@@ -1,0 +1,6 @@
+[package]
+name = "twitter"
+version = "0.1.0"
+authors = ["icesoldier <bryan@icesoldier.me>"]
+
+[dependencies]
