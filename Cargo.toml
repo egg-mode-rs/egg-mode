@@ -4,3 +4,5 @@ version = "0.1.0"
 authors = ["icesoldier <bryan@icesoldier.me>"]
 
 [dependencies]
+hyper = "0.9.10"
+url = "1.1.1"
