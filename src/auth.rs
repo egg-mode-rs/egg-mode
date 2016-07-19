@@ -1,24 +1,7 @@
 use std;
 use std::error::Error;
 use hyper::header::Scheme;
-use url::percent_encoding::{EncodeSet, utf8_percent_encode};
-
-//the encode setes in the url crate don't quite match what twitter wants,
-//so i'll make up my own
-#[derive(Copy, Clone)]
-struct TwitterEncodeSet;
-
-impl EncodeSet for TwitterEncodeSet {
-    fn contains(&self, byte: u8) -> bool {
-        match byte {
-            b'a' ... b'z' => false,
-            b'A' ... b'Z' => false,
-            b'0' ... b'9' => false,
-            b'-' | b'.' | b'_' | b'~' => false,
-            _ => true
-        }
-    }
-}
+use super::percent_encode;
 
 //TODO: should this be just a HashMap<String, String> instead?
 ///Basic component of the OAuth authorization header. Intended to be combined
@@ -79,24 +62,24 @@ impl Scheme for TwitterOAuth {
     }
 
     fn fmt_scheme(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        try!(write!(f, "oauth_consumer_key=\"{}\"", utf8_percent_encode(&self.consumer_key.as_str(), TwitterEncodeSet)));
+        try!(write!(f, "oauth_consumer_key=\"{}\"", percent_encode(&self.consumer_key)));
 
-        try!(write!(f, ", oauth_nonce=\"{}\"", utf8_percent_encode(&self.nonce.as_str(), TwitterEncodeSet)));
+        try!(write!(f, ", oauth_nonce=\"{}\"", percent_encode(&self.nonce)));
 
-        try!(write!(f, ", oauth_signature=\"{}\"", utf8_percent_encode(&self.signature.as_str(), TwitterEncodeSet)));
+        try!(write!(f, ", oauth_signature=\"{}\"", percent_encode(&self.signature)));
 
-        try!(write!(f, ", oauth_signature_method=\"{}\"", "HMAC-SHA1"));
+        try!(write!(f, ", oauth_signature_method=\"{}\"", percent_encode("HMAC-SHA1")));
 
         try!(write!(f, ", oauth_timestamp=\"{}\"", self.timestamp));
 
         if let Some(ref token) = self.token {
-            try!(write!(f, ", oauth_token=\"{}\"", utf8_percent_encode(token, TwitterEncodeSet)));
+            try!(write!(f, ", oauth_token=\"{}\"", percent_encode(token)));
         }
 
         try!(write!(f, ", oauth_version=\"{}\"", "1.0"));
 
         if let Some(ref callback) = self.callback {
-            try!(write!(f, ", oauth_callback=\"{}\"", utf8_percent_encode(callback, TwitterEncodeSet)));
+            try!(write!(f, ", oauth_callback=\"{}\"", percent_encode(callback)));
         }
 
         Ok(())
