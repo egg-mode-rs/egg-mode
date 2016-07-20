@@ -1,3 +1,5 @@
 target
 Cargo.lock
 *.swp
+consumer_key
+consumer_secret

@@ -6,3 +6,7 @@ authors = ["icesoldier <bryan@icesoldier.me>"]
 [dependencies]
 hyper = "0.9.10"
 url = "1.1.1"
+time = "0.1.35"
+rand = "0.3.14"
+rust-crypto = "0.2.36"
+rustc-serialize = "0.3.19"
