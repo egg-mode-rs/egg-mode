@@ -14,8 +14,12 @@ use crypto::sha1::Sha1;
 use rustc_serialize::base64::{self, ToBase64};
 use super::{percent_encode, add_param, ParamList, links, error};
 
-///Basic component of the OAuth authorization header. Intended to be combined
-///with hyper's `Authorization` struct to create a full request header.
+///OAuth header set given to Twitter calls.
+///
+///Since different authorization/authentication calls have various parameters
+///that go into this header, they're optionally placed at the end of this header.
+///On the other hand, `signature` is optional so a structured header can be
+///passed to `sign()` for signature.
 #[derive(Clone, Debug)]
 struct TwitterOAuth {
     consumer_key: String,
@@ -106,12 +110,19 @@ impl Scheme for TwitterOAuth {
     }
 }
 
+///A key/secret pair representing an OAuth token.
 pub struct Token<'a> {
     key: Cow<'a, str>,
     secret: Cow<'a, str>,
 }
 
 impl<'a> Token<'a> {
+    ///Creates a Token with the given key and secret.
+    ///
+    ///This can be called with either `&str` or `String`. In the former
+    ///case the resulting Token will have the same lifetime as the given
+    ///reference. If two Strings are given, the Token effectively has
+    ///lifetime `'static`.
     pub fn new<K, S>(key: K, secret: S) -> Token<'a>
         where K: Into<Cow<'a, str>>,
               S: Into<Cow<'a, str>>
@@ -123,6 +134,8 @@ impl<'a> Token<'a> {
     }
 }
 
+///With the given OAuth header and method parameters, create an OAuth
+///signature and return the header with the signature in line.
 fn sign(header: TwitterOAuth,
         method: Method,
         uri: &str,
@@ -187,6 +200,7 @@ fn sign(header: TwitterOAuth,
     }
 }
 
+///With the given method parameters, return a signed OAuth header.
 fn get_header(method: Method,
               uri: &str,
               con_token: &Token,
@@ -207,6 +221,19 @@ fn get_header(method: Method,
     sign(header, method, uri, params, con_token, access_token)
 }
 
+///With the given consumer Token, ask Twitter for a request Token that can be
+///used to request access to the user's account.
+///
+///This can be considered Step 1 in obtaining access to a user's account. With
+///this Token, a web-based application can use `authenticate_url` (currently
+///unimplemented), and a desktop-based application can use `authorize_url` to
+///perform the authorization request.
+///
+///The parameter `callback` is used to provide an OAuth Callback URL for a web-
+///or mobile-based application to receive the results of the authorization request.
+///To use the PIN-Based Auth request, this must be set to `"oob"`. The resulting
+///Token can be passed to `authorize_url` to give the user a means to accept the
+///request.
 pub fn request_token<S: Into<String>>(con_token: &Token, callback: S) -> Result<Token<'static>, error::Error> {
     let header = get_header(Method::Post, links::auth::REQUEST_TOKEN,
                             con_token, None, Some(callback.into()), None, None);
@@ -236,10 +263,31 @@ pub fn request_token<S: Into<String>>(con_token: &Token, callback: S) -> Result<
                   try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")))))
 }
 
+///With the given request Token, return a URL that a user can access to
+///accept or reject an authorization request.
+///
+///This can be considered Step 2 in obtaining access to a user's account.
+///Using PIN-Based Auth, give the URL that this function returns to the
+///user so they can process the authorization request. They will receive
+///a PIN in return, that can be given as the Verifier to `access_token`.
 pub fn authorize_url(request_token: &Token) -> String {
     format!("{}?oauth_token={}", links::auth::AUTHORIZE, request_token.key)
 }
 
+///With the given OAuth tokens and verifier, ask Twitter for an access
+///Token that can be used to sign further requests to the Twitter API.
+///
+///This can be considered Step 3 in obtaining access to a user's account.
+///The Token this function returns represents the user's authorization
+///that your app can use their account, and needs to be given to all other
+///functions in the Twitter API.
+///
+///The OAuth Verifier this function takes is either given as a result of
+///the OAuth Callback given to `request_token`, or the PIN given to the
+///user as a result of their access of the `authorize_url`.
+///
+///This function also returns the User ID and Username of the authenticated
+///user.
 pub fn access_token<S: Into<String>>(con_token: &Token,
                                      request_token: &Token,
                                      verifier: S) -> Result<(Token<'static>, i64, String), error::Error> {
