@@ -1,11 +1,20 @@
 use std;
 use hyper;
 
+///A set of errors that can occur when interacting with Twitter.
 #[derive(Debug)]
 pub enum Error {
+    ///The response from Twitter was formatted incorrectly or in
+    ///an unexpected manner.
     InvalidResponse,
+    ///The response from Twitter was missing an expected value.
+    ///The enclosed value was the expected parameter.
     MissingValue(&'static str),
+    ///The web request experienced an error. The enclosed value
+    ///was returned from hyper.
     NetError(hyper::error::Error),
+    ///An error was experienced while processing the response
+    ///stream. The enclosed value was returned from libstd.
     IOError(std::io::Error),
 }
 
