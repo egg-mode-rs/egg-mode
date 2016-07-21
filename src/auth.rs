@@ -232,8 +232,8 @@ pub fn request_token<S: Into<String>>(con_token: &Token, callback: S) -> Result<
         }
     }
 
-    Ok(Token::new(try!(key.ok_or(error::Error::InvalidResponse)),
-                  try!(secret.ok_or(error::Error::InvalidResponse))))
+    Ok(Token::new(try!(key.ok_or(error::Error::MissingValue("oauth_token"))),
+                  try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")))))
 }
 
 pub fn authorize_url(request_token: &Token) -> String {
@@ -242,7 +242,7 @@ pub fn authorize_url(request_token: &Token) -> String {
 
 pub fn access_token<S: Into<String>>(con_token: &Token,
                                      request_token: &Token,
-                                     verifier: S) -> Result<Token<'static>, error::Error> {
+                                     verifier: S) -> Result<(Token<'static>, i64, String), error::Error> {
     let header = get_header(Method::Post, links::auth::ACCESS_TOKEN,
                             con_token, Some(request_token), None, Some(verifier.into()), None);
 
@@ -256,17 +256,23 @@ pub fn access_token<S: Into<String>>(con_token: &Token,
 
     let mut key: Option<String> = None;
     let mut secret: Option<String> = None;
+    let mut id: Option<i64> = None;
+    let mut username: Option<String> = None;
 
     for elem in full_resp.split('&') {
         let mut kv = elem.splitn(2, '=');
         match kv.next() {
             Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
             Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
+            Some("user_id") => id = kv.next().and_then(|s| i64::from_str_radix(s, 10).ok()),
+            Some("screen_name") => username = kv.next().map(|s| s.to_string()),
             Some(_) => (),
             None => return Err(error::Error::InvalidResponse),
         }
     }
 
-    Ok(Token::new(try!(key.ok_or(error::Error::InvalidResponse)),
-                  try!(secret.ok_or(error::Error::InvalidResponse))))
+    Ok((Token::new(try!(key.ok_or(error::Error::MissingValue("oauth_token"))),
+                  try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")))),
+        try!(id.ok_or(error::Error::MissingValue("user_id"))),
+        try!(username.ok_or(error::Error::MissingValue("screen_name")))))
 }
