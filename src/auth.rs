@@ -2,7 +2,6 @@ use std;
 use std::error::Error;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::io::Read;
 use hyper;
 use hyper::header::{Authorization, Scheme};
 use hyper::method::Method;
@@ -12,7 +11,8 @@ use crypto::hmac::Hmac;
 use crypto::mac::Mac;
 use crypto::sha1::Sha1;
 use rustc_serialize::base64::{self, ToBase64};
-use super::{percent_encode, add_param, ParamList, links, error};
+use super::{links, error};
+use super::common::*;
 
 ///OAuth header set given to Twitter calls.
 ///
@@ -112,8 +112,8 @@ impl Scheme for TwitterOAuth {
 
 ///A key/secret pair representing an OAuth token.
 pub struct Token<'a> {
-    key: Cow<'a, str>,
-    secret: Cow<'a, str>,
+    pub key: Cow<'a, str>,
+    pub secret: Cow<'a, str>,
 }
 
 impl<'a> Token<'a> {
@@ -240,11 +240,10 @@ pub fn request_token<S: Into<String>>(con_token: &Token, callback: S) -> Result<
 
     let client = hyper::Client::new();
     let mut resp = try!(client.post(links::auth::REQUEST_TOKEN)
-                              .header(Authorization(header))
-                              .send());
+                          .header(Authorization(header))
+                          .send());
 
-    let mut full_resp = String::new();
-    try!(resp.read_to_string(&mut full_resp));
+    let full_resp = try!(response_raw(&mut resp));
 
     let mut key: Option<String> = None;
     let mut secret: Option<String> = None;
@@ -296,11 +295,10 @@ pub fn access_token<S: Into<String>>(con_token: &Token,
 
     let client = hyper::Client::new();
     let mut resp = try!(client.post(links::auth::ACCESS_TOKEN)
-                              .header(Authorization(header))
-                              .send());
+                          .header(Authorization(header))
+                          .send());
 
-    let mut full_resp = String::new();
-    try!(resp.read_to_string(&mut full_resp));
+    let full_resp = try!(response_raw(&mut resp));
 
     let mut key: Option<String> = None;
     let mut secret: Option<String> = None;
