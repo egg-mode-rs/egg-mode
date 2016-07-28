@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::HashMap;
 use common::*;
 use error;
@@ -216,6 +217,18 @@ impl TwitterUser {
         let mut params = HashMap::new();
         let id_param = ids.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
         add_param(&mut params, "user_id", id_param);
+
+        let mut resp = try!(auth::post(links::users::LOOKUP, con_token, access_token, Some(&params)));
+
+        parse_response(&mut resp)
+    }
+
+    pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access_token: &auth::Token)
+        -> Result<Response<Vec<TwitterUser>>, error::Error>
+    {
+        let mut params = HashMap::new();
+        let id_param = names.join(",");
+        add_param(&mut params, "screen_name", id_param);
 
         let mut resp = try!(auth::post(links::users::LOOKUP, con_token, access_token, Some(&params)));
 
