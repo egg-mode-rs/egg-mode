@@ -3,8 +3,10 @@ use std::error::Error;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use hyper;
-use hyper::header::{Authorization, Scheme};
+use hyper::client::response::Response as HyperResponse;
+use hyper::header::{Authorization, Scheme, ContentType};
 use hyper::method::Method;
+use mime::Mime;
 use time;
 use rand::{self, Rng};
 use crypto::hmac::Hmac;
@@ -219,6 +221,48 @@ fn get_header(method: Method,
     };
 
     sign(header, method, uri, params, con_token, access_token)
+}
+
+pub fn get(uri: &str,
+           con_token: &Token,
+           access_token: &Token,
+           params: Option<&ParamList>) -> Result<HyperResponse, error::Error> {
+    let header = get_header(Method::Get, uri, con_token, Some(access_token),
+                            None, None, params);
+
+    let full_url = if let Some(p) = params {
+        let query = p.iter()
+                     .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
+                     .collect::<Vec<_>>()
+                     .join("&");
+
+        format!("{}?{}", uri, query)
+    }
+    else { uri.to_string() };
+    let client = hyper::Client::new();
+    Ok(try!(client.get(&full_url).header(Authorization(header)).send()))
+}
+
+pub fn post(uri: &str,
+            con_token: &Token,
+            access_token: &Token,
+            params: Option<&ParamList>) -> Result<HyperResponse, error::Error> {
+    let header = get_header(Method::Post, uri, con_token, Some(access_token),
+                            None, None, params);
+
+    let content: Mime = "application/x-www-form-urlencoded".parse().unwrap();
+    let body = if let Some(p) = params {
+        p.iter()
+         .map(|(k, v)| format!("{}={}", k, percent_encode(v)))
+         .collect::<Vec<_>>()
+         .join("&")
+    }
+    else { "".to_string() };
+    let client = hyper::Client::new();
+    Ok(try!(client.post(uri).body(body.as_bytes())
+                  .header(Authorization(header))
+                  .header(ContentType(content))
+                  .send()))
 }
 
 ///With the given consumer Token, ask Twitter for a request Token that can be

@@ -4,6 +4,7 @@ extern crate time;
 extern crate rand;
 extern crate crypto;
 extern crate rustc_serialize;
+extern crate mime;
 
 pub mod auth;
 pub mod error;

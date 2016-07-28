@@ -5,9 +5,9 @@ use std::io::Read;
 use url::percent_encoding::{EncodeSet, utf8_percent_encode};
 use hyper::client::response::Response as HyperResponse;
 use hyper::status::StatusCode;
-use rustc_serialize::Decodable;
 use rustc_serialize::json;
 use super::error;
+use super::error::Error::*;
 
 //the encode sets in the url crate don't quite match what twitter wants,
 //so i'll make up my own
@@ -53,9 +53,7 @@ pub struct Response<T> {
     pub rate_limit: i32,
     ///The number of requests left for the 15-minute window.
     pub rate_limit_remaining: i32,
-    ///The remaining window before the rate limit resets, in seconds.
-    ///
-    ///(The Twiter API docs say "in UTC epoch seconds", so ???)
+    ///The UTC Unix timestamp at which the rate window resets.
     pub rate_limit_reset: i32,
     ///The decoded response from the request.
     pub response: T,
@@ -63,11 +61,11 @@ pub struct Response<T> {
 
 ///Represents a collection of errors returned from a Twitter API call.
 #[derive(Debug, RustcDecodable, RustcEncodable)]
-pub struct TwitterError {
+pub struct TwitterErrors {
     pub errors: Vec<TwitterErrorCode>,
 }
 
-impl fmt::Display for TwitterError {
+impl fmt::Display for TwitterErrors {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut first = true;
         for e in &self.errors {
@@ -94,18 +92,36 @@ impl fmt::Display for TwitterErrorCode {
     }
 }
 
+pub trait FromJson : Sized {
+    fn from_json(&json::Json) -> Result<Self, error::Error>;
+
+    fn from_str(input: &str) -> Result<Self, error::Error> {
+        let json = try!(json::Json::from_str(input));
+
+        Self::from_json(&json)
+    }
+}
+
+impl<T> FromJson for Vec<T> where T: FromJson {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        let arr = try!(input.as_array().ok_or(InvalidResponse));
+
+        arr.iter().map(|x| T::from_json(x)).collect()
+    }
+}
+
 ///With the given response struct, parse it into a String.
 pub fn response_raw(resp: &mut HyperResponse) -> Result<String, error::Error> {
     let mut full_resp = String::new();
     try!(resp.read_to_string(&mut full_resp));
 
-    if let Ok(err) = json::decode::<TwitterError>(&full_resp) {
-        return Err(error::Error::TwitterError(err));
+    if let Ok(err) = json::decode::<TwitterErrors>(&full_resp) {
+        return Err(TwitterError(err));
     }
 
     match resp.status {
         StatusCode::Ok | StatusCode::NotModified => (),
-        _ => return Err(error::Error::BadStatus(resp.status)),
+        _ => return Err(BadStatus(resp.status)),
     }
 
     Ok(full_resp)
@@ -114,7 +130,7 @@ pub fn response_raw(resp: &mut HyperResponse) -> Result<String, error::Error> {
 ///With the given response struct, parse it into the desired format and
 ///return it along with rate limit information.
 pub fn parse_response<T>(resp: &mut HyperResponse) -> Result<Response<T>, error::Error>
-    where T: Decodable
+    where T: FromJson
 {
     let resp_str = try!(response_raw(resp));
 
@@ -122,6 +138,22 @@ pub fn parse_response<T>(resp: &mut HyperResponse) -> Result<Response<T>, error:
         rate_limit: resp.headers.get::<XRateLimitLimit>().map(|h| h.0).unwrap_or(-1),
         rate_limit_remaining: resp.headers.get::<XRateLimitRemaining>().map(|h| h.0).unwrap_or(-1),
         rate_limit_reset: resp.headers.get::<XRateLimitReset>().map(|h| h.0).unwrap_or(-1),
-        response: try!(json::decode::<T>(&resp_str)),
+        response: try!(T::from_str(&resp_str)),
     })
+}
+
+pub fn field_bool(input: &json::Json, field: &'static str) -> Result<bool, error::Error> {
+    input.find(field).and_then(|f| f.as_boolean()).ok_or(MissingValue(field))
+}
+
+pub fn field_string(input: &json::Json, field: &'static str) -> Result<String, error::Error> {
+    input.find(field).and_then(|f| f.as_string()).map(|f| f.to_string()).ok_or(MissingValue(field))
+}
+
+pub fn field_i64(input: &json::Json, field: &'static str) -> Result<i64, error::Error> {
+    input.find(field).and_then(|f| f.as_i64()).ok_or(MissingValue(field))
+}
+
+pub fn field_i32(input: &json::Json, field: &'static str) -> Result<i32, error::Error> {
+    field_i64(input, field).map(|f| f as i32)
 }

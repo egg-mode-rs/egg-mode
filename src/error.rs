@@ -14,7 +14,7 @@ pub enum Error {
     ///The response from Twitter returned an error structure
     ///instead of the expected response. The enclosed value was
     ///the response from Twitter.
-    TwitterError(super::common::TwitterError),
+    TwitterError(super::common::TwitterErrors),
     ///The response from Twitter gave a response code that
     ///indicated an error. The enclosed value was the response
     ///code.
