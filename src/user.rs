@@ -214,7 +214,7 @@ impl TwitterUser {
         -> Result<Response<Vec<TwitterUser>>, error::Error>
     {
         let mut params = HashMap::new();
-        let id_param = ids.iter().map(|x| format!("{}", x)).collect::<Vec<String>>().join(",");
+        let id_param = ids.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
         add_param(&mut params, "user_id", id_param);
 
         let mut resp = try!(auth::post(links::users::LOOKUP, con_token, access_token, Some(&params)));
