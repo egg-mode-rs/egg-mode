@@ -3,6 +3,13 @@ extern crate twitter;
 use std::io::{Write, Read};
 
 fn main() {
+    //IMPORTANT: make an app for yourself at apps.twitter.com and get your
+    //key/secret into these files; this example won't work without them
+    let consumer_key = include_str!("consumer_key").trim();
+    let consumer_secret = include_str!("consumer_secret").trim();
+
+    let token = twitter::auth::Token::new(consumer_key, consumer_secret);
+
     let mut config = String::new();
     let user_id: i64;
     let username: String;
@@ -22,13 +29,6 @@ fn main() {
         println!("Welcome back, {}!", username);
     }
     else {
-        //IMPORTANT: make an app for yourself at apps.twitter.com and get your
-        //key/secret into these files; this example won't work without them
-        let consumer_key = include_str!("consumer_key").trim();
-        let consumer_secret = include_str!("consumer_secret").trim();
-
-        let token = twitter::auth::Token::new(consumer_key, consumer_secret);
-
         let request_token = match twitter::auth::request_token(&token, "oob") {
             Ok(token) => token,
             Err(e) => {
@@ -62,5 +62,24 @@ fn main() {
         f.write_all(config.as_bytes()).unwrap();
 
         println!("Welcome, {}, let's get this show on the road!", username);
+    }
+
+    let resp = twitter::user::TwitterUser::lookup_ids(&[user_id], &token, &access_token);
+    let ref user = resp.unwrap().response[0];
+
+    println!("{} (@{})", user.name, user.screen_name);
+    println!("Created at {}", user.created_at);
+    println!("Follows {}, followed by {}", user.friends_count, user.followers_count);
+    if let Some(ref desc) = user.description {
+        println!("{}", desc);
+    }
+    else {
+        println!("(no description provided)");
+    }
+    match (&user.location, &user.url) {
+        (&Some(ref loc), &Some(ref link)) => println!("{} | {}", loc, link),
+        (&None, &Some(ref link)) => println!("{}", link),
+        (&Some(ref loc), &None) => println!("{}", loc),
+        (&None, &None) => (),
     }
 }

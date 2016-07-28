@@ -8,5 +8,6 @@ extern crate mime;
 
 pub mod auth;
 pub mod error;
+pub mod user;
 mod links;
 mod common;
