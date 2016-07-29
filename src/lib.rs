@@ -6,8 +6,11 @@ extern crate crypto;
 extern crate rustc_serialize;
 extern crate mime;
 
-pub mod auth;
+mod auth;
 pub mod error;
 pub mod user;
 mod links;
 mod common;
+
+pub use auth::{Token, request_token, authorize_url, access_token};
+pub use common::{Response, TwitterErrors, TwitterErrorCode};

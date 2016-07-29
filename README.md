@@ -9,16 +9,16 @@ Twitter's v1.1 API.
 To authenticate a user and request an access token:
 
 ```rust
-use twitter::auth;
+extern crate twitter;
 
-let consumer_token = auth::Token::new(consumer_key, consumer_secret);
-let request_token = auth::request_token(&consumer_token, "oob").unwrap();
-let authorize_url = auth::authorize_url(&request_token);
+let consumer_token = twitter::Token::new(consumer_key, consumer_secret);
+let request_token = twitter::request_token(&consumer_token, "oob").unwrap();
+let authorize_url = twitter::authorize_url(&request_token);
 
 //show authorize_url to the user, have them sign in to Twitter there, and enter the PIN that
 //Twitter gives them
 
-let (access_token, user_id, username) = auth::access_token(&consumer_token, &request_token, pin).unwrap();
+let (access_token, user_id, username) = twitter::access_token(&consumer_token, &request_token, pin).unwrap();
 ```
 
 As the last line shows, this also returns the User ID and username of the user that authenticated
