@@ -1,3 +1,7 @@
+#![warn(missing_docs)]
+#![warn(unused_extern_crates)]
+#![warn(unused_qualifications)]
+
 #[macro_use] extern crate hyper;
 extern crate url;
 extern crate time;
