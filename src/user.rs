@@ -1,3 +1,5 @@
+//! Structs and methods for pulling user information from Twitter.
+
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use common::*;
@@ -211,6 +213,7 @@ impl FromJson for TwitterUser {
 }
 
 impl TwitterUser {
+    ///Lookup a set of Twitter users by their numerical ID.
     pub fn lookup_ids(ids: &[i64], con_token: &auth::Token, access_token: &auth::Token)
         -> Result<Response<Vec<TwitterUser>>, error::Error>
     {
@@ -223,6 +226,7 @@ impl TwitterUser {
         parse_response(&mut resp)
     }
 
+    ///Lookup a set of Twitter users by their screen name.
     pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access_token: &auth::Token)
         -> Result<Response<Vec<TwitterUser>>, error::Error>
     {

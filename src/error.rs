@@ -1,3 +1,5 @@
+//! A composite error type for errors that can occur while interacting with Twitter.
+
 use std;
 use hyper;
 use rustc_serialize;

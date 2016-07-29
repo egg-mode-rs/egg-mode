@@ -62,6 +62,7 @@ pub struct Response<T> {
 ///Represents a collection of errors returned from a Twitter API call.
 #[derive(Debug, RustcDecodable, RustcEncodable)]
 pub struct TwitterErrors {
+    ///A collection of errors returned by Twitter.
     pub errors: Vec<TwitterErrorCode>,
 }
 
@@ -82,7 +83,12 @@ impl fmt::Display for TwitterErrors {
 ///Represents a specific error returned from a Twitter API call.
 #[derive(Debug, RustcDecodable, RustcEncodable)]
 pub struct TwitterErrorCode {
+    ///The error message returned by Twitter.
     pub message: String,
+    ///The numeric error code returned by Twitter. A list of possible error codes can be found in
+    ///the [API documentation][error-codes].
+    ///
+    ///[error-codes]: https://dev.twitter.com/overview/api/response-codes
     pub code: i32,
 }
 
@@ -92,9 +98,12 @@ impl fmt::Display for TwitterErrorCode {
     }
 }
 
+///Helper trait to provide a general interface for deserializing Twitter API data structures.
 pub trait FromJson : Sized {
+    ///Parse the given Json object into a data structure.
     fn from_json(&json::Json) -> Result<Self, error::Error>;
 
+    ///Parse the given string into a Json object, then into a data structure.
     fn from_str(input: &str) -> Result<Self, error::Error> {
         let json = try!(json::Json::from_str(input));
 
@@ -142,18 +151,22 @@ pub fn parse_response<T>(resp: &mut HyperResponse) -> Result<Response<T>, error:
     })
 }
 
+///Extract a boolean field from the given Json.
 pub fn field_bool(input: &json::Json, field: &'static str) -> Result<bool, error::Error> {
     input.find(field).and_then(|f| f.as_boolean()).ok_or(MissingValue(field))
 }
 
+///Extract a string field from the given Json.
 pub fn field_string(input: &json::Json, field: &'static str) -> Result<String, error::Error> {
     input.find(field).and_then(|f| f.as_string()).map(|f| f.to_string()).ok_or(MissingValue(field))
 }
 
+///Extract an i64 field from the given Json.
 pub fn field_i64(input: &json::Json, field: &'static str) -> Result<i64, error::Error> {
     input.find(field).and_then(|f| f.as_i64()).ok_or(MissingValue(field))
 }
 
+///Extract an i32 field from the given Json.
 pub fn field_i32(input: &json::Json, field: &'static str) -> Result<i32, error::Error> {
     field_i64(input, field).map(|f| f as i32)
 }

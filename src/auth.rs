@@ -114,7 +114,9 @@ impl Scheme for TwitterOAuth {
 
 ///A key/secret pair representing an OAuth token.
 pub struct Token<'a> {
+    ///A key used to identify an application or user.
     pub key: Cow<'a, str>,
+    ///A private key used to sign messages from an application or user.
     pub secret: Cow<'a, str>,
 }
 

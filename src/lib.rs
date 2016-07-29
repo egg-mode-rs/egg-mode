@@ -1,3 +1,10 @@
+//! A library for interacting with Twitter.
+//!
+//! Please see [the repository][] and its enclosed examples for tips on working with this library
+//! while it's still in progress.
+//!
+//! [the repository]: https://github.com/icesoldier/twitter-rs
+
 #![warn(missing_docs)]
 #![warn(unused_extern_crates)]
 #![warn(unused_qualifications)]
