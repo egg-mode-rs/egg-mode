@@ -98,7 +98,7 @@ pub struct TwitterUser {
     ///sized images, with size specifiers according to [Profile Images and Banners][profile-img].
     ///
     ///[profile-img]: https://dev.twitter.com/overview/general/user-profile-images-and-banners
-    pub profile_banner_url: String,
+    pub profile_banner_url: Option<String>,
     ///A URL pointing to the user's avatar image. Uses HTTP as the protocol. Size
     ///specifiers can be used according to [Profile Images and Banners][profile-img].
     ///
@@ -187,7 +187,7 @@ impl FromJson for TwitterUser {
             profile_background_image_url: try!(field_string(input, "profile_background_image_url")),
             profile_background_image_url_https: try!(field_string(input, "profile_background_image_url_https")),
             profile_background_tile: try!(field_bool(input, "profile_background_tile")),
-            profile_banner_url: try!(field_string(input, "profile_banner_url")),
+            profile_banner_url: field_string(input, "profile_banner_url").ok(),
             profile_image_url: try!(field_string(input, "profile_image_url")),
             profile_image_url_https: try!(field_string(input, "profile_image_url_https")),
             profile_link_color: try!(field_string(input, "profile_link_color")),
@@ -235,6 +235,30 @@ impl TwitterUser {
         add_param(&mut params, "screen_name", id_param);
 
         let mut resp = try!(auth::post(links::users::LOOKUP, con_token, access_token, Some(&params)));
+
+        parse_response(&mut resp)
+    }
+
+    ///Lookup user details for a single user ID.
+    pub fn show_id(id: i64, con_token: &auth::Token, access_token: &auth::Token)
+        -> Result<Response<TwitterUser>, error::Error>
+    {
+        let mut params = HashMap::new();
+        add_param(&mut params, "user_id", id.to_string());
+
+        let mut resp  = try!(auth::get(links::users::SHOW, con_token, access_token, Some(&params)));
+
+        parse_response(&mut resp)
+    }
+
+    ///Lookup user details for a single username.
+    pub fn show_name(name: &str, con_token: &auth::Token, access_token: &auth::Token)
+        -> Result<Response<TwitterUser>, error::Error>
+    {
+        let mut params = HashMap::new();
+        add_param(&mut params, "screen_name", name);
+
+        let mut resp = try!(auth::get(links::users::SHOW, con_token, access_token, Some(&params)));
 
         parse_response(&mut resp)
     }
