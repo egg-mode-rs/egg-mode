@@ -64,9 +64,14 @@ fn main() {
         println!("Welcome, {}, let's get this show on the road!", username);
     }
 
-    let resp = twitter::user::TwitterUser::lookup_ids(&[user_id], &token, &access_token);
-    let ref user = resp.unwrap().response[0];
+    let resp = twitter::user::TwitterUser::show_id(user_id, &token, &access_token);
+    print_user(&resp.unwrap().response);
 
+    let resp = twitter::user::TwitterUser::show_name("SwiftOnSecurity", &token, &access_token);
+    print_user(&resp.unwrap().response);
+}
+
+fn print_user(user: &twitter::user::TwitterUser) {
     println!("{} (@{})", user.name, user.screen_name);
     println!("Created at {}", user.created_at);
     println!("Follows {}, followed by {}", user.friends_count, user.followers_count);
