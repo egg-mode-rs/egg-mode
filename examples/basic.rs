@@ -68,11 +68,11 @@ fn main() {
     users.push(user_id.into());
     users.push("SwiftOnSecurity".into());
 
-    for user in twitter::user::TwitterUser::lookup(&users, &token, &access_token).unwrap().response.iter() {
+    for user in twitter::user::lookup(&users, &token, &access_token).unwrap().response.iter() {
         print_user(user)
     }
 
-    for resp in twitter::user::TwitterUser::search("rustlang", &token, &access_token).take(5) {
+    for resp in twitter::user::search("rustlang", &token, &access_token).take(5) {
         print_user(&resp.unwrap().response);
     }
 }

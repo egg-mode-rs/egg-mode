@@ -212,85 +212,83 @@ impl FromJson for TwitterUser {
     }
 }
 
-impl TwitterUser {
-    ///Lookup a set of Twitter users by their numerical ID.
-    pub fn lookup_ids(ids: &[i64], con_token: &auth::Token, access_token: &auth::Token)
-        -> Result<Response<Vec<TwitterUser>>, error::Error>
-    {
-        let mut params = HashMap::new();
-        let id_param = ids.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
-        add_param(&mut params, "user_id", id_param);
+///Lookup a set of Twitter users by their numerical ID.
+pub fn lookup_ids(ids: &[i64], con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<Vec<TwitterUser>>, error::Error>
+{
+    let mut params = HashMap::new();
+    let id_param = ids.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
+    add_param(&mut params, "user_id", id_param);
 
-        let mut resp = try!(auth::post(links::users::LOOKUP, con_token, access_token, Some(&params)));
+    let mut resp = try!(auth::post(links::users::LOOKUP, con_token, access_token, Some(&params)));
 
-        parse_response(&mut resp)
-    }
+    parse_response(&mut resp)
+}
 
-    ///Lookup a set of Twitter users by their screen name.
-    pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access_token: &auth::Token)
-        -> Result<Response<Vec<TwitterUser>>, error::Error>
-    {
-        let mut params = HashMap::new();
-        let id_param = names.join(",");
-        add_param(&mut params, "screen_name", id_param);
+///Lookup a set of Twitter users by their screen name.
+pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<Vec<TwitterUser>>, error::Error>
+{
+    let mut params = HashMap::new();
+    let id_param = names.join(",");
+    add_param(&mut params, "screen_name", id_param);
 
-        let mut resp = try!(auth::post(links::users::LOOKUP, con_token, access_token, Some(&params)));
+    let mut resp = try!(auth::post(links::users::LOOKUP, con_token, access_token, Some(&params)));
 
-        parse_response(&mut resp)
-    }
+    parse_response(&mut resp)
+}
 
-    ///Lookup a set of Twitter users by both ID and screen name, as applicable.
-    pub fn lookup(accts: &[UserID], con_token: &auth::Token, access_token: &auth::Token)
-        -> Result<Response<Vec<TwitterUser>>, error::Error>
-    {
-        let mut params = HashMap::new();
-        let id_param = accts.iter()
-                            .filter_map(|x| match x {
-                                &UserID::ID(id) => Some(id.to_string()),
-                                _ => None,
-                            })
-                            .collect::<Vec<_>>()
-                            .join(",");
-        let name_param = accts.iter()
-                              .filter_map(|x| match x {
-                                  &UserID::ScreenName(name) => Some(name),
-                                  _ => None,
-                              })
-                              .collect::<Vec<_>>()
-                              .join(",");
+///Lookup a set of Twitter users by both ID and screen name, as applicable.
+pub fn lookup(accts: &[UserID], con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<Vec<TwitterUser>>, error::Error>
+{
+    let mut params = HashMap::new();
+    let id_param = accts.iter()
+                        .filter_map(|x| match x {
+                            &UserID::ID(id) => Some(id.to_string()),
+                            _ => None,
+                        })
+                        .collect::<Vec<_>>()
+                        .join(",");
+    let name_param = accts.iter()
+                          .filter_map(|x| match x {
+                              &UserID::ScreenName(name) => Some(name),
+                              _ => None,
+                          })
+                          .collect::<Vec<_>>()
+                          .join(",");
 
-        add_param(&mut params, "user_id", id_param);
-        add_param(&mut params, "screen_name", name_param);
+    add_param(&mut params, "user_id", id_param);
+    add_param(&mut params, "screen_name", name_param);
 
-        let mut resp = try!(auth::post(links::users::LOOKUP, con_token, access_token, Some(&params)));
+    let mut resp = try!(auth::post(links::users::LOOKUP, con_token, access_token, Some(&params)));
 
-        parse_response(&mut resp)
-    }
+    parse_response(&mut resp)
+}
 
-    ///Lookup user information for a single user.
-    pub fn show<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
-        -> Result<Response<TwitterUser>, error::Error>
-    {
-        let mut params = HashMap::new();
-        add_name_param(&mut params, acct.into());
+///Lookup user information for a single user.
+pub fn show<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<TwitterUser>, error::Error>
+{
+    let mut params = HashMap::new();
+    add_name_param(&mut params, acct.into());
 
-        let mut resp = try!(auth::get(links::users::SHOW, con_token, access_token, Some(&params)));
+    let mut resp = try!(auth::get(links::users::SHOW, con_token, access_token, Some(&params)));
 
-        parse_response(&mut resp)
-    }
+    parse_response(&mut resp)
+}
 
-    ///Set up a user search. Returns an Iterator and does not call the API until iterating.
-    pub fn search<'a>(query: &'a str, con_token: &'a auth::Token, access_token: &'a auth::Token)
-        -> UserSearch<'a>
-    {
-        UserSearch {
-            con_token: con_token,
-            access_token: access_token,
-            query: query,
-            page_num: 1,
-            page_size: 10,
-            current_results: None,
-        }
+///Set up a user search. Returns an Iterator and does not call the API until iterating.
+pub fn search<'a>(query: &'a str, con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> UserSearch<'a>
+{
+    UserSearch {
+        con_token: con_token,
+        access_token: access_token,
+        query: query,
+        page_num: 1,
+        page_size: 10,
+        current_results: None,
     }
 }
 
