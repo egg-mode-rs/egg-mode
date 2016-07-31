@@ -264,7 +264,7 @@ impl TwitterUser {
     }
 
     ///Set up a user search. Returns an Iterator and does not call the API until iterating.
-    pub fn search<'a>(query: String, con_token: &'a auth::Token, access_token: &'a auth::Token)
+    pub fn search<'a>(query: &'a str, con_token: &'a auth::Token, access_token: &'a auth::Token)
         -> UserSearch<'a>
     {
         UserSearch {
@@ -282,7 +282,7 @@ impl TwitterUser {
 pub struct UserSearch<'a> {
     con_token: &'a auth::Token<'a>,
     access_token: &'a auth::Token<'a>,
-    query: String,
+    query: &'a str,
     ///The current page of results being returned, starting at 1.
     pub page_num: i32,
     ///The number of user records per page of results. Defaults to 10, maximum of 20.
@@ -328,7 +328,7 @@ impl<'a> UserSearch<'a> {
     ///change `page_num` between calls.
     pub fn call(&self) -> Result<Response<Vec<TwitterUser>>, error::Error> {
         let mut params = HashMap::new();
-        add_param(&mut params, "q", self.query.as_str());
+        add_param(&mut params, "q", self.query);
         add_param(&mut params, "page", self.page_num.to_string());
         add_param(&mut params, "count", self.page_size.to_string());
 
