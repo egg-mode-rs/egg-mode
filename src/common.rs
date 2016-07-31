@@ -42,6 +42,32 @@ pub fn add_param<'a, K, V>(list: &mut ParamList<'a>, key: K, value: V) -> Option
     list.insert(key.into(), value.into())
 }
 
+pub enum UserID<'a> {
+    ID(i64),
+    ScreenName(&'a str),
+}
+
+impl<'a> UserID<'a> {
+    pub fn add_param(&self, list: &mut ParamList<'a>) -> Option<Cow<'a, str>> {
+        match self {
+            &UserID::ID(id) => add_param(list, "user_id", id.to_string()),
+            &UserID::ScreenName(name) => add_param(list, "screen_name", name),
+        }
+    }
+}
+
+impl<'a> From<i64> for UserID<'a> {
+    fn from(id: i64) -> UserID<'a> {
+        UserID::ID(id)
+    }
+}
+
+impl<'a> From<&'a str> for UserID<'a> {
+    fn from(name: &'a str) -> UserID<'a> {
+        UserID::ScreenName(name)
+    }
+}
+
 header! { (XRateLimitLimit, "X-Rate-Limit-Limit") => [i32] }
 header! { (XRateLimitRemaining, "X-Rate-Limit-Remaining") => [i32] }
 header! { (XRateLimitReset, "X-Rate-Limit-Reset") => [i32] }
