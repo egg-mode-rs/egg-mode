@@ -42,18 +42,19 @@ pub fn add_param<'a, K, V>(list: &mut ParamList<'a>, key: K, value: V) -> Option
     list.insert(key.into(), value.into())
 }
 
-pub enum UserID<'a> {
-    ID(i64),
-    ScreenName(&'a str),
+pub fn add_name_param<'a>(list: &mut ParamList<'a>, id: UserID<'a>) -> Option<Cow<'a, str>> {
+    match id {
+        UserID::ID(id) => add_param(list, "user_id", id.to_string()),
+        UserID::ScreenName(name) => add_param(list, "screen_name", name),
+    }
 }
 
-impl<'a> UserID<'a> {
-    pub fn add_param(&self, list: &mut ParamList<'a>) -> Option<Cow<'a, str>> {
-        match self {
-            &UserID::ID(id) => add_param(list, "user_id", id.to_string()),
-            &UserID::ScreenName(name) => add_param(list, "screen_name", name),
-        }
-    }
+///Convenience enum to generalize between referring to an account by numeric ID or by screen name.
+pub enum UserID<'a> {
+    ///Referring via the account's numeric ID.
+    ID(i64),
+    ///Referring via the account's screen name.
+    ScreenName(&'a str),
 }
 
 impl<'a> From<i64> for UserID<'a> {

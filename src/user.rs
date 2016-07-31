@@ -239,6 +239,7 @@ impl TwitterUser {
         parse_response(&mut resp)
     }
 
+    ///Lookup a set of Twitter users by both ID and screen name, as applicable.
     pub fn lookup(accts: &[UserID], con_token: &auth::Token, access_token: &auth::Token)
         -> Result<Response<Vec<TwitterUser>>, error::Error>
     {
@@ -266,11 +267,12 @@ impl TwitterUser {
         parse_response(&mut resp)
     }
 
+    ///Lookup user information for a single user.
     pub fn show<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
         -> Result<Response<TwitterUser>, error::Error>
     {
         let mut params = HashMap::new();
-        acct.into().add_param(&mut params);
+        add_name_param(&mut params, acct.into());
 
         let mut resp = try!(auth::get(links::users::SHOW, con_token, access_token, Some(&params)));
 
