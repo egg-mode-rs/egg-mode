@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::fmt;
+use std::{fmt, vec};
 use std::io::Read;
 use url::percent_encoding::{EncodeSet, utf8_percent_encode};
 use hyper::client::response::Response as HyperResponse;
@@ -57,6 +57,52 @@ pub struct Response<T> {
     pub rate_limit_reset: i32,
     ///The decoded response from the request.
     pub response: T,
+}
+
+///Iterator returned by calling `.into_iter()` on a `Response<Vec<T>>`.
+pub struct ResponseIter<T> {
+    rate_limit: i32,
+    rate_limit_remaining: i32,
+    rate_limit_reset: i32,
+    resp_iter: vec::IntoIter<T>,
+}
+
+impl<T> ResponseIter<T> {
+    pub fn len(&self) -> usize {
+        self.resp_iter.len()
+    }
+}
+
+impl<T> Iterator for ResponseIter<T> {
+    type Item = Response<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(resp) = self.resp_iter.next() {
+            Some(Response {
+                rate_limit: self.rate_limit,
+                rate_limit_remaining: self.rate_limit_remaining,
+                rate_limit_reset: self.rate_limit_reset,
+                response: resp,
+            })
+        }
+        else {
+            None
+        }
+    }
+}
+
+impl<T> IntoIterator for Response<Vec<T>> {
+    type Item = Response<T>;
+    type IntoIter = ResponseIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ResponseIter {
+            rate_limit: self.rate_limit,
+            rate_limit_remaining: self.rate_limit_remaining,
+            rate_limit_reset: self.rate_limit_reset,
+            resp_iter: self.response.into_iter(),
+        }
+    }
 }
 
 ///Represents a collection of errors returned from a Twitter API call.

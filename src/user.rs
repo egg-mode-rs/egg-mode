@@ -262,4 +262,109 @@ impl TwitterUser {
 
         parse_response(&mut resp)
     }
+
+    ///Set up a user search. Returns an Iterator and does not call the API until iterating.
+    pub fn search<'a>(query: String, con_token: &'a auth::Token, access_token: &'a auth::Token)
+        -> UserSearch<'a>
+    {
+        UserSearch {
+            con_token: con_token,
+            access_token: access_token,
+            query: query,
+            page_num: 1,
+            page_size: 10,
+            current_results: None,
+        }
+    }
+}
+
+///Represents an active user search.
+pub struct UserSearch<'a> {
+    con_token: &'a auth::Token<'a>,
+    access_token: &'a auth::Token<'a>,
+    query: String,
+    ///The current page of results being returned, starting at 1.
+    pub page_num: i32,
+    ///The number of user records per page of results. Defaults to 10, maximum of 20.
+    pub page_size: i32,
+    current_results: Option<ResponseIter<TwitterUser>>,
+}
+
+impl<'a> UserSearch<'a> {
+    ///Sets the page size used for the search query.
+    ///
+    ///Calling this will invalidate any current search results, making the next call to `next()`
+    ///perform a network call.
+    pub fn with_page_size(self, page_size: i32) -> Self {
+        UserSearch {
+            con_token: self.con_token,
+            access_token: self.access_token,
+            query: self.query,
+            page_num: self.page_num,
+            page_size: page_size,
+            current_results: None,
+        }
+    }
+
+    ///Sets the starting page number for the search query.
+    ///
+    ///Calling this will invalidate any current search results, making the next call to `next()`
+    ///perform a network call.
+    pub fn start_at_page(self, page_num: i32) -> Self {
+        UserSearch {
+            con_token: self.con_token,
+            access_token: self.access_token,
+            query: self.query,
+            page_num: page_num,
+            page_size: self.page_size,
+            current_results: None,
+        }
+    }
+
+    ///Performs the search for the current page of results.
+    ///
+    ///This will automatically be called if you use the `UserSearch` as an iterator. This method is
+    ///made public for convenience if you want to manage the pagination yourself. Remember to
+    ///change `page_num` between calls.
+    pub fn call(&self) -> Result<Response<Vec<TwitterUser>>, error::Error> {
+        let mut params = HashMap::new();
+        add_param(&mut params, "q", self.query.as_str());
+        add_param(&mut params, "page", self.page_num.to_string());
+        add_param(&mut params, "count", self.page_size.to_string());
+
+        let mut resp = try!(auth::get(links::users::SEARCH, self.con_token, self.access_token, Some(&params)));
+
+        parse_response(&mut resp)
+    }
+}
+
+impl<'a> Iterator for UserSearch<'a> {
+    type Item = Result<Response<TwitterUser>, error::Error>;
+
+    fn next(&mut self) -> Option<Result<Response<TwitterUser>, error::Error>> {
+        if let Some(ref mut results) = self.current_results {
+            if let Some(user) = results.next() {
+                return Some(Ok(user));
+            }
+            else if (results.len() as i32) < self.page_size {
+                return None;
+            }
+            else {
+                self.page_num += 1;
+            }
+        }
+
+        match self.call() {
+            Ok(resp) => {
+                let mut iter = resp.into_iter();
+                let first = iter.next();
+                self.current_results = Some(iter);
+                match first {
+                    Some(user) => Some(Ok(user)),
+                    None => None,
+                }
+            },
+            Err(err) => Some(Err(err))
+        }
+    }
 }
