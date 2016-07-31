@@ -69,9 +69,14 @@ fn main() {
 
     let resp = twitter::user::TwitterUser::show_name("SwiftOnSecurity", &token, &access_token);
     print_user(&resp.unwrap().response);
+
+    for resp in twitter::user::TwitterUser::search("rustlang", &token, &access_token).take(5) {
+        print_user(&resp.unwrap().response);
+    }
 }
 
 fn print_user(user: &twitter::user::TwitterUser) {
+    println!("");
     println!("{} (@{})", user.name, user.screen_name);
     println!("Created at {}", user.created_at);
     println!("Follows {}, followed by {}", user.friends_count, user.followers_count);
