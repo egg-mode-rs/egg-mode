@@ -271,14 +271,15 @@ pub fn show<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_to
     -> Result<Response<TwitterUser>, error::Error>
 {
     let mut params = HashMap::new();
-    add_name_param(&mut params, acct.into());
+    add_name_param(&mut params, &acct.into());
 
     let mut resp = try!(auth::get(links::users::SHOW, con_token, access_token, Some(&params)));
 
     parse_response(&mut resp)
 }
 
-///Set up a user search. Returns an Iterator and does not call the API until iterating.
+///Lookup users based on the given search term. Returns an iterator that lazily loads a page of
+///results at a time, but returns a single user per-iteration.
 pub fn search<'a>(query: &'a str, con_token: &'a auth::Token, access_token: &'a auth::Token)
     -> UserSearch<'a>
 {
@@ -379,6 +380,130 @@ impl<'a> Iterator for UserSearch<'a> {
                 }
             },
             Err(err) => Some(Err(err))
+        }
+    }
+}
+
+///Lookup the users a given account follows, also called their "friends" within the API. Returns an
+///iterator that lazily loads a page of results at a time, but returns a single user per-iteration.
+pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> FriendsList<'a>
+{
+    FriendsList {
+        con_token: con_token,
+        access_token: access_token,
+        user_id: acct.into(),
+        page_size: 20,
+        previous_cursor: -1,
+        next_cursor: -1,
+        users_iter: None,
+    }
+}
+
+///Represents a single-page view into a list of users.
+pub struct UserCursor {
+    ///Numeric reference to the previous page of results.
+    pub previous_cursor: i64,
+    ///Numeric reference to the next page of results.
+    pub next_cursor: i64,
+    ///The list of users in this page of results.
+    pub users: Vec<TwitterUser>,
+}
+
+impl FromJson for UserCursor {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse);
+        }
+
+        Ok(UserCursor {
+            previous_cursor: try!(field_i64(input, "previous_cursor")),
+            next_cursor: try!(field_i64(input, "next_cursor")),
+            users: try!(field(input, "users")),
+        })
+    }
+}
+
+///Represents a list of users a specific user follows. Implemented as an iterator that lazily loads
+///a page of results at a time while iterating.
+pub struct FriendsList<'a> {
+    con_token: &'a auth::Token<'a>,
+    access_token: &'a auth::Token<'a>,
+    user_id: UserID<'a>,
+    ///The number of users returned in one network call. Defaults to 20, maximum of 200.
+    pub page_size: i32,
+    ///Numeric reference to the previous page of results. Automatically updated if iterating.
+    pub previous_cursor: i64,
+    ///Numeric reference to the next page of results. Automatically updated if iterating. Set to
+    ///zero if the current page is the last page of results.
+    pub next_cursor: i64,
+    users_iter: Option<ResponseIter<TwitterUser>>,
+}
+
+impl<'a> FriendsList<'a> {
+    ///Sets the number of results returned in a single network call. Intended to be used before
+    ///iterating over results. Defaults to 20, maximum of 200.
+    pub fn with_page_size(self, page_size: i32) -> FriendsList<'a> {
+        FriendsList {
+            con_token: self.con_token,
+            access_token: self.access_token,
+            user_id: self.user_id,
+            page_size: page_size,
+            previous_cursor: -1,
+            next_cursor: -1,
+            users_iter: None,
+        }
+    }
+
+    ///Performs a network call for the next page of results. Automatically called while iterating,
+    ///but made public as a convenience method to allow for manual paging.
+    pub fn call(&self) -> Result<Response<UserCursor>, error::Error> {
+        let mut params = HashMap::new();
+        add_name_param(&mut params, &self.user_id);
+        add_param(&mut params, "cursor", self.next_cursor.to_string());
+        add_param(&mut params, "count", self.page_size.to_string());
+
+        let mut resp = try!(auth::get(links::users::FRIENDS_LIST, self.con_token, self.access_token, Some(&params)));
+
+        parse_response(&mut resp)
+    }
+}
+
+impl<'a> Iterator for FriendsList<'a> {
+    type Item = Result<Response<TwitterUser>, error::Error>;
+
+    fn next(&mut self) -> Option<Result<Response<TwitterUser>, error::Error>> {
+        if let Some(ref mut results) = self.users_iter {
+            if let Some(user) = results.next() {
+                return Some(Ok(user));
+            }
+            else if self.next_cursor == 0 {
+                return None;
+            }
+        }
+
+        match self.call() {
+            Ok(resp) => {
+                self.previous_cursor = resp.response.previous_cursor;
+                self.next_cursor = resp.response.next_cursor;
+
+                let resp = Response {
+                    rate_limit: resp.rate_limit,
+                    rate_limit_remaining: resp.rate_limit_remaining,
+                    rate_limit_reset: resp.rate_limit_reset,
+                    response: resp.response.users,
+                };
+
+                let mut iter = resp.into_iter();
+                let first = iter.next();
+                self.users_iter = Some(iter);
+
+                match first {
+                    Some(user) => Some(Ok(user)),
+                    None => None,
+                }
+            },
+            Err(err) => Some(Err(err)),
         }
     }
 }

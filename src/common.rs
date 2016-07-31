@@ -42,10 +42,10 @@ pub fn add_param<'a, K, V>(list: &mut ParamList<'a>, key: K, value: V) -> Option
     list.insert(key.into(), value.into())
 }
 
-pub fn add_name_param<'a>(list: &mut ParamList<'a>, id: UserID<'a>) -> Option<Cow<'a, str>> {
+pub fn add_name_param<'a>(list: &mut ParamList<'a>, id: &UserID<'a>) -> Option<Cow<'a, str>> {
     match id {
-        UserID::ID(id) => add_param(list, "user_id", id.to_string()),
-        UserID::ScreenName(name) => add_param(list, "screen_name", name),
+        &UserID::ID(id) => add_param(list, "user_id", id.to_string()),
+        &UserID::ScreenName(name) => add_param(list, "screen_name", name),
     }
 }
 
@@ -242,4 +242,8 @@ pub fn field_i64(input: &json::Json, field: &'static str) -> Result<i64, error::
 ///Extract an i32 field from the given Json.
 pub fn field_i32(input: &json::Json, field: &'static str) -> Result<i32, error::Error> {
     field_i64(input, field).map(|f| f as i32)
+}
+
+pub fn field<T: FromJson>(input: &json::Json, field: &'static str) -> Result<T, error::Error> {
+    T::from_json(try!(input.find(field).ok_or(MissingValue(field))))
 }
