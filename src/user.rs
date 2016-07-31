@@ -266,24 +266,11 @@ impl TwitterUser {
         parse_response(&mut resp)
     }
 
-    ///Lookup user details for a single user ID.
-    pub fn show_id(id: i64, con_token: &auth::Token, access_token: &auth::Token)
+    pub fn show<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
         -> Result<Response<TwitterUser>, error::Error>
     {
         let mut params = HashMap::new();
-        add_param(&mut params, "user_id", id.to_string());
-
-        let mut resp  = try!(auth::get(links::users::SHOW, con_token, access_token, Some(&params)));
-
-        parse_response(&mut resp)
-    }
-
-    ///Lookup user details for a single username.
-    pub fn show_name(name: &str, con_token: &auth::Token, access_token: &auth::Token)
-        -> Result<Response<TwitterUser>, error::Error>
-    {
-        let mut params = HashMap::new();
-        add_param(&mut params, "screen_name", name);
+        acct.into().add_param(&mut params);
 
         let mut resp = try!(auth::get(links::users::SHOW, con_token, access_token, Some(&params)));
 
