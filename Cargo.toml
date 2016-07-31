@@ -1,7 +1,7 @@
 [package]
 name = "twitter"
 version = "0.1.0"
-authors = ["icesoldier <bryan@icesoldier.me>"]
+authors = ["QuietMisdreavus <bryan@icesoldier.me>"]
 
 [dependencies]
 hyper = "0.9.10"
