@@ -239,6 +239,33 @@ impl TwitterUser {
         parse_response(&mut resp)
     }
 
+    pub fn lookup(accts: &[UserID], con_token: &auth::Token, access_token: &auth::Token)
+        -> Result<Response<Vec<TwitterUser>>, error::Error>
+    {
+        let mut params = HashMap::new();
+        let id_param = accts.iter()
+                            .filter_map(|x| match x {
+                                &UserID::ID(id) => Some(id.to_string()),
+                                _ => None,
+                            })
+                            .collect::<Vec<_>>()
+                            .join(",");
+        let name_param = accts.iter()
+                              .filter_map(|x| match x {
+                                  &UserID::ScreenName(name) => Some(name),
+                                  _ => None,
+                              })
+                              .collect::<Vec<_>>()
+                              .join(",");
+
+        add_param(&mut params, "user_id", id_param);
+        add_param(&mut params, "screen_name", name_param);
+
+        let mut resp = try!(auth::post(links::users::LOOKUP, con_token, access_token, Some(&params)));
+
+        parse_response(&mut resp)
+    }
+
     ///Lookup user details for a single user ID.
     pub fn show_id(id: i64, con_token: &auth::Token, access_token: &auth::Token)
         -> Result<Response<TwitterUser>, error::Error>

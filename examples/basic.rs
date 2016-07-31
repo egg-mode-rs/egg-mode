@@ -64,11 +64,13 @@ fn main() {
         println!("Welcome, {}, let's get this show on the road!", username);
     }
 
-    let resp = twitter::user::TwitterUser::show_id(user_id, &token, &access_token);
-    print_user(&resp.unwrap().response);
+    let mut users: Vec<twitter::UserID> = vec![];
+    users.push(user_id.into());
+    users.push("SwiftOnSecurity".into());
 
-    let resp = twitter::user::TwitterUser::show_name("SwiftOnSecurity", &token, &access_token);
-    print_user(&resp.unwrap().response);
+    for user in twitter::user::TwitterUser::lookup(&users, &token, &access_token).unwrap().response.iter() {
+        print_user(user)
+    }
 
     for resp in twitter::user::TwitterUser::search("rustlang", &token, &access_token).take(5) {
         print_user(&resp.unwrap().response);
