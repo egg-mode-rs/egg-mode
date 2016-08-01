@@ -92,6 +92,12 @@ fn main() {
     for resp in twitter::user::followers_of(user_id, &token, &access_token).with_page_size(5).take(5) {
         print_user(&resp.unwrap().response);
     }
+
+    println!("");
+    println!("Who have you blocked?");
+    for resp in twitter::user::blocks(&token, &access_token).take(5) {
+        print_user(&resp.unwrap().response);
+    }
 }
 
 fn print_user(user: &twitter::user::TwitterUser) {
