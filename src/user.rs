@@ -466,7 +466,7 @@ pub struct UserLoader<'a> {
     access_token: &'a auth::Token<'a>,
     user_id: Option<UserID<'a>>,
     ///The number of users returned in one network call. Defaults to 20, maximum of 200. Not set
-    ///when loading blocks.
+    ///for loaders where the page size is unspecified, e.g. the blocks list.
     pub page_size: Option<i32>,
     ///Numeric reference to the previous page of results. Automatically updated if iterating.
     pub previous_cursor: i64,
