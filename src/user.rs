@@ -85,13 +85,13 @@ pub struct TwitterUser {
     pub profile_background_color: String,
     ///A URL pointing to the background image chosen by the user for their profile. Uses
     ///HTTP as the protocol.
-    pub profile_background_image_url: String,
+    pub profile_background_image_url: Option<String>,
     ///A URL pointing to the background image chosen by the user for their profile. Uses
     ///HTTPS as the protocol.
-    pub profile_background_image_url_https: String,
+    pub profile_background_image_url_https: Option<String>,
     ///Indicates whether the user's `profile_background_image_url` should be tiled when
     ///displayed.
-    pub profile_background_tile: bool,
+    pub profile_background_tile: Option<bool>,
     ///A URL pointing to the banner image chosen by the user. Uses HTTPS as the protocol.
     ///
     ///This is a base URL that a size specifier can be appended onto to get variously
@@ -184,9 +184,9 @@ impl FromJson for TwitterUser {
             name: try!(field_string(input, "name")),
             notifications: field_bool(input, "notifications").ok(),
             profile_background_color: try!(field_string(input, "profile_background_color")),
-            profile_background_image_url: try!(field_string(input, "profile_background_image_url")),
-            profile_background_image_url_https: try!(field_string(input, "profile_background_image_url_https")),
-            profile_background_tile: try!(field_bool(input, "profile_background_tile")),
+            profile_background_image_url: field_string(input, "profile_background_image_url").ok(),
+            profile_background_image_url_https: field_string(input, "profile_background_image_url_https").ok(),
+            profile_background_tile: field_bool(input, "profile_background_tile").ok(),
             profile_banner_url: field_string(input, "profile_banner_url").ok(),
             profile_image_url: try!(field_string(input, "profile_image_url")),
             profile_image_url_https: try!(field_string(input, "profile_image_url_https")),
@@ -393,8 +393,8 @@ pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, 
         link: links::users::FRIENDS_LIST,
         con_token: con_token,
         access_token: access_token,
-        user_id: acct.into(),
-        page_size: 20,
+        user_id: Some(acct.into()),
+        page_size: Some(20),
         previous_cursor: -1,
         next_cursor: -1,
         users_iter: None,
@@ -410,8 +410,23 @@ pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token
         link: links::users::FOLLOWERS_LIST,
         con_token: con_token,
         access_token: access_token,
-        user_id: acct.into(),
-        page_size: 20,
+        user_id: Some(acct.into()),
+        page_size: Some(20),
+        previous_cursor: -1,
+        next_cursor: -1,
+        users_iter: None,
+    }
+}
+
+///Lookup the users that have been blocked by the authenticated user. Returns an iterator that
+///lazily loads a page of results at a time, but returns a single user per-iteration.
+pub fn blocks<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> UserLoader<'a> {
+    UserLoader {
+        link: links::users::BLOCKS_LIST,
+        con_token: con_token,
+        access_token: access_token,
+        user_id: None,
+        page_size: None,
         previous_cursor: -1,
         next_cursor: -1,
         users_iter: None,
@@ -449,9 +464,10 @@ pub struct UserLoader<'a> {
     link: &'static str,
     con_token: &'a auth::Token<'a>,
     access_token: &'a auth::Token<'a>,
-    user_id: UserID<'a>,
-    ///The number of users returned in one network call. Defaults to 20, maximum of 200.
-    pub page_size: i32,
+    user_id: Option<UserID<'a>>,
+    ///The number of users returned in one network call. Defaults to 20, maximum of 200. Not set
+    ///when loading blocks.
+    pub page_size: Option<i32>,
     ///Numeric reference to the previous page of results. Automatically updated if iterating.
     pub previous_cursor: i64,
     ///Numeric reference to the next page of results. Automatically updated if iterating. Set to
@@ -462,27 +478,35 @@ pub struct UserLoader<'a> {
 
 impl<'a> UserLoader<'a> {
     ///Sets the number of results returned in a single network call. Intended to be used before
-    ///iterating over results. Defaults to 20, maximum of 200.
+    ///iterating over results. Defaults to 20, maximum of 200. Does not modify page size if used on
+    ///a loader where page size is unspecified, e.g. the blocks list.
     pub fn with_page_size(self, page_size: i32) -> UserLoader<'a> {
-        UserLoader {
-            link: self.link,
-            con_token: self.con_token,
-            access_token: self.access_token,
-            user_id: self.user_id,
-            page_size: page_size,
-            previous_cursor: -1,
-            next_cursor: -1,
-            users_iter: None,
+        if self.page_size.is_some() {
+            UserLoader {
+                link: self.link,
+                con_token: self.con_token,
+                access_token: self.access_token,
+                user_id: self.user_id,
+                page_size: Some(page_size),
+                previous_cursor: -1,
+                next_cursor: -1,
+                users_iter: None,
+            }
         }
+        else { self }
     }
 
     ///Performs a network call for the next page of results. Automatically called while iterating,
     ///but made public as a convenience method to allow for manual paging.
     pub fn call(&self) -> Result<Response<UserCursor>, error::Error> {
         let mut params = HashMap::new();
-        add_name_param(&mut params, &self.user_id);
+        if let Some(ref id) = self.user_id {
+            add_name_param(&mut params, id);
+        }
         add_param(&mut params, "cursor", self.next_cursor.to_string());
-        add_param(&mut params, "count", self.page_size.to_string());
+        if let Some(count) = self.page_size {
+            add_param(&mut params, "count", count.to_string());
+        }
 
         let mut resp = try!(auth::get(self.link, self.con_token, self.access_token, Some(&params)));
 
