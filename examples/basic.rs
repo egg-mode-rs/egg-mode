@@ -64,6 +64,9 @@ fn main() {
         println!("Welcome, {}, let's get this show on the road!", username);
     }
 
+    println!("");
+    println!("Heterogeneous multi-user lookup:");
+
     let mut users: Vec<twitter::UserID> = vec![];
     users.push(user_id.into());
     users.push("SwiftOnSecurity".into());
@@ -72,7 +75,21 @@ fn main() {
         print_user(user)
     }
 
-    for resp in twitter::user::search("rustlang", &token, &access_token).take(5) {
+    println!("");
+    println!("Searching based on a term: (here, it's 'rustlang')");
+    for resp in twitter::user::search("rustlang", &token, &access_token).with_page_size(5).take(5) {
+        print_user(&resp.unwrap().response);
+    }
+
+    println!("");
+    println!("Who do you follow?");
+    for resp in twitter::user::friends_of(user_id, &token, &access_token).with_page_size(5).take(5) {
+        print_user(&resp.unwrap().response);
+    }
+
+    println!("");
+    println!("Who follows you?");
+    for resp in twitter::user::followers_of(user_id, &token, &access_token).with_page_size(5).take(5) {
         print_user(&resp.unwrap().response);
     }
 }
