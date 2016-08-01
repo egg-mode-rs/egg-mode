@@ -9,4 +9,5 @@ pub mod users {
     pub const SHOW: &'static str = "https://api.twitter.com/1.1/users/show.json";
     pub const SEARCH: &'static str = "https://api.twitter.com/1.1/users/search.json";
     pub const FRIENDS_LIST: &'static str = "https://api.twitter.com/1.1/friends/list.json";
+    pub const FOLLOWERS_LIST: &'static str = "https://api.twitter.com/1.1/followers/list.json";
 }

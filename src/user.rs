@@ -387,9 +387,27 @@ impl<'a> Iterator for UserSearch<'a> {
 ///Lookup the users a given account follows, also called their "friends" within the API. Returns an
 ///iterator that lazily loads a page of results at a time, but returns a single user per-iteration.
 pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
-    -> FriendsList<'a>
+    -> UserLoader<'a>
 {
-    FriendsList {
+    UserLoader {
+        link: links::users::FRIENDS_LIST,
+        con_token: con_token,
+        access_token: access_token,
+        user_id: acct.into(),
+        page_size: 20,
+        previous_cursor: -1,
+        next_cursor: -1,
+        users_iter: None,
+    }
+}
+
+///Lookup the users that follow a given account. Returns an iterator that lazily loads a page of
+///results at a time, but returns a single user per-iteration.
+pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> UserLoader<'a>
+{
+    UserLoader {
+        link: links::users::FOLLOWERS_LIST,
         con_token: con_token,
         access_token: access_token,
         user_id: acct.into(),
@@ -424,9 +442,11 @@ impl FromJson for UserCursor {
     }
 }
 
-///Represents a list of users a specific user follows. Implemented as an iterator that lazily loads
-///a page of results at a time while iterating.
-pub struct FriendsList<'a> {
+///Represents a paginated list of users, such as the list of users who follow or are followed by a
+///specific user. Implemented as an iterator that lazily loads a page of results at a time, but
+///returns a single user per-iteration.
+pub struct UserLoader<'a> {
+    link: &'static str,
     con_token: &'a auth::Token<'a>,
     access_token: &'a auth::Token<'a>,
     user_id: UserID<'a>,
@@ -440,11 +460,12 @@ pub struct FriendsList<'a> {
     users_iter: Option<ResponseIter<TwitterUser>>,
 }
 
-impl<'a> FriendsList<'a> {
+impl<'a> UserLoader<'a> {
     ///Sets the number of results returned in a single network call. Intended to be used before
     ///iterating over results. Defaults to 20, maximum of 200.
-    pub fn with_page_size(self, page_size: i32) -> FriendsList<'a> {
-        FriendsList {
+    pub fn with_page_size(self, page_size: i32) -> UserLoader<'a> {
+        UserLoader {
+            link: self.link,
             con_token: self.con_token,
             access_token: self.access_token,
             user_id: self.user_id,
@@ -463,13 +484,13 @@ impl<'a> FriendsList<'a> {
         add_param(&mut params, "cursor", self.next_cursor.to_string());
         add_param(&mut params, "count", self.page_size.to_string());
 
-        let mut resp = try!(auth::get(links::users::FRIENDS_LIST, self.con_token, self.access_token, Some(&params)));
+        let mut resp = try!(auth::get(self.link, self.con_token, self.access_token, Some(&params)));
 
         parse_response(&mut resp)
     }
 }
 
-impl<'a> Iterator for FriendsList<'a> {
+impl<'a> Iterator for UserLoader<'a> {
     type Item = Result<Response<TwitterUser>, error::Error>;
 
     fn next(&mut self) -> Option<Result<Response<TwitterUser>, error::Error>> {
