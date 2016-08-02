@@ -1,101 +1,44 @@
 extern crate twitter;
 
-use std::io::{Write, Read};
+mod common;
 
+//IMPORTANT: see common.rs for instructions on making sure this properly authenticates with
+//Twitter.
 fn main() {
-    //IMPORTANT: make an app for yourself at apps.twitter.com and get your
-    //key/secret into these files; this example won't work without them
-    let consumer_key = include_str!("consumer_key").trim();
-    let consumer_secret = include_str!("consumer_secret").trim();
-
-    let token = twitter::Token::new(consumer_key, consumer_secret);
-
-    let mut config = String::new();
-    let user_id: i64;
-    let username: String;
-    let access_token: twitter::Token;
-
-    //look at all this unwrapping! who told you it was my birthday?
-    if let Ok(mut f) = std::fs::File::open("twitter_settings") {
-        f.read_to_string(&mut config).unwrap();
-
-        let mut iter = config.split('\n');
-
-        username = iter.next().unwrap().to_string();
-        user_id = i64::from_str_radix(&iter.next().unwrap(), 10).unwrap();
-        access_token = twitter::Token::new(iter.next().unwrap(),
-                                                 iter.next().unwrap());
-
-        println!("Welcome back, {}!", username);
-    }
-    else {
-        let request_token = match twitter::request_token(&token, "oob") {
-            Ok(token) => token,
-            Err(e) => {
-                println!("Error: {}", e);
-                return;
-            },
-        };
-
-        println!("Go to the following URL, sign in, and give me the PIN that comes back:");
-        println!("{}", twitter::authorize_url(&request_token));
-
-        let mut pin = String::new();
-        std::io::stdin().read_line(&mut pin).unwrap();
-        println!("");
-
-        let tok_result = twitter::access_token(&token, &request_token, pin).unwrap();
-
-        access_token = tok_result.0;
-        user_id = tok_result.1;
-        username = tok_result.2;
-
-        config.push_str(&username);
-        config.push('\n');
-        config.push_str(&format!("{}", user_id));
-        config.push('\n');
-        config.push_str(&access_token.key);
-        config.push('\n');
-        config.push_str(&access_token.secret);
-
-        let mut f = std::fs::File::create("twitter_settings").unwrap();
-        f.write_all(config.as_bytes()).unwrap();
-
-        println!("Welcome, {}, let's get this show on the road!", username);
-    }
+    let config = common::Config::load();
 
     println!("");
     println!("Heterogeneous multi-user lookup:");
 
     let mut users: Vec<twitter::UserID> = vec![];
-    users.push(user_id.into());
+    users.push(config.user_id.into());
     users.push("SwiftOnSecurity".into());
 
-    for user in twitter::user::lookup(&users, &token, &access_token).unwrap().response.iter() {
+    for user in twitter::user::lookup(&users, &config.con_token, &config.access_token).unwrap().response.iter() {
         print_user(user)
     }
 
     println!("");
     println!("Searching based on a term: (here, it's 'rustlang')");
-    for resp in twitter::user::search("rustlang", &token, &access_token).with_page_size(5).take(5) {
+    for resp in twitter::user::search("rustlang", &config.con_token, &config.access_token).with_page_size(5).take(5) {
         print_user(&resp.unwrap().response);
     }
 
     println!("");
     println!("Who do you follow?");
-    for resp in twitter::user::friends_of(user_id, &token, &access_token).with_page_size(5).take(5) {
+    for resp in twitter::user::friends_of(config.user_id, &config.con_token, &config.access_token).with_page_size(5).take(5) {
         print_user(&resp.unwrap().response);
     }
 
     println!("");
     println!("Who follows you?");
-    for resp in twitter::user::followers_of(user_id, &token, &access_token).with_page_size(5).take(5) {
+    for resp in twitter::user::followers_of(config.user_id, &config.con_token, &config.access_token).with_page_size(5).take(5) {
         print_user(&resp.unwrap().response);
     }
 
     println!("");
     println!("Who have you blocked?");
-    for resp in twitter::user::blocks(&token, &access_token).take(5) {
+    for resp in twitter::user::blocks(&config.con_token, &config.access_token).take(5) {
         print_user(&resp.unwrap().response);
     }
 }
