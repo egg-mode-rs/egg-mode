@@ -192,6 +192,12 @@ impl<T> FromJson for Vec<T> where T: FromJson {
     }
 }
 
+impl FromJson for i64 {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        input.as_i64().ok_or(InvalidResponse)
+    }
+}
+
 ///With the given response struct, parse it into a String.
 pub fn response_raw(resp: &mut HyperResponse) -> Result<String, error::Error> {
     let mut full_resp = String::new();

@@ -51,7 +51,7 @@ impl std::str::FromStr for TwitterOAuth {
                 Some("oauth_consumer_key") => consumer_key = parts.next().map(str::to_string),
                 Some("oauth_nonce") => nonce = parts.next().map(str::to_string),
                 Some("oauth_signature") => signature = parts.next().map(str::to_string),
-                Some("oauth_timestamp") => match parts.next().map(i64::from_str) {
+                Some("oauth_timestamp") => match parts.next().map(<i64 as std::str::FromStr>::from_str) {
                     Some(Ok(n)) => timestamp = Some(n),
                     Some(Err(e)) => return Err(e.description().to_string()),
                     None => timestamp = None,
