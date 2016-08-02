@@ -15,7 +15,7 @@ pub struct Config {
 impl Config {
     pub fn load() -> Self {
         //IMPORTANT: make an app for yourself at apps.twitter.com and get your
-        //key/secret into these files; this example won't work without them
+        //key/secret into these files; these examples won't work without them
         let consumer_key = include_str!("consumer_key").trim();
         let consumer_secret = include_str!("consumer_secret").trim();
 
