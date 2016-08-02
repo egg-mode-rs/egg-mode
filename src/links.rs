@@ -9,6 +9,9 @@ pub mod users {
     pub const SHOW: &'static str = "https://api.twitter.com/1.1/users/show.json";
     pub const SEARCH: &'static str = "https://api.twitter.com/1.1/users/search.json";
     pub const FRIENDS_LIST: &'static str = "https://api.twitter.com/1.1/friends/list.json";
+    pub const FRIENDS_IDS: &'static str = "https://api.twitter.com/1.1/friends/ids.json";
     pub const FOLLOWERS_LIST: &'static str = "https://api.twitter.com/1.1/followers/list.json";
+    pub const FOLLOWERS_IDS: &'static str = "https://api.twitter.com/1.1/followers/ids.json";
     pub const BLOCKS_LIST: &'static str = "https://api.twitter.com/1.1/blocks/list.json";
+    pub const BLOCKS_IDS: &'static str = "https://api.twitter.com/1.1/blocks/ids.json";
 }

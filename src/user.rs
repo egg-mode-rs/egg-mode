@@ -356,7 +356,7 @@ impl<'a> UserSearch<'a> {
 impl<'a> Iterator for UserSearch<'a> {
     type Item = Result<Response<TwitterUser>, error::Error>;
 
-    fn next(&mut self) -> Option<Result<Response<TwitterUser>, error::Error>> {
+    fn next(&mut self) -> Option<Self::Item> {
         if let Some(ref mut results) = self.current_results {
             if let Some(user) = results.next() {
                 return Some(Ok(user));
@@ -401,6 +401,28 @@ pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, 
     }
 }
 
+///Lookup the users a given account follows, also called their "friends" within the API, but only
+///return their user IDs. Returns an iterator that lazily loads a page of results at a time, but
+///returns a single user per-iteration.
+///
+///Choosing only to load the user IDs instead of the full user information results in a call that
+///can return more accounts per-page, which can be useful if you anticipate having to page through
+///several results and don't need all the user information.
+pub fn friends_ids<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> IDLoader<'a>
+{
+    IDLoader {
+        link: links::users::FRIENDS_IDS,
+        con_token: con_token,
+        access_token: access_token,
+        user_id: Some(acct.into()),
+        page_size: Some(500),
+        previous_cursor: -1,
+        next_cursor: -1,
+        ids_iter: None,
+    }
+}
+
 ///Lookup the users that follow a given account. Returns an iterator that lazily loads a page of
 ///results at a time, but returns a single user per-iteration.
 pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
@@ -418,6 +440,27 @@ pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token
     }
 }
 
+///Lookup the users that follow a given account, but only return their user IDs. Returns an
+///iterator that lazily loads a page of results at a time, but returns a single user per-iteration.
+///
+///Choosing only to load the user IDs instead of the full user information results in a call that
+///can return more accounts per-page, which can be useful if you anticipate having to page through
+///several results and don't need all the user information.
+pub fn followers_ids<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> IDLoader<'a>
+{
+    IDLoader {
+        link: links::users::FOLLOWERS_IDS,
+        con_token: con_token,
+        access_token: access_token,
+        user_id: Some(acct.into()),
+        page_size: Some(500),
+        previous_cursor: -1,
+        next_cursor: -1,
+        ids_iter: None,
+    }
+}
+
 ///Lookup the users that have been blocked by the authenticated user. Returns an iterator that
 ///lazily loads a page of results at a time, but returns a single user per-iteration.
 pub fn blocks<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> UserLoader<'a> {
@@ -430,6 +473,26 @@ pub fn blocks<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> 
         previous_cursor: -1,
         next_cursor: -1,
         users_iter: None,
+    }
+}
+
+///Lookup the users that have been blocked by the authenticated user, but only return their user
+///IDs.  Returns an iterator that lazily loads a page of results at a time, but returns a single
+///user per-iteration.
+///
+///Choosing only to load the user IDs instead of the full user information results in a call that
+///can return more accounts per-page, which can be useful if you anticipate having to page through
+///several results and don't need all the user information.
+pub fn blocks_ids<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> IDLoader<'a> {
+    IDLoader {
+        link: links::users::BLOCKS_IDS,
+        con_token: con_token,
+        access_token: access_token,
+        user_id: None,
+        page_size: None,
+        previous_cursor: -1,
+        next_cursor: -1,
+        ids_iter: None,
     }
 }
 
@@ -517,7 +580,7 @@ impl<'a> UserLoader<'a> {
 impl<'a> Iterator for UserLoader<'a> {
     type Item = Result<Response<TwitterUser>, error::Error>;
 
-    fn next(&mut self) -> Option<Result<Response<TwitterUser>, error::Error>> {
+    fn next(&mut self) -> Option<Self::Item> {
         if let Some(ref mut results) = self.users_iter {
             if let Some(user) = results.next() {
                 return Some(Ok(user));
@@ -542,6 +605,126 @@ impl<'a> Iterator for UserLoader<'a> {
                 let mut iter = resp.into_iter();
                 let first = iter.next();
                 self.users_iter = Some(iter);
+
+                match first {
+                    Some(user) => Some(Ok(user)),
+                    None => None,
+                }
+            },
+            Err(err) => Some(Err(err)),
+        }
+    }
+}
+
+///Represents a single-page view into a list of user IDs.
+pub struct IDCursor {
+    ///Numeric reference to the previous page of results.
+    pub previous_cursor: i64,
+    ///Numeric reference to the next page of results.
+    pub next_cursor: i64,
+    ///The list of user IDs in this page of results.
+    pub ids: Vec<i64>,
+}
+
+impl FromJson for IDCursor {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse);
+        }
+
+        Ok(IDCursor {
+            previous_cursor: try!(field_i64(input, "previous_cursor")),
+            next_cursor: try!(field_i64(input, "next_cursor")),
+            ids: try!(field(input, "ids")),
+        })
+    }
+}
+
+///Represents a paginated list of user IDs, such as the list of users who follow or are followed by
+///a specific user. Implemented as an iterator that lazily loads a page of results at a time, but
+///returns a single user per-iteration.
+pub struct IDLoader<'a> {
+    link: &'static str,
+    con_token: &'a auth::Token<'a>,
+    access_token: &'a auth::Token<'a>,
+    user_id: Option<UserID<'a>>,
+    ///The number of users returned in one network call. Defaults to 500, maximum of 5,000. Not set
+    ///for loaders where the page size is unspecified, e.g. the blocks list.
+    pub page_size: Option<i32>,
+    ///Numeric reference to the previous page of results. Automatically updated if iterating.
+    pub previous_cursor: i64,
+    ///Numeric reference to the next page of results. Automatically updated if iterating. Set to
+    ///zero if the current page is the last page of results.
+    pub next_cursor: i64,
+    ids_iter: Option<ResponseIter<i64>>,
+}
+
+impl<'a> IDLoader<'a> {
+    ///Sets the number of results returned in a single network call. Intended to be used before
+    ///iterating over results. Defaults to 500, maximum of 5,000. Does not modify page size if used on
+    ///a loader where page size is unspecified, e.g. the blocks list.
+    pub fn with_page_size(self, page_size: i32) -> IDLoader<'a> {
+        if self.page_size.is_some() {
+            IDLoader {
+                link: self.link,
+                con_token: self.con_token,
+                access_token: self.access_token,
+                user_id: self.user_id,
+                page_size: Some(page_size),
+                previous_cursor: -1,
+                next_cursor: -1,
+                ids_iter: None,
+            }
+        }
+        else { self }
+    }
+
+    ///Performs a network call for the next page of results. Automatically called while iterating,
+    ///but made public as a convenience method to allow for manual paging.
+    pub fn call(&self) -> Result<Response<IDCursor>, error::Error> {
+        let mut params = HashMap::new();
+        if let Some(ref id) = self.user_id {
+            add_name_param(&mut params, id);
+        }
+        add_param(&mut params, "cursor", self.next_cursor.to_string());
+        if let Some(count) = self.page_size {
+            add_param(&mut params, "count", count.to_string());
+        }
+
+        let mut resp = try!(auth::get(self.link, self.con_token, self.access_token, Some(&params)));
+
+        parse_response(&mut resp)
+    }
+}
+
+impl<'a> Iterator for IDLoader<'a> {
+    type Item = Result<Response<i64>, error::Error>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(ref mut results) = self.ids_iter {
+            if let Some(user) = results.next() {
+                return Some(Ok(user));
+            }
+            else if self.next_cursor == 0 {
+                return None;
+            }
+        }
+
+        match self.call() {
+            Ok(resp) => {
+                self.previous_cursor = resp.response.previous_cursor;
+                self.next_cursor = resp.response.next_cursor;
+
+                let resp = Response {
+                    rate_limit: resp.rate_limit,
+                    rate_limit_remaining: resp.rate_limit_remaining,
+                    rate_limit_reset: resp.rate_limit_reset,
+                    response: resp.response.ids,
+                };
+
+                let mut iter = resp.into_iter();
+                let first = iter.next();
+                self.ids_iter = Some(iter);
 
                 match first {
                     Some(user) => Some(Ok(user)),
