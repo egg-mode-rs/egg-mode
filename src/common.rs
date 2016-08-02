@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::{fmt, vec};
 use std::io::Read;
+use std::iter::FromIterator;
 use url::percent_encoding::{EncodeSet, utf8_percent_encode};
 use hyper::client::response::Response as HyperResponse;
 use hyper::status::StatusCode;
@@ -129,6 +130,28 @@ impl<T> IntoIterator for Response<Vec<T>> {
             rate_limit_reset: self.rate_limit_reset,
             resp_iter: self.response.into_iter(),
         }
+    }
+}
+
+impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
+    fn from_iter<I>(iter: I) -> Self
+        where I: IntoIterator<Item=Response<T>>
+    {
+        let mut resp = Response {
+            rate_limit: -1,
+            rate_limit_remaining: -1,
+            rate_limit_reset: -1,
+            response: Vec::new(),
+        };
+
+        for item in iter {
+            resp.rate_limit = item.rate_limit;
+            resp.rate_limit_remaining = item.rate_limit_remaining;
+            resp.rate_limit_reset = item.rate_limit_reset;
+            resp.response.push(item.response);
+        }
+
+        resp
     }
 }
 
