@@ -69,5 +69,5 @@ pub mod user;
 mod links;
 mod common;
 
-pub use auth::{Token, request_token, authorize_url, access_token};
+pub use auth::{Token, request_token, authorize_url, authenticate_url, access_token};
 pub use common::{Response, TwitterErrors, TwitterErrorCode, UserID};
