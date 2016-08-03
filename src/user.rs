@@ -212,7 +212,8 @@ impl FromJson for TwitterUser {
     }
 }
 
-///Lookup a set of Twitter users by their numerical ID.
+///Lookup a set of Twitter users by their numerical ID. Twitter enforces a maximum of 100 lookups
+///per call.
 pub fn lookup_ids(ids: &[i64], con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<Vec<TwitterUser>>, error::Error>
 {
@@ -225,7 +226,8 @@ pub fn lookup_ids(ids: &[i64], con_token: &auth::Token, access_token: &auth::Tok
     parse_response(&mut resp)
 }
 
-///Lookup a set of Twitter users by their screen name.
+///Lookup a set of Twitter users by their screen name. Twitter enforces a maximum of 100 lookups
+///per call.
 pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<Vec<TwitterUser>>, error::Error>
 {
@@ -238,7 +240,8 @@ pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access
     parse_response(&mut resp)
 }
 
-///Lookup a set of Twitter users by both ID and screen name, as applicable.
+///Lookup a set of Twitter users by both ID and screen name, as applicable. Twitter enforces a
+///maximum of 100 lookups per call.
 pub fn lookup(accts: &[UserID], con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<Vec<TwitterUser>>, error::Error>
 {
