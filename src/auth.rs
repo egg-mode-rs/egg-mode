@@ -271,9 +271,9 @@ pub fn post(uri: &str,
 ///used to request access to the user's account.
 ///
 ///This can be considered Step 1 in obtaining access to a user's account. With
-///this Token, a web-based application can use `authenticate_url` (currently
-///unimplemented), and a desktop-based application can use `authorize_url` to
-///perform the authorization request.
+///this Token, a web-based application can use `authenticate_url`, and a
+///desktop-based application can use `authorize_url` to perform the authorization
+///request.
 ///
 ///The parameter `callback` is used to provide an OAuth Callback URL for a web-
 ///or mobile-based application to receive the results of the authorization request.
@@ -312,11 +312,30 @@ pub fn request_token<S: Into<String>>(con_token: &Token, callback: S) -> Result<
 ///accept or reject an authorization request.
 ///
 ///This can be considered Step 2 in obtaining access to a user's account.
-///Using PIN-Based Auth, give the URL that this function returns to the
-///user so they can process the authorization request. They will receive
-///a PIN in return, that can be given as the Verifier to `access_token`.
+///Using [PIN-Based Auth][] for desktop applications, give the URL that this
+///function returns to the user so they can process the authorization
+///request. They will receive a PIN in return, that can be given as the
+///Verifier to `access_token`.
+///
+///[Pin-Based Auth]: https://dev.twitter.com/oauth/pin-based
 pub fn authorize_url(request_token: &Token) -> String {
     format!("{}?oauth_token={}", links::auth::AUTHORIZE, request_token.key)
+}
+
+///With the given request Token, return a URL to redirect a user to so they
+///can accept or reject an authorization request.
+///
+///This can be considered Step 2 in obtaining access to a user's account.
+///Using the "[Sign in with Twitter][]" authenication flow for websites,
+///your application can redirect the user to the URL returned by this
+///function. Upon accepting the request, the user is redirected to the
+///callback URL given to `access_token`, with an `oauth_token` and
+///`oauth_verifier` appended as a query string. That Verifier can then be
+///given to `access_token` to complete authorization.
+///
+///[Sign in with Twitter]: https://dev.twitter.com/web/sign-in
+pub fn authenticate_url(request_token: &Token) -> String {
+    format!("{}?oauth_token={}", links::auth::AUTHENTICATE, request_token.key)
 }
 
 ///With the given OAuth tokens and verifier, ask Twitter for an access
