@@ -58,9 +58,6 @@ pub struct TwitterUser {
     pub geo_enabled: bool,
     ///Unique identifier for this user.
     pub id: i64,
-    ///User `id` represented as a string, for compatibility with API clients who cannot
-    ///properly handle 64-bit integers.
-    pub id_str: String,
     ///Indicates whether the user participates in Twitter's translator community.
     pub is_translator: bool,
     ///Language code for the user's self-declared interface language.
@@ -125,11 +122,11 @@ pub struct TwitterUser {
     pub protected: bool,
     ///The screen name or handle identifying this user.
     ///
-    ///Screen names are unique per-user but can be changed. Use `id`/`id_str` for an
-    ///immutable identifier for an account.
+    ///Screen names are unique per-user but can be changed. Use `id` for an immutable identifier
+    ///for an account.
     ///
-    ///Typically a maximum of 15 characters long, but older accounts may exist with
-    ///longer screen names.
+    ///Typically a maximum of 15 characters long, but older accounts may exist with longer screen
+    ///names.
     pub screen_name: String,
     ///Indicates that the user would like to see media inline. "Somewhat disused."
     pub show_all_inline_media: Option<bool>,
@@ -176,7 +173,6 @@ impl FromJson for TwitterUser {
             friends_count: try!(field_i32(input, "friends_count")),
             geo_enabled: try!(field_bool(input, "geo_enabled")),
             id: try!(field_i64(input, "id")),
-            id_str: try!(field_string(input, "id_str")),
             is_translator: try!(field_bool(input, "is_translator")),
             lang: try!(field_string(input, "lang")),
             listed_count: try!(field_i32(input, "listed_count")),
