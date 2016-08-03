@@ -1,4 +1,32 @@
 //! Structs and methods for pulling user information from Twitter.
+//!
+//! All the functions in this module eventually return either a [TwitterUser][] struct or the
+//! numeric ID of one. The TwitterUser struct itself contains many fields, relating to the user's
+//! profile information and a handful of UI settings available to them. See the struct's
+//! documention for details.
+//!
+//! [TwitterUser]: struct.TwitterUser.html
+//!
+//! ## `UserCursor`/`UserLoader` and `IDCursor`/`IDLoader` (and `UserSearch`)
+//!
+//! The functions that return the \*Loader structs all return paginated results, implemented over
+//! the network as the corresponding \*Cursor structs. The Loader structs both implement
+//! `Iterator`, returning an individual user or ID at a time. This allows them to easily be used
+//! with regular iterator adaptors and looped over:
+//!
+//! ```rust,no_run
+//! # let consumer_token = twitter::Token::new("", "");
+//! # let access_token = twitter::Token::new("", "");
+//! for user in twitter::user::friends_of("rustlang", &consumer_token, &access_token)
+//!                            .with_page_size(5)
+//!                            .map(|resp| resp.unwrap().response)
+//!                            .take(5) {
+//!     println!("{} (@{})", user.name, user.screen_name);
+//! }
+//! ```
+//!
+//! The actual Item returned by the iterator is `Result<Response<TwitterUser>, Error>`; rate-limit
+//! information and network errors are passed into the loop as-is.
 
 use std::borrow::Borrow;
 use std::collections::HashMap;
@@ -9,19 +37,65 @@ use auth;
 use links;
 use rustc_serialize::json;
 
-///Represents a Twitter user.
+/// Represents a Twitter user.
 ///
-///Field-level documentation is mostly ripped wholesale from [Twitter's user
-///documentation][api-user].
+/// Field-level documentation is mostly ripped wholesale from [Twitter's user
+/// documentation][api-user].
 ///
-///[api-user]: https://dev.twitter.com/overview/api/users
+/// [api-user]: https://dev.twitter.com/overview/api/users
+///
+/// The fields present in this struct can be divided up into a few sections: Profile Information and
+/// Settings.
+///
+/// ## Profile Information
+///
+/// Information here can be considered part of the user's profile. These fields are the "obvious"
+/// visible portion of a profile view.
+///
+/// * `id`
+/// * `screen_name`
+/// * `name`
+/// * `verified`
+/// * `protected`
+/// * `description`
+/// * `location`
+/// * `url`
+/// * `statuses_count`
+/// * `friends_count`
+/// * `followers_count`
+/// * `favourites_count`
+/// * `listed_count`
+/// * `profile_image_url`/`profile_image_url_https`
+/// * `profile_banner_url`
+///
+/// ## Settings Information
+///
+/// Information here can be used to alter the UI around this user, or to provide further metadata
+/// that may not necessarily be user-facing.
+///
+/// * `contributors_enabled`
+/// * `created_at`
+/// * `default_profile_image`
+/// * `follow_request_sent`
+/// * `default_profile`, `profile_background_color`, `profile_background_image_url`,
+///   `profile_background_image_url_https`, `profile_background_tile`, `profile_link_color`,
+///   `profile_sidebar_border_color`, `profile_sidebar_fill_color`, `profile_text_color`,
+///   `profile_use_background_image`: These fields can be used to theme a user's profile page to
+///   look like the settings they've set on the Twitter website.
+/// * `geo_enabled`
+/// * `is_translator`
+/// * `lang`
+/// * `show_all_inline_media`
+/// * `time_zone`/`utc_offset`
+/// * `withheld_in_countries`/`withheld_scope`
 #[derive(Debug)]
 pub struct TwitterUser {
     ///Indicates this user has an account with "contributor mode" enabled, allowing
     ///for Tweets issued by the user to be co-authored by another account. Rarely `true`.
     pub contributors_enabled: bool,
     //TODO: parse as date?
-    ///The UTC datetime that this user account was created on Twitter.
+    ///The UTC datetime that this user account was created on Twitter, formatted like "Tue Jan
+    ///13 23:37:34 +0000 2015".
     pub created_at: String,
     ///When true, indicates that this user has not altered the theme or background of
     ///their user profile.
@@ -208,8 +282,7 @@ impl FromJson for TwitterUser {
     }
 }
 
-///Lookup a set of Twitter users by their numerical ID. Twitter enforces a maximum of 100 lookups
-///per call.
+///Lookup a set of Twitter users by their numerical ID.
 pub fn lookup_ids(ids: &[i64], con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<Vec<TwitterUser>>, error::Error>
 {
@@ -222,8 +295,7 @@ pub fn lookup_ids(ids: &[i64], con_token: &auth::Token, access_token: &auth::Tok
     parse_response(&mut resp)
 }
 
-///Lookup a set of Twitter users by their screen name. Twitter enforces a maximum of 100 lookups
-///per call.
+///Lookup a set of Twitter users by their screen name.
 pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<Vec<TwitterUser>>, error::Error>
 {
@@ -236,8 +308,7 @@ pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access
     parse_response(&mut resp)
 }
 
-///Lookup a set of Twitter users by both ID and screen name, as applicable. Twitter enforces a
-///maximum of 100 lookups per call.
+///Lookup a set of Twitter users by both ID and screen name, as applicable.
 pub fn lookup(accts: &[UserID], con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<Vec<TwitterUser>>, error::Error>
 {
@@ -277,8 +348,7 @@ pub fn show<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_to
     parse_response(&mut resp)
 }
 
-///Lookup users based on the given search term. Returns an iterator that lazily loads a page of
-///results at a time, but returns a single user per-iteration.
+///Lookup users based on the given search term.
 pub fn search<'a>(query: &'a str, con_token: &'a auth::Token, access_token: &'a auth::Token)
     -> UserSearch<'a>
 {
@@ -383,8 +453,7 @@ impl<'a> Iterator for UserSearch<'a> {
     }
 }
 
-///Lookup the users a given account follows, also called their "friends" within the API. Returns an
-///iterator that lazily loads a page of results at a time, but returns a single user per-iteration.
+///Lookup the users a given account follows, also called their "friends" within the API.
 pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
     -> UserLoader<'a>
 {
@@ -401,8 +470,7 @@ pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, 
 }
 
 ///Lookup the users a given account follows, also called their "friends" within the API, but only
-///return their user IDs. Returns an iterator that lazily loads a page of results at a time, but
-///returns a single user per-iteration.
+///return their user IDs.
 ///
 ///Choosing only to load the user IDs instead of the full user information results in a call that
 ///can return more accounts per-page, which can be useful if you anticipate having to page through
@@ -422,8 +490,7 @@ pub fn friends_ids<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token,
     }
 }
 
-///Lookup the users that follow a given account. Returns an iterator that lazily loads a page of
-///results at a time, but returns a single user per-iteration.
+///Lookup the users that follow a given account.
 pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
     -> UserLoader<'a>
 {
@@ -439,8 +506,7 @@ pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token
     }
 }
 
-///Lookup the users that follow a given account, but only return their user IDs. Returns an
-///iterator that lazily loads a page of results at a time, but returns a single user per-iteration.
+///Lookup the users that follow a given account, but only return their user IDs.
 ///
 ///Choosing only to load the user IDs instead of the full user information results in a call that
 ///can return more accounts per-page, which can be useful if you anticipate having to page through
@@ -460,8 +526,7 @@ pub fn followers_ids<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Toke
     }
 }
 
-///Lookup the users that have been blocked by the authenticated user. Returns an iterator that
-///lazily loads a page of results at a time, but returns a single user per-iteration.
+///Lookup the users that have been blocked by the authenticated user.
 pub fn blocks<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> UserLoader<'a> {
     UserLoader {
         link: links::users::BLOCKS_LIST,
@@ -476,8 +541,7 @@ pub fn blocks<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> 
 }
 
 ///Lookup the users that have been blocked by the authenticated user, but only return their user
-///IDs.  Returns an iterator that lazily loads a page of results at a time, but returns a single
-///user per-iteration.
+///IDs.
 ///
 ///Choosing only to load the user IDs instead of the full user information results in a call that
 ///can return more accounts per-page, which can be useful if you anticipate having to page through
@@ -496,6 +560,11 @@ pub fn blocks_ids<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token)
 }
 
 ///Represents a single-page view into a list of users.
+///
+///This type is intended to be used in the background by `UserLoader` to hold an intermediate list
+///of users to iterate over. See the [module-level documentation][mod] for details.
+///
+///[mod]: index.html
 pub struct UserCursor {
     ///Numeric reference to the previous page of results.
     pub previous_cursor: i64,
@@ -520,28 +589,46 @@ impl FromJson for UserCursor {
 }
 
 ///Represents a paginated list of users, such as the list of users who follow or are followed by a
-///specific user. Implemented as an iterator that lazily loads a page of results at a time, but
-///returns a single user per-iteration.
+///specific user.
+///
+///Implemented as an iterator that lazily loads a page of results at a time, but returns a single
+///user per-iteration. See the [module-level documentation][mod] for details.
+///
+///[mod]: index.html
 pub struct UserLoader<'a> {
     link: &'static str,
     con_token: &'a auth::Token<'a>,
     access_token: &'a auth::Token<'a>,
     user_id: Option<UserID<'a>>,
-    ///The number of users returned in one network call. Defaults to 20, maximum of 200. Not set
-    ///for loaders where the page size is unspecified, e.g. the blocks list.
+    ///The number of users returned in one network call.
+    ///
+    ///This value has a default of 20 and a maximum of 200. Not set for loaders where the page size
+    ///is unspecified, e.g. the blocks list.
     pub page_size: Option<i32>,
-    ///Numeric reference to the previous page of results. Automatically updated if iterating.
+    ///Numeric reference to the previous page of results.
+    ///
+    ///This value is automatically set and used if you use this struct's `Iterator` impl to
+    ///navigate the results.
     pub previous_cursor: i64,
-    ///Numeric reference to the next page of results. Automatically updated if iterating. Set to
-    ///zero if the current page is the last page of results.
+    ///Numeric reference to the next page of results.
+    ///
+    ///This value is automatically set and used is you use this struct's `Iterator` impl to
+    ///navigate the results. A value of zero signifies that the current page of results is the last
+    ///page of the cursor.
     pub next_cursor: i64,
     users_iter: Option<ResponseIter<TwitterUser>>,
 }
 
 impl<'a> UserLoader<'a> {
-    ///Sets the number of results returned in a single network call. Intended to be used before
-    ///iterating over results. Defaults to 20, maximum of 200. Does not modify page size if used on
-    ///a loader where page size is unspecified, e.g. the blocks list.
+    ///Sets the number of results returned in a single network call.
+    ///
+    ///This value defaults to 20 and has a maximum of 200.
+    ///
+    ///Calling this function will invalidate any current results, if any were previously loaded.
+    ///This is intended to be used as part of the `Iterator` implementation; see the [module-level
+    ///documentation][mod] for details.
+    ///
+    ///[mod]: index.html
     pub fn with_page_size(self, page_size: i32) -> UserLoader<'a> {
         if self.page_size.is_some() {
             UserLoader {
@@ -558,8 +645,10 @@ impl<'a> UserLoader<'a> {
         else { self }
     }
 
-    ///Performs a network call for the next page of results. Automatically called while iterating,
-    ///but made public as a convenience method to allow for manual paging.
+    ///Loads the next page of results.
+    ///
+    ///This is automatically used in the `Iterator` impl, but is provided here in case you want to
+    ///manually manage the network calls and pagination.
     pub fn call(&self) -> Result<Response<UserCursor>, error::Error> {
         let mut params = HashMap::new();
         if let Some(ref id) = self.user_id {
@@ -616,6 +705,11 @@ impl<'a> Iterator for UserLoader<'a> {
 }
 
 ///Represents a single-page view into a list of user IDs.
+///
+///This type is intended to be used in the background by `IDLoader` to hold an intermediate list of
+///users to iterate over. See the [module-level documentation][mod] for details.
+///
+///[mod]: index.html
 pub struct IDCursor {
     ///Numeric reference to the previous page of results.
     pub previous_cursor: i64,
@@ -640,28 +734,46 @@ impl FromJson for IDCursor {
 }
 
 ///Represents a paginated list of user IDs, such as the list of users who follow or are followed by
-///a specific user. Implemented as an iterator that lazily loads a page of results at a time, but
-///returns a single user per-iteration.
+///a specific user.
+///
+///Implemented as an iterator that lazily loads a page of results at a time, but returns a single
+///ID per-iteration. See the [module-level documentation][mod] for details.
+///
+///[mod]: index.html
 pub struct IDLoader<'a> {
     link: &'static str,
     con_token: &'a auth::Token<'a>,
     access_token: &'a auth::Token<'a>,
     user_id: Option<UserID<'a>>,
-    ///The number of users returned in one network call. Defaults to 500, maximum of 5,000. Not set
-    ///for loaders where the page size is unspecified, e.g. the blocks list.
+    ///The number of users returned in one network call.
+    ///
+    ///This value has a default of 500 and a maximum of 5,000. Not set for loaders where the page
+    ///size is unspecified, e.g. the blocks list.
     pub page_size: Option<i32>,
-    ///Numeric reference to the previous page of results. Automatically updated if iterating.
+    ///Numeric reference to the previous page of results.
+    ///
+    ///This value is automatically set and used if you use this struct's `Iterator` impl to
+    ///navigate the results.
     pub previous_cursor: i64,
-    ///Numeric reference to the next page of results. Automatically updated if iterating. Set to
-    ///zero if the current page is the last page of results.
+    ///Numeric reference to the next page of results.
+    ///
+    ///This value is automatically set and used is you use this struct's `Iterator` impl to
+    ///navigate the results. A value of zero signifies that the current page of results is the last
+    ///page of the cursor.
     pub next_cursor: i64,
     ids_iter: Option<ResponseIter<i64>>,
 }
 
 impl<'a> IDLoader<'a> {
-    ///Sets the number of results returned in a single network call. Intended to be used before
-    ///iterating over results. Defaults to 500, maximum of 5,000. Does not modify page size if used on
-    ///a loader where page size is unspecified, e.g. the blocks list.
+    ///Sets the number of results returned in a single network call.
+    ///
+    ///This value defaults to 500 and has a maximum of 5,000.
+    ///
+    ///Calling this function will invalidate any current results, if any were previously loaded.
+    ///This is intended to be used as part of the `Iterator` implementation; see the [module-level
+    ///documentation][mod] for details.
+    ///
+    ///[mod]: index.html
     pub fn with_page_size(self, page_size: i32) -> IDLoader<'a> {
         if self.page_size.is_some() {
             IDLoader {
@@ -678,8 +790,10 @@ impl<'a> IDLoader<'a> {
         else { self }
     }
 
-    ///Performs a network call for the next page of results. Automatically called while iterating,
-    ///but made public as a convenience method to allow for manual paging.
+    ///Loads the next page of results.
+    ///
+    ///This is automatically used in the `Iterator` impl, but is provided here in case you want to
+    ///manually manage the network calls and pagination.
     pub fn call(&self) -> Result<Response<IDCursor>, error::Error> {
         let mut params = HashMap::new();
         if let Some(ref id) = self.user_id {
