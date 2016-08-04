@@ -1,13 +1,13 @@
 [package]
 name = "egg-mode"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["QuietMisdreavus <bryan@icesoldier.me>"]
 description = "Library to interact with the Twitter API"
 documentation = "https://shiva.icesoldier.me/doc/twitter/"
 homepage = "https://github.com/QuietMisdreavus/twitter-rs"
 repository = "https://github.com/QuietMisdreavus/twitter-rs"
 keywords = ["twitter"]
-license = "LGPL-3.0+"
+license = "Apache-2.0"
 readme = "README.md"
 
 [dependencies]

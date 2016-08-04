@@ -29,8 +29,4 @@ some information about the authenticated user.
 
 ## License
 
-This library is licensed under the GNU Lesser General Public License v3 or later. See the `LICENSE`
-file and [the original GPL][gpl] for gory details. Essentially, if you use this library in an
-application, you don't need to distribute its source code, but you do need to link back here.
-
-[gpl]: http://www.gnu.org/licenses/gpl-3.0.txt
+This library is licensed under the Apache License, version 2.0. See the LICENSE file for details.
