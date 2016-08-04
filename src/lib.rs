@@ -50,6 +50,15 @@
 //! Either way, when you have a "verifier" from either of these methods, you can use your Tokens
 //! from earlier in the process with that verifier to request an [access token][]. This access
 //! token can then be saved and cached for future use.
+//!
+//! ## `Response<T>`
+//!
+//! Every method that calls Twitter and carries rate-limit information wraps its return value in a
+//! `[Response][]` struct, that transmits this information to your app. From there, you can handle
+//! the rate-limit information to hold off on that kind of request, or simply grab its `response`
+//! field to get the output of whatever method you called.
+//!
+//! [Response]: struct.Response.html
 
 #![warn(missing_docs)]
 #![warn(unused_extern_crates)]
