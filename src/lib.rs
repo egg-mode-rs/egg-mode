@@ -3,7 +3,7 @@
 //! Please see [the repository][] and its enclosed examples for tips on working with this library
 //! while it's still in progress.
 //!
-//! [the repository]: https://github.com/icesoldier/twitter-rs
+//! [the repository]: https://github.com/QuietMisdreavus/twitter-rs
 //!
 //! ## Getting Started
 //!
