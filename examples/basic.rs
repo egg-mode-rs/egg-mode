@@ -1,4 +1,4 @@
-extern crate twitter;
+extern crate egg_mode;
 
 mod common;
 
@@ -10,40 +10,40 @@ fn main() {
     println!("");
     println!("Heterogeneous multi-user lookup:");
 
-    let mut users: Vec<twitter::UserID> = vec![];
+    let mut users: Vec<egg_mode::UserID> = vec![];
     users.push(config.user_id.into());
     users.push("SwiftOnSecurity".into());
 
-    for user in twitter::user::lookup(&users, &config.con_token, &config.access_token).unwrap().response.iter() {
+    for user in egg_mode::user::lookup(&users, &config.con_token, &config.access_token).unwrap().response.iter() {
         print_user(user)
     }
 
     println!("");
     println!("Searching based on a term: (here, it's 'rustlang')");
-    for resp in twitter::user::search("rustlang", &config.con_token, &config.access_token).with_page_size(5).take(5) {
+    for resp in egg_mode::user::search("rustlang", &config.con_token, &config.access_token).with_page_size(5).take(5) {
         print_user(&resp.unwrap().response);
     }
 
     println!("");
     println!("Who do you follow?");
-    for resp in twitter::user::friends_of(config.user_id, &config.con_token, &config.access_token).with_page_size(5).take(5) {
+    for resp in egg_mode::user::friends_of(config.user_id, &config.con_token, &config.access_token).with_page_size(5).take(5) {
         print_user(&resp.unwrap().response);
     }
 
     println!("");
     println!("Who follows you?");
-    for resp in twitter::user::followers_of(config.user_id, &config.con_token, &config.access_token).with_page_size(5).take(5) {
+    for resp in egg_mode::user::followers_of(config.user_id, &config.con_token, &config.access_token).with_page_size(5).take(5) {
         print_user(&resp.unwrap().response);
     }
 
     println!("");
     println!("Who have you blocked?");
-    for resp in twitter::user::blocks(&config.con_token, &config.access_token).take(5) {
+    for resp in egg_mode::user::blocks(&config.con_token, &config.access_token).take(5) {
         print_user(&resp.unwrap().response);
     }
 }
 
-fn print_user(user: &twitter::user::TwitterUser) {
+fn print_user(user: &egg_mode::user::TwitterUser) {
     println!("");
     println!("{} (@{})", user.name, user.screen_name);
     println!("Created at {}", user.created_at);

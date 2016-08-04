@@ -1,9 +1,9 @@
-extern crate twitter;
+extern crate egg_mode;
 
 mod common;
 
 use std::collections::HashSet;
-use twitter::user;
+use egg_mode::user;
 
 //IMPORTANT: see common.rs for instructions on making sure this properly authenticates with
 //Twitter.

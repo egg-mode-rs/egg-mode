@@ -1,4 +1,4 @@
-# twitter-rs
+# egg-mode
 
 another twitter library for rust
 
@@ -9,16 +9,16 @@ Twitter's v1.1 API.
 To authenticate a user and request an access token:
 
 ```rust
-extern crate twitter;
+extern crate egg_mode;
 
-let consumer_token = twitter::Token::new(consumer_key, consumer_secret);
-let request_token = twitter::request_token(&consumer_token, "oob").unwrap();
-let authorize_url = twitter::authorize_url(&request_token);
+let consumer_token = egg_mode::Token::new(consumer_key, consumer_secret);
+let request_token = egg_mode::request_token(&consumer_token, "oob").unwrap();
+let authorize_url = egg_mode::authorize_url(&request_token);
 
 //show authorize_url to the user, have them sign in to Twitter there, and enter the PIN that
 //Twitter gives them
 
-let (access_token, user_id, username) = twitter::access_token(&consumer_token, &request_token, pin).unwrap();
+let (access_token, user_id, username) = egg_mode::access_token(&consumer_token, &request_token, pin).unwrap();
 ```
 
 As the last line shows, this also returns the User ID and username of the user that authenticated
