@@ -2,12 +2,12 @@ use std;
 use std::error::Error;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::time::{UNIX_EPOCH, SystemTime};
 use hyper;
 use hyper::client::response::Response as HyperResponse;
 use hyper::header::{Authorization, Scheme, ContentType};
 use hyper::method::Method;
 use mime::Mime;
-use time;
 use rand::{self, Rng};
 use crypto::hmac::Hmac;
 use crypto::mac::Mac;
@@ -212,11 +212,15 @@ fn get_header(method: Method,
               callback: Option<String>,
               verifier: Option<String>,
               params: Option<&ParamList>) -> TwitterOAuth {
+    let now_s = match SystemTime::now().duration_since(UNIX_EPOCH) {
+        Ok(dur) => dur,
+        Err(err) => err.duration(),
+    }.as_secs();
     let header = TwitterOAuth {
         consumer_key: con_token.key.to_string(),
         nonce: rand::thread_rng().gen_ascii_chars().take(32).collect::<String>(),
         signature: None,
-        timestamp: time::now_utc().to_timespec().sec,
+        timestamp: now_s as i64,
         token: access_token.map(|tok| tok.key.to_string()),
         callback: callback,
         verifier: verifier,
