@@ -221,6 +221,46 @@ impl FromJson for i64 {
     }
 }
 
+impl FromJson for i32 {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        input.as_i64().map(|x| x as i32).ok_or(InvalidResponse)
+    }
+}
+
+impl FromJson for String {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        input.as_string().map(|s| s.to_string()).ok_or(InvalidResponse)
+    }
+}
+
+impl FromJson for bool {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        input.as_boolean().ok_or(InvalidResponse)
+    }
+}
+
+impl FromJson for (i32, i32) {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        //assumptions: input is
+        // - an array
+        // - of integers
+        // - with exactly two entries
+        //any deviation from these assumptions will return an error.
+        let int_vec = try!(input.as_array()
+                                .ok_or(InvalidResponse)
+                                .and_then(|v| v.iter()
+                                               .map(|i| i.as_i64())
+                                               .collect::<Option<Vec<_>>>()
+                                               .ok_or(InvalidResponse)));
+
+        if int_vec.len() != 2 {
+            return Err(InvalidResponse);
+        }
+
+        Ok((int_vec[0] as i32, int_vec[1] as i32))
+    }
+}
+
 ///With the given response struct, parse it into a String.
 pub fn response_raw(resp: &mut HyperResponse) -> Result<String, error::Error> {
     let mut full_resp = String::new();
@@ -251,26 +291,6 @@ pub fn parse_response<T>(resp: &mut HyperResponse) -> Result<Response<T>, error:
         rate_limit_reset: resp.headers.get::<XRateLimitReset>().map(|h| h.0).unwrap_or(-1),
         response: try!(T::from_str(&resp_str)),
     })
-}
-
-///Extract a boolean field from the given Json.
-pub fn field_bool(input: &json::Json, field: &'static str) -> Result<bool, error::Error> {
-    input.find(field).and_then(|f| f.as_boolean()).ok_or(MissingValue(field))
-}
-
-///Extract a string field from the given Json.
-pub fn field_string(input: &json::Json, field: &'static str) -> Result<String, error::Error> {
-    input.find(field).and_then(|f| f.as_string()).map(|f| f.to_string()).ok_or(MissingValue(field))
-}
-
-///Extract an i64 field from the given Json.
-pub fn field_i64(input: &json::Json, field: &'static str) -> Result<i64, error::Error> {
-    input.find(field).and_then(|f| f.as_i64()).ok_or(MissingValue(field))
-}
-
-///Extract an i32 field from the given Json.
-pub fn field_i32(input: &json::Json, field: &'static str) -> Result<i32, error::Error> {
-    field_i64(input, field).map(|f| f as i32)
 }
 
 pub fn field<T: FromJson>(input: &json::Json, field: &'static str) -> Result<T, error::Error> {
