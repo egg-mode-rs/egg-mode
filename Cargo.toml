@@ -1,9 +1,9 @@
 [package]
 name = "egg-mode"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["QuietMisdreavus <bryan@icesoldier.me>"]
 description = "Library to interact with the Twitter API"
-documentation = "https://shiva.icesoldier.me/doc/twitter/"
+documentation = "https://shiva.icesoldier.me/doc/egg_mode/"
 homepage = "https://github.com/QuietMisdreavus/twitter-rs"
 repository = "https://github.com/QuietMisdreavus/twitter-rs"
 keywords = ["twitter"]
