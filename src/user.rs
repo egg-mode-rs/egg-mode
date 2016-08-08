@@ -35,6 +35,7 @@ use error;
 use error::Error::InvalidResponse;
 use auth;
 use links;
+use entities;
 use rustc_serialize::json;
 
 /// Represents a Twitter user.
@@ -105,9 +106,9 @@ pub struct TwitterUser {
     pub default_profile_image: bool,
     ///The user-defined string describing their account.
     pub description: Option<String>,
-    //Entities that have been parsed out of the `url` or `description` fields given by
-    //the user.
-    //TODO: pub entities: Entities,
+    ///Link information that has been parsed out of the `url` or `description` fields given by the
+    ///user.
+    pub entities: UserEntities,
     ///The number of tweets this user has favorited or liked in the account's lifetime.
     ///The term "favourites" and its British spelling are used for historical reasons.
     pub favourites_count: i32,
@@ -227,6 +228,30 @@ pub struct TwitterUser {
     pub withheld_scope: Option<String>,
 }
 
+///Container for URL entity information that may be paired with a user's profile.
+#[derive(Debug)]
+pub struct UserEntities {
+    ///URL information that has been parsed out of the user's `description`. If no URLs were
+    ///detected, then the contained Vec will be empty.
+    pub description: UserEntityDetail,
+    ///Link information for the user's `url`.
+    ///
+    ///If `url` is present on the user's profile, so will this field. Twitter validates the URL
+    ///entered to a user's profile when they save it, so this can be reasonably assumed to have URL
+    ///information if it's present.
+    pub url: Option<UserEntityDetail>,
+}
+
+///Represents a collection of URL entity information paired with a specific user profile field.
+#[derive(Debug)]
+pub struct UserEntityDetail {
+    ///Collection of URL entity information.
+    ///
+    ///There should be one of these per URL in the paired field. In the case of the user's
+    ///`description`, if no URLs are present, this field will still be present, but empty.
+    pub urls: Vec<entities::UrlEntity>,
+}
+
 impl FromJson for TwitterUser {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
@@ -239,7 +264,7 @@ impl FromJson for TwitterUser {
             default_profile: try!(field(input, "default_profile")),
             default_profile_image: try!(field(input, "default_profile_image")),
             description: field(input, "description").ok(),
-            //TODO: entities: ???,
+            entities: try!(field(input, "entities")),
             favourites_count: try!(field(input, "favourites_count")),
             follow_request_sent: field(input, "follow_request_sent").ok(),
             following: field(input, "following").ok(),
@@ -278,6 +303,31 @@ impl FromJson for TwitterUser {
                                         .and_then(|arr| arr.iter().map(|x| x.as_string().map(|x| x.to_string()))
                                                            .collect::<Option<Vec<String>>>()),
             withheld_scope: field(input, "withheld_scope").ok(),
+        })
+    }
+}
+
+impl FromJson for UserEntities {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse);
+        }
+
+        Ok(UserEntities {
+            description: try!(field(input, "description")),
+            url: field(input, "url").ok(),
+        })
+    }
+}
+
+impl FromJson for UserEntityDetail {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse);
+        }
+
+        Ok(UserEntityDetail {
+            urls: try!(field(input, "urls")),
         })
     }
 }

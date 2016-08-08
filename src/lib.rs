@@ -74,6 +74,7 @@ extern crate mime;
 mod auth;
 pub mod error;
 pub mod user;
+pub mod entities;
 mod links;
 mod common;
 
