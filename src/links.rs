@@ -15,4 +15,6 @@ pub mod users {
     pub const FOLLOWERS_IDS: &'static str = "https://api.twitter.com/1.1/followers/ids.json";
     pub const BLOCKS_LIST: &'static str = "https://api.twitter.com/1.1/blocks/list.json";
     pub const BLOCKS_IDS: &'static str = "https://api.twitter.com/1.1/blocks/ids.json";
+    pub const MUTES_LIST: &'static str = "https://api.twitter.com/1.1/mutes/users/list.json";
+    pub const MUTES_IDS: &'static str = "https://api.twitter.com/1.1/mutes/users/ids.json";
 }

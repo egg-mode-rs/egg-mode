@@ -577,6 +577,11 @@ pub fn followers_ids<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Toke
 }
 
 ///Lookup the users that have been blocked by the authenticated user.
+///
+///Note that while loading a user's blocks list is a cursored search, it does not allow you to set
+///the page size. Calling `with_page_size` on the iterator returned by this function will not
+///change the page size used by the network call. Setting `page_size` manually may result in an
+///error from Twitter.
 pub fn blocks<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> UserLoader<'a> {
     UserLoader {
         link: links::users::BLOCKS_LIST,
@@ -596,9 +601,56 @@ pub fn blocks<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> 
 ///Choosing only to load the user IDs instead of the full user information results in a call that
 ///can return more accounts per-page, which can be useful if you anticipate having to page through
 ///several results and don't need all the user information.
+///
+///Note that while loading a user's blocks list is a cursored search, it does not allow you to set
+///the page size. Calling `with_page_size` on the iterator returned by this function will not
+///change the page size used by the network call. Setting `page_size` manually may result in an
+///error from Twitter.
 pub fn blocks_ids<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> IDLoader<'a> {
     IDLoader {
         link: links::users::BLOCKS_IDS,
+        con_token: con_token,
+        access_token: access_token,
+        user_id: None,
+        page_size: None,
+        previous_cursor: -1,
+        next_cursor: -1,
+        ids_iter: None,
+    }
+}
+
+///Lookup the users that have been muted by the authenticated user.
+///
+///Note that while loading a user's mutes list is a cursored search, it does not allow you to set
+///the page size. Calling `with_page_size` on the iterator returned by this function will not
+///change the page size used by the network call. Setting `page_size` manually may result in an
+///error from Twitter.
+pub fn mutes<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> UserLoader<'a> {
+    UserLoader {
+        link: links::users::MUTES_LIST,
+        con_token: con_token,
+        access_token: access_token,
+        user_id: None,
+        page_size: None,
+        previous_cursor: -1,
+        next_cursor: -1,
+        users_iter: None,
+    }
+}
+
+///Lookup the users that have been muted by the authenticated user, but only return their user IDs.
+///
+///Choosing only to load the user IDs instead of the full user information results in a call that
+///can return more accounts per-page, which can be useful if you anticipate having to page through
+///several results and don't need all the user information.
+///
+///Note that while loading a user's mutes list is a cursored search, it does not allow you to set
+///the page size. Calling `with_page_size` on the iterator returned by this function will not
+///change the page size used by the network call. Setting `page_size` manually may result in an
+///error from Twitter.
+pub fn mutes_ids<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> IDLoader<'a> {
+    IDLoader {
+        link: links::users::MUTES_IDS,
         con_token: con_token,
         access_token: access_token,
         user_id: None,
