@@ -4,6 +4,9 @@
 ### Added
 - New functions to load the muted users list
 
+### Changed
+- Combined IDLoader and UserLoader into CursorIter (with the same interface)
+
 ## [0.2.0] - 2016-08-08
 ### Added
 - Entity structs, so you can parse URL's from user bios (and from tweets in the future)
