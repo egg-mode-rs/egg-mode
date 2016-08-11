@@ -30,7 +30,6 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [ ] statuses/update
 - [ ] statuses/retweet/:id
 - [ ] statuses/unretweet/:id
-- (statuses/update\_with\_media is deprecated)
 - [ ] statuses/retweeters/ids
 - [ ] statuses/lookup
 - [ ] search/tweets
