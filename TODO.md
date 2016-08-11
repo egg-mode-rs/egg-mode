@@ -7,6 +7,15 @@ alongside them.
 I've grouped them by API heading, then by a rough category and data structure. Endpoints that just
 return a list of IDs of something are grouped in with the rest of the main structure's list.
 
+## [OAuth](https://dev.twitter.com/oauth/overview)
+
+- [x] oauth/request\_token (`request_token`)
+- [x] oauth/authenticate (`authenticate_url`)
+- [x] oauth/authorize (`authorize_url`)
+- [x] oauth/access\_token (`access_token`)
+- [ ] oauth2/token
+- [ ] oauth2/invalidate\_token
+
 ## [Public API](https://dev.twitter.com/rest/public)
 
 ### Statuses
