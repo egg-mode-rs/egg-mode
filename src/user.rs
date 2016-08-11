@@ -17,7 +17,7 @@
 //! ```rust,no_run
 //! # let consumer_token = egg_mode::Token::new("", "");
 //! # let access_token = egg_mode::Token::new("", "");
-//! for user in twitter::user::friends_of("rustlang", &consumer_token, &access_token)
+//! for user in egg_mode::user::friends_of("rustlang", &consumer_token, &access_token)
 //!                            .with_page_size(5)
 //!                            .map(|resp| resp.unwrap().response)
 //!                            .take(5) {
