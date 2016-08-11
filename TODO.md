@@ -158,3 +158,14 @@ detail other than the response examples for those endpoints.
 - [ ] collections/entries/remove
 - [ ] collections/entries/curate
 - [ ] collections/entries/move
+
+## [Streaming API](https://dev.twitter.com/streaming/overview)
+
+Site Streams are apparently in a closed beta, and the public firehose is unavailable to the general
+public, so I don't plan to implement them unless asked. They shouldn't be much different from the
+other streams, though, so once I have these ones working, all I'd need is the request to implement
+them.
+
+- [ ] statuses/sample
+- [ ] statuses/filter
+- [ ] user
