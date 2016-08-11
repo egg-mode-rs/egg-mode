@@ -79,4 +79,4 @@ mod links;
 mod common;
 
 pub use auth::{Token, request_token, authorize_url, authenticate_url, access_token};
-pub use common::{Response, TwitterErrors, TwitterErrorCode, UserID};
+pub use common::{Response, TwitterErrors, TwitterErrorCode, UserID, Cursor, CursorIter};

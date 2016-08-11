@@ -412,6 +412,104 @@ pub fn search<'a>(query: &'a str, con_token: &'a auth::Token, access_token: &'a 
     }
 }
 
+///Lookup the users a given account follows, also called their "friends" within the API.
+///
+///This function returns an iterator over the `TwitterUser` objects returned by Twitter. This
+///method defaults to returning 20 users in a single network call; the maximum is 200.
+pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> CursorIter<'a, UserCursor>
+{
+    CursorIter::new(links::users::FRIENDS_LIST, con_token, access_token, Some(acct.into()), Some(20))
+}
+
+///Lookup the users a given account follows, also called their "friends" within the API, but only
+///return their user IDs.
+///
+///This function returns an iterator over the User IDs returned by Twitter. This method defaults to
+///returning 500 IDs in a single network call; the maximum is 5000.
+///
+///Choosing only to load the user IDs instead of the full user information results in a call that
+///can return more accounts per-page, which can be useful if you anticipate having to page through
+///several results and don't need all the user information.
+pub fn friends_ids<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> CursorIter<'a, IDCursor>
+{
+    CursorIter::new(links::users::FRIENDS_IDS, con_token, access_token, Some(acct.into()), Some(500))
+}
+
+///Lookup the users that follow a given account.
+///
+///This function returns an iterator over the `TwitterUser` objects returned by Twitter. This
+///method defaults to returning 20 users in a single network call; the maximum is 200.
+pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> CursorIter<'a, UserCursor>
+{
+    CursorIter::new(links::users::FOLLOWERS_LIST, con_token, access_token, Some(acct.into()), Some(20))
+}
+
+///Lookup the users that follow a given account, but only return their user IDs.
+///
+///This function returns an iterator over the User IDs returned by Twitter. This method defaults to
+///returning 500 IDs in a single network call; the maximum is 5000.
+///
+///Choosing only to load the user IDs instead of the full user information results in a call that
+///can return more accounts per-page, which can be useful if you anticipate having to page through
+///several results and don't need all the user information.
+pub fn followers_ids<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> CursorIter<'a, IDCursor>
+{
+    CursorIter::new(links::users::FOLLOWERS_IDS, con_token, access_token, Some(acct.into()), Some(500))
+}
+
+///Lookup the users that have been blocked by the authenticated user.
+///
+///Note that while loading a user's blocks list is a cursored search, it does not allow you to set
+///the page size. Calling `with_page_size` on the iterator returned by this function will not
+///change the page size used by the network call. Setting `page_size` manually may result in an
+///error from Twitter.
+pub fn blocks<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
+    CursorIter::new(links::users::BLOCKS_LIST, con_token, access_token, None, None)
+}
+
+///Lookup the users that have been blocked by the authenticated user, but only return their user
+///IDs.
+///
+///Choosing only to load the user IDs instead of the full user information results in a call that
+///can return more accounts per-page, which can be useful if you anticipate having to page through
+///several results and don't need all the user information.
+///
+///Note that while loading a user's blocks list is a cursored search, it does not allow you to set
+///the page size. Calling `with_page_size` on the iterator returned by this function will not
+///change the page size used by the network call. Setting `page_size` manually may result in an
+///error from Twitter.
+pub fn blocks_ids<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> CursorIter<'a, IDCursor> {
+    CursorIter::new(links::users::BLOCKS_IDS, con_token, access_token, None, None)
+}
+
+///Lookup the users that have been muted by the authenticated user.
+///
+///Note that while loading a user's mutes list is a cursored search, it does not allow you to set
+///the page size. Calling `with_page_size` on the iterator returned by this function will not
+///change the page size used by the network call. Setting `page_size` manually may result in an
+///error from Twitter.
+pub fn mutes<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
+    CursorIter::new(links::users::MUTES_LIST, con_token, access_token, None, None)
+}
+
+///Lookup the users that have been muted by the authenticated user, but only return their user IDs.
+///
+///Choosing only to load the user IDs instead of the full user information results in a call that
+///can return more accounts per-page, which can be useful if you anticipate having to page through
+///several results and don't need all the user information.
+///
+///Note that while loading a user's mutes list is a cursored search, it does not allow you to set
+///the page size. Calling `with_page_size` on the iterator returned by this function will not
+///change the page size used by the network call. Setting `page_size` manually may result in an
+///error from Twitter.
+pub fn mutes_ids<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> CursorIter<'a, IDCursor> {
+    CursorIter::new(links::users::MUTES_IDS, con_token, access_token, None, None)
+}
+
 ///Represents an active user search.
 pub struct UserSearch<'a> {
     con_token: &'a auth::Token<'a>,
@@ -503,164 +601,6 @@ impl<'a> Iterator for UserSearch<'a> {
     }
 }
 
-///Lookup the users a given account follows, also called their "friends" within the API.
-pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
-    -> UserLoader<'a>
-{
-    UserLoader {
-        link: links::users::FRIENDS_LIST,
-        con_token: con_token,
-        access_token: access_token,
-        user_id: Some(acct.into()),
-        page_size: Some(20),
-        previous_cursor: -1,
-        next_cursor: -1,
-        users_iter: None,
-    }
-}
-
-///Lookup the users a given account follows, also called their "friends" within the API, but only
-///return their user IDs.
-///
-///Choosing only to load the user IDs instead of the full user information results in a call that
-///can return more accounts per-page, which can be useful if you anticipate having to page through
-///several results and don't need all the user information.
-pub fn friends_ids<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
-    -> IDLoader<'a>
-{
-    IDLoader {
-        link: links::users::FRIENDS_IDS,
-        con_token: con_token,
-        access_token: access_token,
-        user_id: Some(acct.into()),
-        page_size: Some(500),
-        previous_cursor: -1,
-        next_cursor: -1,
-        ids_iter: None,
-    }
-}
-
-///Lookup the users that follow a given account.
-pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
-    -> UserLoader<'a>
-{
-    UserLoader {
-        link: links::users::FOLLOWERS_LIST,
-        con_token: con_token,
-        access_token: access_token,
-        user_id: Some(acct.into()),
-        page_size: Some(20),
-        previous_cursor: -1,
-        next_cursor: -1,
-        users_iter: None,
-    }
-}
-
-///Lookup the users that follow a given account, but only return their user IDs.
-///
-///Choosing only to load the user IDs instead of the full user information results in a call that
-///can return more accounts per-page, which can be useful if you anticipate having to page through
-///several results and don't need all the user information.
-pub fn followers_ids<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
-    -> IDLoader<'a>
-{
-    IDLoader {
-        link: links::users::FOLLOWERS_IDS,
-        con_token: con_token,
-        access_token: access_token,
-        user_id: Some(acct.into()),
-        page_size: Some(500),
-        previous_cursor: -1,
-        next_cursor: -1,
-        ids_iter: None,
-    }
-}
-
-///Lookup the users that have been blocked by the authenticated user.
-///
-///Note that while loading a user's blocks list is a cursored search, it does not allow you to set
-///the page size. Calling `with_page_size` on the iterator returned by this function will not
-///change the page size used by the network call. Setting `page_size` manually may result in an
-///error from Twitter.
-pub fn blocks<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> UserLoader<'a> {
-    UserLoader {
-        link: links::users::BLOCKS_LIST,
-        con_token: con_token,
-        access_token: access_token,
-        user_id: None,
-        page_size: None,
-        previous_cursor: -1,
-        next_cursor: -1,
-        users_iter: None,
-    }
-}
-
-///Lookup the users that have been blocked by the authenticated user, but only return their user
-///IDs.
-///
-///Choosing only to load the user IDs instead of the full user information results in a call that
-///can return more accounts per-page, which can be useful if you anticipate having to page through
-///several results and don't need all the user information.
-///
-///Note that while loading a user's blocks list is a cursored search, it does not allow you to set
-///the page size. Calling `with_page_size` on the iterator returned by this function will not
-///change the page size used by the network call. Setting `page_size` manually may result in an
-///error from Twitter.
-pub fn blocks_ids<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> IDLoader<'a> {
-    IDLoader {
-        link: links::users::BLOCKS_IDS,
-        con_token: con_token,
-        access_token: access_token,
-        user_id: None,
-        page_size: None,
-        previous_cursor: -1,
-        next_cursor: -1,
-        ids_iter: None,
-    }
-}
-
-///Lookup the users that have been muted by the authenticated user.
-///
-///Note that while loading a user's mutes list is a cursored search, it does not allow you to set
-///the page size. Calling `with_page_size` on the iterator returned by this function will not
-///change the page size used by the network call. Setting `page_size` manually may result in an
-///error from Twitter.
-pub fn mutes<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> UserLoader<'a> {
-    UserLoader {
-        link: links::users::MUTES_LIST,
-        con_token: con_token,
-        access_token: access_token,
-        user_id: None,
-        page_size: None,
-        previous_cursor: -1,
-        next_cursor: -1,
-        users_iter: None,
-    }
-}
-
-///Lookup the users that have been muted by the authenticated user, but only return their user IDs.
-///
-///Choosing only to load the user IDs instead of the full user information results in a call that
-///can return more accounts per-page, which can be useful if you anticipate having to page through
-///several results and don't need all the user information.
-///
-///Note that while loading a user's mutes list is a cursored search, it does not allow you to set
-///the page size. Calling `with_page_size` on the iterator returned by this function will not
-///change the page size used by the network call. Setting `page_size` manually may result in an
-///error from Twitter.
-pub fn mutes_ids<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> IDLoader<'a> {
-    IDLoader {
-        link: links::users::MUTES_IDS,
-        con_token: con_token,
-        access_token: access_token,
-        user_id: None,
-        page_size: None,
-        previous_cursor: -1,
-        next_cursor: -1,
-        ids_iter: None,
-    }
-}
-
 ///Represents a single-page view into a list of users.
 ///
 ///This type is intended to be used in the background by `UserLoader` to hold an intermediate list
@@ -690,119 +630,19 @@ impl FromJson for UserCursor {
     }
 }
 
-///Represents a paginated list of users, such as the list of users who follow or are followed by a
-///specific user.
-///
-///Implemented as an iterator that lazily loads a page of results at a time, but returns a single
-///user per-iteration. See the [module-level documentation][mod] for details.
-///
-///[mod]: index.html
-pub struct UserLoader<'a> {
-    link: &'static str,
-    con_token: &'a auth::Token<'a>,
-    access_token: &'a auth::Token<'a>,
-    user_id: Option<UserID<'a>>,
-    ///The number of users returned in one network call.
-    ///
-    ///This value has a default of 20 and a maximum of 200. Not set for loaders where the page size
-    ///is unspecified, e.g. the blocks list.
-    pub page_size: Option<i32>,
-    ///Numeric reference to the previous page of results.
-    ///
-    ///This value is automatically set and used if you use this struct's `Iterator` impl to
-    ///navigate the results.
-    pub previous_cursor: i64,
-    ///Numeric reference to the next page of results.
-    ///
-    ///This value is automatically set and used is you use this struct's `Iterator` impl to
-    ///navigate the results. A value of zero signifies that the current page of results is the last
-    ///page of the cursor.
-    pub next_cursor: i64,
-    users_iter: Option<ResponseIter<TwitterUser>>,
-}
+impl Cursor for UserCursor {
+    type Item = TwitterUser;
 
-impl<'a> UserLoader<'a> {
-    ///Sets the number of results returned in a single network call.
-    ///
-    ///This value defaults to 20 and has a maximum of 200.
-    ///
-    ///Calling this function will invalidate any current results, if any were previously loaded.
-    ///This is intended to be used as part of the `Iterator` implementation; see the [module-level
-    ///documentation][mod] for details.
-    ///
-    ///[mod]: index.html
-    pub fn with_page_size(self, page_size: i32) -> UserLoader<'a> {
-        if self.page_size.is_some() {
-            UserLoader {
-                link: self.link,
-                con_token: self.con_token,
-                access_token: self.access_token,
-                user_id: self.user_id,
-                page_size: Some(page_size),
-                previous_cursor: -1,
-                next_cursor: -1,
-                users_iter: None,
-            }
-        }
-        else { self }
+    fn previous_cursor_id(&self) -> i64 {
+        self.previous_cursor
     }
 
-    ///Loads the next page of results.
-    ///
-    ///This is automatically used in the `Iterator` impl, but is provided here in case you want to
-    ///manually manage the network calls and pagination.
-    pub fn call(&self) -> Result<Response<UserCursor>, error::Error> {
-        let mut params = HashMap::new();
-        if let Some(ref id) = self.user_id {
-            add_name_param(&mut params, id);
-        }
-        add_param(&mut params, "cursor", self.next_cursor.to_string());
-        if let Some(count) = self.page_size {
-            add_param(&mut params, "count", count.to_string());
-        }
-
-        let mut resp = try!(auth::get(self.link, self.con_token, self.access_token, Some(&params)));
-
-        parse_response(&mut resp)
+    fn next_cursor_id(&self) -> i64 {
+        self.next_cursor
     }
-}
 
-impl<'a> Iterator for UserLoader<'a> {
-    type Item = Result<Response<TwitterUser>, error::Error>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(ref mut results) = self.users_iter {
-            if let Some(user) = results.next() {
-                return Some(Ok(user));
-            }
-            else if self.next_cursor == 0 {
-                return None;
-            }
-        }
-
-        match self.call() {
-            Ok(resp) => {
-                self.previous_cursor = resp.response.previous_cursor;
-                self.next_cursor = resp.response.next_cursor;
-
-                let resp = Response {
-                    rate_limit: resp.rate_limit,
-                    rate_limit_remaining: resp.rate_limit_remaining,
-                    rate_limit_reset: resp.rate_limit_reset,
-                    response: resp.response.users,
-                };
-
-                let mut iter = resp.into_iter();
-                let first = iter.next();
-                self.users_iter = Some(iter);
-
-                match first {
-                    Some(user) => Some(Ok(user)),
-                    None => None,
-                }
-            },
-            Err(err) => Some(Err(err)),
-        }
+    fn into_inner(self) -> Vec<Self::Item> {
+        self.users
     }
 }
 
@@ -835,118 +675,18 @@ impl FromJson for IDCursor {
     }
 }
 
-///Represents a paginated list of user IDs, such as the list of users who follow or are followed by
-///a specific user.
-///
-///Implemented as an iterator that lazily loads a page of results at a time, but returns a single
-///ID per-iteration. See the [module-level documentation][mod] for details.
-///
-///[mod]: index.html
-pub struct IDLoader<'a> {
-    link: &'static str,
-    con_token: &'a auth::Token<'a>,
-    access_token: &'a auth::Token<'a>,
-    user_id: Option<UserID<'a>>,
-    ///The number of users returned in one network call.
-    ///
-    ///This value has a default of 500 and a maximum of 5,000. Not set for loaders where the page
-    ///size is unspecified, e.g. the blocks list.
-    pub page_size: Option<i32>,
-    ///Numeric reference to the previous page of results.
-    ///
-    ///This value is automatically set and used if you use this struct's `Iterator` impl to
-    ///navigate the results.
-    pub previous_cursor: i64,
-    ///Numeric reference to the next page of results.
-    ///
-    ///This value is automatically set and used is you use this struct's `Iterator` impl to
-    ///navigate the results. A value of zero signifies that the current page of results is the last
-    ///page of the cursor.
-    pub next_cursor: i64,
-    ids_iter: Option<ResponseIter<i64>>,
-}
+impl Cursor for IDCursor {
+    type Item = i64;
 
-impl<'a> IDLoader<'a> {
-    ///Sets the number of results returned in a single network call.
-    ///
-    ///This value defaults to 500 and has a maximum of 5,000.
-    ///
-    ///Calling this function will invalidate any current results, if any were previously loaded.
-    ///This is intended to be used as part of the `Iterator` implementation; see the [module-level
-    ///documentation][mod] for details.
-    ///
-    ///[mod]: index.html
-    pub fn with_page_size(self, page_size: i32) -> IDLoader<'a> {
-        if self.page_size.is_some() {
-            IDLoader {
-                link: self.link,
-                con_token: self.con_token,
-                access_token: self.access_token,
-                user_id: self.user_id,
-                page_size: Some(page_size),
-                previous_cursor: -1,
-                next_cursor: -1,
-                ids_iter: None,
-            }
-        }
-        else { self }
+    fn previous_cursor_id(&self) -> i64 {
+        self.previous_cursor
     }
 
-    ///Loads the next page of results.
-    ///
-    ///This is automatically used in the `Iterator` impl, but is provided here in case you want to
-    ///manually manage the network calls and pagination.
-    pub fn call(&self) -> Result<Response<IDCursor>, error::Error> {
-        let mut params = HashMap::new();
-        if let Some(ref id) = self.user_id {
-            add_name_param(&mut params, id);
-        }
-        add_param(&mut params, "cursor", self.next_cursor.to_string());
-        if let Some(count) = self.page_size {
-            add_param(&mut params, "count", count.to_string());
-        }
-
-        let mut resp = try!(auth::get(self.link, self.con_token, self.access_token, Some(&params)));
-
-        parse_response(&mut resp)
+    fn next_cursor_id(&self) -> i64 {
+        self.next_cursor
     }
-}
 
-impl<'a> Iterator for IDLoader<'a> {
-    type Item = Result<Response<i64>, error::Error>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(ref mut results) = self.ids_iter {
-            if let Some(user) = results.next() {
-                return Some(Ok(user));
-            }
-            else if self.next_cursor == 0 {
-                return None;
-            }
-        }
-
-        match self.call() {
-            Ok(resp) => {
-                self.previous_cursor = resp.response.previous_cursor;
-                self.next_cursor = resp.response.next_cursor;
-
-                let resp = Response {
-                    rate_limit: resp.rate_limit,
-                    rate_limit_remaining: resp.rate_limit_remaining,
-                    rate_limit_reset: resp.rate_limit_reset,
-                    response: resp.response.ids,
-                };
-
-                let mut iter = resp.into_iter();
-                let first = iter.next();
-                self.ids_iter = Some(iter);
-
-                match first {
-                    Some(user) => Some(Ok(user)),
-                    None => None,
-                }
-            },
-            Err(err) => Some(Err(err)),
-        }
+    fn into_inner(self) -> Vec<Self::Item> {
+        self.ids
     }
 }
