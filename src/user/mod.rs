@@ -209,3 +209,35 @@ pub fn mutes<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> C
 pub fn mutes_ids<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> CursorIter<'a, IDCursor> {
     CursorIter::new(links::users::MUTES_IDS, con_token, access_token, None, None)
 }
+
+///Follow the given user with the authenticated account, and set whether device notifications
+///should be enabled.
+///
+///Calling this with an account the user already follows will return success, even though it
+///doesn't change any settings.
+pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool, con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<TwitterUser>, error::Error>
+{
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+    add_param(&mut params, "follow", notifications.to_string());
+
+    let mut resp = try!(auth::post(links::users::FOLLOW, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
+}
+
+///Unfollow the given user with the authenticated account.
+///
+///Calling this with an account the user doesn't follow will return success, even though it doesn't
+///change any settings.
+pub fn unfollow<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<TwitterUser>, error::Error>
+{
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+
+    let mut resp = try!(auth::post(links::users::UNFOLLOW, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
+}

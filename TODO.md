@@ -66,9 +66,9 @@ detail other than the response examples for those endpoints.
 - [x] users/search (`users::search`)
 - [x] friends/list (`users::friends_of`)
 - [x] friends/ids (`users::friends_ids`)
-- [ ] friendships/create
+- [x] friendships/create
 - [ ] friendships/update
-- [ ] friendships/destroy
+- [x] friendships/destroy
 - [ ] friendships/incoming
 - [ ] friendships/outgoing
 - [ ] friendships/no\_retweets/ids
