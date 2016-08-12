@@ -2,15 +2,31 @@
 
 another twitter library for rust
 
-This is an early library for interacting with Twitter. So far the only thing I've implemented is
-getting an access token and looking up a user. The aim with this is complete integration with
-Twitter's v1.1 API.
+[Documentation][]
+
+[Documentation]: https://shiva.icesoldier.me/doc/egg_mode/
+
+This is an early library for interacting with Twitter. It's still pretty early days, but it's also
+being actively developed. The aim with this is complete integration with Twitter's v1.1 API.
+
+To start using this library, put the following into your Cargo.toml:
+
+```TOML
+[dependencies]
+egg-mode = "0.2.0"
+```
+
+...and the following in your lib.rs or main.rs:
+
+```rust
+extern crate egg_mode;
+```
+
+See available methods and tips to get started in the [Documentation][].
 
 To authenticate a user and request an access token:
 
 ```rust
-extern crate egg_mode;
-
 let consumer_token = egg_mode::Token::new(consumer_key, consumer_secret);
 let request_token = egg_mode::request_token(&consumer_token, "oob").unwrap();
 let authorize_url = egg_mode::authorize_url(&request_token);
@@ -24,8 +40,7 @@ let (access_token, user_id, username) = egg_mode::access_token(&consumer_token, 
 As the last line shows, this also returns the User ID and username of the user that authenticated
 with your application. With this access token, all of the other Twitter functions become available.
 
-The file `examples/basic.rs` shows the process of loading an access token and using that to show
-some information about the authenticated user.
+For more examples of how to use this library, check the files in the examples folder.
 
 ## License
 
