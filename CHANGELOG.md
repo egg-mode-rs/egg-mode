@@ -6,6 +6,7 @@
 
 ### Changed
 - Combined IDLoader and UserLoader into CursorIter (with the same interface)
+- Moved `TwitterErrors` and `TwitterErrorCode` into the error module
 
 ## [0.2.0] - 2016-08-08
 ### Added
