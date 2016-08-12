@@ -1,8 +1,47 @@
 //! A composite error type for errors that can occur while interacting with Twitter.
 
-use std;
+use std::{self, fmt};
 use hyper;
 use rustc_serialize;
+
+///Represents a collection of errors returned from a Twitter API call.
+#[derive(Debug, RustcDecodable, RustcEncodable)]
+pub struct TwitterErrors {
+    ///A collection of errors returned by Twitter.
+    pub errors: Vec<TwitterErrorCode>,
+}
+
+impl fmt::Display for TwitterErrors {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut first = true;
+        for e in &self.errors {
+            if first { first = false; }
+            else { try!(writeln!(f, ",")); }
+
+            try!(write!(f, "{}", e));
+        }
+
+        Ok(())
+    }
+}
+
+///Represents a specific error returned from a Twitter API call.
+#[derive(Debug, RustcDecodable, RustcEncodable)]
+pub struct TwitterErrorCode {
+    ///The error message returned by Twitter.
+    pub message: String,
+    ///The numeric error code returned by Twitter. A list of possible error codes can be found in
+    ///the [API documentation][error-codes].
+    ///
+    ///[error-codes]: https://dev.twitter.com/overview/api/response-codes
+    pub code: i32,
+}
+
+impl fmt::Display for TwitterErrorCode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "#{}: {}", self.code, self.message)
+    }
+}
 
 ///A set of errors that can occur when interacting with Twitter.
 #[derive(Debug)]
@@ -16,7 +55,7 @@ pub enum Error {
     ///The response from Twitter returned an error structure
     ///instead of the expected response. The enclosed value was
     ///the response from Twitter.
-    TwitterError(super::common::TwitterErrors),
+    TwitterError(TwitterErrors),
     ///The response from Twitter gave a response code that
     ///indicated an error. The enclosed value was the response
     ///code.
