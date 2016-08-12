@@ -46,3 +46,9 @@ impl<'a> From<&'a str> for UserID<'a> {
         UserID::ScreenName(name)
     }
 }
+
+impl<'a> From<&'a String> for UserID<'a> {
+    fn from(name: &'a String) -> UserID<'a> {
+        UserID::ScreenName(name.as_str())
+    }
+}
