@@ -4,7 +4,7 @@ rust:
   - beta
   - nightly
 script:
-  - touch examples/consumer_key examples/consumer_secret
+  - touch examples/common/consumer_key examples/common/consumer_secret
   - cargo build --verbose
   - cargo test --verbose
 matrix:
