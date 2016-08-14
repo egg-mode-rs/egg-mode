@@ -3,6 +3,10 @@ rust:
   - stable
   - beta
   - nightly
+script:
+  - touch examples/consumer_key examples/consumer_secret
+  - cargo build --verbose
+  - cargo test --verbose
 matrix:
   allow_failures:
     - rust: nightly
