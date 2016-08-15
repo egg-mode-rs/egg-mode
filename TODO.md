@@ -67,7 +67,7 @@ detail other than the response examples for those endpoints.
 - [x] friends/list (`users::friends_of`)
 - [x] friends/ids (`users::friends_ids`)
 - [x] friendships/create (`users::follow`)
-- [ ] friendships/update
+- [x] friendships/update (`users::update_follow`)
 - [x] friendships/destroy (`users::unfollow`)
 - [x] friendships/incoming (`users::incoming_requests`)
 - [x] friendships/outgoing (`users::outgoing_requests`)

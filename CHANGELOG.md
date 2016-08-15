@@ -7,6 +7,7 @@
 - New function to test the validity of access tokens (`verify_tokens`)
 - New functions to see incoming/outgoing follow requests (`incoming_requests`, `outgoing_requests`)
 - New function to see friendship status between users (`relation`)
+- New function to change notification/retweet settings (`update_follow`)
 
 ### Changed
 - Combined IDLoader and UserLoader into CursorIter (with the same interface)

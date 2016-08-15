@@ -284,3 +284,28 @@ pub fn relation<'a, F, T>(from: F, to: T, con_token: &auth::Token, access_token:
 
     parse_response(&mut resp)
 }
+
+///Update notification settings and reweet visibility for the given user.
+///
+///Calling this for an account the authenticated user does not already follow will not cause them
+///to follow that user. It will return an error if you pass `Some(true)` for `notifications` or
+///`Some(false)` for `retweets`. Any other combination of arguments will return a `Relationship` as
+///if you had called `relation` between the authenticated user and the given user.
+pub fn update_follow<'a, T>(acct: T, notifications: Option<bool>, retweets: Option<bool>,
+                            con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<Relationship>, error::Error>
+    where T: Into<UserID<'a>>
+{
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+    if let Some(notifications) = notifications {
+        add_param(&mut params, "device", notifications.to_string());
+    }
+    if let Some(retweets) = retweets {
+        add_param(&mut params, "retweets", retweets.to_string());
+    }
+
+    let mut resp = try!(auth::post(links::users::FRIENDSHIP_UPDATE, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
+}
