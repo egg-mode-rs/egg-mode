@@ -217,8 +217,8 @@ pub fn mutes_ids<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) 
 ///following a protected account. In the latter case, this indicates that the follow request was
 ///successfully sent.
 ///
-///Calling this with an account the user already follows will return success, even though it
-///doesn't change any settings.
+///Calling this with an account the user already follows may return an error, or ("for performance
+///reasons") may return success without changing any account settings.
 pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool, con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<TwitterUser>, error::Error>
 {
