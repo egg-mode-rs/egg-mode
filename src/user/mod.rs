@@ -210,6 +210,22 @@ pub fn mutes_ids<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) 
     CursorIter::new(links::users::MUTES_IDS, con_token, access_token, None, None)
 }
 
+///Lookup the user IDs who have pending requests to follow the authenticated protected user.
+///
+///If the authenticated user is not a protected account, this will return an empty collection.
+pub fn incoming_requests<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> CursorIter<'a, IDCursor>
+{
+    CursorIter::new(links::users::FRIENDSHIPS_INCOMING, con_token, access_token, None, None)
+}
+
+///Lookup the user IDs with which the authenticating user has a pending follow request.
+pub fn outgoing_requests<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> CursorIter<'a, IDCursor>
+{
+    CursorIter::new(links::users::FRIENDSHIPS_OUTGOING, con_token, access_token, None, None)
+}
+
 ///Follow the given user with the authenticated account, and set whether device notifications
 ///should be enabled.
 ///

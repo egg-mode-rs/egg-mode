@@ -20,4 +20,6 @@ pub mod users {
     pub const MUTES_IDS: &'static str = "https://api.twitter.com/1.1/mutes/users/ids.json";
     pub const FOLLOW: &'static str = "https://api.twitter.com/1.1/friendships/create.json";
     pub const UNFOLLOW: &'static str = "https://api.twitter.com/1.1/friendships/destroy.json";
+    pub const FRIENDSHIPS_INCOMING: &'static str = "https://api.twitter.com/1.1/friendships/incoming.json";
+    pub const FRIENDSHIPS_OUTGOING: &'static str = "https://api.twitter.com/1.1/friendships/outgoing.json";
 }

@@ -5,6 +5,7 @@
 - New functions to load the muted users list (`mutes`, `mutes_ids`)
 - New functions to follow/unfollow a user (`follow`, `unfollow`)
 - New function to test the validity of access tokens (`verify_tokens`)
+- New functions to see incoming/outgoing follow requests (`incoming_requests`, `outgoing_requests`)
 
 ### Changed
 - Combined IDLoader and UserLoader into CursorIter (with the same interface)
