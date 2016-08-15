@@ -137,6 +137,8 @@ detail other than the response examples for those endpoints.
 - [ ] help/privacy
 - [ ] help/tos
 
+- [x] account/verify\_credentials (`verify_tokens`)
+
 ## [Media API](https://dev.twitter.com/rest/media)
 
 - [ ] media/upload (Simple)

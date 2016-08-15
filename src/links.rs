@@ -3,6 +3,7 @@ pub mod auth {
     pub const ACCESS_TOKEN: &'static str = "https://api.twitter.com/oauth/access_token";
     pub const AUTHORIZE: &'static str = "https://api.twitter.com/oauth/authorize";
     pub const AUTHENTICATE: &'static str = "https://api.twitter.com/oauth/authenticate";
+    pub const VERIFY_CREDENTIALS: &'static str = "https://api.twitter.com/1.1/account/verify_credentials.json";
 }
 
 pub mod users {
