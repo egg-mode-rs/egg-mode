@@ -226,6 +226,17 @@ pub fn outgoing_requests<'a>(con_token: &'a auth::Token, access_token: &'a auth:
     CursorIter::new(links::users::FRIENDSHIPS_OUTGOING, con_token, access_token, None, None)
 }
 
+///Lookup the user IDs that the authenticating user has disabled retweets from.
+///
+///Use `update_follow` to enable/disable viewing retweets from a specific user.
+pub fn friends_no_retweets<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> Result<Response<Vec<i64>>, error::Error>
+{
+    let mut resp = try!(auth::get(links::users::FRIENDS_NO_RETWEETS, con_token, access_token, None));
+
+    parse_response(&mut resp)
+}
+
 ///Follow the given user with the authenticated account, and set whether device notifications
 ///should be enabled.
 ///

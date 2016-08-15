@@ -8,6 +8,7 @@
 - New functions to see incoming/outgoing follow requests (`incoming_requests`, `outgoing_requests`)
 - New function to see friendship status between users (`relation`)
 - New function to change notification/retweet settings (`update_follow`)
+- New function to list users that the user has disabled retweets from (`friends_no_retweets`)
 
 ### Changed
 - Combined IDLoader and UserLoader into CursorIter (with the same interface)

@@ -71,7 +71,7 @@ detail other than the response examples for those endpoints.
 - [x] friendships/destroy (`users::unfollow`)
 - [x] friendships/incoming (`users::incoming_requests`)
 - [x] friendships/outgoing (`users::outgoing_requests`)
-- [ ] friendships/no\_retweets/ids
+- [x] friendships/no\_retweets/ids (`users::friends_no_retweets`)
 - [x] followers/list (`users::followers_of`)
 - [x] followers/ids (`users::followers_ids`)
 - [x] blocks/list (`users::blocks`)

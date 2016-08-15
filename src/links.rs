@@ -24,4 +24,5 @@ pub mod users {
     pub const FRIENDSHIPS_OUTGOING: &'static str = "https://api.twitter.com/1.1/friendships/outgoing.json";
     pub const FRIENDSHIP_SHOW: &'static str = "https://api.twitter.com/1.1/friendships/show.json";
     pub const FRIENDSHIP_UPDATE: &'static str = "https://api.twitter.com/1.1/friendships/update.json";
+    pub const FRIENDS_NO_RETWEETS: &'static str = "https://api.twitter.com/1.1/friendships/no_retweets/ids.json";
 }
