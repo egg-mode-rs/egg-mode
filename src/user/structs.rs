@@ -493,3 +493,127 @@ impl Cursor for IDCursor {
         self.ids
     }
 }
+
+///Represents relationship settings between two Twitter accounts.
+#[derive(Debug)]
+pub struct Relationship {
+    ///Contains settings from the perspective of the target account.
+    pub target: RelationTarget,
+    ///Contains settings from the perspective of the source account.
+    ///
+    ///This contains more information than `target` if the source account is the same as the
+    ///authenticated user. See the [`RelationSource`][] page for details.
+    ///
+    ///[`RelationSource`]: struct.RelationSource.html
+    pub source: RelationSource,
+}
+
+impl FromJson for Relationship {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse);
+        }
+
+        if let Some(relation) = input.find("relationship") {
+            Ok(Relationship {
+                target: try!(field(relation, "target")),
+                source: try!(field(relation, "source")),
+            })
+        }
+        else {
+            Err(error::Error::MissingValue("relationship"))
+        }
+    }
+}
+
+///Represents relationship settings between two Twitter accounts, from the perspective of the
+///target user.
+#[derive(Debug)]
+pub struct RelationTarget {
+    ///Numeric ID for this account.
+    pub id: i64,
+    ///Screen name for this account.
+    pub screen_name: String,
+    ///Indicates whether the source account follows this target account.
+    pub followed_by: bool,
+    ///Indicates whether this target account follows the source account.
+    pub following: bool,
+}
+
+impl FromJson for RelationTarget {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse);
+        }
+
+        Ok(RelationTarget {
+            id: try!(field(input, "id")),
+            screen_name: try!(field(input, "screen_name")),
+            followed_by: try!(field(input, "followed_by")),
+            following: try!(field(input, "following")),
+        })
+    }
+}
+
+///Represents relationship settings between two Twitter accounts, from the perspective of the
+///source user.
+///
+///This struct holds more information than the `RelationTarget` struct, mainly attributes only
+///visible to the user that set them. While you can see relationships between any two arbitrary
+///users, if the "source" account is the same one whose access token you're using, you can see
+///extra information about this relationship.
+#[derive(Debug)]
+pub struct RelationSource {
+    ///Numeric ID for this account.
+    pub id: i64,
+    ///Screen name for this account.
+    pub screen_name: String,
+    ///Indicates whether this source account follows the target account.
+    pub following: bool,
+    ///Indicates whether the target account follows this source account.
+    pub followed_by: bool,
+    ///Indicates whether this source account can send a direct message to the target account.
+    ///
+    ///If `followed_by` is false but this is true, that could indicate that the target account has
+    ///allowed anyone to direct-message them.
+    pub can_dm: bool,
+    ///Indicates whether this source account is blocking the target account. If the source account
+    ///is not the authenticated user, holds `None` instead.
+    pub blocking: Option<bool>,
+    ///Indicates whether this source account has reported the target account for spam. If the source
+    ///account is not the authenticated user, holds `None` instead.
+    pub marked_spam: Option<bool>,
+    ///Indicates whether this source account has decided to receive all replies from the target
+    ///account. If the source account is not the authenticated user, holds `None` instead.
+    ///
+    ///Note that there is no mechanism with which to toggle this setting, at least none that this
+    ///author could find, either through the API or through the official site.
+    all_replies: Option<bool>,
+    ///Indicates whether this source account has decided to show retweets from the target account.
+    ///If the source account is not the authenticated user, holds `None` instead.
+    pub want_retweets: Option<bool>,
+    ///Indicates whether this source account has decided to receive mobile notifications for the
+    ///target account. If the source account is not the authenticated user, holds `None` instead.
+    pub notifications_enabled: Option<bool>,
+}
+
+impl FromJson for RelationSource {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse);
+        }
+
+        Ok(RelationSource {
+            id: try!(field(input, "id")),
+            screen_name: try!(field(input, "screen_name")),
+            following: try!(field(input, "following")),
+            followed_by: try!(field(input, "followed_by")),
+            can_dm: try!(field(input, "can_dm")),
+            blocking: field(input, "blocking").ok(),
+            marked_spam: field(input, "marked_spam").ok(),
+            all_replies: field(input, "all_replies").ok(),
+            want_retweets: field(input, "want_retweets").ok(),
+            notifications_enabled: field(input, "notifications_enabled").ok(),
+        })
+    }
+}

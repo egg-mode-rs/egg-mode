@@ -84,7 +84,7 @@ detail other than the response examples for those endpoints.
 - [ ] mutes/users/create
 - [ ] mutes/users/destroy
 
-- [ ] friendships/show
+- [x] friendships/show (`users::relation`)
 
 - [ ] friendships/lookup
 
