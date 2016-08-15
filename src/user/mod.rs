@@ -213,6 +213,10 @@ pub fn mutes_ids<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) 
 ///Follow the given user with the authenticated account, and set whether device notifications
 ///should be enabled.
 ///
+///Upon success, this function returns `Ok` with the user that was just followed, even when
+///following a protected account. In the latter case, this indicates that the follow request was
+///successfully sent.
+///
 ///Calling this with an account the user already follows will return success, even though it
 ///doesn't change any settings.
 pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool, con_token: &auth::Token, access_token: &auth::Token)
@@ -228,6 +232,8 @@ pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool, con_token: 
 }
 
 ///Unfollow the given user with the authenticated account.
+///
+///Upon success, this function returns `Ok` with the user that was just unfollowed.
 ///
 ///Calling this with an account the user doesn't follow will return success, even though it doesn't
 ///change any settings.
