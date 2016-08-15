@@ -1,6 +1,6 @@
 # egg-mode
 
-another twitter library for rust
+another twitter library for rust [![Build Status](https://travis-ci.org/QuietMisdreavus/twitter-rs.svg?branch=master)](https://travis-ci.org/QuietMisdreavus/twitter-rs)
 
 [Documentation][]
 
