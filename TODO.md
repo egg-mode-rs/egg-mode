@@ -86,7 +86,7 @@ detail other than the response examples for those endpoints.
 
 - [x] friendships/show (`users::relation`)
 
-- [ ] friendships/lookup
+- [x] friendships/lookup (`users::relation_lookup`)
 
 - [ ] users/suggestions
 - [ ] users/suggestions/:slug

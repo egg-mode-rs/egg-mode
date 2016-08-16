@@ -617,3 +617,79 @@ impl FromJson for RelationSource {
         })
     }
 }
+
+///Represents the relation the authenticated user has to a given account.
+///
+///This is returned by `relation_lookup`, as opposed to `Relationship`, which is returned by
+///`relation`.
+#[derive(Debug)]
+pub struct RelationLookup {
+    ///The display name of the target account.
+    pub name: String,
+    ///The screen name of the target account.
+    pub screen_name: String,
+    ///The numeric ID of the target account.
+    pub id: i64,
+    ///The ways the target account is connected to the authenticated user.
+    ///
+    ///If the target account has no relation to the authenticated user, this will not be empty; its
+    ///only element will be `None`.
+    pub connections: Vec<Connection>,
+}
+
+impl FromJson for RelationLookup {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse);
+        }
+
+        Ok(RelationLookup {
+            name: try!(field(input, "name")),
+            screen_name: try!(field(input, "screen_name")),
+            id: try!(field(input, "id")),
+            connections: try!(field(input, "connections")),
+        })
+    }
+}
+
+///Represents the ways a target account can be connected to another account.
+#[derive(Debug)]
+pub enum Connection {
+    ///The target account has no relation.
+    None,
+    ///The authenticated user has requested to follow the target account.
+    FollowingRequested,
+    ///The target account has requested to follow the authenticated user.
+    FollowingReceived,
+    ///The target account follows the authenticated user.
+    FollowedBy,
+    ///The authenticated user follows the target account.
+    Following,
+    ///The authenticated user has blocked the target account.
+    Blocking,
+    ///The authenticated user has muted the target account.
+    Muting,
+}
+
+impl FromJson for Connection {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if let Some(text) = input.as_string() {
+            match text {
+                "none" => Ok(Connection::None),
+                "following_requested" => Ok(Connection::FollowingRequested),
+                "following_received" => Ok(Connection::FollowingReceived),
+                "followed_by" => Ok(Connection::FollowedBy),
+                "following" => Ok(Connection::Following),
+                "blocking" => Ok(Connection::Blocking),
+                "muting" => Ok(Connection::Muting),
+                _ => {
+                    println!("{}", text);
+                    Err(InvalidResponse)
+                },
+            }
+        }
+        else {
+            Err(InvalidResponse)
+        }
+    }
+}
