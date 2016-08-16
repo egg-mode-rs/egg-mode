@@ -105,6 +105,27 @@ pub fn show<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_to
     parse_response(&mut resp)
 }
 
+///Lookup relationship settings between two arbitrary users.
+pub fn relation<'a, F, T>(from: F, to: T, con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<Relationship>, error::Error>
+    where F: Into<UserID<'a>>,
+          T: Into<UserID<'a>>
+{
+    let mut params = HashMap::new();
+    match from.into() {
+        UserID::ID(id) => add_param(&mut params, "source_id", id.to_string()),
+        UserID::ScreenName(name) => add_param(&mut params, "source_screen_name", name),
+    };
+    match to.into() {
+        UserID::ID(id) => add_param(&mut params, "target_id", id.to_string()),
+        UserID::ScreenName(name) => add_param(&mut params, "target_screen_name", name),
+    };
+
+    let mut resp = try!(auth::get(links::users::FRIENDSHIP_SHOW, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
+}
+
 ///Lookup users based on the given search term.
 pub fn search<'a>(query: &'a str, con_token: &'a auth::Token, access_token: &'a auth::Token)
     -> UserSearch<'a>
@@ -271,27 +292,6 @@ pub fn unfollow<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, acces
     add_name_param(&mut params, &acct.into());
 
     let mut resp = try!(auth::post(links::users::UNFOLLOW, con_token, access_token, Some(&params)));
-
-    parse_response(&mut resp)
-}
-
-///Lookup relationship settings between two arbitrary users.
-pub fn relation<'a, F, T>(from: F, to: T, con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<Relationship>, error::Error>
-    where F: Into<UserID<'a>>,
-          T: Into<UserID<'a>>
-{
-    let mut params = HashMap::new();
-    match from.into() {
-        UserID::ID(id) => add_param(&mut params, "source_id", id.to_string()),
-        UserID::ScreenName(name) => add_param(&mut params, "source_screen_name", name),
-    };
-    match to.into() {
-        UserID::ID(id) => add_param(&mut params, "target_id", id.to_string()),
-        UserID::ScreenName(name) => add_param(&mut params, "target_screen_name", name),
-    };
-
-    let mut resp = try!(auth::get(links::users::FRIENDSHIP_SHOW, con_token, access_token, Some(&params)));
 
     parse_response(&mut resp)
 }
