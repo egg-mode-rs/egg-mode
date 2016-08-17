@@ -39,6 +39,8 @@ mod structs;
 
 pub use user::structs::*;
 
+//---Groups of users---
+
 ///Lookup a set of Twitter users by their numerical ID.
 pub fn lookup_ids(ids: &[i64], con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<Vec<TwitterUser>>, error::Error>
@@ -125,6 +127,47 @@ pub fn relation<'a, F, T>(from: F, to: T, con_token: &auth::Token, access_token:
 
     parse_response(&mut resp)
 }
+
+///Lookup the user IDs that the authenticating user has disabled retweets from.
+///
+///Use `update_follow` to enable/disable viewing retweets from a specific user.
+pub fn friends_no_retweets<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> Result<Response<Vec<i64>>, error::Error>
+{
+    let mut resp = try!(auth::get(links::users::FRIENDS_NO_RETWEETS, con_token, access_token, None));
+
+    parse_response(&mut resp)
+}
+
+///Lookup the relations between the authenticated user and the given accounts.
+pub fn relation_lookup(accts: &[UserID], con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<Vec<RelationLookup>>, error::Error>
+{
+    let mut params = HashMap::new();
+    let id_param = accts.iter()
+                        .filter_map(|x| match x {
+                            &UserID::ID(id) => Some(id.to_string()),
+                            _ => None,
+                        })
+                        .collect::<Vec<_>>()
+                        .join(",");
+    let name_param = accts.iter()
+                          .filter_map(|x| match x {
+                              &UserID::ScreenName(name) => Some(name),
+                              _ => None,
+                          })
+                          .collect::<Vec<_>>()
+                          .join(",");
+
+    add_param(&mut params, "user_id", id_param);
+    add_param(&mut params, "screen_name", name_param);
+
+    let mut resp = try!(auth::get(links::users::FRIENDSHIP_LOOKUP, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
+}
+
+//---Cursored collections---
 
 ///Lookup users based on the given search term.
 pub fn search<'a>(query: &'a str, con_token: &'a auth::Token, access_token: &'a auth::Token)
@@ -247,44 +290,7 @@ pub fn outgoing_requests<'a>(con_token: &'a auth::Token, access_token: &'a auth:
     CursorIter::new(links::users::FRIENDSHIPS_OUTGOING, con_token, access_token, None, None)
 }
 
-///Lookup the user IDs that the authenticating user has disabled retweets from.
-///
-///Use `update_follow` to enable/disable viewing retweets from a specific user.
-pub fn friends_no_retweets<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token)
-    -> Result<Response<Vec<i64>>, error::Error>
-{
-    let mut resp = try!(auth::get(links::users::FRIENDS_NO_RETWEETS, con_token, access_token, None));
-
-    parse_response(&mut resp)
-}
-
-///Lookup the relations between the authenticated user and the given accounts.
-pub fn relation_lookup(accts: &[UserID], con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<Vec<RelationLookup>>, error::Error>
-{
-    let mut params = HashMap::new();
-    let id_param = accts.iter()
-                        .filter_map(|x| match x {
-                            &UserID::ID(id) => Some(id.to_string()),
-                            _ => None,
-                        })
-                        .collect::<Vec<_>>()
-                        .join(",");
-    let name_param = accts.iter()
-                          .filter_map(|x| match x {
-                              &UserID::ScreenName(name) => Some(name),
-                              _ => None,
-                          })
-                          .collect::<Vec<_>>()
-                          .join(",");
-
-    add_param(&mut params, "user_id", id_param);
-    add_param(&mut params, "screen_name", name_param);
-
-    let mut resp = try!(auth::get(links::users::FRIENDSHIP_LOOKUP, con_token, access_token, Some(&params)));
-
-    parse_response(&mut resp)
-}
+//---User actions---
 
 ///Follow the given user with the authenticated account, and set whether device notifications
 ///should be enabled.
