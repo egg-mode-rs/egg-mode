@@ -396,3 +396,31 @@ pub fn unblock<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access
 
     parse_response(&mut resp)
 }
+
+///Mute the given user with the authenticated user.
+///
+///Upon success, this function returns `Ok` with the given user.
+pub fn mute<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<TwitterUser>, error::Error>
+{
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+
+    let mut resp = try!(auth::post(links::users::MUTE, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
+}
+
+///Unmute the given user with the authenticated user.
+///
+///Upon success, this function returns `Ok` with the given user.
+pub fn unmute<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<TwitterUser>, error::Error>
+{
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+
+    let mut resp = try!(auth::post(links::users::UNMUTE, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
+}

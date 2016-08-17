@@ -81,8 +81,8 @@ detail other than the response examples for those endpoints.
 - [x] users/report\_spam (`users::report_spam`)
 - [x] mutes/users/list (`users::mutes`)
 - [x] mutes/users/ids (`users::mutes_ids`)
-- [ ] mutes/users/create
-- [ ] mutes/users/destroy
+- [x] mutes/users/create (`users::mute`)
+- [x] mutes/users/destroy (`users::unmute`)
 
 - [x] friendships/show (`users::relation`)
 

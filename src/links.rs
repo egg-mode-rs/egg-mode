@@ -29,4 +29,6 @@ pub mod users {
     pub const BLOCK: &'static str = "https://api.twitter.com/1.1/blocks/create.json";
     pub const UNBLOCK: &'static str = "https://api.twitter.com/1.1/blocks/destroy.json";
     pub const REPORT_SPAM: &'static str = "https://api.twitter.com/1.1/users/report_spam.json";
+    pub const MUTE: &'static str = "https://api.twitter.com/1.1/mutes/users/create.json";
+    pub const UNMUTE: &'static str = "https://api.twitter.com/1.1/mutes/users/destroy.json";
 }
