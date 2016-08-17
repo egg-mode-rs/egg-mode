@@ -292,7 +292,7 @@ pub fn outgoing_requests<'a>(con_token: &'a auth::Token, access_token: &'a auth:
 
 //---User actions---
 
-///Follow the given user with the authenticated account, and set whether device notifications
+///Follow the given account with the authenticated user, and set whether device notifications
 ///should be enabled.
 ///
 ///Upon success, this function returns `Ok` with the user that was just followed, even when
@@ -313,7 +313,7 @@ pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool, con_token: 
     parse_response(&mut resp)
 }
 
-///Unfollow the given user with the authenticated account.
+///Unfollow the given account with the authenticated user.
 ///
 ///Upon success, this function returns `Ok` with the user that was just unfollowed.
 ///
@@ -351,6 +351,48 @@ pub fn update_follow<'a, T>(acct: T, notifications: Option<bool>, retweets: Opti
     }
 
     let mut resp = try!(auth::post(links::users::FRIENDSHIP_UPDATE, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
+}
+
+///Block the given account with the authenticated user.
+///
+///Upon success, this function returns `Ok` with the given user.
+pub fn block<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<TwitterUser>, error::Error>
+{
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+
+    let mut resp = try!(auth::post(links::users::BLOCK, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
+}
+
+///Block the given account and report it for spam, with the authenticated user.
+///
+///Upon success, this function returns `Ok` with the given user.
+pub fn report_spam<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<TwitterUser>, error::Error>
+{
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+
+    let mut resp = try!(auth::post(links::users::REPORT_SPAM, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
+}
+
+///Unblock the given user with the authenticated user.
+///
+///Upon success, this function returns `Ok` with the given user.
+pub fn unblock<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
+    -> Result<Response<TwitterUser>, error::Error>
+{
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+
+    let mut resp = try!(auth::post(links::users::UNBLOCK, con_token, access_token, Some(&params)));
 
     parse_response(&mut resp)
 }

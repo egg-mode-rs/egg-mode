@@ -76,9 +76,9 @@ detail other than the response examples for those endpoints.
 - [x] followers/ids (`users::followers_ids`)
 - [x] blocks/list (`users::blocks`)
 - [x] blocks/ids (`users::blocks_ids`)
-- [ ] blocks/create
-- [ ] blocks/destroy
-- [ ] users/report\_spam
+- [x] blocks/create (`users::block`)
+- [x] blocks/destroy (`users::unblock`)
+- [x] users/report\_spam (`users::report_spam`)
 - [x] mutes/users/list (`users::mutes`)
 - [x] mutes/users/ids (`users::mutes_ids`)
 - [ ] mutes/users/create

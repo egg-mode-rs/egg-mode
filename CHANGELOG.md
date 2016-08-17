@@ -10,6 +10,7 @@
 - New function to change notification/retweet settings (`update_follow`)
 - New function to list users that the user has disabled retweets from (`friends_no_retweets`)
 - New function to look up friendship status for several users (`relation_lookup`)
+- New functions to block/unblock users (`block`, `unblock`, `report_spam`)
 
 ### Changed
 - Combined IDLoader and UserLoader into CursorIter (with the same interface)
