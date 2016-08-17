@@ -14,6 +14,8 @@
 
 ### Changed
 - Combined IDLoader and UserLoader into CursorIter (with the same interface)
+  - This is a **breaking change** if you assigned these results to variables with explicit types
+  - (If you merely used them as iterators or didn't explicitly declare their type, the interface is the same)
 - Moved `TwitterErrors` and `TwitterErrorCode` into the error module
 
 ## [0.2.0] - 2016-08-08
