@@ -24,6 +24,7 @@ pub trait Cursor {
 ///item per-iteration. See examples in [the user module-level documentation][user-mod].
 ///
 ///[user-mod]: user/index.html
+#[must_use = "cursor iterators are lazy and do nothing unless consumed"]
 pub struct CursorIter<'a, T>
     where T: Cursor + FromJson
 {
