@@ -343,10 +343,12 @@ impl FromJson for UserEntityDetail {
 ///
 ///## Manual paging
 ///
-///While using the iterator implementation for this struct can be convenient, you also have the
-///option to manually pull the next page of results and jump to arbitrary pages without having to
-///iterate through the previous ones. This way you can be sure of where and when the network call
-///will occur.
+///The iterator works by lazily loading a page of results at a time (with size set by
+///`with_page_size` or by directly assigning `page_size`) in the background whenever you ask for
+///the next result. This can be nice, but it also means that you can lose track of when your loop
+///will block for the next page of results. This is where the extra fields and methods on
+///`UserSearch` come in. By using the raw `call()` function and changing `page_num` as necessary,
+///you can have full control over when the network calls happen:
 ///
 ///```rust,no_run
 ///# let con_token = egg_mode::Token::new("", "");
