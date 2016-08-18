@@ -20,10 +20,73 @@ pub trait Cursor {
 ///Represents a paginated list of results, such as the users who follow a specific user or the
 ///lists owned by that user.
 ///
-///Implemented as an iterator that lazily loads a page of results at a time, but returns a single
-///item per-iteration. See examples in [the user module-level documentation][user-mod].
+///This struct is returned by various functions and is meant to be used as an iterator. This means
+///that all the standard iterator adaptors can be used to work with the results:
 ///
-///[user-mod]: user/index.html
+///```rust,no_run
+///# let con_token = egg_mode::Token::new("", "");
+///# let access_token = egg_mode::Token::new("", "");
+///for name in egg_mode::user::followers_of("rustlang", &con_token, &access_token)
+///                                        .map(|u| u.unwrap().response.screen_name).take(10) {
+///    println!("{}", name);
+///}
+///```
+///
+///You can even collect the results, letting you get one set of rate-limit information for the
+///entire search setup:
+///
+///```rust,no_run
+///# let con_token = egg_mode::Token::new("", "");
+///# let access_token = egg_mode::Token::new("", "");
+///use egg_mode::Response;
+///use egg_mode::user::TwitterUser;
+///use egg_mode::error::Error;
+///
+///let names: Result<Response<Vec<TwitterUser>>, Error> =
+///    egg_mode::user::followers_of("rustlang", &con_token, &access_token).take(10).collect();
+///```
+///
+///`CursorIter` has a couple adaptors of its own that you can use before consuming it.
+///`with_page_size` will let you set how many users are pulled in with a single network call, and
+///`start_at_page` lets you start your search at a specific page. Calling either of these after
+///starting iteration will clear any current results.
+///
+///(A note about `with_page_size`/`page_size`: While the CursorIter struct always has this method
+///and field available, not every cursored call supports changing page size. Check the individual
+///method documentation for notes on what page sizes are allowed.)
+///
+///The type returned by the iterator is `Result<Response<T::Item>, Error>`, so network errors,
+///rate-limit errors and other issues are passed directly through to `next()`. This also means that
+///getting an error while iterating doesn't mean you're at the end of the list; you can wait for
+///the network connection to return or for the rate limit to refresh before trying again.
+///
+///## Manual paging
+///
+///The iterator works by lazily loading a page of results at a time (with size set by
+///`with_page_size` or by directly assigning `page_size` for applicable calls) in the background
+///whenever you ask for the next result. This can be nice, but it also means that you can lose
+///track of when your loop will block for the next page of results. This is where the extra fields
+///and methods on `UserSearch` come in. By using `call()`, you can get the cursor struct directly
+///from Twitter.  With that you can iterate over the results and page forward and backward as
+///needed:
+///
+///```rust,no_run
+///# let con_token = egg_mode::Token::new("", "");
+///# let access_token = egg_mode::Token::new("", "");
+///let mut list = egg_mode::user::followers_of("rustlang", &con_token, &access_token).with_page_size(20);
+///let resp = list.call().unwrap();
+///
+///for user in resp.response.users {
+///    println!("{} (@{})", user.name, user.screen_name);
+///}
+///
+///list.next_cursor = resp.response.next_cursor;
+///let resp = list.call().unwrap();
+///
+///for user in resp.response.users {
+///    println!("{} (@{})", user.name, user.screen_name);
+///}
+///```
 #[must_use = "cursor iterators are lazy and do nothing unless consumed"]
 pub struct CursorIter<'a, T>
     where T: Cursor + FromJson
