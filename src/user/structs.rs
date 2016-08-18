@@ -449,8 +449,6 @@ impl<'a> Iterator for UserSearch<'a> {
                 return None;
             }
             else {
-                //in case the next call() errors, we don't want to skip a page
-                self.current_results = None;
                 self.page_num += 1;
             }
         }
@@ -465,7 +463,11 @@ impl<'a> Iterator for UserSearch<'a> {
                     None => None,
                 }
             },
-            Err(err) => Some(Err(err))
+            Err(err) => {
+                //Invalidate current results so we don't increment the page number again
+                self.current_results = None;
+                Some(Err(err))
+            },
         }
     }
 }
