@@ -302,6 +302,70 @@ impl FromJson for UserEntityDetail {
 }
 
 ///Represents an active user search.
+///
+///This struct is returned by [`search`][] and is meant to be used as an iterator. This means that
+///all the standard iterator adaptors can be used to work with the results:
+///
+///[`search`]: fn.search.html
+///
+///```rust,no_run
+///# let con_token = egg_mode::Token::new("", "");
+///# let access_token = egg_mode::Token::new("", "");
+///for name in egg_mode::user::search("rustlang", &con_token, &access_token)
+///                                  .map(|u| u.unwrap().response.screen_name).take(10) {
+///    println!("{}", name);
+///}
+///```
+///
+///You can even collect the results, letting you get one set of rate-limit information for the
+///entire search setup:
+///
+///```rust,no_run
+///# let con_token = egg_mode::Token::new("", "");
+///# let access_token = egg_mode::Token::new("", "");
+///use egg_mode::Response;
+///use egg_mode::user::TwitterUser;
+///use egg_mode::error::Error;
+///
+///let names: Result<Response<Vec<TwitterUser>>, Error> =
+///    egg_mode::user::search("rustlang", &con_token, &access_token).take(10).collect();
+///```
+///
+///`UserSearch` has a couple adaptors of its own that you can use before consuming it.
+///`with_page_size` will let you set how many users are pulled in with a single network call, and
+///`start_at_page` lets you start your search at a specific page. Calling either of these after
+///starting iteration will clear any current results.
+///
+///The type returned by the iterator is `Result<Response<TwitterUser>, Error>`, so network errors,
+///rate-limit errors and other issues are passed directly through to `next()`. This also means that
+///getting an error while iterating doesn't mean you're at the end of the list; you can wait for
+///the network connection to return or for the rate limit to refresh before trying again.
+///
+///## Manual paging
+///
+///While using the iterator implementation for this struct can be convenient, you also have the
+///option to manually pull the next page of results and jump to arbitrary pages without having to
+///iterate through the previous ones. This way you can be sure of where and when the network call
+///will occur.
+///
+///```rust,no_run
+///# let con_token = egg_mode::Token::new("", "");
+///# let access_token = egg_mode::Token::new("", "");
+///let mut search = egg_mode::user::search("rustlang", &con_token, &access_token).with_page_size(20);
+///let resp = search.call().unwrap();
+///
+///for user in resp.response {
+///    println!("{} (@{})", user.name, user.screen_name);
+///}
+///
+///search.page_num += 1;
+///let resp = search.call().unwrap();
+///
+///for user in resp.response {
+///    println!("{} (@{})", user.name, user.screen_name);
+///}
+///```
+#[must_use = "search iterators are lazy and do nothing unless consumed"]
 pub struct UserSearch<'a> {
     con_token: &'a auth::Token<'a>,
     access_token: &'a auth::Token<'a>,
@@ -385,6 +449,8 @@ impl<'a> Iterator for UserSearch<'a> {
                 return None;
             }
             else {
+                //in case the next call() errors, we don't want to skip a page
+                self.current_results = None;
                 self.page_num += 1;
             }
         }

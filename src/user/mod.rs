@@ -170,6 +170,13 @@ pub fn relation_lookup(accts: &[UserID], con_token: &auth::Token, access_token: 
 //---Cursored collections---
 
 ///Lookup users based on the given search term.
+///
+///This function returns an iterator over the `TwitterUser` objects returned by Twitter. Due to a
+///limitation in the API, you can only obtain the first 1000 search results. This method defaults
+///to returning 10 users in a single network call; the maximum is 20. See the [`UserSearch`][] page
+///for details.
+///
+///[`UserSearch`]: struct.UserSearch.html
 pub fn search<'a>(query: &'a str, con_token: &'a auth::Token, access_token: &'a auth::Token)
     -> UserSearch<'a>
 {
