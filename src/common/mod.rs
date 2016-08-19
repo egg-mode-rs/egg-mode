@@ -2,11 +2,9 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 mod response;
-mod cursor;
 mod from_json;
 
 pub use common::response::*;
-pub use common::cursor::*;
 pub use common::from_json::*;
 
 ///Convenience type used to hold parameters to an API call.

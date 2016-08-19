@@ -75,8 +75,9 @@ mod auth;
 pub mod error;
 pub mod user;
 pub mod entities;
+pub mod cursor;
 mod links;
 mod common;
 
 pub use auth::{Token, request_token, authorize_url, authenticate_url, access_token, verify_tokens};
-pub use common::{Response, UserID, Cursor, CursorIter};
+pub use common::{Response, UserID};

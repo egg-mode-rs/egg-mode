@@ -1,8 +1,13 @@
+//! Types and traits to navigate cursored collections.
+
 use std::collections::HashMap;
 use std::marker::PhantomData;
-use super::*;
+use rustc_serialize::json;
+use common::*;
 use auth;
 use error;
+use error::Error::InvalidResponse;
+use user;
 
 ///Trait to generalize over paginated views of API results.
 pub trait Cursor {
@@ -15,6 +20,96 @@ pub trait Cursor {
     fn next_cursor_id(&self) -> i64;
     ///Consumes the cursor and returns the collection of results from inside.
     fn into_inner(self) -> Vec<Self::Item>;
+}
+
+///Represents a single-page view into a list of users.
+///
+///This type is intended to be used in the background by [`CursorIter`][] to hold an intermediate
+///list of users to iterate over. See that struct's documentation for details.
+///
+///[`CursorIter`]: struct.CursorIter.html
+pub struct UserCursor {
+    ///Numeric reference to the previous page of results.
+    pub previous_cursor: i64,
+    ///Numeric reference to the next page of results.
+    pub next_cursor: i64,
+    ///The list of users in this page of results.
+    pub users: Vec<user::TwitterUser>,
+}
+
+impl FromJson for UserCursor {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse);
+        }
+
+        Ok(UserCursor {
+            previous_cursor: try!(field(input, "previous_cursor")),
+            next_cursor: try!(field(input, "next_cursor")),
+            users: try!(field(input, "users")),
+        })
+    }
+}
+
+impl Cursor for UserCursor {
+    type Item = user::TwitterUser;
+
+    fn previous_cursor_id(&self) -> i64 {
+        self.previous_cursor
+    }
+
+    fn next_cursor_id(&self) -> i64 {
+        self.next_cursor
+    }
+
+    fn into_inner(self) -> Vec<Self::Item> {
+        self.users
+    }
+}
+
+///Represents a single-page view into a list of user IDs.
+///
+///This type is intended to be used in the background by [`CursorIter`][] to hold an intermediate
+///list of users to iterate over. See that struct's documentation for details.
+///
+///[`CursorIter`]: struct.CursorIter.html
+pub struct IDCursor {
+    ///Numeric reference to the previous page of results.
+    pub previous_cursor: i64,
+    ///Numeric reference to the next page of results.
+    pub next_cursor: i64,
+    ///The list of user IDs in this page of results.
+    pub ids: Vec<i64>,
+}
+
+impl FromJson for IDCursor {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse);
+        }
+
+        Ok(IDCursor {
+            previous_cursor: try!(field(input, "previous_cursor")),
+            next_cursor: try!(field(input, "next_cursor")),
+            ids: try!(field(input, "ids")),
+        })
+    }
+}
+
+impl Cursor for IDCursor {
+    type Item = i64;
+
+    fn previous_cursor_id(&self) -> i64 {
+        self.previous_cursor
+    }
+
+    fn next_cursor_id(&self) -> i64 {
+        self.next_cursor
+    }
+
+    fn into_inner(self) -> Vec<Self::Item> {
+        self.ids
+    }
 }
 
 ///Represents a paginated list of results, such as the users who follow a specific user or the
