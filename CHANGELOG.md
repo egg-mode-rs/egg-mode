@@ -1,6 +1,6 @@
 # Changelog for egg-mode
 
-## [Pending]
+## [0.3.0] - 2016-08-19
 ### Added
 - New functions to load the muted users list (`mutes`, `mutes_ids`)
 - New functions to follow/unfollow a user (`follow`, `unfollow`)

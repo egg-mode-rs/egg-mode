@@ -13,7 +13,7 @@ To start using this library, put the following into your Cargo.toml:
 
 ```TOML
 [dependencies]
-egg-mode = "0.2.0"
+egg-mode = "0.3.0"
 ```
 
 ...and the following in your lib.rs or main.rs:
