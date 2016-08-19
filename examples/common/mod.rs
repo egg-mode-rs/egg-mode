@@ -37,7 +37,14 @@ impl Config {
             access_token = egg_mode::Token::new(iter.next().unwrap().to_string(),
                                                      iter.next().unwrap().to_string());
 
-            println!("Welcome back, {}!", username);
+            if let Err(err) = egg_mode::verify_tokens(&token, &access_token) {
+                println!("We've hit an error using your old tokens: {:?}", err);
+                println!("We'll have to reauthenticate before continuing.");
+                std::fs::remove_file("twitter_settings").unwrap();
+            }
+            else {
+                println!("Welcome back, {}!", username);
+            }
         }
         else {
             let request_token = egg_mode::request_token(&token, "oob").unwrap();
@@ -69,11 +76,17 @@ impl Config {
             println!("Welcome, {}, let's get this show on the road!", username);
         }
 
-        Config {
-            con_token: token,
-            access_token: access_token,
-            user_id: user_id,
-            screen_name: username,
+        //TODO: Is there a better way to query whether a file exists?
+        if std::fs::metadata("twitter_settings").is_ok() {
+            Config {
+                con_token: token,
+                access_token: access_token,
+                user_id: user_id,
+                screen_name: username,
+            }
+        }
+        else {
+            Self::load()
         }
     }
 }
