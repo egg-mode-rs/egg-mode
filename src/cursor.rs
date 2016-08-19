@@ -1,4 +1,9 @@
 //! Types and traits to navigate cursored collections.
+//!
+//! Much of this module can be considered an implementation detail; the main intended entry point
+//! to this code is `CursorIter`, and that can just be used as an iterator to ignore the rest of
+//! this module. The rest of it is available to make sure consumers of the API can understand
+//! precisely what types come out of functions that return `CursorIter`.
 
 use std::collections::HashMap;
 use std::marker::PhantomData;
@@ -10,6 +15,12 @@ use error::Error::InvalidResponse;
 use user;
 
 ///Trait to generalize over paginated views of API results.
+///
+///Types that implement Cursor are used as intermediate steps in [`CursorIter`][]'s Iterator
+///implementation, to properly load the data from Twitter. Most of the time you don't need to deal
+///with Cursor structs directly, but you can get them via `CursorIter`'s manual paging functionality.
+///
+///[`CursorIter`]: struct.CursorIter.html
 pub trait Cursor {
     ///What type is being returned by the API call?
     type Item;
@@ -263,6 +274,9 @@ impl<'a, T> CursorIter<'a, T>
     }
 
     ///Creates a new instance of CursorIter, with the given parameters and empty initial results.
+    ///
+    ///This is essentially an internal infrastructure function, not meant to be used from consumer
+    ///code.
     pub fn new(link: &'static str, con_token: &'a auth::Token, access_token: &'a auth::Token,
                user_id: Option<UserID<'a>>, page_size: Option<i32>) -> CursorIter<'a, T> {
         CursorIter {
