@@ -1,11 +1,53 @@
 //! Structs and methods for pulling user information from Twitter.
 //!
-//! All the functions in this module eventually return either a [TwitterUser][] struct or the
-//! numeric ID of one. The TwitterUser struct itself contains many fields, relating to the user's
-//! profile information and a handful of UI settings available to them. See the struct's
-//! documention for details.
+//! Everything in here acts on users in some way, whether looking up user information, finding the
+//! relations between two users, or actions like following or blocking a user.
 //!
-//! [TwitterUser]: struct.TwitterUser.html
+//! ## Types
+//!
+//! - `Relationship`/`RelationSource`/`RelationTarget`: returned by `relation`, these types
+//!   (`Relationship` contains the other two) show the ways two accounts relate to each other.
+//! - `RelationLookup`/`Connection`: returned as part of a collection by `relation_lookup`, these
+//!   types (`RelationLookup` contains a `Vec<Connection>`) shows the ways the authenticated user
+//!   relates to a specific account.
+//! - `TwitterUser`/`UserEntities`/`UserEntityDetail`: returned by many functions in this module,
+//!   these types (`TwitterUser` contains the other two) describe the content of a user's profile,
+//!   and a handful of settings relating to how their profile is displayed.
+//! - `UserSearch`: returned by `search`, this is an iterator over search results.
+//!
+//! ## Functions
+//!
+//! ### User actions
+//!
+//! These functions perform actions to the user's account. Their use requires that your application
+//! request write access to authenticated accounts.
+//!
+//! - `block`/`report_spam`/`unblock`
+//! - `follow`/`unfollow`/`update_follow`
+//! - `mute`/`unmute`
+//!
+//! ### Direct lookup
+//!
+//! These functions return single users, or groups of users without having to iterate over the
+//! results.
+//!
+//! - `show`
+//! - `lookup`/`lookup_ids`/`lookup_names`
+//! - `friends_no_retweets`
+//! - `relation`/`relation_lookup`
+//!
+//! ### Cursored lookup
+//!
+//! These functions imply that they can return more entries than Twitter is willing to return at
+//! once, so they're delivered in pages. This library takes those paginated results and wraps an
+//! iterator around them that loads the pages as-needed.
+//!
+//! - `search`
+//! - `friends_of`/`friends_ids`
+//! - `followers_of`/`followers_ids`
+//! - `blocks`/`blocks_ids`
+//! - `mutes`/`mutes_ids`
+//! - `incoming_requests`/`outgoing_requests`
 
 use std::borrow::Borrow;
 use std::collections::HashMap;
@@ -87,6 +129,17 @@ pub fn show<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_to
     parse_response(&mut resp)
 }
 
+///Lookup the user IDs that the authenticating user has disabled retweets from.
+///
+///Use `update_follow` to enable/disable viewing retweets from a specific user.
+pub fn friends_no_retweets<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> Result<Response<Vec<i64>>, error::Error>
+{
+    let mut resp = try!(auth::get(links::users::FRIENDS_NO_RETWEETS, con_token, access_token, None));
+
+    parse_response(&mut resp)
+}
+
 ///Lookup relationship settings between two arbitrary users.
 pub fn relation<'a, F, T>(from: F, to: T, con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<Relationship>, error::Error>
@@ -104,17 +157,6 @@ pub fn relation<'a, F, T>(from: F, to: T, con_token: &auth::Token, access_token:
     };
 
     let mut resp = try!(auth::get(links::users::FRIENDSHIP_SHOW, con_token, access_token, Some(&params)));
-
-    parse_response(&mut resp)
-}
-
-///Lookup the user IDs that the authenticating user has disabled retweets from.
-///
-///Use `update_follow` to enable/disable viewing retweets from a specific user.
-pub fn friends_no_retweets<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token)
-    -> Result<Response<Vec<i64>>, error::Error>
-{
-    let mut resp = try!(auth::get(links::users::FRIENDS_NO_RETWEETS, con_token, access_token, None));
 
     parse_response(&mut resp)
 }
