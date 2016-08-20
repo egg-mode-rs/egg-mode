@@ -64,6 +64,7 @@ pub use user::structs::*;
 //---Groups of users---
 
 ///Lookup a set of Twitter users by their numerical ID.
+#[deprecated(note = "you can call lookup with &[i64] now")]
 pub fn lookup_ids(ids: &[i64], con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<Vec<TwitterUser>>, error::Error>
 {
@@ -77,6 +78,7 @@ pub fn lookup_ids(ids: &[i64], con_token: &auth::Token, access_token: &auth::Tok
 }
 
 ///Lookup a set of Twitter users by their screen name.
+#[deprecated(note = "you can call lookup with &[&str] and &[String] now")]
 pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<Vec<TwitterUser>>, error::Error>
 {
@@ -90,19 +92,20 @@ pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access
 }
 
 ///Lookup a set of Twitter users by both ID and screen name, as applicable.
-pub fn lookup(accts: &[UserID], con_token: &auth::Token, access_token: &auth::Token)
+pub fn lookup<'a, T: 'a>(accts: &'a [T], con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<Vec<TwitterUser>>, error::Error>
+    where &'a T: Into<UserID<'a>>
 {
     let mut params = HashMap::new();
     let id_param = accts.iter()
-                        .filter_map(|x| match *x {
+                        .filter_map(|x| match x.into() {
                             UserID::ID(id) => Some(id.to_string()),
                             _ => None,
                         })
                         .collect::<Vec<_>>()
                         .join(",");
     let name_param = accts.iter()
-                          .filter_map(|x| match *x {
+                          .filter_map(|x| match x.into() {
                               UserID::ScreenName(name) => Some(name),
                               _ => None,
                           })
