@@ -33,12 +33,6 @@ pub struct ResponseIter<T> {
     resp_iter: vec::IntoIter<T>,
 }
 
-impl<T> ResponseIter<T> {
-    pub fn len(&self) -> usize {
-        self.resp_iter.len()
-    }
-}
-
 impl<T> Iterator for ResponseIter<T> {
     type Item = Response<T>;
 
@@ -54,6 +48,32 @@ impl<T> Iterator for ResponseIter<T> {
         else {
             None
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.resp_iter.size_hint()
+    }
+}
+
+impl<T> DoubleEndedIterator for ResponseIter<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if let Some(resp) = self.resp_iter.next_back() {
+            Some(Response {
+                rate_limit: self.rate_limit,
+                rate_limit_remaining: self.rate_limit_remaining,
+                rate_limit_reset: self.rate_limit_reset,
+                response: resp,
+            })
+        }
+        else {
+            None
+        }
+    }
+}
+
+impl<T> ExactSizeIterator for ResponseIter<T> {
+    fn len(&self) -> usize {
+        self.resp_iter.len()
     }
 }
 
