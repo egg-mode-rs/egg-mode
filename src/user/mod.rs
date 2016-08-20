@@ -91,7 +91,45 @@ pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access
     parse_response(&mut resp)
 }
 
-///Lookup a set of Twitter users by both ID and screen name, as applicable.
+///Lookup a set of Twitter users by either ID and screen name, as applicable.
+///
+///This function is set up so it can be called with any number of slice types; whether just IDs,
+///just screen names, or even a mix of both (by using &[UserID] directly).
+///
+///## Examples
+///
+///```rust,no_run
+///# let con_token = egg_mode::Token::new("", "");
+///# let access_token = egg_mode::Token::new("", "");
+///let mut list: Vec<i64> = Vec::new();
+///
+///list.push(1234);
+///list.push(2345);
+///
+///let users = egg_mode::user::lookup(&list, &con_token, &access_token).unwrap();
+///```
+///
+///```rust,no_run
+///# let con_token = egg_mode::Token::new("", "");
+///# let access_token = egg_mode::Token::new("", "");
+///let mut list: Vec<String> = Vec::new();
+///
+///list.push("rustlang".into());
+///list.push("ThisWeekInRust".into());
+///
+///let users = egg_mode::user::lookup(&list, &con_token, &access_token).unwrap();
+///```
+///
+///```rust,no_run
+///# let con_token = egg_mode::Token::new("", "");
+///# let access_token = egg_mode::Token::new("", "");
+///let mut list: Vec<egg_mode::UserID> = Vec::new();
+///
+///list.push(1234.into());
+///list.push("rustlang".into());
+///
+///let users = egg_mode::user::lookup(&list, &con_token, &access_token).unwrap();
+///```
 pub fn lookup<'a, T: 'a>(accts: &'a [T], con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<Vec<TwitterUser>>, error::Error>
     where &'a T: Into<UserID<'a>>
