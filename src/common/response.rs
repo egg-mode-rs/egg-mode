@@ -103,9 +103,17 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
         };
 
         for item in iter {
-            resp.rate_limit = item.rate_limit;
-            resp.rate_limit_remaining = item.rate_limit_remaining;
-            resp.rate_limit_reset = item.rate_limit_reset;
+            if item.rate_limit_reset > resp.rate_limit_reset {
+                resp.rate_limit = item.rate_limit;
+                resp.rate_limit_remaining = item.rate_limit_remaining;
+                resp.rate_limit_reset = item.rate_limit_reset;
+            }
+            else if (item.rate_limit_reset == resp.rate_limit_reset) &&
+                    (item.rate_limit_remaining < resp.rate_limit_remaining) {
+                resp.rate_limit = item.rate_limit;
+                resp.rate_limit_remaining = item.rate_limit_remaining;
+                resp.rate_limit_reset = item.rate_limit_reset;
+            }
             resp.response.push(item.response);
         }
 
