@@ -1,3 +1,6 @@
+//! Infrastructure types related to packaging rate-limit information alongside responses from
+//! Twitter.
+
 use std::vec;
 use std::iter::FromIterator;
 use std::io::Read;

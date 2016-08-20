@@ -1,3 +1,9 @@
+//! Set of structs and methods that act as a sort of internal prelude.
+//!
+//! The elements available in this module and its children are fairly basic building blocks that
+//! the other modules all glob-import to make available as a common language. A lot of
+//! infrastructure code goes in here.
+
 use std::borrow::Cow;
 use std::collections::HashMap;
 

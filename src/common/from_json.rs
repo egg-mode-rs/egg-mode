@@ -1,3 +1,5 @@
+//! Infrastructure trait and related functions for deserializing data from Twitter.
+
 use rustc_serialize::json;
 use error;
 use error::Error::{InvalidResponse, MissingValue};
