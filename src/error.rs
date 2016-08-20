@@ -78,7 +78,7 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             Error::InvalidResponse => write!(f, "Invalid response received"),
-            Error::MissingValue(ref val) => write!(f, "Value missing from response: {}", val),
+            Error::MissingValue(val) => write!(f, "Value missing from response: {}", val),
             Error::TwitterError(ref err) => write!(f, "Error(s) returned from Twitter: {}", err),
             Error::BadStatus(ref val) => write!(f, "Error status received: {}", val),
             Error::NetError(ref err) => write!(f, "Network error: {}", err),

@@ -157,7 +157,7 @@ impl Cursor for IDCursor {
 ///`start_at_page` lets you start your search at a specific page. Calling either of these after
 ///starting iteration will clear any current results.
 ///
-///(A note about `with_page_size`/`page_size`: While the CursorIter struct always has this method
+///(A note about `with_page_size`/`page_size`: While the `CursorIter` struct always has this method
 ///and field available, not every cursored call supports changing page size. Check the individual
 ///method documentation for notes on what page sizes are allowed.)
 ///

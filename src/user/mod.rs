@@ -95,15 +95,15 @@ pub fn lookup(accts: &[UserID], con_token: &auth::Token, access_token: &auth::To
 {
     let mut params = HashMap::new();
     let id_param = accts.iter()
-                        .filter_map(|x| match x {
-                            &UserID::ID(id) => Some(id.to_string()),
+                        .filter_map(|x| match *x {
+                            UserID::ID(id) => Some(id.to_string()),
                             _ => None,
                         })
                         .collect::<Vec<_>>()
                         .join(",");
     let name_param = accts.iter()
-                          .filter_map(|x| match x {
-                              &UserID::ScreenName(name) => Some(name),
+                          .filter_map(|x| match *x {
+                              UserID::ScreenName(name) => Some(name),
                               _ => None,
                           })
                           .collect::<Vec<_>>()
@@ -167,15 +167,15 @@ pub fn relation_lookup(accts: &[UserID], con_token: &auth::Token, access_token: 
 {
     let mut params = HashMap::new();
     let id_param = accts.iter()
-                        .filter_map(|x| match x {
-                            &UserID::ID(id) => Some(id.to_string()),
+                        .filter_map(|x| match *x {
+                            UserID::ID(id) => Some(id.to_string()),
                             _ => None,
                         })
                         .collect::<Vec<_>>()
                         .join(",");
     let name_param = accts.iter()
-                          .filter_map(|x| match x {
-                              &UserID::ScreenName(name) => Some(name),
+                          .filter_map(|x| match *x {
+                              UserID::ScreenName(name) => Some(name),
                               _ => None,
                           })
                           .collect::<Vec<_>>()

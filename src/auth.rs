@@ -1,7 +1,6 @@
 use std;
 use std::error::Error;
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::time::{UNIX_EPOCH, SystemTime};
 use url::percent_encoding::{EncodeSet, utf8_percent_encode};
 use hyper;
@@ -25,10 +24,8 @@ struct TwitterEncodeSet;
 impl EncodeSet for TwitterEncodeSet {
     fn contains(&self, byte: u8) -> bool {
         match byte {
-            b'a' ... b'z' => false,
-            b'A' ... b'Z' => false,
-            b'0' ... b'9' => false,
-            b'-' | b'.' | b'_' | b'~' => false,
+            b'a' ... b'z' | b'A' ... b'Z' | b'0' ... b'9'
+                | b'-' | b'.' | b'_' | b'~' => false,
             _ => true
         }
     }
@@ -170,7 +167,7 @@ fn sign(header: TwitterOAuth,
         con_token: &Token,
         access_token: Option<&Token>) -> TwitterOAuth {
     let query_string = {
-        let mut sig_params = params.map(|p| p.clone()).unwrap_or(HashMap::new());
+        let mut sig_params = params.cloned().unwrap_or_default();
 
         add_param(&mut sig_params, "oauth_consumer_key", header.consumer_key.as_str());
         add_param(&mut sig_params, "oauth_nonce", header.nonce.as_str());

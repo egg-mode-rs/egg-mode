@@ -116,9 +116,9 @@ pub fn parse_response<T: FromJson>(resp: &mut HyperResponse) -> Result<Response<
     let resp_str = try!(response_raw(resp));
 
     Ok(Response {
-        rate_limit: resp.headers.get::<XRateLimitLimit>().map(|h| h.0).unwrap_or(-1),
-        rate_limit_remaining: resp.headers.get::<XRateLimitRemaining>().map(|h| h.0).unwrap_or(-1),
-        rate_limit_reset: resp.headers.get::<XRateLimitReset>().map(|h| h.0).unwrap_or(-1),
+        rate_limit: resp.headers.get::<XRateLimitLimit>().map_or(-1, |h| h.0),
+        rate_limit_remaining: resp.headers.get::<XRateLimitRemaining>().map_or(-1, |h| h.0),
+        rate_limit_reset: resp.headers.get::<XRateLimitReset>().map_or(-1, |h| h.0),
         response: try!(T::from_str(&resp_str)),
     })
 }

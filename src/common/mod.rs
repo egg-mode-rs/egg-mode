@@ -10,7 +10,7 @@ pub use common::from_json::*;
 ///Convenience type used to hold parameters to an API call.
 pub type ParamList<'a> = HashMap<Cow<'a, str>, Cow<'a, str>>;
 
-///Convenience function to add a key/value parameter to a ParamList.
+///Convenience function to add a key/value parameter to a `ParamList`.
 pub fn add_param<'a, K, V>(list: &mut ParamList<'a>, key: K, value: V) -> Option<Cow<'a, str>>
     where K: Into<Cow<'a, str>>,
           V: Into<Cow<'a, str>>
@@ -19,9 +19,9 @@ pub fn add_param<'a, K, V>(list: &mut ParamList<'a>, key: K, value: V) -> Option
 }
 
 pub fn add_name_param<'a>(list: &mut ParamList<'a>, id: &UserID<'a>) -> Option<Cow<'a, str>> {
-    match id {
-        &UserID::ID(id) => add_param(list, "user_id", id.to_string()),
-        &UserID::ScreenName(name) => add_param(list, "screen_name", name),
+    match *id {
+        UserID::ID(id) => add_param(list, "user_id", id.to_string()),
+        UserID::ScreenName(name) => add_param(list, "screen_name", name),
     }
 }
 
