@@ -80,4 +80,4 @@ mod links;
 mod common;
 
 pub use auth::{Token, request_token, authorize_url, authenticate_url, access_token, verify_tokens};
-pub use common::{Response, UserID};
+pub use common::Response;

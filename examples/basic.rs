@@ -10,7 +10,7 @@ fn main() {
     println!("");
     println!("Heterogeneous multi-user lookup:");
 
-    let mut users: Vec<egg_mode::UserID> = vec![];
+    let mut users: Vec<egg_mode::user::UserID> = vec![];
     users.push(config.user_id.into());
     users.push("SwiftOnSecurity".into());
 

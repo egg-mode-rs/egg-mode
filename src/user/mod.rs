@@ -94,7 +94,7 @@ pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access
 ///Lookup a set of Twitter users by either ID and screen name, as applicable.
 ///
 ///This function is set up so it can be called with any number of slice types; whether just IDs,
-///just screen names, or even a mix of both (by using &[UserID] directly).
+///just screen names, or even a mix of both (by using `&[UserID]` directly).
 ///
 ///## Examples
 ///
@@ -123,7 +123,7 @@ pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access
 ///```rust,no_run
 ///# let con_token = egg_mode::Token::new("", "");
 ///# let access_token = egg_mode::Token::new("", "");
-///let mut list: Vec<egg_mode::UserID> = Vec::new();
+///let mut list: Vec<egg_mode::user::UserID> = Vec::new();
 ///
 ///list.push(1234.into());
 ///list.push("rustlang".into());

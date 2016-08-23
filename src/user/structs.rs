@@ -7,6 +7,45 @@ use error;
 use error::Error::InvalidResponse;
 use links;
 
+///Convenience enum to generalize between referring to an account by numeric ID or by screen name.
+#[derive(Debug, Clone)]
+pub enum UserID<'a> {
+    ///Referring via the account's numeric ID.
+    ID(i64),
+    ///Referring via the account's screen name.
+    ScreenName(&'a str),
+}
+
+impl<'a> From<i64> for UserID<'a> {
+    fn from(id: i64) -> UserID<'a> {
+        UserID::ID(id)
+    }
+}
+
+impl<'a> From<&'a i64> for UserID<'a> {
+    fn from(id: &'a i64) -> UserID<'a> {
+        UserID::ID(*id)
+    }
+}
+
+impl<'a> From<&'a str> for UserID<'a> {
+    fn from(name: &'a str) -> UserID<'a> {
+        UserID::ScreenName(name)
+    }
+}
+
+impl<'a> From<&'a String> for UserID<'a> {
+    fn from(name: &'a String) -> UserID<'a> {
+        UserID::ScreenName(name.as_str())
+    }
+}
+
+impl<'a> From<&'a UserID<'a>> for UserID<'a> {
+    fn from(id: &'a UserID<'a>) -> UserID<'a> {
+        id.clone()
+    }
+}
+
 /// Represents a Twitter user.
 ///
 /// Field-level documentation is mostly ripped wholesale from [Twitter's user

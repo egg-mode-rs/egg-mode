@@ -6,6 +6,7 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use user;
 
 mod response;
 mod from_json;
@@ -24,48 +25,9 @@ pub fn add_param<'a, K, V>(list: &mut ParamList<'a>, key: K, value: V) -> Option
     list.insert(key.into(), value.into())
 }
 
-pub fn add_name_param<'a>(list: &mut ParamList<'a>, id: &UserID<'a>) -> Option<Cow<'a, str>> {
+pub fn add_name_param<'a>(list: &mut ParamList<'a>, id: &user::UserID<'a>) -> Option<Cow<'a, str>> {
     match *id {
-        UserID::ID(id) => add_param(list, "user_id", id.to_string()),
-        UserID::ScreenName(name) => add_param(list, "screen_name", name),
-    }
-}
-
-///Convenience enum to generalize between referring to an account by numeric ID or by screen name.
-#[derive(Debug, Clone)]
-pub enum UserID<'a> {
-    ///Referring via the account's numeric ID.
-    ID(i64),
-    ///Referring via the account's screen name.
-    ScreenName(&'a str),
-}
-
-impl<'a> From<i64> for UserID<'a> {
-    fn from(id: i64) -> UserID<'a> {
-        UserID::ID(id)
-    }
-}
-
-impl<'a> From<&'a i64> for UserID<'a> {
-    fn from(id: &'a i64) -> UserID<'a> {
-        UserID::ID(*id)
-    }
-}
-
-impl<'a> From<&'a str> for UserID<'a> {
-    fn from(name: &'a str) -> UserID<'a> {
-        UserID::ScreenName(name)
-    }
-}
-
-impl<'a> From<&'a String> for UserID<'a> {
-    fn from(name: &'a String) -> UserID<'a> {
-        UserID::ScreenName(name.as_str())
-    }
-}
-
-impl<'a> From<&'a UserID<'a>> for UserID<'a> {
-    fn from(id: &'a UserID<'a>) -> UserID<'a> {
-        id.clone()
+        user::UserID::ID(id) => add_param(list, "user_id", id.to_string()),
+        user::UserID::ScreenName(name) => add_param(list, "screen_name", name),
     }
 }

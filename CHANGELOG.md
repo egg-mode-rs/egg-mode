@@ -1,5 +1,10 @@
 # Changelog for egg-mode
 
+## Pending
+### Changed
+- Moved `UserID` into the user module
+  - This is a **breaking change** if you used the type directly (like in the lookup example)
+
 ## [0.3.0] - 2016-08-19
 ### Added
 - New functions to load the muted users list (`mutes`, `mutes_ids`)

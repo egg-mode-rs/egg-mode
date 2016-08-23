@@ -200,7 +200,7 @@ pub struct CursorIter<'a, T>
     link: &'static str,
     con_token: &'a auth::Token<'a>,
     access_token: &'a auth::Token<'a>,
-    user_id: Option<UserID<'a>>,
+    user_id: Option<user::UserID<'a>>,
     ///The number of results returned in one network call.
     ///
     ///Certain calls set their own minimums and maximums for what this value can be. Furthermore,
@@ -278,7 +278,7 @@ impl<'a, T> CursorIter<'a, T>
     ///This is essentially an internal infrastructure function, not meant to be used from consumer
     ///code.
     pub fn new(link: &'static str, con_token: &'a auth::Token, access_token: &'a auth::Token,
-               user_id: Option<UserID<'a>>, page_size: Option<i32>) -> CursorIter<'a, T> {
+               user_id: Option<user::UserID<'a>>, page_size: Option<i32>) -> CursorIter<'a, T> {
         CursorIter {
             link: link,
             con_token: con_token,
