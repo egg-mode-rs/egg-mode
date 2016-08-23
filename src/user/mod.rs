@@ -205,19 +205,20 @@ pub fn relation<'a, F, T>(from: F, to: T, con_token: &auth::Token, access_token:
 }
 
 ///Lookup the relations between the authenticated user and the given accounts.
-pub fn relation_lookup(accts: &[UserID], con_token: &auth::Token, access_token: &auth::Token)
+pub fn relation_lookup<'a, T: 'a>(accts: &'a [T], con_token: &auth::Token, access_token: &auth::Token)
     -> Result<Response<Vec<RelationLookup>>, error::Error>
+    where &'a T: Into<UserID<'a>>
 {
     let mut params = HashMap::new();
     let id_param = accts.iter()
-                        .filter_map(|x| match *x {
+                        .filter_map(|x| match x.into() {
                             UserID::ID(id) => Some(id.to_string()),
                             _ => None,
                         })
                         .collect::<Vec<_>>()
                         .join(",");
     let name_param = accts.iter()
-                          .filter_map(|x| match *x {
+                          .filter_map(|x| match x.into() {
                               UserID::ScreenName(name) => Some(name),
                               _ => None,
                           })
