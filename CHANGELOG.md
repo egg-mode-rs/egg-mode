@@ -4,6 +4,7 @@
 ### Changed
 - Moved `UserID` into the user module
   - This is a **breaking change** if you used the type directly (like in the lookup example)
+- Changed the signature of `user::relation_lookup` to match `user::lookup`
 
 ## [0.3.0] - 2016-08-19
 ### Added
