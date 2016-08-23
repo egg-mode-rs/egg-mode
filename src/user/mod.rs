@@ -5,6 +5,8 @@
 //!
 //! ## Types
 //!
+//! - `UserID`: used as a generic input to many functions, this enum allows you to refer to a user
+//!   by a numeric ID or by their screen name.
 //! - `Relationship`/`RelationSource`/`RelationTarget`: returned by `relation`, these types
 //!   (`Relationship` contains the other two) show the ways two accounts relate to each other.
 //! - `RelationLookup`/`Connection`: returned as part of a collection by `relation_lookup`, these
