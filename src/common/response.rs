@@ -130,7 +130,17 @@ pub fn response_raw(resp: &mut HyperResponse) -> Result<String, error::Error> {
     try!(resp.read_to_string(&mut full_resp));
 
     if let Ok(err) = json::decode::<TwitterErrors>(&full_resp) {
-        return Err(TwitterError(err));
+        if err.errors.iter().any(|e| e.code == 88) {
+            if resp.headers.has::<XRateLimitReset>() {
+                return Err(RateLimit(resp.headers.get::<XRateLimitReset>().map(|h| h.0).unwrap()));
+            }
+            else {
+                return Err(TwitterError(err));
+            }
+        }
+        else {
+            return Err(TwitterError(err));
+        }
     }
 
     match resp.status {

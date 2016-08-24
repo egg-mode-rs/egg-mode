@@ -10,6 +10,8 @@
   - This is a **breaking change** if you used the type directly (like in the lookup example)
 - Changed the signature of `user::relation_lookup` to match `user::lookup`
 - New field in `user::TwitterUser`: `status`
+- New error enum, `RateLimit(i32)`, telling you that you hit your rate limit
+  and when it will lapse
 
 ## [0.3.0] - 2016-08-19
 ### Added
