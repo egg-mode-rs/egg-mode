@@ -12,6 +12,7 @@
 - New field in `user::TwitterUser`: `status`
 - New error enum, `RateLimit(i32)`, telling you that you hit your rate limit
   and when it will lapse
+  - This is a **breaking change** if you were exhaustively matching on these before
 
 ## [0.3.0] - 2016-08-19
 ### Added
