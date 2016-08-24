@@ -144,7 +144,7 @@ pub fn response_raw(resp: &mut HyperResponse) -> Result<String, error::Error> {
     }
 
     match resp.status {
-        StatusCode::Ok | StatusCode::NotModified => (),
+        StatusCode::Ok => (),
         _ => return Err(BadStatus(resp.status)),
     }
 
