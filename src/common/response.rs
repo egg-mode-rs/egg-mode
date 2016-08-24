@@ -153,7 +153,7 @@ pub fn response_raw(resp: &mut HyperResponse) -> Result<String, error::Error> {
 
 ///With the given response struct, parse it into the desired format and
 ///return it along with rate limit information.
-pub fn parse_response<T: FromJson>(resp: &mut HyperResponse) -> Result<Response<T>, error::Error> {
+pub fn parse_response<T: FromJson>(resp: &mut HyperResponse) -> ::common::WebResponse<T> {
     let resp_str = try!(response_raw(resp));
 
     Ok(Response {

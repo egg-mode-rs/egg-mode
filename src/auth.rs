@@ -414,7 +414,7 @@ pub fn access_token<S: Into<String>>(con_token: &Token,
 
 ///If the given tokens are valid, return the user information for the authenticated user.
 pub fn verify_tokens(con_token: &Token, access_token: &Token)
-    -> Result<Response<super::user::TwitterUser>, error::Error>
+    -> WebResponse<::user::TwitterUser>
 {
     let mut resp = try!(get(links::auth::VERIFY_CREDENTIALS, con_token, access_token, None));
 

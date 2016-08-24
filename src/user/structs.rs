@@ -460,7 +460,7 @@ impl<'a> UserSearch<'a> {
     ///This will automatically be called if you use the `UserSearch` as an iterator. This method is
     ///made public for convenience if you want to manage the pagination yourself. Remember to
     ///change `page_num` between calls.
-    pub fn call(&self) -> Result<Response<Vec<TwitterUser>>, error::Error> {
+    pub fn call(&self) -> WebResponse<Vec<TwitterUser>> {
         let mut params = HashMap::new();
         add_param(&mut params, "q", self.query);
         add_param(&mut params, "page", self.page_num.to_string());
@@ -485,7 +485,7 @@ impl<'a> UserSearch<'a> {
 }
 
 impl<'a> Iterator for UserSearch<'a> {
-    type Item = Result<Response<TwitterUser>, error::Error>;
+    type Item = WebResponse<TwitterUser>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(ref mut results) = self.current_results {

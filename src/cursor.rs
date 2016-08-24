@@ -258,7 +258,7 @@ impl<'a, T> CursorIter<'a, T>
     ///
     ///This is intended to be used as part of this struct's Iterator implementation. It is provided
     ///as a convenience for those who wish to manage network calls and pagination manually.
-    pub fn call(&self) -> Result<Response<T>, error::Error> {
+    pub fn call(&self) -> WebResponse<T> {
         let mut params = HashMap::new();
         if let Some(ref id) = self.user_id {
             add_name_param(&mut params, id);
@@ -296,7 +296,7 @@ impl<'a, T> CursorIter<'a, T>
 impl<'a, T> Iterator for CursorIter<'a, T>
     where T: Cursor + FromJson
 {
-    type Item = Result<Response<T::Item>, error::Error>;
+    type Item = WebResponse<T::Item>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(ref mut results) = self.iter {

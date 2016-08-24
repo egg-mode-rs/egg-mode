@@ -54,7 +54,6 @@
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use common::*;
-use error;
 use auth;
 use links;
 use cursor;
@@ -68,7 +67,7 @@ pub use user::structs::*;
 ///Lookup a set of Twitter users by their numerical ID.
 #[deprecated(note = "you can call lookup with &[i64] now")]
 pub fn lookup_ids(ids: &[i64], con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<Vec<TwitterUser>>, error::Error>
+    -> WebResponse<Vec<TwitterUser>>
 {
     let mut params = HashMap::new();
     let id_param = ids.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
@@ -82,7 +81,7 @@ pub fn lookup_ids(ids: &[i64], con_token: &auth::Token, access_token: &auth::Tok
 ///Lookup a set of Twitter users by their screen name.
 #[deprecated(note = "you can call lookup with &[&str] and &[String] now")]
 pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<Vec<TwitterUser>>, error::Error>
+    -> WebResponse<Vec<TwitterUser>>
 {
     let mut params = HashMap::new();
     let id_param = names.join(",");
@@ -133,7 +132,7 @@ pub fn lookup_names<S: Borrow<str>>(names: &[S], con_token: &auth::Token, access
 ///let users = egg_mode::user::lookup(&list, &con_token, &access_token).unwrap();
 ///```
 pub fn lookup<'a, T: 'a>(accts: &'a [T], con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<Vec<TwitterUser>>, error::Error>
+    -> WebResponse<Vec<TwitterUser>>
     where &'a T: Into<UserID<'a>>
 {
     let mut params = HashMap::new();
@@ -162,7 +161,7 @@ pub fn lookup<'a, T: 'a>(accts: &'a [T], con_token: &auth::Token, access_token: 
 
 ///Lookup user information for a single user.
 pub fn show<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<TwitterUser>, error::Error>
+    -> WebResponse<TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
@@ -176,7 +175,7 @@ pub fn show<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_to
 ///
 ///Use `update_follow` to enable/disable viewing retweets from a specific user.
 pub fn friends_no_retweets<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token)
-    -> Result<Response<Vec<i64>>, error::Error>
+    -> WebResponse<Vec<i64>>
 {
     let mut resp = try!(auth::get(links::users::FRIENDS_NO_RETWEETS, con_token, access_token, None));
 
@@ -185,7 +184,7 @@ pub fn friends_no_retweets<'a>(con_token: &'a auth::Token, access_token: &'a aut
 
 ///Lookup relationship settings between two arbitrary users.
 pub fn relation<'a, F, T>(from: F, to: T, con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<Relationship>, error::Error>
+    -> WebResponse<Relationship>
     where F: Into<UserID<'a>>,
           T: Into<UserID<'a>>
 {
@@ -206,7 +205,7 @@ pub fn relation<'a, F, T>(from: F, to: T, con_token: &auth::Token, access_token:
 
 ///Lookup the relations between the authenticated user and the given accounts.
 pub fn relation_lookup<'a, T: 'a>(accts: &'a [T], con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<Vec<RelationLookup>>, error::Error>
+    -> WebResponse<Vec<RelationLookup>>
     where &'a T: Into<UserID<'a>>
 {
     let mut params = HashMap::new();
@@ -375,7 +374,7 @@ pub fn outgoing_requests<'a>(con_token: &'a auth::Token, access_token: &'a auth:
 ///Calling this with an account the user already follows may return an error, or ("for performance
 ///reasons") may return success without changing any account settings.
 pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool, con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<TwitterUser>, error::Error>
+    -> WebResponse<TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
@@ -393,7 +392,7 @@ pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool, con_token: 
 ///Calling this with an account the user doesn't follow will return success, even though it doesn't
 ///change any settings.
 pub fn unfollow<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<TwitterUser>, error::Error>
+    -> WebResponse<TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
@@ -411,7 +410,7 @@ pub fn unfollow<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, acces
 ///if you had called `relation` between the authenticated user and the given user.
 pub fn update_follow<'a, T>(acct: T, notifications: Option<bool>, retweets: Option<bool>,
                             con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<Relationship>, error::Error>
+    -> WebResponse<Relationship>
     where T: Into<UserID<'a>>
 {
     let mut params = HashMap::new();
@@ -432,7 +431,7 @@ pub fn update_follow<'a, T>(acct: T, notifications: Option<bool>, retweets: Opti
 ///
 ///Upon success, this function returns `Ok` with the given user.
 pub fn block<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<TwitterUser>, error::Error>
+    -> WebResponse<TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
@@ -446,7 +445,7 @@ pub fn block<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_t
 ///
 ///Upon success, this function returns `Ok` with the given user.
 pub fn report_spam<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<TwitterUser>, error::Error>
+    -> WebResponse<TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
@@ -460,7 +459,7 @@ pub fn report_spam<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, ac
 ///
 ///Upon success, this function returns `Ok` with the given user.
 pub fn unblock<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<TwitterUser>, error::Error>
+    -> WebResponse<TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
@@ -474,7 +473,7 @@ pub fn unblock<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access
 ///
 ///Upon success, this function returns `Ok` with the given user.
 pub fn mute<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<TwitterUser>, error::Error>
+    -> WebResponse<TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
@@ -488,7 +487,7 @@ pub fn mute<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_to
 ///
 ///Upon success, this function returns `Ok` with the given user.
 pub fn unmute<'a, T: Into<UserID<'a>>>(acct: T, con_token: &auth::Token, access_token: &auth::Token)
-    -> Result<Response<TwitterUser>, error::Error>
+    -> WebResponse<TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());

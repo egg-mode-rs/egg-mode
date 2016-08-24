@@ -31,3 +31,6 @@ pub fn add_name_param<'a>(list: &mut ParamList<'a>, id: &user::UserID<'a>) -> Op
         user::UserID::ScreenName(name) => add_param(list, "screen_name", name),
     }
 }
+
+///Type alias for responses from Twitter.
+pub type WebResponse<T> = Result<Response<T>, ::error::Error>;
