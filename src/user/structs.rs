@@ -6,6 +6,7 @@ use entities;
 use error;
 use error::Error::InvalidResponse;
 use links;
+use tweet;
 
 ///Convenience enum to generalize between referring to an account by numeric ID or by screen name.
 #[derive(Debug, Clone)]
@@ -213,13 +214,18 @@ pub struct TwitterUser {
     pub screen_name: String,
     ///Indicates that the user would like to see media inline. "Somewhat disused."
     pub show_all_inline_media: Option<bool>,
-    //If possible, the most recent tweet or reweet from this user.
-    //
-    //"Perspectival" items within this tweet that depend on the authenticating user
-    //[may not be completely reliable][stale-embed] in this embed.
-    //
-    //[stale-embed]: https://dev.twitter.com/docs/faq/basics/why-are-embedded-objects-stale-or-inaccurate
-    //TODO: pub status: Option<Tweet>,
+    ///If possible, the most recent tweet or retweet from this user.
+    ///
+    ///"In some circumstances, this data cannot be provided and this field will be omitted, null,
+    ///or empty." Do not depend on this field being filled. (Consequently, I can't say at the
+    ///moment whether this actually refers to their most recent tweet or if this has been
+    ///overloaded to display their pinned tweet if available.)
+    ///
+    ///"Perspectival" items within this tweet that depend on the authenticating user
+    ///[may not be completely reliable][stale-embed] in this embed.
+    ///
+    ///[stale-embed]: https://dev.twitter.com/docs/faq/basics/why-are-embedded-objects-stale-or-inaccurate
+    pub status: Option<Box<tweet::Tweet>>,
     ///The number of tweets (including retweets) posted by this user.
     pub statuses_count: i32,
     ///The full name of the time zone the user has set their UI preference to.
@@ -301,7 +307,7 @@ impl FromJson for TwitterUser {
             protected: try!(field(input, "protected")),
             screen_name: try!(field(input, "screen_name")),
             show_all_inline_media: field(input, "show_all_inline_media").ok(),
-            //TODO: status: ???,
+            status: field(input, "status").map(Box::new).ok(),
             statuses_count: try!(field(input, "statuses_count")),
             time_zone: field(input, "time_zone").ok(),
             url: field(input, "url").ok(),
