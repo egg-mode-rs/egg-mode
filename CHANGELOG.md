@@ -1,6 +1,10 @@
 # Changelog for egg-mode
 
 ## Pending
+### Added
+- New module `tweet` and `Tweet` struct
+- New function to load a single tweet (`show`)
+
 ### Changed
 - Moved `UserID` into the user module
   - This is a **breaking change** if you used the type directly (like in the lookup example)

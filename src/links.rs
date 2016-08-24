@@ -32,3 +32,7 @@ pub mod users {
     pub const MUTE: &'static str = "https://api.twitter.com/1.1/mutes/users/create.json";
     pub const UNMUTE: &'static str = "https://api.twitter.com/1.1/mutes/users/destroy.json";
 }
+
+pub mod statuses {
+    pub const SHOW: &'static str = "https://api.twitter.com/1.1/statuses/show.json";
+}

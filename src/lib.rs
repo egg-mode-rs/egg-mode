@@ -76,6 +76,7 @@ pub mod error;
 pub mod user;
 pub mod entities;
 pub mod cursor;
+pub mod tweet;
 mod links;
 mod common;
 
