@@ -62,7 +62,7 @@ detail other than the response examples for those endpoints.
 ### Users
 
 - [x] users/show (`users::show`)
-- [x] users/lookup (`users::lookup`, `users::lookup_ids`, `users::lookup_names`)
+- [x] users/lookup (`users::lookup`)
 - [x] users/search (`users::search`)
 - [x] friends/list (`users::friends_of`)
 - [x] friends/ids (`users::friends_ids`)
