@@ -217,9 +217,8 @@ pub struct TwitterUser {
     ///If possible, the most recent tweet or retweet from this user.
     ///
     ///"In some circumstances, this data cannot be provided and this field will be omitted, null,
-    ///or empty." Do not depend on this field being filled. (Consequently, I can't say at the
-    ///moment whether this actually refers to their most recent tweet or if this has been
-    ///overloaded to display their pinned tweet if available.)
+    ///or empty." Do not depend on this field being filled. Also note that this is actually their
+    ///most-recent tweet, not the status pinned to their profile.
     ///
     ///"Perspectival" items within this tweet that depend on the authenticating user
     ///[may not be completely reliable][stale-embed] in this embed.
