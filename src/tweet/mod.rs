@@ -23,7 +23,7 @@ pub fn show(id: i64, con_token: &auth::Token, access_token: &auth::Token)
 ///Lookup the most recent 100 (or fewer) retweets of the given tweet.
 ///
 ///Use the `count` parameter to indicate how many retweets you would like to retrieve. If `count`
-///is 0 or greater than 100, 100 will be given to Twitter.
+///is 0 or greater than 100, it will be defaulted to 100 before making the call.
 pub fn retweets_of(id: i64, count: u32, con_token: &auth::Token, access_token: &auth::Token)
     -> WebResponse<Vec<Tweet>>
 {
