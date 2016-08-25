@@ -4,6 +4,7 @@
 ### Added
 - New module `tweet` and `Tweet` struct
 - New function to load a single tweet (`show`)
+- New function to load recent retweets of a single tweet (`retweets_of`)
 
 ### Changed
 - Moved `UserID` into the user module
