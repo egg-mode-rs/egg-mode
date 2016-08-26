@@ -16,6 +16,7 @@ pub fn show(id: i64, con_token: &auth::Token, access_token: &auth::Token)
 {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
+    add_param(&mut params, "include_my_retweet", "true");
 
     let mut resp = try!(auth::get(links::statuses::SHOW, con_token, access_token, Some(&params)));
 

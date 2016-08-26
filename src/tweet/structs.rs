@@ -15,8 +15,8 @@ pub struct Tweet {
     ///UTC timestamp showing when the tweet was posted, formatted like "Wed Aug 27 13:08:45 +0000
     ///2008".
     pub created_at: String,
-    //If the authenticated user has retweeted this tweet, contains the ID of the retweet.
-    //pub current_user_retweet: Option<i64>, //TODO: cannot load with just field()
+    ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
+    pub current_user_retweet: Option<i64>,
     //Link, hashtag, and user mention information extracted from the tweet text.
     //pub entities: TweetEntities,
     ///"Approximately" how many times this tweet has been liked by users.
@@ -91,7 +91,7 @@ impl FromJson for Tweet {
             //contributors: Option<Contributors>,
             //coordinates: Option<Coordinates>,
             created_at: try!(field(input, "created_at")),
-            //current_user_retweet: Option<i64>, //TODO: cannot load with just field()
+            current_user_retweet: try!(current_user_retweet(input, "current_user_retweet")),
             //entities: TweetEntities,
             favorite_count: field(input, "favorite_count").unwrap_or(0),
             favorited: field(input, "favorited").ok(),
@@ -116,5 +116,17 @@ impl FromJson for Tweet {
             withheld_in_countries: field(input, "withheld_in_countries").ok(),
             withheld_scope: field(input, "withheld_scope").ok(),
         })
+    }
+}
+
+fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Option<i64>, error::Error> {
+    if let Some(obj) = input.find(field).and_then(|f| f.as_object()) {
+        match obj.get("id").and_then(|o| o.as_i64()) {
+            Some(id) => Ok(Some(id)),
+            None => Err(InvalidResponse),
+        }
+    }
+    else {
+        Ok(None)
     }
 }
