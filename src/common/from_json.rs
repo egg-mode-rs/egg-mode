@@ -71,6 +71,16 @@ impl FromJson for (i32, i32) {
     }
 }
 
+impl FromJson for json::Json {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        Ok(input.clone())
+    }
+
+    fn from_str(input: &str) -> Result<Self, error::Error> {
+        Ok(try!(json::Json::from_str(input)))
+    }
+}
+
 pub fn field<T: FromJson>(input: &json::Json, field: &'static str) -> Result<T, error::Error> {
     T::from_json(try!(input.find(field).ok_or(MissingValue(field))))
 }

@@ -36,4 +36,5 @@ pub mod users {
 pub mod statuses {
     pub const SHOW: &'static str = "https://api.twitter.com/1.1/statuses/show.json";
     pub const RETWEETS_OF_STEM: &'static str = "https://api.twitter.com/1.1/statuses/retweets";
+    pub const LOOKUP: &'static str = "https://api.twitter.com/1.1/statuses/lookup.json";
 }

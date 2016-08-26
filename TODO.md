@@ -35,7 +35,7 @@ tokens.
 - [ ] statuses/retweet/:id
 - [ ] statuses/unretweet/:id
 - [ ] statuses/retweeters/ids
-- [ ] statuses/lookup
+- [x] statuses/lookup (`tweet::lookup`, `tweet::lookup_map`)
 - [ ] search/tweets
 - [ ] favorites/list
 - [ ] favorites/create

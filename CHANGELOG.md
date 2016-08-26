@@ -5,6 +5,7 @@
 - New module `tweet` and `Tweet` struct
 - New function to load a single tweet (`show`)
 - New function to load recent retweets of a single tweet (`retweets_of`)
+- New functions to look up a list of tweet IDs (`lookup`, `lookup_map`)
 
 ### Changed
 - Moved `UserID` into the user module
