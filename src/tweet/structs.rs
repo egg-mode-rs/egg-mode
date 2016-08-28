@@ -2,6 +2,7 @@ use rustc_serialize::json;
 use user;
 use error;
 use error::Error::InvalidResponse;
+use entities;
 use common::*;
 
 ///Represents a single status update.
@@ -17,8 +18,15 @@ pub struct Tweet {
     pub created_at: String,
     ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
     pub current_user_retweet: Option<i64>,
-    //Link, hashtag, and user mention information extracted from the tweet text.
-    //pub entities: TweetEntities,
+    ///Link, hashtag, and user mention information extracted from the tweet text.
+    pub entities: TweetEntities,
+    ///Extended media information attached to the tweet, if media is available.
+    ///
+    ///If a tweet has a photo, set of photos, gif, or video attached to it, this field will be
+    ///present and contain the real media information. The information available in the `media`
+    ///field of `entities` will only contain the first photo of a set, or a thumbnail of a gif or
+    ///video.
+    pub extended_entities: Option<ExtendedTweetEntities>,
     ///"Approximately" how many times this tweet has been liked by users.
     pub favorite_count: i32,
     ///Indicates whether the authenticated user has liked this tweet.
@@ -92,7 +100,8 @@ impl FromJson for Tweet {
             //coordinates: Option<Coordinates>,
             created_at: try!(field(input, "created_at")),
             current_user_retweet: try!(current_user_retweet(input, "current_user_retweet")),
-            //entities: TweetEntities,
+            entities: try!(field(input, "entities")),
+            extended_entities: field(input, "extended_entities").ok(),
             favorite_count: field(input, "favorite_count").unwrap_or(0),
             favorited: field(input, "favorited").ok(),
             //filter_level: FilterLevel,
@@ -128,5 +137,60 @@ fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Optio
     }
     else {
         Ok(None)
+    }
+}
+
+///Container for URL, hashtag, mention, and media information associated with a tweet.
+#[derive(Debug)]
+pub struct TweetEntities {
+    ///Collection of hashtags parsed from the tweet.
+    pub hashtags: Vec<entities::HashtagEntity>,
+    ///Collection of financial symbols, or "cashtags", parsed from the tweet.
+    pub symbols: Vec<entities::HashtagEntity>,
+    ///Collection of URLs parsed from the tweet.
+    pub urls: Vec<entities::UrlEntity>,
+    ///Collection of user mentions parsed from the tweet.
+    pub user_mentions: Vec<entities::MentionEntity>,
+    ///If the tweet contains any attached media, this contains a collection of media information
+    ///from the tweet.
+    pub media: Option<Vec<entities::MediaEntity>>,
+}
+
+impl FromJson for TweetEntities {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse);
+        }
+
+        Ok(TweetEntities {
+            hashtags: try!(field(input, "hashtags")),
+            symbols: try!(field(input, "symbols")),
+            urls: try!(field(input, "urls")),
+            user_mentions: try!(field(input, "user_mentions")),
+            media: field(input, "media").ok(),
+        })
+    }
+}
+
+///Container for extended media information for a tweet.
+///
+///If a tweet has a photo, set of photos, gif, or video attached to it, this field will be present
+///and contain the real media information. The information available in the `media` field of
+///`entities` will only contain the first photo of a set, or a thumbnail of a gif or video.
+#[derive(Debug)]
+pub struct ExtendedTweetEntities {
+    ///Collection of extended media information attached to the tweet.
+    pub media: Vec<entities::MediaEntity>,
+}
+
+impl FromJson for ExtendedTweetEntities {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse);
+        }
+
+        Ok(ExtendedTweetEntities {
+            media: try!(field(input, "media")),
+        })
     }
 }

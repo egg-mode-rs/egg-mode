@@ -3,6 +3,7 @@
 use rustc_serialize::json;
 use error;
 use error::Error::{InvalidResponse, MissingValue};
+use mime;
 
 ///Helper trait to provide a general interface for deserializing Twitter API data structures.
 pub trait FromJson : Sized {
@@ -78,6 +79,15 @@ impl FromJson for json::Json {
 
     fn from_str(input: &str) -> Result<Self, error::Error> {
         Ok(try!(json::Json::from_str(input)))
+    }
+}
+
+impl FromJson for mime::Mime {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        let str = try!(input.as_string().ok_or(InvalidResponse));
+        let mime = try!(str.parse().or(Err(InvalidResponse)));
+
+        Ok(mime)
     }
 }
 
