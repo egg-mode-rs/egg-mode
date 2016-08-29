@@ -245,7 +245,7 @@ impl<'a> Timeline<'a> {
         Ok(resp)
     }
 
-    ///Return the set of twets between the IDs given.
+    ///Return the set of tweets between the IDs given.
     ///
     ///Note that the range is not fully inclusive; the tweet ID given by `since_id` will not be
     ///returned, but the tweet ID in `max_id` will be returned.
