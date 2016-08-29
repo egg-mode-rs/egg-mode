@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 use rustc_serialize::json;
 use auth;
+use cursor;
 use user::UserID;
 use error::Error::InvalidResponse;
 use links;
@@ -45,6 +46,20 @@ pub fn retweets_of(id: i64, count: u32, con_token: &auth::Token, access_token: &
     let mut resp = try!(auth::get(&url, con_token, access_token, Some(&params)));
 
     parse_response(&mut resp)
+}
+
+///Lookup the user IDs that have retweeted the given tweet.
+///
+///Note that while loading a user's mutes list is a cursored search, it does not allow you to set
+///the page size. Calling `with_page_size` on the iterator returned by this function will not
+///change the page size used by the network call. Setting `page_size` manually may result in an
+///error from Twitter.
+pub fn retweeters_of<'a>(id: i64, con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> cursor::CursorIter<'a, cursor::IDCursor>
+{
+    let mut params = HashMap::new();
+    add_param(&mut params, "id", id.to_string());
+    cursor::CursorIter::new(links::statuses::RETWEETERS_OF, con_token, access_token, Some(params), None)
 }
 
 ///Lookup tweet information for the given list of tweet IDs.

@@ -41,4 +41,5 @@ pub mod statuses {
     pub const MENTIONS_TIMELINE: &'static str = "https://api.twitter.com/1.1/statuses/mentions_timeline.json";
     pub const USER_TIMELINE: &'static str = "https://api.twitter.com/1.1/statuses/user_timeline.json";
     pub const RETWEETS_OF_ME: &'static str = "https://api.twitter.com/1.1/statuses/retweets_of_me.json";
+    pub const RETWEETERS_OF: &'static str = "https://api.twitter.com/1.1/statuses/retweeters/ids.json";
 }
