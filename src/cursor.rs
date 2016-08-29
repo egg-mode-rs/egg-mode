@@ -5,7 +5,6 @@
 //! this module. The rest of it is available to make sure consumers of the API can understand
 //! precisely what types come out of functions that return `CursorIter`.
 
-use std::collections::HashMap;
 use std::marker::PhantomData;
 use rustc_serialize::json;
 use common::*;
@@ -200,7 +199,7 @@ pub struct CursorIter<'a, T>
     link: &'static str,
     con_token: &'a auth::Token<'a>,
     access_token: &'a auth::Token<'a>,
-    user_id: Option<user::UserID<'a>>,
+    params_base: Option<ParamList<'a>>,
     ///The number of results returned in one network call.
     ///
     ///Certain calls set their own minimums and maximums for what this value can be. Furthermore,
@@ -241,7 +240,7 @@ impl<'a, T> CursorIter<'a, T>
                 link: self.link,
                 con_token: self.con_token,
                 access_token: self.access_token,
-                user_id: self.user_id,
+                params_base: self.params_base,
                 page_size: Some(page_size),
                 previous_cursor: -1,
                 next_cursor: -1,
@@ -259,10 +258,8 @@ impl<'a, T> CursorIter<'a, T>
     ///This is intended to be used as part of this struct's Iterator implementation. It is provided
     ///as a convenience for those who wish to manage network calls and pagination manually.
     pub fn call(&self) -> WebResponse<T> {
-        let mut params = HashMap::new();
-        if let Some(ref id) = self.user_id {
-            add_name_param(&mut params, id);
-        }
+        let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
+
         add_param(&mut params, "cursor", self.next_cursor.to_string());
         if let Some(count) = self.page_size {
             add_param(&mut params, "count", count.to_string());
@@ -278,12 +275,12 @@ impl<'a, T> CursorIter<'a, T>
     ///This is essentially an internal infrastructure function, not meant to be used from consumer
     ///code.
     pub fn new(link: &'static str, con_token: &'a auth::Token, access_token: &'a auth::Token,
-               user_id: Option<user::UserID<'a>>, page_size: Option<i32>) -> CursorIter<'a, T> {
+               params_base: Option<ParamList<'a>>, page_size: Option<i32>) -> CursorIter<'a, T> {
         CursorIter {
             link: link,
             con_token: con_token,
             access_token: access_token,
-            user_id: user_id,
+            params_base: params_base,
             page_size: page_size,
             previous_cursor: -1,
             next_cursor: -1,

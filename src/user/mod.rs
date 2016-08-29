@@ -255,7 +255,9 @@ pub fn search<'a>(query: &'a str, con_token: &'a auth::Token, access_token: &'a 
 pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
     -> cursor::CursorIter<'a, cursor::UserCursor>
 {
-    cursor::CursorIter::new(links::users::FRIENDS_LIST, con_token, access_token, Some(acct.into()), Some(20))
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+    cursor::CursorIter::new(links::users::FRIENDS_LIST, con_token, access_token, Some(params), Some(20))
 }
 
 ///Lookup the users a given account follows, also called their "friends" within the API, but only
@@ -270,7 +272,9 @@ pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, 
 pub fn friends_ids<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
-    cursor::CursorIter::new(links::users::FRIENDS_IDS, con_token, access_token, Some(acct.into()), Some(500))
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+    cursor::CursorIter::new(links::users::FRIENDS_IDS, con_token, access_token, Some(params), Some(500))
 }
 
 ///Lookup the users that follow a given account.
@@ -280,7 +284,9 @@ pub fn friends_ids<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token,
 pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
     -> cursor::CursorIter<'a, cursor::UserCursor>
 {
-    cursor::CursorIter::new(links::users::FOLLOWERS_LIST, con_token, access_token, Some(acct.into()), Some(20))
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+    cursor::CursorIter::new(links::users::FOLLOWERS_LIST, con_token, access_token, Some(params), Some(20))
 }
 
 ///Lookup the users that follow a given account, but only return their user IDs.
@@ -294,7 +300,9 @@ pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token
 pub fn followers_ids<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
-    cursor::CursorIter::new(links::users::FOLLOWERS_IDS, con_token, access_token, Some(acct.into()), Some(500))
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+    cursor::CursorIter::new(links::users::FOLLOWERS_IDS, con_token, access_token, Some(params), Some(500))
 }
 
 ///Lookup the users that have been blocked by the authenticated user.
