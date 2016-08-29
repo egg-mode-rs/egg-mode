@@ -212,7 +212,7 @@ pub struct Timeline<'a> {
     pub count: i32,
     ///The largest/most recent tweet ID returned in the last call to `start`, `older`, or `newer`.
     pub max_id: Option<i64>,
-    ///The smalles/oldest tweet ID returned in the last call to `start`, `older`, or `newer`.
+    ///The smallest/oldest tweet ID returned in the last call to `start`, `older`, or `newer`.
     pub min_id: Option<i64>,
 }
 
