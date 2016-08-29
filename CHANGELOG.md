@@ -21,6 +21,8 @@
   and when it will lapse
   - This is a **breaking change** if you were exhaustively matching on these before
 - Introduce a type alias `WebResponse` for `Result<Response<T>, Error>` which was *everywhere*
+- Error::InvalidResponse now contains information about where in the code the error occurred
+  - This is a **breaking change** if you were matching on the error types before
 
 ## [0.3.0] - 2016-08-19
 ### Added
