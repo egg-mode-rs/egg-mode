@@ -6,6 +6,8 @@
 - New function to load a single tweet (`show`)
 - New function to load recent retweets of a single tweet (`retweets_of`)
 - New functions to look up a list of tweet IDs (`lookup`, `lookup_map`)
+- New `Timeline` struct to navigate timelines and other relatively-indexed collections of tweets
+- New function to load user's home timeline (`home_timeline`)
 
 ### Changed
 - Moved `UserID` into the user module

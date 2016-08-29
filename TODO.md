@@ -26,7 +26,7 @@ tokens.
 
 - [ ] statuses/mentions\_timeline
 - [ ] statuses/user\_timeline
-- [ ] statuses/home\_timeline
+- [x] statuses/home\_timeline (`tweet::home_timeline`)
 - [ ] statuses/retweets\_of\_me
 - [x] statuses/retweets/:id (`tweet::retweets_of`)
 - [x] statuses/show/:id (`tweet::show`)

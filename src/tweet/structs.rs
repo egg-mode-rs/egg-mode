@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use rustc_serialize::json;
+use auth;
 use user;
 use error;
 use error::Error::InvalidResponse;
@@ -192,5 +194,108 @@ impl FromJson for ExtendedTweetEntities {
         Ok(ExtendedTweetEntities {
             media: try!(field(input, "media")),
         })
+    }
+}
+
+///Helper struct to navigate collections of tweets by requesting tweets older or newer than certain
+///IDs.
+pub struct Timeline<'a> {
+    ///The URL to request tweets from.
+    link: &'static str,
+    ///The consumer token to authenticate requests with.
+    con_token: &'a auth::Token<'a>,
+    ///The access token to authenticate requests with.
+    access_token: &'a auth::Token<'a>,
+    ///The maximum number of tweets to return in a single call. Twitter doesn't guarantee returning
+    ///exactly this number, as suspended or deleted content is removed after retrieving the initial
+    ///collection of tweets.
+    pub count: i32,
+    ///The largest/most recent tweet ID returned in the last call to `start`, `older`, or `newer`.
+    pub max_id: Option<i64>,
+    ///The smalles/oldest tweet ID returned in the last call to `start`, `older`, or `newer`.
+    pub min_id: Option<i64>,
+}
+
+impl<'a> Timeline<'a> {
+    ///Clear the saved IDs on this timeline, and return the most recent set of tweets.
+    pub fn start(&mut self) -> WebResponse<Vec<Tweet>> {
+        self.max_id = None;
+        self.min_id = None;
+
+        self.older(None)
+    }
+
+    ///Return the set of tweets older than the last set pulled, optionally placing a minimum tweet
+    ///ID to bound with.
+    pub fn older(&mut self, since_id: Option<i64>) -> WebResponse<Vec<Tweet>> {
+        let resp = try!(self.call(since_id, self.min_id.map(|id| id - 1)));
+
+        self.map_ids(&resp.response);
+
+        Ok(resp)
+    }
+
+    ///Return the set of tweets newer than the last set pulled, optionall placing a maximum tweet
+    ///ID to bound with.
+    pub fn newer(&mut self, max_id: Option<i64>) -> WebResponse<Vec<Tweet>> {
+        let resp = try!(self.call(self.max_id, max_id));
+
+        self.map_ids(&resp.response);
+
+        Ok(resp)
+    }
+
+    ///Return the set of twets between the IDs given.
+    ///
+    ///Note that the range is not fully inclusive; the tweet ID given by `since_id` will not be
+    ///returned, but the tweet ID in `max_id` will be returned.
+    ///
+    ///If the range of tweets given by the IDs would return more than `self.count`, the newest set
+    ///of tweets will be returned.
+    pub fn call(&self, since_id: Option<i64>, max_id: Option<i64>) -> WebResponse<Vec<Tweet>> {
+        let mut params = HashMap::new();
+        add_param(&mut params, "count", self.count.to_string());
+
+        if let Some(id) = since_id {
+            add_param(&mut params, "since_id", id.to_string());
+        }
+
+        if let Some(id) = max_id {
+            add_param(&mut params, "max_id", id.to_string());
+        }
+
+        let mut resp = try!(auth::get(self.link, self.con_token, self.access_token, Some(&params)));
+
+        parse_response(&mut resp)
+    }
+
+    ///Helper builder function to set the page size.
+    pub fn with_page_size(self, page_size: i32) -> Self {
+        Timeline {
+            link: self.link,
+            con_token: self.con_token,
+            access_token: self.access_token,
+            count: page_size,
+            max_id: self.max_id,
+            min_id: self.min_id,
+        }
+    }
+
+    ///With the returned slice of Tweets, set the min_id and max_id on self.
+    fn map_ids(&mut self, resp: &[Tweet]) {
+        self.max_id = resp.first().map(|status| status.id);
+        self.min_id = resp.last().map(|status| status.id);
+    }
+
+    ///Create an instance of `Timeline` with the given link and tokens.
+    pub fn new(link: &'static str, con_token: &'a auth::Token, access_token: &'a auth::Token) -> Self {
+        Timeline {
+            link: link,
+            con_token: con_token,
+            access_token: access_token,
+            count: 20,
+            max_id: None,
+            min_id: None,
+        }
     }
 }
