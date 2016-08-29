@@ -32,4 +32,13 @@ fn main() {
         common::print_tweet(&status);
         println!("");
     }
+
+    println!("");
+    println!("Loading the user's timeline:");
+    let mut home = egg_mode::tweet::user_timeline(config.user_id, true, true,
+                                                  &config.con_token, &config.access_token).with_page_size(5);
+    for status in &home.start().unwrap().response {
+        common::print_tweet(&status);
+        println!("");
+    }
 }
