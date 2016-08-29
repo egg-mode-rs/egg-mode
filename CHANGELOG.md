@@ -9,6 +9,7 @@
 - New `Timeline` struct to navigate timelines and other relatively-indexed collections of tweets
 - New function to load user's home timeline (`home_timeline`)
 - New function to load user's mentions timeline (`mentions_timeline`)
+- New function to load the posts by a given user (`user_timeline`)
 
 ### Changed
 - Moved `UserID` into the user module

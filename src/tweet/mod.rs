@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 use rustc_serialize::json;
 use auth;
+use user::UserID;
 use error::Error::InvalidResponse;
 use links;
 use common::*;
@@ -114,7 +115,7 @@ pub fn lookup_map(ids: &[i64], con_token: &auth::Token, access_token: &auth::Tok
 ///
 ///Twitter will only return the most recent 800 tweets by navigating this method.
 pub fn home_timeline<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> Timeline<'a> {
-    Timeline::new(links::statuses::HOME_TIMELINE, con_token, access_token)
+    Timeline::new(links::statuses::HOME_TIMELINE, None, con_token, access_token)
 }
 
 ///Make a `Timeline` struct for navigating the collection of tweets that mention the authenticated
@@ -124,5 +125,29 @@ pub fn home_timeline<'a>(con_token: &'a auth::Token, access_token: &'a auth::Tok
 ///
 ///Twitter will only return the most recent 800 tweets by navigating this method.
 pub fn mentions_timeline<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> Timeline<'a> {
-    Timeline::new(links::statuses::MENTIONS_TIMELINE, con_token, access_token)
+    Timeline::new(links::statuses::MENTIONS_TIMELINE, None, con_token, access_token)
+}
+
+///Make a `Timeline` struct for navigating the collection of tweets posted by the given user,
+///optionally including or excluding replies or retweets.
+///
+///Attempting to load the timeline of a protected account will only work if the account is the
+///authenticated user's, or if the authenticated user is an approved follower of the account.
+///
+///This method has a default page size of 20 tweets, with a maximum of 200. Note that asking to
+///leave out replies or retweets will generate pages that may have fewer tweets than your requested
+///page size; Twitter will load the requested number of tweets before removing replies and/or
+///retweets.
+///
+///Twitter will only load the most recent 3,200 tweets with this method.
+pub fn user_timeline<'a, T: Into<UserID<'a>>>(acct: T, with_replies: bool, with_rts: bool,
+                                              con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> Timeline<'a>
+{
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+    add_param(&mut params, "exclude_replies", (!with_replies).to_string());
+    add_param(&mut params, "include_rts", with_rts.to_string());
+
+    Timeline::new(links::statuses::USER_TIMELINE, Some(params), con_token, access_token)
 }

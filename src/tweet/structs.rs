@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use rustc_serialize::json;
 use auth;
 use user;
@@ -206,6 +205,8 @@ pub struct Timeline<'a> {
     con_token: &'a auth::Token<'a>,
     ///The access token to authenticate requests with.
     access_token: &'a auth::Token<'a>,
+    ///Optional set of params to include prior to adding lifetime navigation parameters.
+    params_base: Option<ParamList<'a>>,
     ///The maximum number of tweets to return in a single call. Twitter doesn't guarantee returning
     ///exactly this number, as suspended or deleted content is removed after retrieving the initial
     ///collection of tweets.
@@ -253,7 +254,7 @@ impl<'a> Timeline<'a> {
     ///If the range of tweets given by the IDs would return more than `self.count`, the newest set
     ///of tweets will be returned.
     pub fn call(&self, since_id: Option<i64>, max_id: Option<i64>) -> WebResponse<Vec<Tweet>> {
-        let mut params = HashMap::new();
+        let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
         add_param(&mut params, "count", self.count.to_string());
 
         if let Some(id) = since_id {
@@ -275,6 +276,7 @@ impl<'a> Timeline<'a> {
             link: self.link,
             con_token: self.con_token,
             access_token: self.access_token,
+            params_base: self.params_base,
             count: page_size,
             max_id: self.max_id,
             min_id: self.min_id,
@@ -288,11 +290,13 @@ impl<'a> Timeline<'a> {
     }
 
     ///Create an instance of `Timeline` with the given link and tokens.
-    pub fn new(link: &'static str, con_token: &'a auth::Token, access_token: &'a auth::Token) -> Self {
+    pub fn new(link: &'static str, params_base: Option<ParamList<'a>>,
+               con_token: &'a auth::Token, access_token: &'a auth::Token) -> Self {
         Timeline {
             link: link,
             con_token: con_token,
             access_token: access_token,
+            params_base: params_base,
             count: 20,
             max_id: None,
             min_id: None,
