@@ -24,4 +24,12 @@ fn main() {
         common::print_tweet(&status);
         println!("");
     }
+
+    println!("");
+    println!("Loading the user's mentions timeline:");
+    let mut home = egg_mode::tweet::mentions_timeline(&config.con_token, &config.access_token).with_page_size(5);
+    for status in &home.start().unwrap().response {
+        common::print_tweet(&status);
+        println!("");
+    }
 }
