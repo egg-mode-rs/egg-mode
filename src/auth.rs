@@ -324,7 +324,7 @@ pub fn request_token<S: Into<String>>(con_token: &Token, callback: S) -> Result<
             Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
             Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
             Some(_) => (),
-            None => return Err(error::Error::InvalidResponse),
+            None => return Err(error::Error::InvalidResponse("unexpected end of request_token response", None)),
         }
     }
 
@@ -402,7 +402,7 @@ pub fn access_token<S: Into<String>>(con_token: &Token,
             Some("user_id") => id = kv.next().and_then(|s| i64::from_str_radix(s, 10).ok()),
             Some("screen_name") => username = kv.next().map(|s| s.to_string()),
             Some(_) => (),
-            None => return Err(error::Error::InvalidResponse),
+            None => return Err(error::Error::InvalidResponse("unexpected end of response in access_token", None)),
         }
     }
 

@@ -51,7 +51,7 @@ pub struct UserCursor {
 impl FromJson for UserCursor {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("UserCursor received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(UserCursor {
@@ -96,7 +96,7 @@ pub struct IDCursor {
 impl FromJson for IDCursor {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("IDCursor received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(IDCursor {

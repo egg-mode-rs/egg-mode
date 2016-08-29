@@ -83,8 +83,13 @@ pub fn lookup_map(ids: &[i64], con_token: &auth::Token, access_token: &auth::Tok
     let parsed: Response<json::Json> = try!(parse_response(&mut resp));
     let mut map = HashMap::new();
 
-    for (key, val) in try!(parsed.response.find("id").and_then(|v| v.as_object()).ok_or(InvalidResponse)) {
-        let id = try!(key.parse::<i64>().or(Err(InvalidResponse)));
+    for (key, val) in try!(parsed.response
+                                 .find("id")
+                                 .and_then(|v| v.as_object())
+                                 .ok_or(InvalidResponse("unexpected response for lookup_map",
+                                                        Some(parsed.response.to_string())))) {
+        let id = try!(key.parse::<i64>().or(Err(InvalidResponse("could not parse id as integer",
+                                                                Some(key.to_string())))));
         if val.is_null() {
             map.insert(id, None);
         }

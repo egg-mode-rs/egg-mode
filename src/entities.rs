@@ -164,7 +164,7 @@ pub struct MentionEntity {
 impl FromJson for HashtagEntity {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("HashtagEntity received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(HashtagEntity {
@@ -177,7 +177,7 @@ impl FromJson for HashtagEntity {
 impl FromJson for MediaEntity {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("MediaEntity received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(MediaEntity {
@@ -209,11 +209,11 @@ impl FromJson for MediaType {
                 Ok(MediaType::Gif)
             }
             else {
-                Err(InvalidResponse)
+                Err(InvalidResponse("unexpected string for MediaType", Some(s.to_string())))
             }
         }
         else {
-            Err(InvalidResponse)
+            Err(InvalidResponse("MediaType received json that wasn't a string", Some(input.to_string())))
         }
     }
 }
@@ -228,11 +228,11 @@ impl FromJson for ResizeMode {
                 Ok(ResizeMode::Crop)
             }
             else {
-                Err(InvalidResponse)
+                Err(InvalidResponse("unexpected string for ResizeMode", Some(s.to_string())))
             }
         }
         else {
-            Err(InvalidResponse)
+            Err(InvalidResponse("ResizeMode received json that wasn't an object", Some(input.to_string())))
         }
     }
 }
@@ -240,7 +240,7 @@ impl FromJson for ResizeMode {
 impl FromJson for MediaSize {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("MediaSize received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(MediaSize {
@@ -254,7 +254,7 @@ impl FromJson for MediaSize {
 impl FromJson for MediaSizes {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("MediaSizes received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(MediaSizes {
@@ -269,7 +269,7 @@ impl FromJson for MediaSizes {
 impl FromJson for UrlEntity {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("UrlEntity received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(UrlEntity {
@@ -284,7 +284,7 @@ impl FromJson for UrlEntity {
 impl FromJson for VideoInfo {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("VideoInfo received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(VideoInfo {
@@ -298,7 +298,7 @@ impl FromJson for VideoInfo {
 impl FromJson for VideoVariant {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("VideoVariant received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(VideoVariant {
@@ -312,7 +312,7 @@ impl FromJson for VideoVariant {
 impl FromJson for MentionEntity {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("MentionEntity received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(MentionEntity {

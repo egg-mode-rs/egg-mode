@@ -268,7 +268,7 @@ pub struct UserEntityDetail {
 impl FromJson for TwitterUser {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("TwitterUser received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(TwitterUser {
@@ -323,7 +323,7 @@ impl FromJson for TwitterUser {
 impl FromJson for UserEntities {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("UserEntities received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(UserEntities {
@@ -336,7 +336,7 @@ impl FromJson for UserEntities {
 impl FromJson for UserEntityDetail {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("UserEntityDetail received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(UserEntityDetail {
@@ -535,7 +535,7 @@ pub struct Relationship {
 impl FromJson for Relationship {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("Relationship received json that wasn't an object", Some(input.to_string())));
         }
 
         if let Some(relation) = input.find("relationship") {
@@ -567,7 +567,7 @@ pub struct RelationTarget {
 impl FromJson for RelationTarget {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("RelationTarget received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(RelationTarget {
@@ -624,7 +624,7 @@ pub struct RelationSource {
 impl FromJson for RelationSource {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("RelationSource received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(RelationSource {
@@ -664,7 +664,7 @@ pub struct RelationLookup {
 impl FromJson for RelationLookup {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("RelationLookup received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(RelationLookup {
@@ -706,14 +706,11 @@ impl FromJson for Connection {
                 "following" => Ok(Connection::Following),
                 "blocking" => Ok(Connection::Blocking),
                 "muting" => Ok(Connection::Muting),
-                _ => {
-                    println!("{}", text);
-                    Err(InvalidResponse)
-                },
+                _ => Err(InvalidResponse("unexpected string for Connection", Some(text.to_string()))),
             }
         }
         else {
-            Err(InvalidResponse)
+            Err(InvalidResponse("Connection received json that wasn't a string", Some(input.to_string())))
         }
     }
 }

@@ -46,8 +46,11 @@ impl fmt::Display for TwitterErrorCode {
 ///A set of errors that can occur when interacting with Twitter.
 #[derive(Debug)]
 pub enum Error {
-    ///The response from Twitter was formatted incorrectly or in an unexpected manner.
-    InvalidResponse,
+    ///The response from Twitter was formatted incorrectly or in an unexpected manner. The enclosed
+    ///values are an explanatory string and, if applicable, the input that caused the error.
+    ///
+    ///This usually reflects a bug in this library, as it means I'm not parsing input right.
+    InvalidResponse(&'static str, Option<String>),
     ///The response from Twitter was missing an expected value.  The enclosed value was the
     ///expected parameter.
     MissingValue(&'static str),
@@ -77,7 +80,7 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
-            Error::InvalidResponse => write!(f, "Invalid response received"),
+            Error::InvalidResponse(err, ref ext) => write!(f, "Invalid response received: {} ({:?})", err, ext),
             Error::MissingValue(val) => write!(f, "Value missing from response: {}", val),
             Error::TwitterError(ref err) => write!(f, "Error(s) returned from Twitter: {}", err),
             Error::RateLimit(ts) => write!(f, "Rate limit reached, hold until {}", ts),
@@ -93,7 +96,7 @@ impl std::fmt::Display for Error {
 impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::InvalidResponse => "Invalid response received",
+            Error::InvalidResponse(_, _) => "Invalid response received",
             Error::MissingValue(_) => "Value missing from response",
             Error::TwitterError(_) => "Error returned from Twitter",
             Error::RateLimit(_) => "Rate limit for method reached",

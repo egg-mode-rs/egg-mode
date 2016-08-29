@@ -92,7 +92,7 @@ pub struct Tweet {
 impl FromJson for Tweet {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("Tweet received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(Tweet {
@@ -132,7 +132,7 @@ fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Optio
     if let Some(obj) = input.find(field).and_then(|f| f.as_object()) {
         match obj.get("id").and_then(|o| o.as_i64()) {
             Some(id) => Ok(Some(id)),
-            None => Err(InvalidResponse),
+            None => Err(InvalidResponse("invalid structure inside current_user_retweet", None)),
         }
     }
     else {
@@ -159,7 +159,7 @@ pub struct TweetEntities {
 impl FromJson for TweetEntities {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("TweetEntities received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(TweetEntities {
@@ -186,7 +186,7 @@ pub struct ExtendedTweetEntities {
 impl FromJson for ExtendedTweetEntities {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
-            return Err(InvalidResponse);
+            return Err(InvalidResponse("ExtendedTweetEntities received json that wasn't an object", Some(input.to_string())));
         }
 
         Ok(ExtendedTweetEntities {
