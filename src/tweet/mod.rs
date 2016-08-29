@@ -151,3 +151,11 @@ pub fn user_timeline<'a, T: Into<UserID<'a>>>(acct: T, with_replies: bool, with_
 
     Timeline::new(links::statuses::USER_TIMELINE, Some(params), con_token, access_token)
 }
+
+///Make a `Timeline` struct for navigating the collection of tweets posted by the authenticated
+///user that have been retweeted by others.
+///
+///This method has a default page size of 20 tweets, with a maximum of 100.
+pub fn retweets_of_me<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> Timeline<'a> {
+    Timeline::new(links::statuses::RETWEETS_OF_ME, None, con_token, access_token)
+}
