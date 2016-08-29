@@ -1,3 +1,7 @@
+//since this is going to get included in examples that might not use everything, clear out warnings
+//that are unnecessary
+#![allow(dead_code)]
+
 use std;
 use std::io::{Write, Read};
 use egg_mode;
@@ -87,6 +91,56 @@ impl Config {
         }
         else {
             Self::load()
+        }
+    }
+}
+
+pub fn print_tweet(tweet: &egg_mode::tweet::Tweet) {
+    println!("{} (@{}) posted at {}", tweet.user.name, tweet.user.screen_name, tweet.created_at);
+
+    if let Some(ref screen_name) = tweet.in_reply_to_screen_name {
+        println!("--> in reply to @{}", screen_name);
+    }
+
+    println!("{}", tweet.text);
+
+    if let Some(ref status) = tweet.quoted_status {
+        println!("--Quoting the following status:");
+        print_tweet(status);
+    }
+
+    if !tweet.entities.hashtags.is_empty() {
+        println!("Hashtags contained in the tweet:");
+        for tag in &tweet.entities.hashtags {
+            println!("{}", tag.text);
+        }
+    }
+
+    if !tweet.entities.symbols.is_empty() {
+        println!("Symbols contained in the tweet:");
+        for tag in &tweet.entities.symbols {
+            println!("{}", tag.text);
+        }
+    }
+
+    if !tweet.entities.urls.is_empty() {
+        println!("URLs contained in the tweet:");
+        for url in &tweet.entities.urls {
+            println!("{}", url.expanded_url);
+        }
+    }
+
+    if !tweet.entities.user_mentions.is_empty() {
+        println!("Users mentioned in the tweet:");
+        for user in &tweet.entities.user_mentions {
+            println!("{}", user.screen_name);
+        }
+    }
+
+    if let Some(ref media) = tweet.extended_entities {
+        println!("Media attached to the tweet:");
+        for info in &media.media {
+            println!("A {:?}", info.media_type);
         }
     }
 }
