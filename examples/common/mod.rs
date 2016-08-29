@@ -102,7 +102,14 @@ pub fn print_tweet(tweet: &egg_mode::tweet::Tweet) {
         println!("--> in reply to @{}", screen_name);
     }
 
-    println!("{}", tweet.text);
+    if let Some(ref status) = tweet.retweeted_status {
+        println!("Retweeted from {}:", status.user.name);
+        print_tweet(status);
+        return;
+    }
+    else {
+        println!("{}", tweet.text);
+    }
 
     if let Some(ref status) = tweet.quoted_status {
         println!("--Quoting the following status:");
