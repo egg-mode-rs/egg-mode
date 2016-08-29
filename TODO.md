@@ -24,7 +24,7 @@ tokens.
 
 ### Statuses
 
-- [ ] statuses/mentions\_timeline
+- [x] statuses/mentions\_timeline (`tweet::mentions_timeline`)
 - [ ] statuses/user\_timeline
 - [x] statuses/home\_timeline (`tweet::home_timeline`)
 - [ ] statuses/retweets\_of\_me

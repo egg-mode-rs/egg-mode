@@ -107,12 +107,22 @@ pub fn lookup_map(ids: &[i64], con_token: &auth::Token, access_token: &auth::Tok
     })
 }
 
-///Make a `Timeline` struct for pulling the collection of tweets posted by the authenticated user
-///and the users they follow.
+///Make a `Timeline` struct for navigating the collection of tweets posted by the authenticated
+///user and the users they follow.
 ///
 ///This method has a default page size of 20 tweets, with a maximum of 200.
 ///
 ///Twitter will only return the most recent 800 tweets by navigating this method.
 pub fn home_timeline<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> Timeline<'a> {
     Timeline::new(links::statuses::HOME_TIMELINE, con_token, access_token)
+}
+
+///Make a `Timeline` struct for navigating the collection of tweets that mention the authenticated
+///user's screen name.
+///
+///This method has a default page size of 20 tweets, with a maximum of 200.
+///
+///Twitter will only return the most recent 800 tweets by navigating this method.
+pub fn mentions_timeline<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> Timeline<'a> {
+    Timeline::new(links::statuses::MENTIONS_TIMELINE, con_token, access_token)
 }

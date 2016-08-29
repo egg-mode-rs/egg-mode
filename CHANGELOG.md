@@ -8,6 +8,7 @@
 - New functions to look up a list of tweet IDs (`lookup`, `lookup_map`)
 - New `Timeline` struct to navigate timelines and other relatively-indexed collections of tweets
 - New function to load user's home timeline (`home_timeline`)
+- New function to load user's mentions timeline (`mentions_timeline`)
 
 ### Changed
 - Moved `UserID` into the user module
