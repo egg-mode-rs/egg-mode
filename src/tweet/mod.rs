@@ -174,3 +174,14 @@ pub fn user_timeline<'a, T: Into<UserID<'a>>>(acct: T, with_replies: bool, with_
 pub fn retweets_of_me<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> Timeline<'a> {
     Timeline::new(links::statuses::RETWEETS_OF_ME, None, con_token, access_token)
 }
+
+///Make a `Timeline` struct for navigating the collection of tweets liked by the given user.
+///
+///This method has a default page size of 20 tweets, with a maximum of 200.
+pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
+    -> Timeline<'a>
+{
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &acct.into());
+    Timeline::new(links::statuses::LIKES_OF, Some(params), con_token, access_token)
+}

@@ -37,7 +37,7 @@ tokens.
 - [x] statuses/retweeters/ids (`tweet::retweeters_of`)
 - [x] statuses/lookup (`tweet::lookup`, `tweet::lookup_map`)
 - [ ] search/tweets
-- [ ] favorites/list
+- [x] favorites/list (`tweet::liked_by`)
 - [ ] favorites/create
 - [ ] favorites/destroy
 

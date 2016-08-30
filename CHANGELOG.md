@@ -12,6 +12,7 @@
 - New function to load the posts by a given user (`user_timeline`)
 - New function to load the user's posts that have been retweeted (`retweets_of_me`)
 - New function to load the user IDs who have retweeted a given tweet (`retweeters_of`)
+- New function to load the posts liked by a given user (`liked_by`)
 
 ### Changed
 - Moved `UserID` into the user module
