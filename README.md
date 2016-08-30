@@ -2,9 +2,10 @@
 
 another twitter library for rust [![Build Status](https://travis-ci.org/QuietMisdreavus/twitter-rs.svg?branch=master)](https://travis-ci.org/QuietMisdreavus/twitter-rs)
 
-[Documentation][]
+[Documentation][] | [(In-development pre-release documentation)][doc-dev]
 
 [Documentation]: https://shiva.icesoldier.me/doc/egg_mode/
+[doc-dev]: https://shiva.icesoldier.me/doc-dev/egg_mode/
 
 This is an early library for interacting with Twitter. It's still pretty early days, but it's also
 being actively developed. The aim with this is complete integration with Twitter's v1.1 API.
