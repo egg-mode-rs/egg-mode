@@ -49,4 +49,5 @@ pub mod statuses {
     pub const LIKE: &'static str = "https://api.twitter.com/1.1/favorites/create.json";
     pub const UNLIKE: &'static str = "https://api.twitter.com/1.1/favorites/destroy.json";
     pub const UPDATE: &'static str = "https://api.twitter.com/1.1/statuses/update.json";
+    pub const DELETE_STEM: &'static str = "https://api.twitter.com/1.1/statuses/destroy";
 }

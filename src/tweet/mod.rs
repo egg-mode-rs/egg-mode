@@ -234,3 +234,14 @@ pub fn unlike(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> W
 
     parse_response(&mut resp)
 }
+
+///Delete the given tweet. The authenticated user must be the user who posted the given tweet.
+///
+///On success, returns the given tweet.
+pub fn delete(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
+    let url = format!("{}/{}.json", links::statuses::DELETE_STEM, id);
+
+    let mut resp = try!(auth::post(&url, con_token, access_token, None));
+
+    parse_response(&mut resp)
+}

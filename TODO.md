@@ -30,7 +30,7 @@ tokens.
 - [x] statuses/retweets\_of\_me (`tweet::retweets_of_me`)
 - [x] statuses/retweets/:id (`tweet::retweets_of`)
 - [x] statuses/show/:id (`tweet::show`)
-- [ ] statuses/destroy/:id
+- [x] statuses/destroy/:id (`tweet::delete`)
 - [x] statuses/update (`tweet::DraftTweet::send`)
 - [x] statuses/retweet/:id (`tweet::retweet`)
 - [x] statuses/unretweet/:id (`tweet::unretweet`)

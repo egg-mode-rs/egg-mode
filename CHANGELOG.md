@@ -17,6 +17,7 @@
 - New functions to retweet and unretweet statuses (`retweet`, `unretweet`)
 - New functions to like and un-like statuses (`like`, `unlike`)
 - New struct `DraftTweet` to handle assembling new statuses to post
+- New function to delete a given tweet (`delete`)
 
 ### Changed
 - Moved `UserID` into the user module
