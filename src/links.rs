@@ -43,4 +43,5 @@ pub mod statuses {
     pub const RETWEETS_OF_ME: &'static str = "https://api.twitter.com/1.1/statuses/retweets_of_me.json";
     pub const RETWEETERS_OF: &'static str = "https://api.twitter.com/1.1/statuses/retweeters/ids.json";
     pub const LIKES_OF: &'static str = "https://api.twitter.com/1.1/favorites/list.json";
+    pub const SEARCH: &'static str = "https://api.twitter.com/1.1/search/tweets.json";
 }

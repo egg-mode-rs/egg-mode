@@ -13,6 +13,7 @@
 - New function to load the user's posts that have been retweeted (`retweets_of_me`)
 - New function to load the user IDs who have retweeted a given tweet (`retweeters_of`)
 - New function to load the posts liked by a given user (`liked_by`)
+- New module `search` to contain all the tweet-search structs and methods
 
 ### Changed
 - Moved `UserID` into the user module
