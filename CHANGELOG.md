@@ -16,6 +16,7 @@
 - New module `search` to contain all the tweet-search structs and methods
 - New functions to retweet and unretweet statuses (`retweet`, `unretweet`)
 - New functions to like and un-like statuses (`like`, `unlike`)
+- New struct `DraftTweet` to handle assembling new statuses to post
 
 ### Changed
 - Moved `UserID` into the user module

@@ -31,7 +31,7 @@ tokens.
 - [x] statuses/retweets/:id (`tweet::retweets_of`)
 - [x] statuses/show/:id (`tweet::show`)
 - [ ] statuses/destroy/:id
-- [ ] statuses/update
+- [x] statuses/update (`tweet::DraftTweet::send`)
 - [x] statuses/retweet/:id (`tweet::retweet`)
 - [x] statuses/unretweet/:id (`tweet::unretweet`)
 - [x] statuses/retweeters/ids (`tweet::retweeters_of`)

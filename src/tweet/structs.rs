@@ -1,5 +1,9 @@
+use std::collections::HashMap;
+
 use rustc_serialize::json;
+
 use auth;
+use links;
 use user;
 use error;
 use error::Error::InvalidResponse;
@@ -301,5 +305,72 @@ impl<'a> Timeline<'a> {
             max_id: None,
             min_id: None,
         }
+    }
+}
+
+///Represents an in-progress tweet before it is sent.
+#[derive(Debug)]
+pub struct DraftTweet<'a> {
+    text: &'a str,
+    in_reply_to: Option<i64>,
+    coordinates: Option<(f32, f32)>,
+    display_coordinates: Option<bool>,
+}
+
+impl<'a> DraftTweet<'a> {
+    ///Creates a new `DraftTweet` with the given status text.
+    pub fn new(text: &'a str) -> Self {
+        DraftTweet {
+            text: text,
+            in_reply_to: None,
+            coordinates: None,
+            display_coordinates: None,
+        }
+    }
+
+    ///Marks this draft tweet as replying to the given status ID.
+    ///
+    ///Note that this will only properly take effect if the user who posted the given status is
+    ///@mentioned in the status text, or if the given status was posted by the authenticated user.
+    pub fn in_reply_to(self, in_reply_to: i64) -> Self {
+        DraftTweet {
+            text: self.text,
+            in_reply_to: Some(in_reply_to),
+            coordinates: self.coordinates,
+            display_coordinates: self.display_coordinates,
+        }
+    }
+
+    ///Attach a lat/lon coordinate to this tweet, and mark whether a pin should be placed on the
+    ///exact coordinate when the tweet is displayed.
+    pub fn coordinates(self, latitude: f32, longitude: f32, display: bool) -> Self {
+        DraftTweet {
+            text: self.text,
+            in_reply_to: self.in_reply_to,
+            coordinates: Some((latitude, longitude)),
+            display_coordinates: Some(display),
+        }
+    }
+
+    ///Send the assembled tweet as the authenticated user.
+    pub fn send(&self, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
+        let mut params = HashMap::new();
+        add_param(&mut params, "status", self.text);
+
+        if let Some(reply) = self.in_reply_to {
+            add_param(&mut params, "in_reply_to_status_id", reply.to_string());
+        }
+
+        if let Some((lat, long)) = self.coordinates {
+            add_param(&mut params, "lat", lat.to_string());
+            add_param(&mut params, "long", long.to_string());
+        }
+
+        if let Some(display) = self.display_coordinates {
+            add_param(&mut params, "display_coordinates", display.to_string());
+        }
+
+        let mut resp = try!(auth::post(links::statuses::UPDATE, con_token, access_token, Some(&params)));
+        parse_response(&mut resp)
     }
 }
