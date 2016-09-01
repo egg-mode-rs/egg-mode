@@ -1,4 +1,5 @@
 //! Structs and functions for working with statuses and timelines.
+
 use std::collections::HashMap;
 use rustc_serialize::json;
 use auth;
@@ -50,8 +51,8 @@ pub fn retweets_of(id: i64, count: u32, con_token: &auth::Token, access_token: &
 
 ///Lookup the user IDs that have retweeted the given tweet.
 ///
-///Note that while loading a user's mutes list is a cursored search, it does not allow you to set
-///the page size. Calling `with_page_size` on the iterator returned by this function will not
+///Note that while loading the list of retweeters is a cursored search, it does not allow you to
+///set the page size. Calling `with_page_size` on the iterator returned by this function will not
 ///change the page size used by the network call. Setting `page_size` manually may result in an
 ///error from Twitter.
 pub fn retweeters_of<'a>(id: i64, con_token: &'a auth::Token, access_token: &'a auth::Token)
