@@ -2,7 +2,7 @@ extern crate egg_mode;
 
 mod common;
 
-use egg_mode::search::{self, ResultType, Distance};
+use egg_mode::search::{self, ResultType};
 
 fn main() {
     let config = common::Config::load();
