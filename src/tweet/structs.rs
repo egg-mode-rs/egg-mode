@@ -212,6 +212,13 @@ fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Optio
 }
 
 ///Container for URL, hashtag, mention, and media information associated with a tweet.
+///
+///If a tweet has no hashtags, financial symbols ("cashtags"), links, or mentions, those respective
+///Vecs will be empty. If there is no media attached to the tweet, that field will be `None`.
+///
+///Note that for media attached to a tweet, this struct will only contain the first image of a
+///photo set, or a thumbnail of a video or GIF. Full media information is available in the tweet's
+///`extended_entities` field.
 #[derive(Debug)]
 pub struct TweetEntities {
     ///Collection of hashtags parsed from the tweet.
