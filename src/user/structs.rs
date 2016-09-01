@@ -430,12 +430,9 @@ impl<'a> UserSearch<'a> {
     ///perform a network call.
     pub fn with_page_size(self, page_size: i32) -> Self {
         UserSearch {
-            con_token: self.con_token,
-            access_token: self.access_token,
-            query: self.query,
-            page_num: self.page_num,
             page_size: page_size,
             current_results: None,
+            ..self
         }
     }
 
@@ -445,12 +442,9 @@ impl<'a> UserSearch<'a> {
     ///perform a network call.
     pub fn start_at_page(self, page_num: i32) -> Self {
         UserSearch {
-            con_token: self.con_token,
-            access_token: self.access_token,
-            query: self.query,
             page_num: page_num,
-            page_size: self.page_size,
             current_results: None,
+            ..self
         }
     }
 

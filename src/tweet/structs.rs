@@ -277,13 +277,8 @@ impl<'a> Timeline<'a> {
     ///Helper builder function to set the page size.
     pub fn with_page_size(self, page_size: i32) -> Self {
         Timeline {
-            link: self.link,
-            con_token: self.con_token,
-            access_token: self.access_token,
-            params_base: self.params_base,
             count: page_size,
-            max_id: self.max_id,
-            min_id: self.min_id,
+            ..self
         }
     }
 
@@ -334,10 +329,8 @@ impl<'a> DraftTweet<'a> {
     ///@mentioned in the status text, or if the given status was posted by the authenticated user.
     pub fn in_reply_to(self, in_reply_to: i64) -> Self {
         DraftTweet {
-            text: self.text,
             in_reply_to: Some(in_reply_to),
-            coordinates: self.coordinates,
-            display_coordinates: self.display_coordinates,
+            ..self
         }
     }
 
@@ -345,10 +338,9 @@ impl<'a> DraftTweet<'a> {
     ///exact coordinate when the tweet is displayed.
     pub fn coordinates(self, latitude: f32, longitude: f32, display: bool) -> Self {
         DraftTweet {
-            text: self.text,
-            in_reply_to: self.in_reply_to,
             coordinates: Some((latitude, longitude)),
             display_coordinates: Some(display),
+            ..self
         }
     }
 

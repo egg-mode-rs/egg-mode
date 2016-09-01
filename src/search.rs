@@ -91,36 +91,24 @@ impl<'a> SearchBuilder<'a> {
     ///language code.
     pub fn lang(self, lang: &'a str) -> Self {
         SearchBuilder {
-            query: self.query,
             lang: Some(lang),
-            result_type: self.result_type,
-            count: self.count,
-            until: self.until,
-            geocode: self.geocode,
+            ..self
         }
     }
 
     ///Specify the type of search results to include. The default is `Recent`.
     pub fn result_type(self, result_type: ResultType) -> Self {
         SearchBuilder {
-            query: self.query,
-            lang: self.lang,
             result_type: Some(result_type),
-            count: self.count,
-            until: self.until,
-            geocode: self.geocode,
+            ..self
         }
     }
 
     ///Set the number of tweets to return per-page, up to a maximum of 100. The default is 15.
     pub fn count(self, count: u32) -> Self {
         SearchBuilder {
-            query: self.query,
-            lang: self.lang,
-            result_type: self.result_type,
             count: Some(count),
-            until: self.until,
-            geocode: self.geocode,
+            ..self
         }
     }
 
@@ -129,12 +117,8 @@ impl<'a> SearchBuilder<'a> {
     ///results.
     pub fn until(self, year: u32, month: u32, day: u32) -> Self {
         SearchBuilder {
-            query: self.query,
-            lang: self.lang,
-            result_type: self.result_type,
-            count: self.count,
             until: Some((year, month, day)),
-            geocode: self.geocode,
+            ..self
         }
     }
 
@@ -143,12 +127,8 @@ impl<'a> SearchBuilder<'a> {
     ///profile as a fallback.
     pub fn geocode(self, latitude: f32, longitude: f32, radius: Distance) -> Self {
         SearchBuilder {
-            query: self.query,
-            lang: self.lang,
-            result_type: self.result_type,
-            count: self.count,
-            until: self.until,
             geocode: Some((latitude, longitude, radius)),
+            ..self
         }
     }
 

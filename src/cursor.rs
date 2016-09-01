@@ -237,15 +237,11 @@ impl<'a, T> CursorIter<'a, T>
     pub fn with_page_size(self, page_size: i32) -> CursorIter<'a, T> {
         if self.page_size.is_some() {
             CursorIter {
-                link: self.link,
-                con_token: self.con_token,
-                access_token: self.access_token,
-                params_base: self.params_base,
                 page_size: Some(page_size),
                 previous_cursor: -1,
                 next_cursor: -1,
                 iter: None,
-                _marker: self._marker,
+                ..self
             }
         }
         else {
