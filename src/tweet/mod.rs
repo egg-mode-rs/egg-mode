@@ -185,3 +185,28 @@ pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, ac
     add_name_param(&mut params, &acct.into());
     Timeline::new(links::statuses::LIKES_OF, Some(params), con_token, access_token)
 }
+
+///Retweet the given status as the authenticated user.
+///
+///On success, returns the retweet, with the original status contained in `retweeted_status`.
+pub fn retweet(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
+    let url = format!("{}/{}.json", links::statuses::RETWEET_STEM, id);
+
+    let mut resp = try!(auth::post(&url, con_token, access_token, None));
+
+    parse_response(&mut resp)
+}
+
+///Unretweet the given status as the authenticated user.
+///
+///The given ID may either be the original status, or the ID of the authenticated user's retweet of
+///it.
+///
+///On success, returns the origianl tweet.
+pub fn unretweet(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
+    let url = format!("{}/{}.json", links::statuses::UNRETWEET_STEM, id);
+
+    let mut resp = try!(auth::post(&url, con_token, access_token, None));
+
+    parse_response(&mut resp)
+}
