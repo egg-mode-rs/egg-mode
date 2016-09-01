@@ -38,8 +38,8 @@ tokens.
 - [x] statuses/lookup (`tweet::lookup`, `tweet::lookup_map`)
 - [x] search/tweets (`search::search`)
 - [x] favorites/list (`tweet::liked_by`)
-- [ ] favorites/create
-- [ ] favorites/destroy
+- [x] favorites/create (`tweet::like`)
+- [x] favorites/destroy (`tweet::unlike`)
 
 - [ ] statuses/oembed
 

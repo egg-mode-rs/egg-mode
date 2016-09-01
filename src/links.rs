@@ -46,4 +46,6 @@ pub mod statuses {
     pub const SEARCH: &'static str = "https://api.twitter.com/1.1/search/tweets.json";
     pub const RETWEET_STEM: &'static str = "https://api.twitter.com/1.1/statuses/retweet";
     pub const UNRETWEET_STEM: &'static str = "https://api.twitter.com/1.1/statuses/unretweet";
+    pub const LIKE: &'static str = "https://api.twitter.com/1.1/favorites/create.json";
+    pub const UNLIKE: &'static str = "https://api.twitter.com/1.1/favorites/destroy.json";
 }

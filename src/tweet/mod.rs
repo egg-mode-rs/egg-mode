@@ -202,11 +202,35 @@ pub fn retweet(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> 
 ///The given ID may either be the original status, or the ID of the authenticated user's retweet of
 ///it.
 ///
-///On success, returns the origianl tweet.
+///On success, returns the original tweet.
 pub fn unretweet(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
     let url = format!("{}/{}.json", links::statuses::UNRETWEET_STEM, id);
 
     let mut resp = try!(auth::post(&url, con_token, access_token, None));
+
+    parse_response(&mut resp)
+}
+
+///Like the given status as the authenticated user.
+///
+///On success, returns the liked tweet.
+pub fn like(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
+    let mut params = HashMap::new();
+    add_param(&mut params, "id", id.to_string());
+
+    let mut resp = try!(auth::post(links::statuses::LIKE, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
+}
+
+///Clears a like of the given status as the authenticated user.
+///
+///On success, returns the given tweet.
+pub fn unlike(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
+    let mut params = HashMap::new();
+    add_param(&mut params, "id", id.to_string());
+
+    let mut resp = try!(auth::post(links::statuses::UNLIKE, con_token, access_token, Some(&params)));
 
     parse_response(&mut resp)
 }

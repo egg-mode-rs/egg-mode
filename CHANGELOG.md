@@ -15,6 +15,7 @@
 - New function to load the posts liked by a given user (`liked_by`)
 - New module `search` to contain all the tweet-search structs and methods
 - New functions to retweet and unretweet statuses (`retweet`, `unretweet`)
+- New functions to like and un-like statuses (`like`, `unlike`)
 
 ### Changed
 - Moved `UserID` into the user module
