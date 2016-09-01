@@ -9,7 +9,18 @@
 //!
 //! [Entities]: https://dev.twitter.com/overview/api/entities
 //! [obj]: https://dev.twitter.com/overview/api/entities-in-twitter-objects
-
+//!
+//! ## Using indices and URLs
+//!
+//! When displaying text with accompanied entities, be wary about how you use the accompanied
+//! indices. The indices given by Twitter reference the *graphemes* in the tweet, so something like
+//! `char_indices` will fall flat when faced with text that uses combining characters. The
+//! [unicode-segmentation][] crate provides a means to iterate over the graphemes of a string,
+//! allowing you to make sure you hyperlink the right range of characters in the text.
+//!
+//! [unicode-segmentation]: https://crates.io/crates/unicode-segmentation
+//!
+//! Alternately, when substituting URLs for display, `str::replace` works just fine.
 use common::*;
 use error;
 use error::Error::InvalidResponse;
@@ -27,6 +38,17 @@ pub struct HashtagEntity {
 }
 
 ///Represents a piece of media attached to a tweet.
+///
+///The information in this struct is subtly different depending on what media is being referenced,
+///and which entity container is holding this instance. For videos and GIFs, the `media_url` and
+///`media_url_https` fields each link to a thumbnail image of the media, typically of the first
+///frame. The real video information can be found on the `video_info` field, including various
+///encodings if available.
+///
+///Image links available in `media_url` and `media_url_https` can be obtained in different sizes by
+///appending a colon and one of the available sizes in the `MediaSizes` struct. For example, the
+///cropped thumbnail can be viewed by appending `:thumb` to the end of the URL, and the full-size
+///image can be viewed by appending `:large`.
 #[derive(Debug)]
 pub struct MediaEntity {
     ///A shortened URL to display to clients.

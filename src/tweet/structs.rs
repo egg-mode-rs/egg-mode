@@ -61,10 +61,9 @@ use common::*;
 ///As a tweet can attach an image, GIF, or video, these fields allow you to access information
 ///about the attached media. Note that polls are not surfaced to the Public API at the time of this
 ///writing (2016-09-01). For more information about how to use attached media, see the
-///documentation for [`MediaEntity`][] and [`ExtendedTweetEntities`][].
+///documentation for [`MediaEntity`][].
 ///
 ///[`MediaEntity`]: ../entities/struct.MediaEntity.html
-///[`ExtendedTweetEntities`]: struct.EntendedTweetEntities.html
 ///
 ///* `entities` (note that this also contains information about hyperlinks, user mentions, and
 ///  hashtags in addition to a picture/thumbnail)
