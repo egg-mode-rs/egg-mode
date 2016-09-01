@@ -1,4 +1,24 @@
 //! Structs and methods for searching for tweets.
+//!
+//! Since there are several optional parameters for searches, egg-mode handles it with a builder
+//! pattern. To begin, call `search` with your requested search term. Additional parameters can be
+//! added onto the `SearchBuilder` struct that is returned. When you're ready to load the first
+//! page of results, hand your tokens to `call`.
+//!
+//! ```rust,no_run
+//! # let con_token = egg_mode::Token::new("", "");
+//! # let access_token = egg_mode::Token::new("", "");
+//! use egg_mode::search::{self, ResultType};
+//!
+//! let search = search::search("rustlang")
+//!                     .result_type(ResultType::Recent)
+//!                     .call(&con_token, &access_token)
+//!                     .unwrap();
+//!
+//! for tweet in &search.response.statuses {
+//!     println!("(@{}) {}", tweet.user.screen_name, tweet.text);
+//! }
+//! ```
 
 use std::collections::HashMap;
 use std::fmt;
