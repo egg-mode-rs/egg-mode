@@ -11,6 +11,72 @@ use entities;
 use common::*;
 
 ///Represents a single status update.
+///
+///The fields present in this struct can be mainly split up based on the context they're present
+///for.
+///
+///## Base Tweet Info
+///
+///This information is the basic information inherent to all tweets, regardless of context.
+///
+///* `text`
+///* `id`
+///* `created_at`
+///* `user`
+///* `source`
+///* `favorite_count`/`retweet_count`
+///* `lang`, though third-party clients usually don't surface this at a user-interface level.
+///  Twitter Web uses this to create machine-translations of the tweet.
+///
+///## Perspective-based data
+///
+///This information depends on the authenticated user who called the data. These are left as
+///Options because certain contexts where the information is pulled either don't have an
+///authenticated user to compare with, or don't have to opportunity to poll the user's interactions
+///with the tweet.
+///
+///* `favorited`
+///* `retweeted`
+///* `current_user_retweet`
+///
+///## Replies
+///
+///This information is only present when the tweet in question is marked as being a reply to
+///another tweet, or when it's threaded into a chain from the same user.
+///
+///* `in_reply_to_user_id`/`in_reply_to_screen_name`
+///* `in_reply_to_status_id`
+///
+///## Retweets and Quote Tweets
+///
+///This information is only present when the tweet in question is a native retweet or is a "quote
+///tweet" that references another tweet by linking to it. These fields allow you to reference the
+///parent tweet without having to make another call to `show`.
+///
+///* `retweeted_status`
+///* `quoted_status`/`quoted_status_id`
+///
+///## Media
+///
+///As a tweet can attach an image, GIF, or video, these fields allow you to access information
+///about the attached media. Note that polls are not surfaced to the Public API at the time of this
+///writing (2016-09-01). For more information about how to use attached media, see the
+///documentation for [`MediaEntity`][] and [`ExtendedTweetEntities`][].
+///
+///[`MediaEntity`]: ../entities/struct.MediaEntity.html
+///[`ExtendedTweetEntities`]: struct.EntendedTweetEntities.html
+///
+///* `entities` (note that this also contains information about hyperlinks, user mentions, and
+///  hashtags in addition to a picture/thumbnail)
+///* `extended_entities`: This field is only present for tweets with attached media, and houses
+///  more complete media information, in the case of a photo set, video, or GIF. For videos and
+///  GIFs, note that `entities` will only contain a thumbnail, and the actual video links will be
+///  in this field. For tweets with more than one photo attached, `entities` will only contain the
+///  first photo, and this field will contain all of them.
+///* `possibly_sensitive`
+///* `withheld_copyright`
+///* `withheld_in_countries`
+///* `withheld_scope`
 #[derive(Debug)]
 pub struct Tweet {
     //If the user has contributors enabled, this will show which accounts contributed to this
