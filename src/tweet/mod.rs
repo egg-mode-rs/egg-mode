@@ -1,4 +1,53 @@
 //! Structs and functions for working with statuses and timelines.
+//!
+//! In this module, you can find various structs and methods to load and interact with tweets and
+//! their metadata. This also includes loading a user's timeline, posting a new tweet, or liking or
+//! retweeting another tweet. However, this does *not* include searching for tweets; that
+//! functionality is in the [`search`][] module.
+//!
+//! [`search`]: ../search/index.html
+//!
+//! ## Types
+//!
+//! - `Tweet`/`TweetEntities`/`ExtendedTweetEntities`: At the bottom of it all, this is the struct
+//!   that represents a single tweet. The `*Entities` structs contain information about media,
+//!   links, and hashtags within their parent tweet.
+//! - `DraftTweet`: This is what you use to post a new tweet. At present, not all available options
+//!   are supported, but basics like marking the tweet as a reply and attaching a location
+//!   coordinate are available.
+//! - `Timeline`: Returned by several functions in this module, this is how you cursor through a
+//!   collection of tweets. See the struct-level documentation for details.
+//!
+//! ## Functions
+//!
+//! ### User actions
+//!
+//! These functions perform actions on their given tweets. They require write access to the
+//! authenticated user's account.
+//!
+//! - `delete` (for creating a tweet, see `DraftTweet`)
+//! - `like`/`unlike`
+//! - `retweet`/`unretweet`
+//!
+//! ### Metadata lookup
+//!
+//! These functions either perform some direct lookup of specific tweets, or provide some metadata
+//! about the given tweet in a direct (non-`Timeline`) fashion.
+//!
+//! - `show`
+//! - `lookup`/`lookup_map` (for the differences between these functions, see their respective
+//!   documentations.)
+//! - `retweeters_of`
+//! - `retweets_of`
+//!
+//! ### `Timeline` cursors
+//!
+//! These functions return `Timeline`s and can be cursored around in the same way. See the
+//! documentation for `Timeline` to learn how to navigate these return values. This correspond to a
+//! user's own view of Twitter, or with feeds you might see attached to a user's profile page.
+//!
+//! - `home_timeline`/`mentions_timeline`/`retweets_of_me`
+//! - `user_timeline`/`liked_by`
 
 use std::collections::HashMap;
 use rustc_serialize::json;
