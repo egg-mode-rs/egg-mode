@@ -4,3 +4,4 @@ Cargo.lock
 consumer_key
 consumer_secret
 twitter_settings
+asdf.*
