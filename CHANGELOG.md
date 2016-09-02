@@ -1,6 +1,6 @@
 # Changelog for egg-mode
 
-## Pending
+## [0.4.0] - 2016-09-02
 ### Added
 - New module `tweet` and `Tweet` struct
 - New function to load a single tweet (`show`)
