@@ -21,6 +21,21 @@
 //! [unicode-segmentation]: https://crates.io/crates/unicode-segmentation
 //!
 //! Alternately, when substituting URLs for display, `str::replace` works just fine.
+//!
+//! ### Shortened, Display, and Expanded URLs
+//!
+//! URL and Media entities contain references to a URL within their parent text. However, due to
+//! the nature of how Twitter handles URLs in tweets and user bios, each entity struct has three
+//! URLs within it:
+//!
+//! - `url`: This is the `t.co` shortened URL as returned directly from twitter. This is what
+//!   contributes to character count in tweets and user bios.
+//! - `expanded_url`: This is the original URL the user entered in their tweet. While it is given
+//!   to API client, Twitter recommends still sending users to the shortened link, for analytics
+//!   purposes. Twitter Web uses this field to supply hover-text for where the URL resolves to.
+//! - `display_url`: This is a truncated version of `expanded_url`, meant to be displayed inline
+//!   with the parent text. This is useful to show users where the link resolves to, without
+//!   potentially filling up a lot of space with the fullly expanded URL.
 use common::*;
 use error;
 use error::Error::InvalidResponse;
