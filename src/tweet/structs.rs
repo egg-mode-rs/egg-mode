@@ -272,8 +272,77 @@ impl FromJson for ExtendedTweetEntities {
     }
 }
 
-///Helper struct to navigate collections of tweets by requesting tweets older or newer than certain
-///IDs.
+/// Helper struct to navigate collections of tweets by requesting tweets older or newer than certain
+/// IDs.
+///
+/// Using a Timeline to navigate collections of tweets (like a user's timeline, their list of likes,
+/// etc) allows you to efficiently cursor through a collection and only load in tweets you need.
+///
+/// To begin, call a method that returns a `Timeline`, optionally set the page size, and call
+/// `start` to load the first page of results:
+///
+/// ```rust,no_run
+/// # let con_token = egg_mode::Token::new("", "");
+/// # let access_token = egg_mode::Token::new("", "");
+/// let timeline = egg_mode::tweet::home_timeline(&con_token, &access_token)
+///                                .with_page_size(10);
+///
+/// for tweet in &timeline.start().unwrap().response {
+///     println!("<@{}> {}", tweet.user.screen_name, tweet.text);
+/// }
+/// ```
+///
+/// If you need to load the next set of tweets, call `older`, which will automatically update the
+/// tweet IDs it tracks:
+///
+/// ```rust,no_run
+/// # let con_token = egg_mode::Token::new("", "");
+/// # let access_token = egg_mode::Token::new("", "");
+/// # let timeline = egg_mode::tweet::home_timeline(&con_token, &access_token);
+/// # timeline.start().unwrap();
+/// for tweet in &timeline.older(None).unwrap().response {
+///     println!("<@{}> {}", tweet.user.screen_name, tweet.text);
+/// }
+/// ```
+///
+/// ...and similarly for `newer`, which operates in a similar fashion.
+///
+/// If you want to start afresh and reload the newest set of tweets again, you can call `start`
+/// again, which will clear the tracked tweet IDs before loading the newest set of tweets. However,
+/// if you've been storing these tweets as you go, and already know the newest tweet ID you have on
+/// hand, you can load only those tweets you need like this:
+///
+/// ```rust,no_run
+/// # let con_token = egg_mode::Token::new("", "");
+/// # let access_token = egg_mode::Token::new("", "");
+/// let timeline = egg_mode::tweet::home_timeline(&con_token, &access_token)
+///                                .with_page_size(10);
+///
+/// timeline.start().unwrap();
+///
+/// //keep the max_id for later
+/// let reload_id = timeline.max_id.unwrap();
+///
+/// //simulate scrolling down a little bit
+/// timeline.older(None).unwrap();
+/// timeline.older(None).unwrap();
+///
+/// //reload the timeline with only what's new
+/// timeline.reset();
+/// timeline.older(Some(reload_id)).unwrap();
+/// ```
+///
+/// Here, the argument to `older` means "older than what I just returned, but newer than the given
+/// ID". Since we cleared the tracked IDs with `reset`, that turns into "the newest tweets
+/// available that were posted after the given ID". The earlier invocations of `older` with `None`
+/// do not place a bound on the tweets it loads. `newer` operates in a similar fashion with its
+/// argument, saying "newer than what I just returned, but not newer than this given ID". When
+/// called like this, it's possible for these methods to return nothing, which will also clear the
+/// `Timeline`'s tracked IDs.
+///
+/// If you want to manually pull tweets between certain IDs, the baseline `call` function can do
+/// that for you. Keep in mind, though, that `call` doesn't update the `min_id` or `max_id` fields,
+/// so you'll have to set those yourself if you want to follow up with `older` or `newer`.
 pub struct Timeline<'a> {
     ///The URL to request tweets from.
     link: &'static str,
@@ -294,10 +363,15 @@ pub struct Timeline<'a> {
 }
 
 impl<'a> Timeline<'a> {
-    ///Clear the saved IDs on this timeline, and return the most recent set of tweets.
-    pub fn start(&mut self) -> WebResponse<Vec<Tweet>> {
+    ///Clear the saved IDs on this timeline.
+    pub fn reset(&mut self) {
         self.max_id = None;
         self.min_id = None;
+    }
+
+    ///Clear the saved IDs on this timeline, and return the most recent set of tweets.
+    pub fn start(&mut self) -> WebResponse<Vec<Tweet>> {
+        self.reset();
 
         self.older(None)
     }
@@ -361,6 +435,9 @@ impl<'a> Timeline<'a> {
     }
 
     ///Create an instance of `Timeline` with the given link and tokens.
+    ///
+    ///This is an infrastructure function, not meant to be used from client code. It's not
+    ///guaranteed to stick around between versions.
     pub fn new(link: &'static str, params_base: Option<ParamList<'a>>,
                con_token: &'a auth::Token, access_token: &'a auth::Token) -> Self {
         Timeline {
