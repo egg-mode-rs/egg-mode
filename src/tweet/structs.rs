@@ -284,7 +284,7 @@ impl FromJson for ExtendedTweetEntities {
 /// ```rust,no_run
 /// # let con_token = egg_mode::Token::new("", "");
 /// # let access_token = egg_mode::Token::new("", "");
-/// let timeline = egg_mode::tweet::home_timeline(&con_token, &access_token)
+/// let mut timeline = egg_mode::tweet::home_timeline(&con_token, &access_token)
 ///                                .with_page_size(10);
 ///
 /// for tweet in &timeline.start().unwrap().response {
@@ -298,7 +298,7 @@ impl FromJson for ExtendedTweetEntities {
 /// ```rust,no_run
 /// # let con_token = egg_mode::Token::new("", "");
 /// # let access_token = egg_mode::Token::new("", "");
-/// # let timeline = egg_mode::tweet::home_timeline(&con_token, &access_token);
+/// # let mut timeline = egg_mode::tweet::home_timeline(&con_token, &access_token);
 /// # timeline.start().unwrap();
 /// for tweet in &timeline.older(None).unwrap().response {
 ///     println!("<@{}> {}", tweet.user.screen_name, tweet.text);
@@ -315,7 +315,7 @@ impl FromJson for ExtendedTweetEntities {
 /// ```rust,no_run
 /// # let con_token = egg_mode::Token::new("", "");
 /// # let access_token = egg_mode::Token::new("", "");
-/// let timeline = egg_mode::tweet::home_timeline(&con_token, &access_token)
+/// let mut timeline = egg_mode::tweet::home_timeline(&con_token, &access_token)
 ///                                .with_page_size(10);
 ///
 /// timeline.start().unwrap();
@@ -452,7 +452,47 @@ impl<'a> Timeline<'a> {
     }
 }
 
-///Represents an in-progress tweet before it is sent.
+/// Represents an in-progress tweet before it is sent.
+///
+/// This is your entry point to posting new tweets to Twitter. To begin, make a new `DraftTweet` by
+/// calling `new` with your desired status text:
+///
+/// ```rust,no_run
+/// use egg_mode::tweet::DraftTweet;
+///
+/// let draft = DraftTweet::new("This is an example status!");
+/// ```
+///
+/// As-is, the draft won't do anything until you call `send` to post it:
+///
+/// ```rust,no_run
+/// # let con_token = egg_mode::Token::new("", "");
+/// # let access_token = egg_mode::Token::new("", "");
+/// # use egg_mode::tweet::DraftTweet;
+/// # let draft = DraftTweet::new("This is an example status!");
+/// draft.send(&con_token, &access_token).unwrap();
+/// ```
+///
+/// Right now, the options for adding metadata to a post are pretty sparse. See the adaptor
+/// functions below to see what metadata can be set. For example, you can use `in_reply_to` to
+/// create a reply-chain like this:
+///
+/// ```rust,no_run
+/// # let con_token = egg_mode::Token::new("", "");
+/// # let access_token = egg_mode::Token::new("", "");
+/// use egg_mode::tweet::DraftTweet;
+///
+/// let draft = DraftTweet::new("I'd like to start a thread here.");
+/// let tweet = draft.send(&con_token, &access_token).unwrap();
+///
+/// let draft = DraftTweet::new("You see, I have a lot of things to say.")
+///                        .in_reply_to(tweet.response.id);
+/// let tweet = draft.send(&con_token, &access_token).unwrap();
+///
+/// let draft = DraftTweet::new("Thank you for your time.")
+///                        .in_reply_to(tweet.response.id);
+/// let tweet = draft.send(&con_token, &access_token).unwrap();
+/// ```
 #[derive(Debug)]
 pub struct DraftTweet<'a> {
     text: &'a str,
