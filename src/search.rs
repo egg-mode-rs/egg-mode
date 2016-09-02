@@ -19,6 +19,13 @@
 //!     println!("(@{}) {}", tweet.user.screen_name, tweet.text);
 //! }
 //! ```
+//!
+//! Once you have your `SearchResult`, you can navigate the search results by calling `older` and
+//! `newer` to get the next and previous pages, respsectively. In addition, you can see your
+//! original query in the search result struct as well, so you can categorize multiple searches by
+//! their query. While this is given as a regular field, note that modifying `query` will not
+//! change what is searched for when you call `older` or `newer`; the `SearchResult` keeps its
+//! search arguments in a separate private field.
 
 use std::collections::HashMap;
 use std::fmt;
