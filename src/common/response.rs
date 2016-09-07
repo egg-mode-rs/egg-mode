@@ -80,6 +80,8 @@ impl<T> ExactSizeIterator for ResponseIter<T> {
     }
 }
 
+///Iteration over a response that returned a collection, copying the rate limit information across
+///all values.
 impl<T> IntoIterator for Response<Vec<T>> {
     type Item = Response<T>;
     type IntoIter = ResponseIter<T>;
@@ -94,6 +96,8 @@ impl<T> IntoIterator for Response<Vec<T>> {
     }
 }
 
+///`FromIterator` impl that allows collecting several responses into one, preserving the latest
+///rate limit information.
 impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
     fn from_iter<I>(iter: I) -> Self
         where I: IntoIterator<Item=Response<T>>
