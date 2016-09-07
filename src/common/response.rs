@@ -29,6 +29,10 @@ pub struct Response<T> {
 }
 
 ///Iterator returned by calling `.into_iter()` on a `Response<Vec<T>>`.
+///
+///This provides a convenient method to iterate over a response that returned a collection, while
+///copying rate-limit information across the entire iteration. For example, this is used in
+///`CursorIter`'s implemention to propagate rate-limit information across a given page of results.
 pub struct ResponseIter<T> {
     rate_limit: i32,
     rate_limit_remaining: i32,
