@@ -500,7 +500,7 @@ pub struct DraftTweet<'a> {
     ///If present, the ID of the tweet this draft is replying to.
     pub in_reply_to: Option<i64>,
     ///If present, the latitude/longitude coordinates to attach to the draft.
-    pub coordinates: Option<(f32, f32)>,
+    pub coordinates: Option<(f64, f64)>,
     ///If present (and if `coordinates` is present), indicates whether to display a pin on the
     ///exact coordinate when the eventual tweet is displayed.
     pub display_coordinates: Option<bool>,
@@ -530,7 +530,7 @@ impl<'a> DraftTweet<'a> {
 
     ///Attach a lat/lon coordinate to this tweet, and mark whether a pin should be placed on the
     ///exact coordinate when the tweet is displayed.
-    pub fn coordinates(self, latitude: f32, longitude: f32, display: bool) -> Self {
+    pub fn coordinates(self, latitude: f64, longitude: f64, display: bool) -> Self {
         DraftTweet {
             coordinates: Some((latitude, longitude)),
             display_coordinates: Some(display),

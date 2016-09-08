@@ -6,6 +6,7 @@
 
 ### Changed
 - Fields on `DraftTweet` are public to facilitate UI for long-term draft storage
+- `DraftTweet`'s coordinates are now f64 instead of f32
 
 ## [0.4.0] - 2016-09-02
 ### Added
