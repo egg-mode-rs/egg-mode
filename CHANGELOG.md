@@ -4,6 +4,9 @@
 ### Added
 - New methods on `SearchBuilder` to constrain initial searches to be before or after given tweet IDs
 
+### Changed
+- Fields on `DraftTweet` are public to facilitate UI for long-term draft storage
+
 ## [0.4.0] - 2016-09-02
 ### Added
 - New module `tweet` and `Tweet` struct
