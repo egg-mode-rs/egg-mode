@@ -495,10 +495,15 @@ impl<'a> Timeline<'a> {
 /// ```
 #[derive(Debug)]
 pub struct DraftTweet<'a> {
-    text: &'a str,
-    in_reply_to: Option<i64>,
-    coordinates: Option<(f32, f32)>,
-    display_coordinates: Option<bool>,
+    ///The text of the draft tweet.
+    pub text: &'a str,
+    ///If present, the ID of the tweet this draft is replying to.
+    pub in_reply_to: Option<i64>,
+    ///If present, the latitude/longitude coordinates to attach to the draft.
+    pub coordinates: Option<(f32, f32)>,
+    ///If present (and if `coordinates` is present), indicates whether to display a pin on the
+    ///exact coordinate when the eventual tweet is displayed.
+    pub display_coordinates: Option<bool>,
 }
 
 impl<'a> DraftTweet<'a> {
