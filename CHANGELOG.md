@@ -1,5 +1,9 @@
 # Changelog for egg-mode
 
+## Pending
+### Added
+- New methods on `SearchBuilder` to constrain initial searches to be before or after given tweet IDs
+
 ## [0.4.0] - 2016-09-02
 ### Added
 - New module `tweet` and `Tweet` struct

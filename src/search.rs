@@ -48,6 +48,8 @@ pub fn search<'a>(query: &'a str) -> SearchBuilder<'a> {
         count: None,
         until: None,
         geocode: None,
+        since_id: None,
+        max_id: None,
     }
 }
 
@@ -90,7 +92,9 @@ pub struct SearchBuilder<'a> {
     result_type: Option<ResultType>,
     count: Option<u32>,
     until: Option<(u32, u32, u32)>,
-    geocode: Option<(f32, f32, Distance)>
+    geocode: Option<(f32, f32, Distance)>,
+    since_id: Option<i64>,
+    max_id: Option<i64>,
 }
 
 impl<'a> SearchBuilder<'a> {
@@ -139,6 +143,24 @@ impl<'a> SearchBuilder<'a> {
         }
     }
 
+    ///Restricts results to those with higher IDs than (i.e. that were posted after) the given
+    ///tweet ID.
+    pub fn since_tweet(self, since_id: i64) -> Self {
+        SearchBuilder {
+            since_id: Some(since_id),
+            ..self
+        }
+    }
+
+    ///Restricts results to those with IDs no higher than (i.e. were posted earlier than) the given
+    ///tweet ID. Will include the given tweet in search results.
+    pub fn max_tweet(self, max_id: i64) -> Self {
+        SearchBuilder {
+            max_id: Some(max_id),
+            ..self
+        }
+    }
+
     ///Finalize the search terms and return the first page of responses.
     pub fn call(self, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<SearchResult<'a>> {
         let mut params = HashMap::new();
@@ -166,6 +188,14 @@ impl<'a> SearchBuilder<'a> {
                 Distance::Miles(r) => add_param(&mut params, "geocode", format!("{:.6},{:.6},{}mi", lat, lon, r)),
                 Distance::Kilometers(r) => add_param(&mut params, "geocode", format!("{:.6},{:.6},{}km", lat, lon, r)),
             };
+        }
+
+        if let Some(since_id) = self.since_id {
+            add_param(&mut params, "since_id", since_id.to_string());
+        }
+
+        if let Some(max_id) = self.max_id {
+            add_param(&mut params, "max_id", max_id.to_string());
         }
 
         let mut resp = try!(auth::get(links::statuses::SEARCH, con_token, access_token, Some(&params)));
