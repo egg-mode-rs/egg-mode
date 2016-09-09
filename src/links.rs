@@ -51,3 +51,7 @@ pub mod statuses {
     pub const UPDATE: &'static str = "https://api.twitter.com/1.1/statuses/update.json";
     pub const DELETE_STEM: &'static str = "https://api.twitter.com/1.1/statuses/destroy";
 }
+
+pub mod place {
+    pub const SHOW_STEM: &'static str = "https://api.twitter.com/1.1/geo/id";
+}

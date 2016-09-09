@@ -3,6 +3,8 @@
 ## Pending
 ### Added
 - New methods on `SearchBuilder` to constrain initial searches to be before or after given tweet IDs
+- New module `place` and `Place` struct
+- New function to load a single place from ID (`show`)
 
 ### Changed
 - Fields on `DraftTweet` are public to facilitate UI for long-term draft storage

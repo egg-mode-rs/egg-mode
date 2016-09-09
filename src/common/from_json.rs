@@ -26,6 +26,12 @@ impl<T> FromJson for Vec<T> where T: FromJson {
     }
 }
 
+impl<T> FromJson for Box<T> where T: FromJson {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        Ok(Box::new(try!(T::from_json(input))))
+    }
+}
+
 impl FromJson for i64 {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         input.as_i64().ok_or(InvalidResponse("expected an i64", Some(input.to_string())))
@@ -35,6 +41,12 @@ impl FromJson for i64 {
 impl FromJson for i32 {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         input.as_i64().map(|x| x as i32).ok_or(InvalidResponse("expected an i32", Some(input.to_string())))
+    }
+}
+
+impl FromJson for f64 {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        input.as_f64().ok_or(InvalidResponse("expected an f64", Some(input.to_string())))
     }
 }
 
@@ -70,6 +82,29 @@ impl FromJson for (i32, i32) {
         }
 
         Ok((int_vec[0] as i32, int_vec[1] as i32))
+    }
+}
+
+impl FromJson for (f64, f64) {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        //assumptions: input is
+        // - an array
+        // - of floats
+        // - with exactly two entries
+        //any deviation from these assumptions will return an error.
+        let float_vec = try!(input.as_array()
+                                  .ok_or(InvalidResponse("expected an array for a pair", Some(input.to_string())))
+                                  .and_then(|v| v.iter()
+                                                 .map(|i| i.as_f64())
+                                                 .collect::<Option<Vec<_>>>()
+                                                 .ok_or(InvalidResponse("array for pair was not fully floats",
+                                                                        Some(input.to_string())))));
+
+        if float_vec.len() != 2 {
+            return Err(InvalidResponse("array for pair didn't have two entries", Some(input.to_string())));
+        }
+
+        Ok((float_vec[0], float_vec[1]))
     }
 }
 

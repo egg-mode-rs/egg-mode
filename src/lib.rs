@@ -78,6 +78,7 @@ pub mod entities;
 pub mod cursor;
 pub mod tweet;
 pub mod search;
+pub mod place;
 mod links;
 mod common;
 

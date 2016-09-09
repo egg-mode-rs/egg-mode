@@ -124,7 +124,7 @@ detail other than the response examples for those endpoints.
 
 - [ ] geo/search
 - [ ] geo/reverse\_geocode
-- [ ] geo/id/:place\_id
+- [x] geo/id/:place\_id (`place::show`)
 
 ### Account Settings/Misc
 
