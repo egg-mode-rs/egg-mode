@@ -5,10 +5,14 @@
 - New methods on `SearchBuilder` to constrain initial searches to be before or after given tweet IDs
 - New module `place` and `Place` struct
 - New function to load a single place from ID (`show`)
+- New functions to load a list of places from a specific latitude/longitude (`reverse_geocode`,
+  `reverse_geocode_url`)
 
 ### Changed
 - Fields on `DraftTweet` are public to facilitate UI for long-term draft storage
 - `DraftTweet`'s coordinates are now f64 instead of f32
+- New error enum, `BadUrl`, telling you that you passed a bad URL to `reverse_geocode_url`
+  - This is a **breaking change** if you were matching on the error types before
 
 ## [0.4.0] - 2016-09-02
 ### Added

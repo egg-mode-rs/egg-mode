@@ -54,4 +54,5 @@ pub mod statuses {
 
 pub mod place {
     pub const SHOW_STEM: &'static str = "https://api.twitter.com/1.1/geo/id";
+    pub const REVERSE_GEOCODE: &'static str = "https://api.twitter.com/1.1/geo/reverse_geocode.json";
 }

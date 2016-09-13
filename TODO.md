@@ -123,7 +123,7 @@ detail other than the response examples for those endpoints.
 ### Places
 
 - [ ] geo/search
-- [ ] geo/reverse\_geocode
+- [x] geo/reverse\_geocode (`place::reverse_geocode`/`place::reverse_geocode_url`)
 - [x] geo/id/:place\_id (`place::show`)
 
 ### Account Settings/Misc
