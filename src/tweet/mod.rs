@@ -50,248 +50,565 @@
 //! - `user_timeline`/`liked_by`
 
 use std::collections::HashMap;
+
 use rustc_serialize::json;
+
 use auth;
-use cursor;
-use user::UserID;
-use error::Error::InvalidResponse;
 use links;
+use user;
+use error;
+use error::Error::InvalidResponse;
+use entities;
 use common::*;
 
-mod structs;
+mod fun;
 
-pub use self::structs::*;
+pub use self::fun::*;
 
-///Lookup a single tweet by numeric ID.
-pub fn show(id: i64, con_token: &auth::Token, access_token: &auth::Token)
-    -> WebResponse<Tweet>
-{
-    let mut params = HashMap::new();
-    add_param(&mut params, "id", id.to_string());
-    add_param(&mut params, "include_my_retweet", "true");
-
-    let mut resp = try!(auth::get(links::statuses::SHOW, con_token, access_token, Some(&params)));
-
-    parse_response(&mut resp)
+///Represents a single status update.
+///
+///The fields present in this struct can be mainly split up based on the context they're present
+///for.
+///
+///## Base Tweet Info
+///
+///This information is the basic information inherent to all tweets, regardless of context.
+///
+///* `text`
+///* `id`
+///* `created_at`
+///* `user`
+///* `source`
+///* `favorite_count`/`retweet_count`
+///* `lang`, though third-party clients usually don't surface this at a user-interface level.
+///  Twitter Web uses this to create machine-translations of the tweet.
+///
+///## Perspective-based data
+///
+///This information depends on the authenticated user who called the data. These are left as
+///Options because certain contexts where the information is pulled either don't have an
+///authenticated user to compare with, or don't have to opportunity to poll the user's interactions
+///with the tweet.
+///
+///* `favorited`
+///* `retweeted`
+///* `current_user_retweet`
+///
+///## Replies
+///
+///This information is only present when the tweet in question is marked as being a reply to
+///another tweet, or when it's threaded into a chain from the same user.
+///
+///* `in_reply_to_user_id`/`in_reply_to_screen_name`
+///* `in_reply_to_status_id`
+///
+///## Retweets and Quote Tweets
+///
+///This information is only present when the tweet in question is a native retweet or is a "quote
+///tweet" that references another tweet by linking to it. These fields allow you to reference the
+///parent tweet without having to make another call to `show`.
+///
+///* `retweeted_status`
+///* `quoted_status`/`quoted_status_id`
+///
+///## Media
+///
+///As a tweet can attach an image, GIF, or video, these fields allow you to access information
+///about the attached media. Note that polls are not surfaced to the Public API at the time of this
+///writing (2016-09-01). For more information about how to use attached media, see the
+///documentation for [`MediaEntity`][].
+///
+///[`MediaEntity`]: ../entities/struct.MediaEntity.html
+///
+///* `entities` (note that this also contains information about hyperlinks, user mentions, and
+///  hashtags in addition to a picture/thumbnail)
+///* `extended_entities`: This field is only present for tweets with attached media, and houses
+///  more complete media information, in the case of a photo set, video, or GIF. For videos and
+///  GIFs, note that `entities` will only contain a thumbnail, and the actual video links will be
+///  in this field. For tweets with more than one photo attached, `entities` will only contain the
+///  first photo, and this field will contain all of them.
+///* `possibly_sensitive`
+///* `withheld_copyright`
+///* `withheld_in_countries`
+///* `withheld_scope`
+#[derive(Debug)]
+pub struct Tweet {
+    //If the user has contributors enabled, this will show which accounts contributed to this
+    //tweet.
+    //pub contributors: Option<Contributors>,
+    //The location point attached to the tweet, if present.
+    //pub coordinates: Option<Coordinates>,
+    ///UTC timestamp showing when the tweet was posted, formatted like "Wed Aug 27 13:08:45 +0000
+    ///2008".
+    pub created_at: String,
+    ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
+    pub current_user_retweet: Option<i64>,
+    ///Link, hashtag, and user mention information extracted from the tweet text.
+    pub entities: TweetEntities,
+    ///Extended media information attached to the tweet, if media is available.
+    ///
+    ///If a tweet has a photo, set of photos, gif, or video attached to it, this field will be
+    ///present and contain the real media information. The information available in the `media`
+    ///field of `entities` will only contain the first photo of a set, or a thumbnail of a gif or
+    ///video.
+    pub extended_entities: Option<ExtendedTweetEntities>,
+    ///"Approximately" how many times this tweet has been liked by users.
+    pub favorite_count: i32,
+    ///Indicates whether the authenticated user has liked this tweet.
+    pub favorited: Option<bool>,
+    //Indicates the maximum `FilterLevel` parameter that can be applied to a stream and still show
+    //this tweet.
+    //pub filter_level: FilterLevel,
+    ///Numeric ID for this tweet.
+    pub id: i64,
+    ///If the tweet is a reply, contains the ID of the user that was replied to.
+    pub in_reply_to_user_id: Option<i64>,
+    ///If the tweet is a reply, contains the screen name of the user that was replied to.
+    pub in_reply_to_screen_name: Option<String>,
+    ///If the tweet is a reply, contains the ID of the tweet that was replied to.
+    pub in_reply_to_status_id: Option<i64>,
+    ///Can contain a language ID indicating the machine-detected language of the text, or "und" if
+    ///no language could be detected.
+    pub lang: String,
+    //TODO: Is this the user-entered location field?
+    //When present, the `Place` that this tweet is associated with (but not necessarily where it
+    //originated from).
+    //pub place: Option<Place>,
+    ///If the tweet has a link, indicates whether the link may contain content that could be
+    ///identified as sensitive.
+    pub possibly_sensitive: Option<bool>,
+    ///If this tweet is quoting another by link, contains the ID of the quoted tweet.
+    pub quoted_status_id: Option<i64>,
+    ///If this tweet is quoting another by link, contains the quoted tweet.
+    pub quoted_status: Option<Box<Tweet>>,
+    //"A set of key-value pairs indicating the intended contextual delivery of the containing
+    //Tweet. Currently used by Twitter’s Promoted Products."
+    //pub scopes: Option<Scopes>,
+    ///The number of times this tweet has been retweeted (with native retweets).
+    pub retweet_count: i32,
+    ///Indicates whether the authenticated user has retweeted this tweet.
+    pub retweeted: Option<bool>,
+    ///If this tweet is a retweet, then this field contains the original status information.
+    ///
+    ///The separation between retweet and original is so that retweets can be recalled by deleting
+    ///the retweet, and so that liking a retweet results in an additional notification to the user
+    ///who retweeted the status, as well as the original poster.
+    pub retweeted_status: Option<Box<Tweet>>,
+    ///The application used to post the tweet, as an HTML anchor tag containing the app's URL and
+    ///name.
+    pub source: String, //TODO: this is html, i want to parse this eventually
+    ///The text of the tweet.
+    pub text: String,
+    ///The user who posted this tweet.
+    pub user: Box<user::TwitterUser>,
+    ///If present and `true`, indicates that this tweet has been withheld due to a DMCA complaint.
+    pub withheld_copyright: bool,
+    ///If present, contains two-letter country codes indicating where this tweet is being withheld.
+    ///
+    ///The following special codes exist:
+    ///
+    ///- `XX`: Withheld in all countries
+    ///- `XY`: Withheld due to DMCA complaint.
+    pub withheld_in_countries: Option<Vec<String>>,
+    ///If present, indicates whether the content being withheld is the `status` or the `user`.
+    pub withheld_scope: Option<String>,
 }
 
-///Lookup the most recent 100 (or fewer) retweets of the given tweet.
-///
-///Use the `count` parameter to indicate how many retweets you would like to retrieve. If `count`
-///is 0 or greater than 100, it will be defaulted to 100 before making the call.
-pub fn retweets_of(id: i64, count: u32, con_token: &auth::Token, access_token: &auth::Token)
-    -> WebResponse<Vec<Tweet>>
-{
-    let mut params = HashMap::new();
+impl FromJson for Tweet {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse("Tweet received json that wasn't an object", Some(input.to_string())));
+        }
 
-    if count == 0 || count > 100 {
-        add_param(&mut params, "count", 100.to_string());
+        Ok(Tweet {
+            //contributors: Option<Contributors>,
+            //coordinates: Option<Coordinates>,
+            created_at: try!(field(input, "created_at")),
+            current_user_retweet: try!(current_user_retweet(input, "current_user_retweet")),
+            entities: try!(field(input, "entities")),
+            extended_entities: field(input, "extended_entities").ok(),
+            favorite_count: field(input, "favorite_count").unwrap_or(0),
+            favorited: field(input, "favorited").ok(),
+            //filter_level: FilterLevel,
+            id: try!(field(input, "id")),
+            in_reply_to_user_id: field(input, "in_reply_to_user_id").ok(),
+            in_reply_to_screen_name: field(input, "in_reply_to_screen_name").ok(),
+            in_reply_to_status_id: field(input, "in_reply_to_status_id").ok(),
+            lang: try!(field(input, "lang")),
+            //place: Option<Place>,
+            possibly_sensitive: field(input, "possibly_sensitive").ok(),
+            quoted_status_id: field(input, "quoted_status_id").ok(),
+            quoted_status: field(input, "quoted_status").map(Box::new).ok(),
+            //scopes: Option<Scopes>,
+            retweet_count: try!(field(input, "retweet_count")),
+            retweeted: field(input, "retweeted").ok(),
+            retweeted_status: field(input, "retweeted_status").map(Box::new).ok(),
+            source: try!(field(input, "source")),
+            text: try!(field(input, "text")),
+            user: try!(field(input, "user").map(Box::new)),
+            withheld_copyright: field(input, "withheld_copyright").unwrap_or(false),
+            withheld_in_countries: field(input, "withheld_in_countries").ok(),
+            withheld_scope: field(input, "withheld_scope").ok(),
+        })
+    }
+}
+
+fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Option<i64>, error::Error> {
+    if let Some(obj) = input.find(field).and_then(|f| f.as_object()) {
+        match obj.get("id").and_then(|o| o.as_i64()) {
+            Some(id) => Ok(Some(id)),
+            None => Err(InvalidResponse("invalid structure inside current_user_retweet", None)),
+        }
     }
     else {
-        add_param(&mut params, "count", count.to_string());
+        Ok(None)
+    }
+}
+
+///Container for URL, hashtag, mention, and media information associated with a tweet.
+///
+///If a tweet has no hashtags, financial symbols ("cashtags"), links, or mentions, those respective
+///Vecs will be empty. If there is no media attached to the tweet, that field will be `None`.
+///
+///Note that for media attached to a tweet, this struct will only contain the first image of a
+///photo set, or a thumbnail of a video or GIF. Full media information is available in the tweet's
+///`extended_entities` field.
+#[derive(Debug)]
+pub struct TweetEntities {
+    ///Collection of hashtags parsed from the tweet.
+    pub hashtags: Vec<entities::HashtagEntity>,
+    ///Collection of financial symbols, or "cashtags", parsed from the tweet.
+    pub symbols: Vec<entities::HashtagEntity>,
+    ///Collection of URLs parsed from the tweet.
+    pub urls: Vec<entities::UrlEntity>,
+    ///Collection of user mentions parsed from the tweet.
+    pub user_mentions: Vec<entities::MentionEntity>,
+    ///If the tweet contains any attached media, this contains a collection of media information
+    ///from the tweet.
+    pub media: Option<Vec<entities::MediaEntity>>,
+}
+
+impl FromJson for TweetEntities {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse("TweetEntities received json that wasn't an object", Some(input.to_string())));
+        }
+
+        Ok(TweetEntities {
+            hashtags: try!(field(input, "hashtags")),
+            symbols: try!(field(input, "symbols")),
+            urls: try!(field(input, "urls")),
+            user_mentions: try!(field(input, "user_mentions")),
+            media: field(input, "media").ok(),
+        })
+    }
+}
+
+///Container for extended media information for a tweet.
+///
+///If a tweet has a photo, set of photos, gif, or video attached to it, this field will be present
+///and contain the real media information. The information available in the `media` field of
+///`entities` will only contain the first photo of a set, or a thumbnail of a gif or video.
+#[derive(Debug)]
+pub struct ExtendedTweetEntities {
+    ///Collection of extended media information attached to the tweet.
+    pub media: Vec<entities::MediaEntity>,
+}
+
+impl FromJson for ExtendedTweetEntities {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse("ExtendedTweetEntities received json that wasn't an object", Some(input.to_string())));
+        }
+
+        Ok(ExtendedTweetEntities {
+            media: try!(field(input, "media")),
+        })
+    }
+}
+
+/// Helper struct to navigate collections of tweets by requesting tweets older or newer than certain
+/// IDs.
+///
+/// Using a Timeline to navigate collections of tweets (like a user's timeline, their list of likes,
+/// etc) allows you to efficiently cursor through a collection and only load in tweets you need.
+///
+/// To begin, call a method that returns a `Timeline`, optionally set the page size, and call
+/// `start` to load the first page of results:
+///
+/// ```rust,no_run
+/// # let con_token = egg_mode::Token::new("", "");
+/// # let access_token = egg_mode::Token::new("", "");
+/// let mut timeline = egg_mode::tweet::home_timeline(&con_token, &access_token)
+///                                .with_page_size(10);
+///
+/// for tweet in &timeline.start().unwrap().response {
+///     println!("<@{}> {}", tweet.user.screen_name, tweet.text);
+/// }
+/// ```
+///
+/// If you need to load the next set of tweets, call `older`, which will automatically update the
+/// tweet IDs it tracks:
+///
+/// ```rust,no_run
+/// # let con_token = egg_mode::Token::new("", "");
+/// # let access_token = egg_mode::Token::new("", "");
+/// # let mut timeline = egg_mode::tweet::home_timeline(&con_token, &access_token);
+/// # timeline.start().unwrap();
+/// for tweet in &timeline.older(None).unwrap().response {
+///     println!("<@{}> {}", tweet.user.screen_name, tweet.text);
+/// }
+/// ```
+///
+/// ...and similarly for `newer`, which operates in a similar fashion.
+///
+/// If you want to start afresh and reload the newest set of tweets again, you can call `start`
+/// again, which will clear the tracked tweet IDs before loading the newest set of tweets. However,
+/// if you've been storing these tweets as you go, and already know the newest tweet ID you have on
+/// hand, you can load only those tweets you need like this:
+///
+/// ```rust,no_run
+/// # let con_token = egg_mode::Token::new("", "");
+/// # let access_token = egg_mode::Token::new("", "");
+/// let mut timeline = egg_mode::tweet::home_timeline(&con_token, &access_token)
+///                                .with_page_size(10);
+///
+/// timeline.start().unwrap();
+///
+/// //keep the max_id for later
+/// let reload_id = timeline.max_id.unwrap();
+///
+/// //simulate scrolling down a little bit
+/// timeline.older(None).unwrap();
+/// timeline.older(None).unwrap();
+///
+/// //reload the timeline with only what's new
+/// timeline.reset();
+/// timeline.older(Some(reload_id)).unwrap();
+/// ```
+///
+/// Here, the argument to `older` means "older than what I just returned, but newer than the given
+/// ID". Since we cleared the tracked IDs with `reset`, that turns into "the newest tweets
+/// available that were posted after the given ID". The earlier invocations of `older` with `None`
+/// do not place a bound on the tweets it loads. `newer` operates in a similar fashion with its
+/// argument, saying "newer than what I just returned, but not newer than this given ID". When
+/// called like this, it's possible for these methods to return nothing, which will also clear the
+/// `Timeline`'s tracked IDs.
+///
+/// If you want to manually pull tweets between certain IDs, the baseline `call` function can do
+/// that for you. Keep in mind, though, that `call` doesn't update the `min_id` or `max_id` fields,
+/// so you'll have to set those yourself if you want to follow up with `older` or `newer`.
+pub struct Timeline<'a> {
+    ///The URL to request tweets from.
+    link: &'static str,
+    ///The consumer token to authenticate requests with.
+    con_token: &'a auth::Token<'a>,
+    ///The access token to authenticate requests with.
+    access_token: &'a auth::Token<'a>,
+    ///Optional set of params to include prior to adding lifetime navigation parameters.
+    params_base: Option<ParamList<'a>>,
+    ///The maximum number of tweets to return in a single call. Twitter doesn't guarantee returning
+    ///exactly this number, as suspended or deleted content is removed after retrieving the initial
+    ///collection of tweets.
+    pub count: i32,
+    ///The largest/most recent tweet ID returned in the last call to `start`, `older`, or `newer`.
+    pub max_id: Option<i64>,
+    ///The smallest/oldest tweet ID returned in the last call to `start`, `older`, or `newer`.
+    pub min_id: Option<i64>,
+}
+
+impl<'a> Timeline<'a> {
+    ///Clear the saved IDs on this timeline.
+    pub fn reset(&mut self) {
+        self.max_id = None;
+        self.min_id = None;
     }
 
-    let url = format!("{}/{}.json", links::statuses::RETWEETS_OF_STEM, id);
+    ///Clear the saved IDs on this timeline, and return the most recent set of tweets.
+    pub fn start(&mut self) -> WebResponse<Vec<Tweet>> {
+        self.reset();
 
-    let mut resp = try!(auth::get(&url, con_token, access_token, Some(&params)));
+        self.older(None)
+    }
 
-    parse_response(&mut resp)
-}
+    ///Return the set of tweets older than the last set pulled, optionally placing a minimum tweet
+    ///ID to bound with.
+    pub fn older(&mut self, since_id: Option<i64>) -> WebResponse<Vec<Tweet>> {
+        let resp = try!(self.call(since_id, self.min_id.map(|id| id - 1)));
 
-///Lookup the user IDs that have retweeted the given tweet.
-///
-///Note that while loading the list of retweeters is a cursored search, it does not allow you to
-///set the page size. Calling `with_page_size` on the iterator returned by this function will not
-///change the page size used by the network call. Setting `page_size` manually may result in an
-///error from Twitter.
-pub fn retweeters_of<'a>(id: i64, con_token: &'a auth::Token, access_token: &'a auth::Token)
-    -> cursor::CursorIter<'a, cursor::IDCursor>
-{
-    let mut params = HashMap::new();
-    add_param(&mut params, "id", id.to_string());
-    cursor::CursorIter::new(links::statuses::RETWEETERS_OF, con_token, access_token, Some(params), None)
-}
+        self.map_ids(&resp.response);
 
-///Lookup tweet information for the given list of tweet IDs.
-///
-///This function differs from `lookup_map` in how it handles protected or nonexistent tweets.
-///`lookup` simply returns a Vec of all the tweets it could find, leaving out any that it couldn't
-///find.
-pub fn lookup(ids: &[i64], con_token: &auth::Token, access_token: &auth::Token)
-    -> WebResponse<Vec<Tweet>>
-{
-    let mut params = HashMap::new();
-    let id_param = ids.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
-    add_param(&mut params, "id", id_param);
+        Ok(resp)
+    }
 
-    let mut resp = try!(auth::post(links::statuses::LOOKUP, con_token, access_token, Some(&params)));
+    ///Return the set of tweets newer than the last set pulled, optionall placing a maximum tweet
+    ///ID to bound with.
+    pub fn newer(&mut self, max_id: Option<i64>) -> WebResponse<Vec<Tweet>> {
+        let resp = try!(self.call(self.max_id, max_id));
 
-    parse_response(&mut resp)
-}
+        self.map_ids(&resp.response);
 
-///Lookup tweet information for the given list of tweet IDs, and return a map indicating which IDs
-///couldn't be found.
-///
-///This function differs from `lookup` in how it handles protected or nonexistent tweets.
-///`lookup_map` returns a map containing every ID in the input slice; tweets that don't exist or
-///can't be read by the authenticated user store `None` in the map, whereas tweets that could be
-///loaded store `Some` and the requested status.
-pub fn lookup_map(ids: &[i64], con_token: &auth::Token, access_token: &auth::Token)
-    -> WebResponse<HashMap<i64, Option<Tweet>>>
-{
-    let mut params = HashMap::new();
-    let id_param = ids.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
-    add_param(&mut params, "id", id_param);
-    add_param(&mut params, "map", "true");
+        Ok(resp)
+    }
 
-    let mut resp = try!(auth::post(links::statuses::LOOKUP, con_token, access_token, Some(&params)));
+    ///Return the set of tweets between the IDs given.
+    ///
+    ///Note that the range is not fully inclusive; the tweet ID given by `since_id` will not be
+    ///returned, but the tweet ID in `max_id` will be returned.
+    ///
+    ///If the range of tweets given by the IDs would return more than `self.count`, the newest set
+    ///of tweets will be returned.
+    pub fn call(&self, since_id: Option<i64>, max_id: Option<i64>) -> WebResponse<Vec<Tweet>> {
+        let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
+        add_param(&mut params, "count", self.count.to_string());
 
-    let parsed: Response<json::Json> = try!(parse_response(&mut resp));
-    let mut map = HashMap::new();
-
-    for (key, val) in try!(parsed.response
-                                 .find("id")
-                                 .and_then(|v| v.as_object())
-                                 .ok_or(InvalidResponse("unexpected response for lookup_map",
-                                                        Some(parsed.response.to_string())))) {
-        let id = try!(key.parse::<i64>().or(Err(InvalidResponse("could not parse id as integer",
-                                                                Some(key.to_string())))));
-        if val.is_null() {
-            map.insert(id, None);
+        if let Some(id) = since_id {
+            add_param(&mut params, "since_id", id.to_string());
         }
-        else {
-            let tweet = try!(Tweet::from_json(&val));
-            map.insert(id, Some(tweet));
+
+        if let Some(id) = max_id {
+            add_param(&mut params, "max_id", id.to_string());
+        }
+
+        let mut resp = try!(auth::get(self.link, self.con_token, self.access_token, Some(&params)));
+
+        parse_response(&mut resp)
+    }
+
+    ///Helper builder function to set the page size.
+    pub fn with_page_size(self, page_size: i32) -> Self {
+        Timeline {
+            count: page_size,
+            ..self
         }
     }
 
-    Ok(Response {
-        rate_limit: parsed.rate_limit,
-        rate_limit_remaining: parsed.rate_limit_remaining,
-        rate_limit_reset: parsed.rate_limit_reset,
-        response: map,
-    })
+    ///With the returned slice of Tweets, set the min_id and max_id on self.
+    fn map_ids(&mut self, resp: &[Tweet]) {
+        self.max_id = resp.first().map(|status| status.id);
+        self.min_id = resp.last().map(|status| status.id);
+    }
+
+    ///Create an instance of `Timeline` with the given link and tokens.
+    fn new(link: &'static str, params_base: Option<ParamList<'a>>,
+               con_token: &'a auth::Token, access_token: &'a auth::Token) -> Self {
+        Timeline {
+            link: link,
+            con_token: con_token,
+            access_token: access_token,
+            params_base: params_base,
+            count: 20,
+            max_id: None,
+            min_id: None,
+        }
+    }
 }
 
-///Make a `Timeline` struct for navigating the collection of tweets posted by the authenticated
-///user and the users they follow.
+/// Represents an in-progress tweet before it is sent.
 ///
-///This method has a default page size of 20 tweets, with a maximum of 200.
+/// This is your entry point to posting new tweets to Twitter. To begin, make a new `DraftTweet` by
+/// calling `new` with your desired status text:
 ///
-///Twitter will only return the most recent 800 tweets by navigating this method.
-pub fn home_timeline<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> Timeline<'a> {
-    Timeline::new(links::statuses::HOME_TIMELINE, None, con_token, access_token)
+/// ```rust,no_run
+/// use egg_mode::tweet::DraftTweet;
+///
+/// let draft = DraftTweet::new("This is an example status!");
+/// ```
+///
+/// As-is, the draft won't do anything until you call `send` to post it:
+///
+/// ```rust,no_run
+/// # let con_token = egg_mode::Token::new("", "");
+/// # let access_token = egg_mode::Token::new("", "");
+/// # use egg_mode::tweet::DraftTweet;
+/// # let draft = DraftTweet::new("This is an example status!");
+/// draft.send(&con_token, &access_token).unwrap();
+/// ```
+///
+/// Right now, the options for adding metadata to a post are pretty sparse. See the adaptor
+/// functions below to see what metadata can be set. For example, you can use `in_reply_to` to
+/// create a reply-chain like this:
+///
+/// ```rust,no_run
+/// # let con_token = egg_mode::Token::new("", "");
+/// # let access_token = egg_mode::Token::new("", "");
+/// use egg_mode::tweet::DraftTweet;
+///
+/// let draft = DraftTweet::new("I'd like to start a thread here.");
+/// let tweet = draft.send(&con_token, &access_token).unwrap();
+///
+/// let draft = DraftTweet::new("You see, I have a lot of things to say.")
+///                        .in_reply_to(tweet.response.id);
+/// let tweet = draft.send(&con_token, &access_token).unwrap();
+///
+/// let draft = DraftTweet::new("Thank you for your time.")
+///                        .in_reply_to(tweet.response.id);
+/// let tweet = draft.send(&con_token, &access_token).unwrap();
+/// ```
+#[derive(Debug)]
+pub struct DraftTweet<'a> {
+    ///The text of the draft tweet.
+    pub text: &'a str,
+    ///If present, the ID of the tweet this draft is replying to.
+    pub in_reply_to: Option<i64>,
+    ///If present, the latitude/longitude coordinates to attach to the draft.
+    pub coordinates: Option<(f64, f64)>,
+    ///If present (and if `coordinates` is present), indicates whether to display a pin on the
+    ///exact coordinate when the eventual tweet is displayed.
+    pub display_coordinates: Option<bool>,
 }
 
-///Make a `Timeline` struct for navigating the collection of tweets that mention the authenticated
-///user's screen name.
-///
-///This method has a default page size of 20 tweets, with a maximum of 200.
-///
-///Twitter will only return the most recent 800 tweets by navigating this method.
-pub fn mentions_timeline<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> Timeline<'a> {
-    Timeline::new(links::statuses::MENTIONS_TIMELINE, None, con_token, access_token)
-}
+impl<'a> DraftTweet<'a> {
+    ///Creates a new `DraftTweet` with the given status text.
+    pub fn new(text: &'a str) -> Self {
+        DraftTweet {
+            text: text,
+            in_reply_to: None,
+            coordinates: None,
+            display_coordinates: None,
+        }
+    }
 
-///Make a `Timeline` struct for navigating the collection of tweets posted by the given user,
-///optionally including or excluding replies or retweets.
-///
-///Attempting to load the timeline of a protected account will only work if the account is the
-///authenticated user's, or if the authenticated user is an approved follower of the account.
-///
-///This method has a default page size of 20 tweets, with a maximum of 200. Note that asking to
-///leave out replies or retweets will generate pages that may have fewer tweets than your requested
-///page size; Twitter will load the requested number of tweets before removing replies and/or
-///retweets.
-///
-///Twitter will only load the most recent 3,200 tweets with this method.
-pub fn user_timeline<'a, T: Into<UserID<'a>>>(acct: T, with_replies: bool, with_rts: bool,
-                                              con_token: &'a auth::Token, access_token: &'a auth::Token)
-    -> Timeline<'a>
-{
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
-    add_param(&mut params, "exclude_replies", (!with_replies).to_string());
-    add_param(&mut params, "include_rts", with_rts.to_string());
+    ///Marks this draft tweet as replying to the given status ID.
+    ///
+    ///Note that this will only properly take effect if the user who posted the given status is
+    ///@mentioned in the status text, or if the given status was posted by the authenticated user.
+    pub fn in_reply_to(self, in_reply_to: i64) -> Self {
+        DraftTweet {
+            in_reply_to: Some(in_reply_to),
+            ..self
+        }
+    }
 
-    Timeline::new(links::statuses::USER_TIMELINE, Some(params), con_token, access_token)
-}
+    ///Attach a lat/lon coordinate to this tweet, and mark whether a pin should be placed on the
+    ///exact coordinate when the tweet is displayed.
+    pub fn coordinates(self, latitude: f64, longitude: f64, display: bool) -> Self {
+        DraftTweet {
+            coordinates: Some((latitude, longitude)),
+            display_coordinates: Some(display),
+            ..self
+        }
+    }
 
-///Make a `Timeline` struct for navigating the collection of tweets posted by the authenticated
-///user that have been retweeted by others.
-///
-///This method has a default page size of 20 tweets, with a maximum of 100.
-pub fn retweets_of_me<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> Timeline<'a> {
-    Timeline::new(links::statuses::RETWEETS_OF_ME, None, con_token, access_token)
-}
+    ///Send the assembled tweet as the authenticated user.
+    pub fn send(&self, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
+        let mut params = HashMap::new();
+        add_param(&mut params, "status", self.text);
 
-///Make a `Timeline` struct for navigating the collection of tweets liked by the given user.
-///
-///This method has a default page size of 20 tweets, with a maximum of 200.
-pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, access_token: &'a auth::Token)
-    -> Timeline<'a>
-{
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
-    Timeline::new(links::statuses::LIKES_OF, Some(params), con_token, access_token)
-}
+        if let Some(reply) = self.in_reply_to {
+            add_param(&mut params, "in_reply_to_status_id", reply.to_string());
+        }
 
-///Retweet the given status as the authenticated user.
-///
-///On success, returns the retweet, with the original status contained in `retweeted_status`.
-pub fn retweet(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
-    let url = format!("{}/{}.json", links::statuses::RETWEET_STEM, id);
+        if let Some((lat, long)) = self.coordinates {
+            add_param(&mut params, "lat", lat.to_string());
+            add_param(&mut params, "long", long.to_string());
+        }
 
-    let mut resp = try!(auth::post(&url, con_token, access_token, None));
+        if let Some(display) = self.display_coordinates {
+            add_param(&mut params, "display_coordinates", display.to_string());
+        }
 
-    parse_response(&mut resp)
-}
-
-///Unretweet the given status as the authenticated user.
-///
-///The given ID may either be the original status, or the ID of the authenticated user's retweet of
-///it.
-///
-///On success, returns the original tweet.
-pub fn unretweet(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
-    let url = format!("{}/{}.json", links::statuses::UNRETWEET_STEM, id);
-
-    let mut resp = try!(auth::post(&url, con_token, access_token, None));
-
-    parse_response(&mut resp)
-}
-
-///Like the given status as the authenticated user.
-///
-///On success, returns the liked tweet.
-pub fn like(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
-    let mut params = HashMap::new();
-    add_param(&mut params, "id", id.to_string());
-
-    let mut resp = try!(auth::post(links::statuses::LIKE, con_token, access_token, Some(&params)));
-
-    parse_response(&mut resp)
-}
-
-///Clears a like of the given status as the authenticated user.
-///
-///On success, returns the given tweet.
-pub fn unlike(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
-    let mut params = HashMap::new();
-    add_param(&mut params, "id", id.to_string());
-
-    let mut resp = try!(auth::post(links::statuses::UNLIKE, con_token, access_token, Some(&params)));
-
-    parse_response(&mut resp)
-}
-
-///Delete the given tweet. The authenticated user must be the user who posted the given tweet.
-///
-///On success, returns the given tweet.
-pub fn delete(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
-    let url = format!("{}/{}.json", links::statuses::DELETE_STEM, id);
-
-    let mut resp = try!(auth::post(&url, con_token, access_token, None));
-
-    parse_response(&mut resp)
+        let mut resp = try!(auth::post(links::statuses::UPDATE, con_token, access_token, Some(&params)));
+        parse_response(&mut resp)
+    }
 }

@@ -13,6 +13,9 @@
 - `DraftTweet`'s coordinates are now f64 instead of f32
 - New error enum, `BadUrl`, telling you that you passed a bad URL to `reverse_geocode_url`
   - This is a **breaking change** if you were matching on the error types before
+- Made `tweet::Timeline::new()` and `user::UserSearch::new()` non-public
+  - This is a **breaking change** if you were using these functions instead of any of the real
+    initializers
 
 ## [0.4.0] - 2016-09-02
 ### Added
