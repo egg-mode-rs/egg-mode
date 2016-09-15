@@ -18,6 +18,7 @@
 - Made `tweet::Timeline::new()` and `user::UserSearch::new()` non-public
   - This is a **breaking change** if you were using these functions instead of any of the real
     initializers
+- Added fields `coordinates` and `place` to the `Tweet` structure
 
 ## [0.4.0] - 2016-09-02
 ### Added

@@ -111,6 +111,10 @@ pub fn print_tweet(tweet: &egg_mode::tweet::Tweet) {
         println!("{}", tweet.text);
     }
 
+    if let Some(ref place) = tweet.place {
+        println!("--from {}", place.full_name);
+    }
+
     if let Some(ref status) = tweet.quoted_status {
         println!("--Quoting the following status:");
         print_tweet(status);

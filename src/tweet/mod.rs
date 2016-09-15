@@ -59,6 +59,7 @@ use user;
 use error;
 use error::Error::InvalidResponse;
 use entities;
+use place;
 use common::*;
 
 mod fun;
@@ -136,8 +137,8 @@ pub struct Tweet {
     //If the user has contributors enabled, this will show which accounts contributed to this
     //tweet.
     //pub contributors: Option<Contributors>,
-    //The location point attached to the tweet, if present.
-    //pub coordinates: Option<Coordinates>,
+    ///If present, the location coordinate attached to the tweet, as a (latitude, longitude) pair.
+    pub coordinates: Option<(f64, f64)>,
     ///UTC timestamp showing when the tweet was posted, formatted like "Wed Aug 27 13:08:45 +0000
     ///2008".
     pub created_at: String,
@@ -170,10 +171,9 @@ pub struct Tweet {
     ///Can contain a language ID indicating the machine-detected language of the text, or "und" if
     ///no language could be detected.
     pub lang: String,
-    //TODO: Is this the user-entered location field?
-    //When present, the `Place` that this tweet is associated with (but not necessarily where it
-    //originated from).
-    //pub place: Option<Place>,
+    ///When present, the `Place` that this tweet is associated with (but not necessarily where it
+    ///originated from).
+    pub place: Option<place::Place>,
     ///If the tweet has a link, indicates whether the link may contain content that could be
     ///identified as sensitive.
     pub possibly_sensitive: Option<bool>,
@@ -220,9 +220,11 @@ impl FromJson for Tweet {
             return Err(InvalidResponse("Tweet received json that wasn't an object", Some(input.to_string())));
         }
 
+        let coords = field(input, "coordinates").ok();
+
         Ok(Tweet {
             //contributors: Option<Contributors>,
-            //coordinates: Option<Coordinates>,
+            coordinates: coords.map(|(lon, lat)| (lat, lon)),
             created_at: try!(field(input, "created_at")),
             current_user_retweet: try!(current_user_retweet(input, "current_user_retweet")),
             entities: try!(field(input, "entities")),
@@ -235,7 +237,7 @@ impl FromJson for Tweet {
             in_reply_to_screen_name: field(input, "in_reply_to_screen_name").ok(),
             in_reply_to_status_id: field(input, "in_reply_to_status_id").ok(),
             lang: try!(field(input, "lang")),
-            //place: Option<Place>,
+            place: field(input, "place").ok(),
             possibly_sensitive: field(input, "possibly_sensitive").ok(),
             quoted_status_id: field(input, "quoted_status_id").ok(),
             quoted_status: field(input, "quoted_status").map(Box::new).ok(),
@@ -556,6 +558,8 @@ pub struct DraftTweet<'a> {
     ///If present (and if `coordinates` is present), indicates whether to display a pin on the
     ///exact coordinate when the eventual tweet is displayed.
     pub display_coordinates: Option<bool>,
+    ///If present the Place to attach to this draft.
+    pub place_id: Option<&'a str>,
 }
 
 impl<'a> DraftTweet<'a> {
@@ -566,6 +570,7 @@ impl<'a> DraftTweet<'a> {
             in_reply_to: None,
             coordinates: None,
             display_coordinates: None,
+            place_id: None,
         }
     }
 
@@ -582,10 +587,27 @@ impl<'a> DraftTweet<'a> {
 
     ///Attach a lat/lon coordinate to this tweet, and mark whether a pin should be placed on the
     ///exact coordinate when the tweet is displayed.
+    ///
+    ///If coordinates are given through this method and no `place_id` is attached, Twitter will
+    ///effectively call `place::reverse_geocode` with the given coordinate and attach that Place to
+    ///the eventual tweet.
+    ///
+    ///Location fields will be ignored unless the user has enabled geolocation from their profile.
     pub fn coordinates(self, latitude: f64, longitude: f64, display: bool) -> Self {
         DraftTweet {
             coordinates: Some((latitude, longitude)),
             display_coordinates: Some(display),
+            ..self
+        }
+    }
+
+    ///Attach a Place to this tweet. This field will take precedence over `coordinates` in terms of
+    ///what location is displayed with the tweet.
+    ///
+    ///Location fields will be ignored unless the user has enabled geolocation from their profile.
+    pub fn place_id(self, place_id: &'a str) -> Self {
+        DraftTweet {
+            place_id: Some(place_id),
             ..self
         }
     }
@@ -606,6 +628,10 @@ impl<'a> DraftTweet<'a> {
 
         if let Some(display) = self.display_coordinates {
             add_param(&mut params, "display_coordinates", display.to_string());
+        }
+
+        if let Some(place_id) = self.place_id {
+            add_param(&mut params, "place_id", place_id);
         }
 
         let mut resp = try!(auth::post(links::statuses::UPDATE, con_token, access_token, Some(&params)));
