@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
 use auth;
+use error;
 use error::Error::BadUrl;
 use links;
 use common::*;
 
 use super::*;
+use super::PlaceQuery;
 
 ///Load the place with the given ID.
 pub fn show(id: &str, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Place> {
@@ -26,11 +28,7 @@ pub fn reverse_geocode(latitude: f64, longitude: f64, within: Accuracy, granular
 
     add_param(&mut params, "lat", latitude.to_string());
     add_param(&mut params, "long", longitude.to_string());
-
-    match within {
-        Accuracy::Meters(dist) => add_param(&mut params, "accuracy", dist.to_string()),
-        Accuracy::Feet(dist) => add_param(&mut params, "accuracy", format!("{}ft", dist)),
-    };
+    add_param(&mut params, "accuracy", within.to_string());
 
     if let Some(param) = granularity {
         add_param(&mut params, "granularity", param.to_string());
@@ -46,14 +44,11 @@ pub fn reverse_geocode(latitude: f64, longitude: f64, within: Accuracy, granular
     parse_response(&mut resp)
 }
 
-///From a URL given with the result of `reverse_geocode`, return the same set of Places.
-pub fn reverse_geocode_url(url: &str, con_token: &auth::Token, access_token: &auth::Token)
-    -> WebResponse<SearchResult>
-{
-    let mut iter = url.split('?');
+fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, error::Error> {
+    let mut iter = full.split('?');
 
-    if let Some(base) = iter.next() {
-        if base != links::place::REVERSE_GEOCODE {
+    if let Some(base_part) = iter.next() {
+        if base_part != base {
             return Err(BadUrl);
         }
     }
@@ -61,7 +56,7 @@ pub fn reverse_geocode_url(url: &str, con_token: &auth::Token, access_token: &au
         return Err(BadUrl);
     }
 
-    let params = if let Some(list) = iter.next() {
+    if let Some(list) = iter.next() {
         let mut p = HashMap::new();
 
         for item in list.split('&') {
@@ -73,13 +68,46 @@ pub fn reverse_geocode_url(url: &str, con_token: &auth::Token, access_token: &au
             add_param(&mut p, k, v);
         }
 
-        p
+        Ok(p)
     }
     else {
-        return Err(BadUrl);
-    };
+        Err(BadUrl)
+    }
+}
+
+///From a URL given with the result of `reverse_geocode`, return the same set of Places.
+pub fn reverse_geocode_url(url: &str, con_token: &auth::Token, access_token: &auth::Token)
+    -> WebResponse<SearchResult>
+{
+    let params = try!(parse_url(links::place::REVERSE_GEOCODE, url));
 
     let mut resp = try!(auth::get(links::place::REVERSE_GEOCODE, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
+}
+
+///Begins building a location search via latitude/longitude.
+pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder<'static> {
+    SearchBuilder::new(PlaceQuery::LatLon(latitude, longitude))
+}
+
+///Begins building a location search via a text query.
+pub fn search_query<'a>(query: &'a str) -> SearchBuilder<'a> {
+    SearchBuilder::new(PlaceQuery::Query(query))
+}
+
+///Begins building a location search via an IP address.
+pub fn search_ip<'a>(query: &'a str) -> SearchBuilder<'a> {
+    SearchBuilder::new(PlaceQuery::IPAddress(query))
+}
+
+///From a URL given with the result of any `search_*` function, return the same set of Places.
+pub fn search_url(url: &str, con_token: &auth::Token, access_token: &auth::Token)
+    -> WebResponse<SearchResult>
+{
+    let params = try!(parse_url(links::place::SEARCH, url));
+
+    let mut resp = try!(auth::get(links::place::SEARCH, con_token, access_token, Some(&params)));
 
     parse_response(&mut resp)
 }

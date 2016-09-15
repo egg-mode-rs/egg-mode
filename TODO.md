@@ -122,7 +122,7 @@ detail other than the response examples for those endpoints.
 
 ### Places
 
-- [ ] geo/search
+- [x] geo/search (`place::search_point`/`place::search_query`/`place::search_ip`/`place::search_url`)
 - [x] geo/reverse\_geocode (`place::reverse_geocode`/`place::reverse_geocode_url`)
 - [x] geo/id/:place\_id (`place::show`)
 

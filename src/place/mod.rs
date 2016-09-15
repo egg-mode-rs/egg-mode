@@ -5,9 +5,11 @@ use std::fmt;
 
 use rustc_serialize::json;
 
+use auth;
 use common::*;
 use error;
 use error::Error::{InvalidResponse, MissingValue};
+use links;
 
 mod fun;
 
@@ -58,9 +60,9 @@ pub enum PlaceType {
 #[derive(Debug)]
 pub enum Accuracy {
     ///Location accurate to the given number of meters.
-    Meters(u32),
+    Meters(f64),
     ///Location accurate to the given number of feet.
-    Feet(u32),
+    Feet(f64),
 }
 
 ///Represents the result of a location search, either via `reverse_geocode` or `search`.
@@ -70,6 +72,141 @@ pub struct SearchResult {
     pub url: String,
     ///The list of results from the search.
     pub results: Vec<Place>,
+}
+
+enum PlaceQuery<'a> {
+    LatLon(f64, f64),
+    Query(&'a str),
+    IPAddress(&'a str),
+}
+
+///Represents a location search query before it is sent.
+pub struct SearchBuilder<'a> {
+    query: PlaceQuery<'a>,
+    accuracy: Option<Accuracy>,
+    granularity: Option<PlaceType>,
+    max_results: Option<u32>,
+    contained_within: Option<&'a str>,
+    attributes: Option<HashMap<&'a str, &'a str>>,
+}
+
+impl<'a> SearchBuilder<'a> {
+    ///Begins building a location search with the given query.
+    fn new(query: PlaceQuery<'a>) -> Self {
+        SearchBuilder {
+            query: query,
+            accuracy: None,
+            granularity: None,
+            max_results: None,
+            contained_within: None,
+            attributes: None,
+        }
+    }
+
+    ///Expands the area to search to the given radius. By default, this is effectively zero.
+    ///
+    ///From Twitter: "If coming from a device, in practice, this value is whatever accuracy the
+    ///device has measuring its location (whether it be coming from a GPS, WiFi triangulation,
+    ///etc.)."
+    pub fn accuracy(self, accuracy: Accuracy) -> Self {
+        SearchBuilder {
+            accuracy: Some(accuracy),
+            ..self
+        }
+    }
+
+    ///Sets the minimal specificity of what kind of results to return. For example, passing `City`
+    ///to this will make the eventual result exclude neighborhoods and points.
+    pub fn granularity(self, granularity: PlaceType) -> Self {
+        SearchBuilder {
+            granularity: Some(granularity),
+            ..self
+        }
+    }
+
+    ///Restricts the maximum number of results returned in this search. This is not a guarantee
+    ///that the search will return this many results, but instead provides a hint as to how many
+    ///"nearby" results to return.
+    ///
+    ///From Twitter: "Ideally, only pass in the number of places you intend to display to the user
+    ///here."
+    pub fn max_results(self, max_results: u32) -> Self {
+        SearchBuilder {
+            max_results: Some(max_results),
+            ..self
+        }
+    }
+
+    ///Restricts results to those contained within the given Place ID.
+    pub fn contained_within(self, contained_id: &'a str) -> Self {
+        SearchBuilder {
+            contained_within: Some(contained_id),
+            ..self
+        }
+    }
+
+    ///Restricts results to those with the given attribute. A list of common attributes are
+    ///available in [Twitter's documentation for Places][attrs]. Custom attributes are supported in
+    ///this search, if you know them. This function may be called multiple times with different
+    ///`attribute_key` values to combine attribute search parameters.
+    ///
+    ///[attrs]: https://dev.twitter.com/overview/api/places#attributes
+    ///
+    ///For example, `.attribute("street_address", "123 Main St")` searches for places with the
+    ///given street address.
+    pub fn attribute(self, attribute_key: &'a str, attribute_value: &'a str) -> Self {
+        let mut attrs = self.attributes.unwrap_or_default();
+        attrs.insert(attribute_key, attribute_value);
+
+        SearchBuilder {
+            attributes: Some(attrs),
+            ..self
+        }
+    }
+
+    ///Finalize the search parameters and return the results collection.
+    pub fn call(&self, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<SearchResult> {
+        let mut params = HashMap::new();
+
+        match self.query {
+            PlaceQuery::LatLon(lat, long) => {
+                add_param(&mut params, "lat", lat.to_string());
+                add_param(&mut params, "long", long.to_string());
+            },
+            PlaceQuery::Query(text) => {
+                add_param(&mut params, "query", text);
+            },
+            PlaceQuery::IPAddress(text) => {
+                add_param(&mut params, "ip", text);
+            },
+        }
+
+        if let Some(ref acc) = self.accuracy {
+            add_param(&mut params, "accuracy", acc.to_string());
+        }
+
+        if let Some(ref gran) = self.granularity {
+            add_param(&mut params, "granularity", gran.to_string());
+        }
+
+        if let Some(max) = self.max_results {
+            add_param(&mut params, "max_results", max.to_string());
+        }
+
+        if let Some(id) = self.contained_within {
+            add_param(&mut params, "contained_within", id);
+        }
+
+        if let Some(ref attrs) = self.attributes {
+            for (k, v) in attrs {
+                add_param(&mut params, format!("attribute:{}", k), *v);
+            }
+        }
+
+        let mut resp = try!(auth::get(links::place::SEARCH, con_token, access_token, Some(&params)));
+
+        parse_response(&mut resp)
+    }
 }
 
 ///Display impl to make `to_string()` format the enum for sending to Twitter. This is *mostly* just
@@ -82,6 +219,17 @@ impl fmt::Display for PlaceType {
             PlaceType::City => write!(f, "city"),
             PlaceType::Admin => write!(f, "admin"),
             PlaceType::Country => write!(f, "country"),
+        }
+    }
+}
+
+///Display impl to make `to_string()` format the enum for sending to Twitter. This turns `Meters`
+///into the contained number by itself, and `Feet` into the number suffixed by `"ft"`.
+impl fmt::Display for Accuracy {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Accuracy::Meters(dist) => write!(f, "{}", dist),
+            Accuracy::Feet(dist) => write!(f, "{}ft", dist),
         }
     }
 }

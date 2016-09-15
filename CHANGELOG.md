@@ -7,6 +7,8 @@
 - New function to load a single place from ID (`show`)
 - New functions to load a list of places from a specific latitude/longitude (`reverse_geocode`,
   `reverse_geocode_url`)
+- New functions to load a list of places from a search query (`search_point`, `search_query`,
+  `search_ip`, `search_url`)
 
 ### Changed
 - Fields on `DraftTweet` are public to facilitate UI for long-term draft storage
