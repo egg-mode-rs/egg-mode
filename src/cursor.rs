@@ -270,6 +270,7 @@ impl<'a, T> CursorIter<'a, T>
     ///
     ///This is essentially an internal infrastructure function, not meant to be used from consumer
     ///code.
+    #[doc(hidden)]
     pub fn new(link: &'static str, con_token: &'a auth::Token, access_token: &'a auth::Token,
                params_base: Option<ParamList<'a>>, page_size: Option<i32>) -> CursorIter<'a, T> {
         CursorIter {
