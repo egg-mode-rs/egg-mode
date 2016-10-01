@@ -1,4 +1,26 @@
 //! Types and methods for looking up locations.
+//!
+//! Location search for Twitter works in one of two ways. The most direct method is to take a
+//! latitude/longitude coordinate (say, from a devide's GPS system or by geolocating from wi-fi
+//! networks, or simply from a known coordinate) and call `reverse_geocode`. Twitter says
+//! `reverse_geocode` provides more of a "raw data access", and it can be considered to merely show
+//! what locations are in that point or area.
+//!
+//! On the other hand, if you're intending to let a user select from a list of locations, you can
+//! use the `search_*` methods instead. These have much of the same available parameters, but will
+//! "potentially re-order [results] with regards to the user who is authenticated." In addition,
+//! the results may potentially pull in "nearby" results to allow for a more broad selection or to
+//! account for inaccurate location reporting.
+//!
+//! Since there are several optional parameters to both query methods, each one is assembled as a
+//! builder. You can create the builder with the `reverse_geocode`, `search_point`, `search_query`,
+//! or `search_ip` functions. From there, add any additional parameters by chaining method calls
+//! onto the builder. When you're ready to peform the search call, hand your tokens to `call`, and
+//! the list of results will be returned.
+//!
+//! Along with the list of place results, Twitter also returns the full search URL. egg-mode
+//! returns this URL as part of the result struct, allowing you to perform the same search using
+//! the `reverse_geocode_url` or `search_url` functions.
 
 use std::collections::HashMap;
 use std::fmt;
@@ -74,6 +96,95 @@ pub struct SearchResult {
     pub results: Vec<Place>,
 }
 
+///Represents a `reverse_geocode` query before it is sent.
+///
+///The available methods on this builder struct allow you to specify optional parameters to the
+///search operation. Where applicable, each method lists its default value and acceptable ranges.
+///
+///To complete your search setup and send the query to Twitter, hand your tokens to `call`. The
+///list of results from Twitter will be returned, as well as a URL to perform the same search via
+///`reverse_geocode_url`.
+pub struct GeocodeBuilder {
+    coordinate: (f64, f64),
+    accuracy: Option<Accuracy>,
+    granularity: Option<PlaceType>,
+    max_results: Option<u32>,
+}
+
+impl GeocodeBuilder {
+    ///Begins building a reverse-geocode query with the given coordinate.
+    fn new(latitude: f64, longitude: f64) -> Self {
+        GeocodeBuilder {
+            coordinate: (latitude, longitude),
+            accuracy: None,
+            granularity: None,
+            max_results: None,
+        }
+    }
+
+    ///Expands the area to search to the given radius. By default, this is zero.
+    ///
+    ///From Twitter: "If coming from a device, in practice, this value is whatever accuracy the
+    ///device has measuring its location (whether it be coming from a GPS, WiFi triangulation,
+    ///etc.)."
+    pub fn accuracy(self, accuracy: Accuracy) -> Self {
+        GeocodeBuilder {
+            accuracy: Some(accuracy),
+            ..self
+        }
+    }
+
+    ///Sets the minimal specificity of what kind of results to return. For example, passing `City`
+    ///to this will make the eventual result exclude neighborhoods and points.
+    pub fn granularity(self, granularity: PlaceType) -> Self {
+        GeocodeBuilder {
+            granularity: Some(granularity),
+            ..self
+        }
+    }
+
+    ///Restricts the maximum number of results returned in this search. This is not a guarantee
+    ///that the search will return this many results, but instead provides a hint as to how many
+    ///"nearby" results to return.
+    ///
+    ///This value has a default value of 20, which is also its maximum. If zero or a number greater
+    ///than 20 is passed here, it will be defaulted to 20 before sending to Twitter.
+    ///
+    ///From Twitter: "Ideally, only pass in the number of places you intend to display to the user
+    ///here."
+    pub fn max_results(self, max_results: u32) -> Self {
+        GeocodeBuilder {
+            max_results: Some(max_results),
+            ..self
+        }
+    }
+
+    ///Finalize the search parameters and return the results collection.
+    pub fn call(&self, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<SearchResult> {
+        let mut params = HashMap::new();
+
+        add_param(&mut params, "lat", self.coordinate.0.to_string());
+        add_param(&mut params, "long", self.coordinate.1.to_string());
+
+        if let Some(ref accuracy) = self.accuracy {
+            add_param(&mut params, "accuracy", accuracy.to_string());
+        }
+
+        if let Some(ref param) = self.granularity {
+            add_param(&mut params, "granularity", param.to_string());
+        }
+
+        if let Some(count) = self.max_results {
+            let count = if count == 0 || count > 20 { 20 } else { count };
+            add_param(&mut params, "max_results", count.to_string());
+        }
+
+        let mut resp = try!(auth::get(links::place::REVERSE_GEOCODE, con_token, access_token, Some(&params)));
+
+        parse_response(&mut resp)
+    }
+}
+
 enum PlaceQuery<'a> {
     LatLon(f64, f64),
     Query(&'a str),
@@ -81,6 +192,13 @@ enum PlaceQuery<'a> {
 }
 
 ///Represents a location search query before it is sent.
+///
+///The available methods on this builder struct allow you to specify optional parameters to the
+///search operation. Where applicable, each method lists its default value and acceptable ranges.
+///
+///To complete your search setup and send the query to Twitter, hand your tokens to `call`. The
+///list of results from Twitter will be returned, as well as a URL to perform the same search via
+///`search_url`.
 pub struct SearchBuilder<'a> {
     query: PlaceQuery<'a>,
     accuracy: Option<Accuracy>,
@@ -103,7 +221,7 @@ impl<'a> SearchBuilder<'a> {
         }
     }
 
-    ///Expands the area to search to the given radius. By default, this is effectively zero.
+    ///Expands the area to search to the given radius. By default, this is zero.
     ///
     ///From Twitter: "If coming from a device, in practice, this value is whatever accuracy the
     ///device has measuring its location (whether it be coming from a GPS, WiFi triangulation,
@@ -127,6 +245,9 @@ impl<'a> SearchBuilder<'a> {
     ///Restricts the maximum number of results returned in this search. This is not a guarantee
     ///that the search will return this many results, but instead provides a hint as to how many
     ///"nearby" results to return.
+    ///
+    ///From experimentation, this value has a default of 20 and a maximum of 100. If fewer
+    ///locations match the search parameters, fewer places will be returned.
     ///
     ///From Twitter: "Ideally, only pass in the number of places you intend to display to the user
     ///here."

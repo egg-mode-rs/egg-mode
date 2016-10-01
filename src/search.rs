@@ -26,6 +26,15 @@
 //! their query. While this is given as a regular field, note that modifying `query` will not
 //! change what is searched for when you call `older` or `newer`; the `SearchResult` keeps its
 //! search arguments in a separate private field.
+//!
+//! The search parameter given in the initial call to `search` has several options itself. A full
+//! reference is available in [Twitter's Search API documentation][search-doc]. This listing by
+//! itself does not include the search by Place ID, as mentioned on [a separate Tweets by Place
+//! page][search-place]. A future version of egg-mode might break these options into further
+//! methods on `SearchBuilder`.
+//!
+//! [search-doc]: https://dev.twitter.com/rest/public/search
+//! [search-place]: https://dev.twitter.com/rest/public/search-by-place
 
 use std::collections::HashMap;
 use std::fmt;

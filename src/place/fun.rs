@@ -10,6 +10,18 @@ use super::*;
 use super::PlaceQuery;
 
 ///Load the place with the given ID.
+///
+///## Examples
+///
+///```rust,no_run
+///# let con_token = egg_mode::Token::new("", "");
+///# let access_token = egg_mode::Token::new("", "");
+///let result = egg_mode::place::show("18810aa5b43e76c7",
+///                                   &con_token, &access_token)
+///                             .unwrap();
+///
+///assert!(result.response.full_name == "Dallas, TX");
+///```
 pub fn show(id: &str, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Place> {
     let url = format!("{}/{}.json", links::place::SHOW_STEM, id);
 
@@ -18,30 +30,24 @@ pub fn show(id: &str, con_token: &auth::Token, access_token: &auth::Token) -> We
     parse_response(&mut resp)
 }
 
-///From the given latitude/longitude and accuracy measurement, return up to 20 Places that can be
-///attached to a new tweet.
-pub fn reverse_geocode(latitude: f64, longitude: f64, within: Accuracy, granularity: Option<PlaceType>,
-                       max_results: Option<u32>, con_token: &auth::Token, access_token: &auth::Token)
-    -> WebResponse<SearchResult>
+///Begins building a reverse-geocode search with the given coordinate.
+///
+///## Examples
+///
+///```rust,no_run
+///# let con_token = egg_mode::Token::new("", "");
+///# let access_token = egg_mode::Token::new("", "");
+///use egg_mode::place::{self, PlaceType};
+///let result = place::reverse_geocode(51.507222, -0.1275)
+///                   .granularity(PlaceType::City)
+///                   .call(&con_token, &access_token)
+///                   .unwrap();
+///
+///assert!(result.response.results.iter().any(|pl| pl.full_name == "London, England"));
+///```
+pub fn reverse_geocode(latitude: f64, longitude: f64) -> GeocodeBuilder
 {
-    let mut params = HashMap::new();
-
-    add_param(&mut params, "lat", latitude.to_string());
-    add_param(&mut params, "long", longitude.to_string());
-    add_param(&mut params, "accuracy", within.to_string());
-
-    if let Some(param) = granularity {
-        add_param(&mut params, "granularity", param.to_string());
-    }
-
-    if let Some(count) = max_results {
-        let count = if count == 0 || count > 20 { 20 } else { count };
-        add_param(&mut params, "max_results", count.to_string());
-    }
-
-    let mut resp = try!(auth::get(links::place::REVERSE_GEOCODE, con_token, access_token, Some(&params)));
-
-    parse_response(&mut resp)
+    GeocodeBuilder::new(latitude, longitude)
 }
 
 fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, error::Error> {
@@ -75,7 +81,12 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
     }
 }
 
-///From a URL given with the result of `reverse_geocode`, return the same set of Places.
+///From a URL given with the result of `reverse_geocode`, perform the same reverse-geocode search.
+///
+///## Errors
+///
+///In addition to errors that might occur generally, this function will return a `BadUrl` error if
+///the given URL is not a valid `reverse_geocode` query URL.
 pub fn reverse_geocode_url(url: &str, con_token: &auth::Token, access_token: &auth::Token)
     -> WebResponse<SearchResult>
 {
@@ -87,11 +98,39 @@ pub fn reverse_geocode_url(url: &str, con_token: &auth::Token, access_token: &au
 }
 
 ///Begins building a location search via latitude/longitude.
+///
+///## Example
+///
+///```rust,no_run
+///# let con_token = egg_mode::Token::new("", "");
+///# let access_token = egg_mode::Token::new("", "");
+///use egg_mode::place::{self, PlaceType};
+///let result = place::search_point(51.507222, -0.1275)
+///                   .granularity(PlaceType::City)
+///                   .call(&con_token, &access_token)
+///                   .unwrap();
+///
+///assert!(result.response.results.iter().any(|pl| pl.full_name == "London, England"));
+///```
 pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder<'static> {
     SearchBuilder::new(PlaceQuery::LatLon(latitude, longitude))
 }
 
 ///Begins building a location search via a text query.
+///
+///## Example
+///
+///```rust,no_run
+///# let con_token = egg_mode::Token::new("", "");
+///# let access_token = egg_mode::Token::new("", "");
+///use egg_mode::place::{self, PlaceType};
+///let result = place::search_query("columbia")
+///                   .granularity(PlaceType::Admin)
+///                   .call(&con_token, &access_token)
+///                   .unwrap();
+///
+///assert!(result.response.results.iter().any(|pl| pl.full_name == "British Columbia, Canada"));
+///```
 pub fn search_query<'a>(query: &'a str) -> SearchBuilder<'a> {
     SearchBuilder::new(PlaceQuery::Query(query))
 }
@@ -101,7 +140,12 @@ pub fn search_ip<'a>(query: &'a str) -> SearchBuilder<'a> {
     SearchBuilder::new(PlaceQuery::IPAddress(query))
 }
 
-///From a URL given with the result of any `search_*` function, return the same set of Places.
+///From a URL given with the result of any `search_*` function, perform the same location search.
+///
+///## Errors
+///
+///In addition to errors that might occur generally, this function will return a `BadUrl` error if
+///the given URL is not a valid `search` query URL.
 pub fn search_url(url: &str, con_token: &auth::Token, access_token: &auth::Token)
     -> WebResponse<SearchResult>
 {
