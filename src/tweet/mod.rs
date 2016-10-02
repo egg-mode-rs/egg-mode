@@ -567,6 +567,20 @@ pub struct DraftTweet<'a> {
     pub text: &'a str,
     ///If present, the ID of the tweet this draft is replying to.
     pub in_reply_to: Option<i64>,
+    ///If present, whether to automatically fill reply mentions from the metadata of the
+    ///`in_reply_to` tweet.
+    pub auto_populate_reply_metadata: Option<bool>,
+    ///If present, the list of user IDs to exclude from the automatically-populated metadata pulled
+    ///when `auto_populate_reply_metadata` is true.
+    pub exclude_reply_user_ids: Option<&'a [i64]>,
+    ///If present, the tweet link to quote or a [DM deep link][] to include in the tweet's
+    ///attachment metadata.
+    ///
+    ///Note that if this link is not a tweet link or a [DM deep link][], Twitter will return an
+    ///error when the draft is sent.
+    ///
+    ///[DM deep link]: https://business.twitter.com/en/help/campaign-editing-and-optimization/public-to-private-conversation.html
+    pub attachment_url: Option<&'a str>,
     ///If present, the latitude/longitude coordinates to attach to the draft.
     pub coordinates: Option<(f64, f64)>,
     ///If present (and if `coordinates` is present), indicates whether to display a pin on the
@@ -582,6 +596,9 @@ impl<'a> DraftTweet<'a> {
         DraftTweet {
             text: text,
             in_reply_to: None,
+            auto_populate_reply_metadata: None,
+            exclude_reply_user_ids: None,
+            attachment_url: None,
             coordinates: None,
             display_coordinates: None,
             place_id: None,
@@ -595,6 +612,49 @@ impl<'a> DraftTweet<'a> {
     pub fn in_reply_to(self, in_reply_to: i64) -> Self {
         DraftTweet {
             in_reply_to: Some(in_reply_to),
+            ..self
+        }
+    }
+
+    ///Tells Twitter whether or not to automatically fill reply mentions from the tweet linked in
+    ///`in_reply_to`.
+    ///
+    ///This parameter will have no effect if `in_reply_to` is absent.
+    ///
+    ///If you set this to true, you can strip out the mentions from the beginning of the tweet text
+    ///if they were also in the reply mentions of the parent tweet. To remove handles from the list
+    ///of reply mentions, hand their user IDs to `exclude_reply_user_ids`.
+    pub fn auto_populate_reply_metadata(self, auto_populate: bool) -> Self {
+        DraftTweet {
+            auto_populate_reply_metadata: Some(auto_populate),
+            ..self
+        }
+    }
+
+    ///Tells Twitter to exclude the given list of user IDs from the automatically-populated reply
+    ///mentions.
+    ///
+    ///This parameter will have no effect if `auto_populate_reply_metadata` is absent or false.
+    ///
+    ///Note that you cannot use this parameter to remove the author of the parent tweet from the
+    ///reply list. Twitter will silently ignore the author's ID in that scenario.
+    pub fn exclude_reply_user_ids(self, user_ids: &'a [i64]) -> Self {
+        DraftTweet {
+            exclude_reply_user_ids: Some(user_ids),
+            ..self
+        }
+    }
+
+    ///Attaches the given tweet URL or [DM deep link][] to the tweet draft, which lets it be used
+    ///outside the 140 character text limit.
+    ///
+    ///Note that if this link is not a tweet URL or a DM deep link, then Twitter will return an
+    ///error when this draft is sent.
+    ///
+    ///[DM deep link]: https://business.twitter.com/en/help/campaign-editing-and-optimization/public-to-private-conversation.html
+    pub fn attachment_url(self, url: &'a str) -> Self {
+        DraftTweet {
+            attachment_url: Some(url),
             ..self
         }
     }
@@ -633,6 +693,19 @@ impl<'a> DraftTweet<'a> {
 
         if let Some(reply) = self.in_reply_to {
             add_param(&mut params, "in_reply_to_status_id", reply.to_string());
+        }
+
+        if let Some(auto_populate) = self.auto_populate_reply_metadata {
+            add_param(&mut params, "auto_populate_reply_metadata", auto_populate.to_string());
+        }
+
+        if let Some(exclude) = self.exclude_reply_user_ids {
+            let list = exclude.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
+            add_param(&mut params, "exclude_reply_user_ids", list);
+        }
+
+        if let Some(url) = self.attachment_url {
+            add_param(&mut params, "attachment_url", url);
         }
 
         if let Some((lat, long)) = self.coordinates {
