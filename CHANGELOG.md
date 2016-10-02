@@ -13,6 +13,7 @@
 ### Changed
 - Fields on `DraftTweet` are public to facilitate UI for long-term draft storage
 - `DraftTweet`'s coordinates are now f64 instead of f32
+  - This is a **breaking change** if you had f32 bindings for this purpose
 - New error enum, `BadUrl`, telling you that you passed a bad URL to `reverse_geocode_url`
   - This is a **breaking change** if you were matching on the error types before
 - Made `tweet::Timeline::new()` and `user::UserSearch::new()` non-public
