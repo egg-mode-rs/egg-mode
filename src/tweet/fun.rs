@@ -16,6 +16,7 @@ pub fn show(id: i64, con_token: &auth::Token, access_token: &auth::Token)
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
     add_param(&mut params, "include_my_retweet", "true");
+    add_param(&mut params, "tweet_mode", "extended");
 
     let mut resp = try!(auth::get(links::statuses::SHOW, con_token, access_token, Some(&params)));
 
@@ -30,6 +31,7 @@ pub fn retweets_of(id: i64, count: u32, con_token: &auth::Token, access_token: &
     -> WebResponse<Vec<Tweet>>
 {
     let mut params = HashMap::new();
+    add_param(&mut params, "tweet_mode", "extended");
 
     if count == 0 || count > 100 {
         add_param(&mut params, "count", 100.to_string());
@@ -70,6 +72,7 @@ pub fn lookup(ids: &[i64], con_token: &auth::Token, access_token: &auth::Token)
     let mut params = HashMap::new();
     let id_param = ids.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
     add_param(&mut params, "id", id_param);
+    add_param(&mut params, "tweet_mode", "extended");
 
     let mut resp = try!(auth::post(links::statuses::LOOKUP, con_token, access_token, Some(&params)));
 
@@ -90,6 +93,7 @@ pub fn lookup_map(ids: &[i64], con_token: &auth::Token, access_token: &auth::Tok
     let id_param = ids.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
     add_param(&mut params, "id", id_param);
     add_param(&mut params, "map", "true");
+    add_param(&mut params, "tweet_mode", "extended");
 
     let mut resp = try!(auth::post(links::statuses::LOOKUP, con_token, access_token, Some(&params)));
 
@@ -187,9 +191,12 @@ pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, con_token: &'a auth::Token, ac
 ///
 ///On success, returns the retweet, with the original status contained in `retweeted_status`.
 pub fn retweet(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
+    let mut params = HashMap::new();
+    add_param(&mut params, "tweet_mode", "extended");
+
     let url = format!("{}/{}.json", links::statuses::RETWEET_STEM, id);
 
-    let mut resp = try!(auth::post(&url, con_token, access_token, None));
+    let mut resp = try!(auth::post(&url, con_token, access_token, Some(&params)));
 
     parse_response(&mut resp)
 }
@@ -201,9 +208,12 @@ pub fn retweet(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> 
 ///
 ///On success, returns the original tweet.
 pub fn unretweet(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
+    let mut params = HashMap::new();
+    add_param(&mut params, "tweet_mode", "extended");
+
     let url = format!("{}/{}.json", links::statuses::UNRETWEET_STEM, id);
 
-    let mut resp = try!(auth::post(&url, con_token, access_token, None));
+    let mut resp = try!(auth::post(&url, con_token, access_token, Some(&params)));
 
     parse_response(&mut resp)
 }
@@ -214,6 +224,7 @@ pub fn unretweet(id: i64, con_token: &auth::Token, access_token: &auth::Token) -
 pub fn like(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
+    add_param(&mut params, "tweet_mode", "extended");
 
     let mut resp = try!(auth::post(links::statuses::LIKE, con_token, access_token, Some(&params)));
 
@@ -226,6 +237,7 @@ pub fn like(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> Web
 pub fn unlike(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
+    add_param(&mut params, "tweet_mode", "extended");
 
     let mut resp = try!(auth::post(links::statuses::UNLIKE, con_token, access_token, Some(&params)));
 
@@ -236,9 +248,12 @@ pub fn unlike(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> W
 ///
 ///On success, returns the given tweet.
 pub fn delete(id: i64, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
+    let mut params = HashMap::new();
+    add_param(&mut params, "tweet_mode", "extended");
+
     let url = format!("{}/{}.json", links::statuses::DELETE_STEM, id);
 
-    let mut resp = try!(auth::post(&url, con_token, access_token, None));
+    let mut resp = try!(auth::post(&url, con_token, access_token, Some(&params)));
 
     parse_response(&mut resp)
 }

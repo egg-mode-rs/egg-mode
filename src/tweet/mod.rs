@@ -144,6 +144,9 @@ pub struct Tweet {
     pub created_at: String,
     ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
     pub current_user_retweet: Option<i64>,
+    ///If this tweet is an extended tweet with "hidden" metadata and entities, contains the code
+    ///point indices where the "displayable" tweet text is.
+    pub display_text_range: Option<(i32, i32)>,
     ///Link, hashtag, and user mention information extracted from the tweet text.
     pub entities: TweetEntities,
     ///Extended media information attached to the tweet, if media is available.
@@ -197,8 +200,13 @@ pub struct Tweet {
     ///The application used to post the tweet, as an HTML anchor tag containing the app's URL and
     ///name.
     pub source: String, //TODO: this is html, i want to parse this eventually
-    ///The text of the tweet.
+    ///The text of the tweet. For "extended" tweets, opening reply mentions and/or attached media
+    ///or quoted tweet links do not count against character count, so this could be longer than 140
+    ///characters in those situations.
     pub text: String,
+    ///Indicates whether this tweet is a truncated "compatibility" form of an extended tweet whose
+    ///full text is longer than 140 characters.
+    pub truncated: bool,
     ///The user who posted this tweet.
     pub user: Box<user::TwitterUser>,
     ///If present and `true`, indicates that this tweet has been withheld due to a DMCA complaint.
@@ -220,6 +228,9 @@ impl FromJson for Tweet {
             return Err(InvalidResponse("Tweet received json that wasn't an object", Some(input.to_string())));
         }
 
+        //TODO: when i start building streams, i want to extract "extended_tweet" and use its
+        //fields here
+
         let coords = field(input, "coordinates").ok();
 
         Ok(Tweet {
@@ -227,6 +238,7 @@ impl FromJson for Tweet {
             coordinates: coords.map(|(lon, lat)| (lat, lon)),
             created_at: try!(field(input, "created_at")),
             current_user_retweet: try!(current_user_retweet(input, "current_user_retweet")),
+            display_text_range: field(input, "display_text_range").ok(),
             entities: try!(field(input, "entities")),
             extended_entities: field(input, "extended_entities").ok(),
             favorite_count: field(input, "favorite_count").unwrap_or(0),
@@ -246,7 +258,8 @@ impl FromJson for Tweet {
             retweeted: field(input, "retweeted").ok(),
             retweeted_status: field(input, "retweeted_status").map(Box::new).ok(),
             source: try!(field(input, "source")),
-            text: try!(field(input, "text")),
+            text: try!(field(input, "full_text").or(field(input, "text"))),
+            truncated: try!(field(input, "truncated")),
             user: try!(field(input, "user").map(Box::new)),
             withheld_copyright: field(input, "withheld_copyright").unwrap_or(false),
             withheld_in_countries: field(input, "withheld_in_countries").ok(),
@@ -463,6 +476,7 @@ impl<'a> Timeline<'a> {
     pub fn call(&self, since_id: Option<i64>, max_id: Option<i64>) -> WebResponse<Vec<Tweet>> {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
         add_param(&mut params, "count", self.count.to_string());
+        add_param(&mut params, "tweet_mode", "extended");
 
         if let Some(id) = since_id {
             add_param(&mut params, "since_id", id.to_string());
