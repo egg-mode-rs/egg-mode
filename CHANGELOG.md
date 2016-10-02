@@ -1,6 +1,6 @@
 # Changelog for egg-mode
 
-## Pending
+## [0.5.0] - 2016-10-02
 ### Added
 - New methods on `SearchBuilder` to constrain initial searches to be before or after given tweet IDs
 - New module `place` and `Place` struct
