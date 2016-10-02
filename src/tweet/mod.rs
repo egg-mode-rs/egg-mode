@@ -83,6 +83,9 @@ pub use self::fun::*;
 ///* `favorite_count`/`retweet_count`
 ///* `lang`, though third-party clients usually don't surface this at a user-interface level.
 ///  Twitter Web uses this to create machine-translations of the tweet.
+///* `coordinates`/`place`
+///* `display_text_range`
+///* `truncated`
 ///
 ///## Perspective-based data
 ///
