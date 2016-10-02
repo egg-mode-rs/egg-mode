@@ -19,6 +19,10 @@
   - This is a **breaking change** if you were using these functions instead of any of the real
     initializers
 - Added fields `coordinates` and `place` to the `Tweet` structure
+- Made tweet loading functions request and parse extended tweets
+- Added fields `display_text_range` and `truncated` to the `Tweet` structure
+- Added fields and methods `auto_populate_reply_metadata`,
+  `exclude_reply_user_ids`, and `attachment_url` to the `DraftTweet` structure
 
 ## [0.4.0] - 2016-09-02
 ### Added
