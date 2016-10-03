@@ -728,3 +728,78 @@ impl<'a> DraftTweet<'a> {
         parse_response(&mut resp)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use common::FromJson;
+    use super::Tweet;
+
+    use std::fs::File;
+    use std::io::Read;
+
+    fn load_tweet(path: &str) -> Tweet {
+        let sample_str = {
+            let mut file = File::open(path).unwrap();
+            let mut ret = String::new();
+            file.read_to_string(&mut ret).unwrap();
+            ret
+        };
+        Tweet::from_str(&sample_str).unwrap()
+    }
+
+    #[test]
+    fn parse_basic() {
+        let sample = load_tweet("src/tweet/sample-extended-onepic.json");
+
+        assert_eq!(sample.text,
+                   ".@Serrayak said he’d use what-ev-er I came up with as his Halloween avatar so I’m just making sure you all know he said that https://t.co/MvgxCwDwSa");
+        assert_eq!(sample.user.screen_name, "0xabad1dea");
+        assert_eq!(sample.id, 782349500404862976);
+        assert_eq!(sample.source,
+                   "<a href=\"http://tapbots.com/tweetbot\" rel=\"nofollow\">Tweetbot for iΟS</a>");
+        assert_eq!(sample.created_at, "Sat Oct 01 22:40:30 +0000 2016");
+        assert_eq!(sample.favorite_count, 20);
+        assert_eq!(sample.retweet_count, 0);
+        assert_eq!(sample.lang, "en");
+        assert_eq!(sample.coordinates, None);
+        assert!(sample.place.is_none());
+
+        assert_eq!(sample.favorited, Some(false));
+        assert_eq!(sample.retweeted, Some(false));
+        assert!(sample.current_user_retweet.is_none());
+
+        assert!(sample.entities.user_mentions.iter().any(|m| m.screen_name == "Serrayak"));
+        assert!(sample.extended_entities.is_some());
+        assert_eq!(sample.extended_entities.unwrap().media.len(), 1);
+        assert_eq!(sample.display_text_range, Some((0, 124)));
+        assert_eq!(sample.truncated, false);
+    }
+
+    #[test]
+    fn parse_reply() {
+        let sample = load_tweet("src/tweet/sample-reply.json");
+
+        assert_eq!(sample.in_reply_to_screen_name, Some("QuietMisdreavus".to_string()));
+        assert_eq!(sample.in_reply_to_user_id, Some(2977334326));
+        assert_eq!(sample.in_reply_to_status_id, Some(782643731665080322));
+    }
+
+    #[test]
+    fn parse_quote() {
+        let sample = load_tweet("src/tweet/sample-quote.json");
+
+        assert_eq!(sample.quoted_status_id, Some(783004145485840384));
+        assert!(sample.quoted_status.is_some());
+        assert_eq!(sample.quoted_status.unwrap().text,
+                   "@chalkboardsband hot damn i should call up my friends in austin, i might actually be able to make one of these now :D");
+    }
+
+    #[test]
+    fn parse_retweet() {
+        let sample = load_tweet("src/tweet/sample-retweet.json");
+
+        assert!(sample.retweeted_status.is_some());
+        assert_eq!(sample.retweeted_status.unwrap().text,
+                   "it's working: follow @andrewhuangbot for a random lyric of mine every hour. we'll call this version 0.1.0. wanna get line breaks in there");
+    }
+}
