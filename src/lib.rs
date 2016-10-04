@@ -79,6 +79,7 @@ pub mod cursor;
 pub mod tweet;
 pub mod search;
 pub mod place;
+pub mod direct;
 mod links;
 mod common;
 
