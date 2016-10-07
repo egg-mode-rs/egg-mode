@@ -1,4 +1,12 @@
 //! Structs and methods for working with direct messages.
+//!
+//! Every method in this module requires that your app has "read, write and direct message" access
+//! requested for any account you attempt them with. If your app is read-only or read/write without
+//! DM access, the calls will fail and return a permissions error from Twitter.
+//!
+//! Although the Twitter website and official apps display DMs as threads between the authenticated
+//! user and specific other users, the API does not expose them like this. Separate calls to
+//! `received` and `sent` are necessary to fully reconstruct a DM thread.
 
 use common::*;
 
@@ -15,6 +23,9 @@ mod fun;
 pub use self::fun::*;
 
 ///Represents a single direct message.
+///
+///The structure of a single DM is fairly simple, as it doesn't have the same amount of metadata a
+///regular tweet does. This means there are much fewer fields of this struct.
 pub struct DirectMessage {
     ///Numeric ID for this DM.
     pub id: i64,
@@ -39,14 +50,19 @@ pub struct DirectMessage {
     pub recipient: Box<user::TwitterUser>,
 }
 
-///Container for URL, hashtag, and user mention information associated with a direct message.
+///Container for URL, hashtag, mention, and media information associated with a direct message.
 pub struct DMEntities {
     ///Collection of hashtags parsed from the DM.
     pub hashtags: Vec<entities::HashtagEntity>,
+    ///Collection of financial symbols, or "cashtags", parsed from the DM.
+    pub symbols: Vec<entities::HashtagEntity>,
     ///Collection of URLs parsed from the DM.
     pub urls: Vec<entities::UrlEntity>,
     ///Collection of user mentions parsed from the DM.
     pub user_mentions: Vec<entities::MentionEntity>,
+    ///If the message contains any attached media, this contains a collection of media information
+    ///from it.
+    pub media: Option<Vec<entities::MediaEntity>>,
 }
 
 impl FromJson for DirectMessage {
@@ -80,8 +96,10 @@ impl FromJson for DMEntities {
 
         Ok(DMEntities {
             hashtags: try!(field(input, "hashtags")),
+            symbols: try!(field(input, "symbols")),
             urls: try!(field(input, "urls")),
             user_mentions: try!(field(input, "user_mentions")),
+            media: field(input, "media").ok(),
         })
     }
 }

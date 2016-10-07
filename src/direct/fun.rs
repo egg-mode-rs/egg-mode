@@ -30,6 +30,14 @@ pub fn sent<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> Ti
 }
 
 ///Send a new direct message to the given user.
+///
+///The recipient must allow DMs from the authenticated user for this to be successful. In practice,
+///this means that the recipient must either follow the authenticated user, or they must have the
+///"allow DMs from anyone" setting enabled. As the latter setting has no visibility on the API,
+///there may be situations where you can't verify the recipient's ability to receive the requested
+///DM beforehand.
+///
+///Upon successfully sending the DM, the message will be returned.
 pub fn send<'a, T: Into<UserID<'a>>>(to: T, text: &str, con_token: &auth::Token, access_token: &auth::Token)
     -> WebResponse<DirectMessage>
 {
