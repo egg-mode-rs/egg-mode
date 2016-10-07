@@ -8,6 +8,7 @@
 - New function to load DMs received by the authenticated user (`received`)
 - New function to load DMs sent by the authenticated user (`sent`)
 - New function to send a DM (`send`)
+- New function to delete a previously-sent DM (`delete`)
 
 ## [0.5.0] - 2016-10-02
 ### Added
