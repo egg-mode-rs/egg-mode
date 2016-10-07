@@ -18,7 +18,12 @@ pub fn show(id: i64, con_token: &auth::Token, access_token: &auth::Token)
     parse_response(&mut resp)
 }
 
-///Create a `Timeline` struct to traverse the direct messages received by the authenticated user.
+///Create a `Timeline` struct to navigate the direct messages received by the authenticated user.
 pub fn received<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> Timeline<'a> {
     Timeline::new(links::direct::RECEIVED, None, con_token, access_token)
+}
+
+///Create a `Timeline` struct to navigate the direct messages sent by the authenticated user.
+pub fn sent<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> Timeline<'a> {
+    Timeline::new(links::direct::SENT, None, con_token, access_token)
 }

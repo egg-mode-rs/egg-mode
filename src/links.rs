@@ -61,4 +61,5 @@ pub mod place {
 pub mod direct {
     pub const SHOW: &'static str = "https://api.twitter.com/1.1/direct_messages/show.json";
     pub const RECEIVED: &'static str = "https://api.twitter.com/1.1/direct_messages.json";
+    pub const SENT: &'static str = "https://api.twitter.com/1.1/direct_messages/sent.json";
 }
