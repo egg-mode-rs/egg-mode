@@ -1,5 +1,12 @@
 # Changelog for egg-mode
 
+## Pending
+### Added
+- New module `direct` and `DirectMessage`/`DMEntities` structs
+- New struct `direct::Timeline` that is like `tweet::Timeline`, but for DMs
+- New function to load a single direct message (`show`)
+- New function to load DMs received by the authenticated user (`received`)
+
 ## [0.5.0] - 2016-10-02
 ### Added
 - New methods on `SearchBuilder` to constrain initial searches to be before or after given tweet IDs

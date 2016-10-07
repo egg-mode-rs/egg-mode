@@ -57,3 +57,8 @@ pub mod place {
     pub const REVERSE_GEOCODE: &'static str = "https://api.twitter.com/1.1/geo/reverse_geocode.json";
     pub const SEARCH: &'static str = "https://api.twitter.com/1.1/geo/search.json";
 }
+
+pub mod direct {
+    pub const SHOW: &'static str = "https://api.twitter.com/1.1/direct_messages/show.json";
+    pub const RECEIVED: &'static str = "https://api.twitter.com/1.1/direct_messages.json";
+}

@@ -54,12 +54,9 @@ tokens.
 
 ### Direct Messages
 
-From what I can tell, DMs are like Tweets, but with a few extra fields? The docs don't go into much
-detail other than the response examples for those endpoints.
-
-- [ ] direct\_messages
+- [x] direct\_messages (`direct::received`)
 - [ ] direct\_messages/sent
-- [ ] direct\_messages/show
+- [x] direct\_messages/show (`direct::show`)
 - [ ] direct\_messages/new
 - [ ] direct\_messages/destroy
 
