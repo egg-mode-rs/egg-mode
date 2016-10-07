@@ -42,3 +42,19 @@ pub fn send<'a, T: Into<UserID<'a>>>(to: T, text: &str, con_token: &auth::Token,
 
     parse_response(&mut resp)
 }
+
+///Delete the direct message with the given ID.
+///
+///The authenticated user must be the sender of this DM for this call to be successful.
+///
+///On a successful deletion, returns the freshly-deleted message.
+pub fn delete(id: i64, con_token: &auth::Token, access_token: &auth::Token)
+    -> WebResponse<DirectMessage>
+{
+    let mut params = HashMap::new();
+    add_param(&mut params, "id", id.to_string());
+
+    let mut resp = try!(auth::post(links::direct::DELETE, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
+}
