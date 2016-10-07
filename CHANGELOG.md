@@ -7,6 +7,7 @@
 - New function to load a single direct message (`show`)
 - New function to load DMs received by the authenticated user (`received`)
 - New function to load DMs sent by the authenticated user (`sent`)
+- New function to send a DM (`send`)
 
 ## [0.5.0] - 2016-10-02
 ### Added

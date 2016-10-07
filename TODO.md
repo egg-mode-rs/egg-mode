@@ -57,7 +57,7 @@ tokens.
 - [x] direct\_messages (`direct::received`)
 - [x] direct\_messages/sent (`direct::sent`)
 - [x] direct\_messages/show (`direct::show`)
-- [ ] direct\_messages/new
+- [x] direct\_messages/new (`direct::send`)
 - [ ] direct\_messages/destroy
 
 ### Users

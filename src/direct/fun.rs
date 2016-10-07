@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use auth;
 use links;
 use common::*;
+use user::UserID;
 
 use super::*;
 
@@ -26,4 +27,18 @@ pub fn received<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -
 ///Create a `Timeline` struct to navigate the direct messages sent by the authenticated user.
 pub fn sent<'a>(con_token: &'a auth::Token, access_token: &'a auth::Token) -> Timeline<'a> {
     Timeline::new(links::direct::SENT, None, con_token, access_token)
+}
+
+///Send a new direct message to the given user.
+pub fn send<'a, T: Into<UserID<'a>>>(to: T, text: &str, con_token: &auth::Token, access_token: &auth::Token)
+    -> WebResponse<DirectMessage>
+{
+    let mut params = HashMap::new();
+    add_name_param(&mut params, &to.into());
+
+    add_param(&mut params, "text", text);
+
+    let mut resp = try!(auth::post(links::direct::SEND, con_token, access_token, Some(&params)));
+
+    parse_response(&mut resp)
 }
