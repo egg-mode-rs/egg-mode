@@ -98,7 +98,6 @@ impl FromJson for DMEntities {
 /// ```rust,no_run
 /// # let con_token = egg_mode::Token::new("", "");
 /// # let access_token = egg_mode::Token::new("", "");
-/// //TODO: These aren't direct messages! >_>
 /// let mut timeline = egg_mode::direct::received(&con_token, &access_token)
 ///                                .with_page_size(10);
 ///
