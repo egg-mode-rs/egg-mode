@@ -734,6 +734,8 @@ mod tests {
     use common::FromJson;
     use super::Tweet;
 
+    use chrono::{Weekday, Datelike, Timelike};
+
     use std::fs::File;
     use std::io::Read;
 
@@ -757,7 +759,13 @@ mod tests {
         assert_eq!(sample.id, 782349500404862976);
         assert_eq!(sample.source,
                    "<a href=\"http://tapbots.com/tweetbot\" rel=\"nofollow\">Tweetbot for iΟS</a>");
-        assert_eq!(sample.created_at, "Sat Oct 01 22:40:30 +0000 2016");
+        assert_eq!(sample.created_at.weekday(), Weekday::Sat);
+        assert_eq!(sample.created_at.year(), 2016);
+        assert_eq!(sample.created_at.month(), 10);
+        assert_eq!(sample.created_at.day(), 1);
+        assert_eq!(sample.created_at.hour(), 22);
+        assert_eq!(sample.created_at.minute(), 40);
+        assert_eq!(sample.created_at.second(), 30);
         assert_eq!(sample.favorite_count, 20);
         assert_eq!(sample.retweet_count, 0);
         assert_eq!(sample.lang, "en");
