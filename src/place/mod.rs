@@ -411,8 +411,8 @@ impl FromJson for Place {
         let bounding_box = if let Some(vec) = input.find_path(&["bounding_box", "coordinates"]) {
             //"Array of Array of Array of Float" https://dev.twitter.com/overview/api/places#obj-boundingbox
             let parsed = try!(<Vec<Vec<(f64, f64)>>>::from_json(vec));
-            try!(parsed.into_iter().next().ok_or(InvalidResponse("Place.bounding_box received an empty array",
-                                                                 Some(vec.to_string()))))
+            try!(parsed.into_iter().next().ok_or_else(|| InvalidResponse("Place.bounding_box received an empty array",
+                                                                         Some(vec.to_string()))))
         }
         else {
             return Err(MissingValue("bounding_box"));

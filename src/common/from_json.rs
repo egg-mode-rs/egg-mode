@@ -21,7 +21,7 @@ pub trait FromJson : Sized {
 
 impl<T> FromJson for Vec<T> where T: FromJson {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        let arr = try!(input.as_array().ok_or(InvalidResponse("expected an array", Some(input.to_string()))));
+        let arr = try!(input.as_array().ok_or_else(|| InvalidResponse("expected an array", Some(input.to_string()))));
 
         arr.iter().map(|x| T::from_json(x)).collect()
     }
@@ -35,31 +35,31 @@ impl<T> FromJson for Box<T> where T: FromJson {
 
 impl FromJson for i64 {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        input.as_i64().ok_or(InvalidResponse("expected an i64", Some(input.to_string())))
+        input.as_i64().ok_or_else(|| InvalidResponse("expected an i64", Some(input.to_string())))
     }
 }
 
 impl FromJson for i32 {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        input.as_i64().map(|x| x as i32).ok_or(InvalidResponse("expected an i32", Some(input.to_string())))
+        input.as_i64().map(|x| x as i32).ok_or_else(|| InvalidResponse("expected an i32", Some(input.to_string())))
     }
 }
 
 impl FromJson for f64 {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        input.as_f64().ok_or(InvalidResponse("expected an f64", Some(input.to_string())))
+        input.as_f64().ok_or_else(|| InvalidResponse("expected an f64", Some(input.to_string())))
     }
 }
 
 impl FromJson for String {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        input.as_string().map(|s| s.to_string()).ok_or(InvalidResponse("expected a string", Some(input.to_string())))
+        input.as_string().map(|s| s.to_string()).ok_or_else(|| InvalidResponse("expected a string", Some(input.to_string())))
     }
 }
 
 impl FromJson for bool {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        input.as_boolean().ok_or(InvalidResponse("expected a boolean", Some(input.to_string())))
+        input.as_boolean().ok_or_else(|| InvalidResponse("expected a boolean", Some(input.to_string())))
     }
 }
 
@@ -71,12 +71,12 @@ impl FromJson for (i32, i32) {
         // - with exactly two entries
         //any deviation from these assumptions will return an error.
         let int_vec = try!(input.as_array()
-                                .ok_or(InvalidResponse("expected an array for a pair", Some(input.to_string())))
+                                .ok_or_else(|| InvalidResponse("expected an array for a pair", Some(input.to_string())))
                                 .and_then(|v| v.iter()
                                                .map(|i| i.as_i64())
                                                .collect::<Option<Vec<_>>>()
-                                               .ok_or(InvalidResponse("array for pair was not fully integers",
-                                                                      Some(input.to_string())))));
+                                               .ok_or_else(|| InvalidResponse("array for pair was not fully integers",
+                                                                              Some(input.to_string())))));
 
         if int_vec.len() != 2 {
             return Err(InvalidResponse("array for pair didn't have two entries", Some(input.to_string())));
@@ -94,12 +94,12 @@ impl FromJson for (f64, f64) {
         // - with exactly two entries
         //any deviation from these assumptions will return an error.
         let float_vec = try!(input.as_array()
-                                  .ok_or(InvalidResponse("expected an array for a pair", Some(input.to_string())))
+                                  .ok_or_else(|| InvalidResponse("expected an array for a pair", Some(input.to_string())))
                                   .and_then(|v| v.iter()
                                                  .map(|i| i.as_f64())
                                                  .collect::<Option<Vec<_>>>()
-                                                 .ok_or(InvalidResponse("array for pair was not fully floats",
-                                                                        Some(input.to_string())))));
+                                                 .ok_or_else(|| InvalidResponse("array for pair was not fully floats",
+                                                                                Some(input.to_string())))));
 
         if float_vec.len() != 2 {
             return Err(InvalidResponse("array for pair didn't have two entries", Some(input.to_string())));
@@ -121,8 +121,8 @@ impl FromJson for json::Json {
 
 impl FromJson for mime::Mime {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        let str = try!(input.as_string().ok_or(InvalidResponse("expected string for Mime", Some(input.to_string()))));
-        let mime = try!(str.parse().or(Err(InvalidResponse("could not parse string as Mime", Some(input.to_string())))));
+        let str = try!(input.as_string().ok_or_else(|| InvalidResponse("expected string for Mime", Some(input.to_string()))));
+        let mime = try!(str.parse().or_else(|_| Err(InvalidResponse("could not parse string as Mime", Some(input.to_string())))));
 
         Ok(mime)
     }
@@ -130,7 +130,7 @@ impl FromJson for mime::Mime {
 
 impl FromJson for chrono::DateTime<chrono::UTC> {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        let str = try!(input.as_string().ok_or(InvalidResponse("expected string for DateTime", Some(input.to_string()))));
+        let str = try!(input.as_string().ok_or_else(|| InvalidResponse("expected string for DateTime", Some(input.to_string()))));
         let date = try!((chrono::UTC).datetime_from_str(str, "%a %b %d %T %z %Y"));
 
         Ok(date)

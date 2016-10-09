@@ -103,8 +103,8 @@ pub fn lookup_map(ids: &[i64], con_token: &auth::Token, access_token: &auth::Tok
     for (key, val) in try!(parsed.response
                                  .find("id")
                                  .and_then(|v| v.as_object())
-                                 .ok_or(InvalidResponse("unexpected response for lookup_map",
-                                                        Some(parsed.response.to_string())))) {
+                                 .ok_or_else(|| InvalidResponse("unexpected response for lookup_map",
+                                                                Some(parsed.response.to_string())))) {
         let id = try!(key.parse::<i64>().or(Err(InvalidResponse("could not parse id as integer",
                                                                 Some(key.to_string())))));
         if val.is_null() {
