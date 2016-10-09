@@ -10,6 +10,10 @@
 - New function to send a DM (`send`)
 - New function to delete a previously-sent DM (`delete`)
 
+### Changed
+- All `created_at` timestamps are now parsed through `chrono`
+  - This is a notable **breaking change** if you were handling this parsing yourself
+
 ## [0.5.0] - 2016-10-02
 ### Added
 - New methods on `SearchBuilder` to constrain initial searches to be before or after given tweet IDs

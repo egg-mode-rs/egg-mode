@@ -52,6 +52,7 @@
 use std::collections::HashMap;
 
 use rustc_serialize::json;
+use chrono;
 
 use auth;
 use links;
@@ -142,9 +143,8 @@ pub struct Tweet {
     //pub contributors: Option<Contributors>,
     ///If present, the location coordinate attached to the tweet, as a (latitude, longitude) pair.
     pub coordinates: Option<(f64, f64)>,
-    ///UTC timestamp showing when the tweet was posted, formatted like "Wed Aug 27 13:08:45 +0000
-    ///2008".
-    pub created_at: String,
+    ///UTC timestamp from when the tweet was posted.
+    pub created_at: chrono::DateTime<chrono::UTC>,
     ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
     pub current_user_retweet: Option<i64>,
     ///If this tweet is an extended tweet with "hidden" metadata and entities, contains the code

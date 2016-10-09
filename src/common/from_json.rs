@@ -1,6 +1,7 @@
 //! Infrastructure trait and related functions for deserializing data from Twitter.
 
 use rustc_serialize::json;
+use chrono::{self, TimeZone};
 use error;
 use error::Error::{InvalidResponse, MissingValue};
 use mime;
@@ -124,6 +125,15 @@ impl FromJson for mime::Mime {
         let mime = try!(str.parse().or(Err(InvalidResponse("could not parse string as Mime", Some(input.to_string())))));
 
         Ok(mime)
+    }
+}
+
+impl FromJson for chrono::DateTime<chrono::UTC> {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        let str = try!(input.as_string().ok_or(InvalidResponse("expected string for DateTime", Some(input.to_string()))));
+        let date = try!((chrono::UTC).datetime_from_str(str, "%a %b %d %T %z %Y"));
+
+        Ok(date)
     }
 }
 

@@ -3,6 +3,7 @@
 use std::{self, fmt};
 use hyper;
 use rustc_serialize;
+use chrono;
 
 ///Represents a collection of errors returned from a Twitter API call.
 #[derive(Debug, RustcDecodable, RustcEncodable)]
@@ -77,6 +78,9 @@ pub enum Error {
     ///An error occurred while loading the JSON response. The enclosed value was returned from
     ///rustc_serialize.
     DecodeError(rustc_serialize::json::DecoderError),
+    ///An error occurred when parsing a timestamp from Twitter. The enclosed value was returned
+    ///from chrono.
+    TimestampParseError(chrono::ParseError),
 }
 
 impl std::fmt::Display for Error {
@@ -92,6 +96,7 @@ impl std::fmt::Display for Error {
             Error::IOError(ref err) => write!(f, "IO error: {}", err),
             Error::JSONError(ref err) => write!(f, "JSON parse Error: {}", err),
             Error::DecodeError(ref err) => write!(f, "JSON decode error: {}", err),
+            Error::TimestampParseError(ref err) => write!(f, "Error parsing timestamp: {}", err),
         }
     }
 }
@@ -109,6 +114,7 @@ impl std::error::Error for Error {
             Error::IOError(ref err) => err.description(),
             Error::JSONError(ref err) => err.description(),
             Error::DecodeError(ref err) => err.description(),
+            Error::TimestampParseError(ref err) => err.description(),
         }
     }
 
@@ -118,6 +124,7 @@ impl std::error::Error for Error {
             Error::IOError(ref err) => Some(err),
             Error::JSONError(ref err) => Some(err),
             Error::DecodeError(ref err) => Some(err),
+            Error::TimestampParseError(ref err) => Some(err),
             _ => None,
         }
     }
@@ -144,5 +151,11 @@ impl From<rustc_serialize::json::ParserError> for Error {
 impl From<rustc_serialize::json::DecoderError> for Error {
     fn from(err: rustc_serialize::json::DecoderError) -> Error {
         Error::DecodeError(err)
+    }
+}
+
+impl From<chrono::ParseError> for Error {
+    fn from(err: chrono::ParseError) -> Error {
+        Error::TimestampParseError(err)
     }
 }

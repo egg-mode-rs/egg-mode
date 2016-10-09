@@ -70,6 +70,7 @@ extern crate rand;
 extern crate crypto;
 extern crate rustc_serialize;
 extern crate mime;
+extern crate chrono;
 
 mod auth;
 pub mod error;

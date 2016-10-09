@@ -2,6 +2,10 @@
 //that are unnecessary
 #![allow(dead_code)]
 
+//to prevent conflicts with examples, i'll import chrono here and let examples use it from here if
+//they need it
+pub extern crate chrono;
+
 use std;
 use std::io::{Write, Read};
 use egg_mode;
@@ -96,7 +100,7 @@ impl Config {
 }
 
 pub fn print_tweet(tweet: &egg_mode::tweet::Tweet) {
-    println!("{} (@{}) posted at {}", tweet.user.name, tweet.user.screen_name, tweet.created_at);
+    println!("{} (@{}) posted at {}", tweet.user.name, tweet.user.screen_name, tweet.created_at.with_timezone(&chrono::Local));
 
     if let Some(ref screen_name) = tweet.in_reply_to_screen_name {
         println!("--> in reply to @{}", screen_name);

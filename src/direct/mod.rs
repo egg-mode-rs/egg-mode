@@ -11,6 +11,7 @@
 use common::*;
 
 use rustc_serialize::json;
+use chrono;
 
 use auth;
 use user;
@@ -29,9 +30,8 @@ pub use self::fun::*;
 pub struct DirectMessage {
     ///Numeric ID for this DM.
     pub id: i64,
-    ///UTC timestamp showing when this DM was created, formatted like "Mon Aug 27 17:21:03 +0000
-    ///2012".
-    pub created_at: String,
+    ///UTC timestamp from when this DM was created.
+    pub created_at: chrono::DateTime<chrono::UTC>,
     ///The text of the DM.
     pub text: String,
     ///Link, hashtag, and user mention information parsed out of the DM.

@@ -52,7 +52,10 @@
 //! - `incoming_requests`/`outgoing_requests`
 
 use std::collections::HashMap;
+
 use rustc_serialize::json;
+use chrono;
+
 use auth;
 use common::*;
 use entities;
@@ -160,10 +163,8 @@ pub struct TwitterUser {
     ///Indicates this user has an account with "contributor mode" enabled, allowing
     ///for Tweets issued by the user to be co-authored by another account. Rarely `true`.
     pub contributors_enabled: bool,
-    //TODO: parse as date?
-    ///The UTC datetime that this user account was created on Twitter, formatted like "Tue Jan
-    ///13 23:37:34 +0000 2015".
-    pub created_at: String,
+    ///The UTC timestamp for when this user account was created on Twitter.
+    pub created_at: chrono::DateTime<chrono::UTC>,
     ///When true, indicates that this user has not altered the theme or background of
     ///their user profile.
     pub default_profile: bool,
