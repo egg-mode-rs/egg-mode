@@ -284,6 +284,13 @@ fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Optio
 }
 
 ///Represents the app from which a specific tweet was posted.
+///
+///This struct is parsed out of the HTML anchor tag that Twitter returns as part of each tweet.
+///This way you can format the source link however you like without having to parse the values out
+///yourself.
+///
+///Note that if you're going to reconstruct a link from this, the source URL has `rel="nofollow"`
+///in the anchor tag.
 #[derive(Debug)]
 pub struct TweetSource {
     ///The name of the app, given by its developer.

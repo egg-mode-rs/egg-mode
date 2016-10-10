@@ -13,6 +13,8 @@
 ### Changed
 - All `created_at` timestamps are now parsed through `chrono`
   - This is a notable **breaking change** if you were handling this parsing yourself
+- `tweet::source` is now a new `TweetSource` struct and no longer an HTML String
+  - This is a notable **breaking change** if you were parsing this yourself
 
 ## [0.5.0] - 2016-10-02
 ### Added
