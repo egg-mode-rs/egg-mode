@@ -53,6 +53,7 @@ use std::collections::HashMap;
 
 use rustc_serialize::json;
 use chrono;
+use regex::Regex;
 
 use auth;
 use links;
@@ -200,9 +201,8 @@ pub struct Tweet {
     ///the retweet, and so that liking a retweet results in an additional notification to the user
     ///who retweeted the status, as well as the original poster.
     pub retweeted_status: Option<Box<Tweet>>,
-    ///The application used to post the tweet, as an HTML anchor tag containing the app's URL and
-    ///name.
-    pub source: String, //TODO: this is html, i want to parse this eventually
+    ///The application used to post the tweet.
+    pub source: TweetSource,
     ///The text of the tweet. For "extended" tweets, opening reply mentions and/or attached media
     ///or quoted tweet links do not count against character count, so this could be longer than 140
     ///characters in those situations.
@@ -280,6 +280,54 @@ fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Optio
     }
     else {
         Ok(None)
+    }
+}
+
+///Represents the app from which a specific tweet was posted.
+#[derive(Debug)]
+pub struct TweetSource {
+    ///The name of the app, given by its developer.
+    pub name: String,
+    ///The URL for the app, given by its developer.
+    pub url: String,
+}
+
+impl FromJson for TweetSource {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        let full = try!(input.as_string()
+                             .ok_or_else(|| InvalidResponse("TweetSource received json that wasn't a string",
+                                                            Some(input.to_string()))));
+
+        if full == "web" {
+            return Ok(TweetSource {
+                name: "Twitter Web Client".to_string(),
+                url: "https://twitter.com".to_string(),
+            });
+        }
+
+        lazy_static! {
+            static ref RE_URL: Regex = Regex::new("href=\"(.*?)\"").unwrap();
+            static ref RE_NAME: Regex = Regex::new(">(.*)</a>").unwrap();
+        }
+
+        let url = if let Some(cap) = RE_URL.captures(full) {
+            cap.expand("$1")
+        }
+        else {
+            return Err(InvalidResponse("TweetSource had no link href", Some(full.to_string())));
+        };
+
+        let name = if let Some(cap) = RE_NAME.captures(full) {
+            cap.expand("$1")
+        }
+        else {
+            return Err(InvalidResponse("TweetSource had no link text", Some(full.to_string())));
+        };
+
+        Ok(TweetSource {
+            name: name,
+            url: url,
+        })
     }
 }
 
@@ -757,8 +805,8 @@ mod tests {
                    ".@Serrayak said he’d use what-ev-er I came up with as his Halloween avatar so I’m just making sure you all know he said that https://t.co/MvgxCwDwSa");
         assert_eq!(sample.user.screen_name, "0xabad1dea");
         assert_eq!(sample.id, 782349500404862976);
-        assert_eq!(sample.source,
-                   "<a href=\"http://tapbots.com/tweetbot\" rel=\"nofollow\">Tweetbot for iΟS</a>");
+        assert_eq!(sample.source.name, "Tweetbot for iΟS");
+        assert_eq!(sample.source.url, "http://tapbots.com/tweetbot");
         assert_eq!(sample.created_at.weekday(), Weekday::Sat);
         assert_eq!(sample.created_at.year(), 2016);
         assert_eq!(sample.created_at.month(), 10);

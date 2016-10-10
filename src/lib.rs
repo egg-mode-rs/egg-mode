@@ -65,12 +65,14 @@
 #![warn(unused_qualifications)]
 
 #[macro_use] extern crate hyper;
+#[macro_use] extern crate lazy_static;
 extern crate url;
 extern crate rand;
 extern crate crypto;
 extern crate rustc_serialize;
 extern crate mime;
 extern crate chrono;
+extern crate regex;
 
 mod auth;
 pub mod error;
