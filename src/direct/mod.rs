@@ -1,12 +1,39 @@
 //! Structs and methods for working with direct messages.
 //!
-//! Every method in this module requires that your app has "read, write and direct message" access
-//! requested for any account you attempt them with. If your app is read-only or read/write without
-//! DM access, the calls will fail and return a permissions error from Twitter.
+//! Note that direct message access requires a special permissions level above regular read/write
+//! access. Your app must be configured to have "read, write, and direct message" access to use any
+//! function in this module, even the read-only ones.
 //!
 //! Although the Twitter website and official apps display DMs as threads between the authenticated
 //! user and specific other users, the API does not expose them like this. Separate calls to
-//! `received` and `sent` are necessary to fully reconstruct a DM thread.
+//! `received` and `sent` are necessary to fully reconstruct a DM thread. You can partition on
+//! `sender_id`/`receiver_id` and sort by their `created_at` to weave the streams together.
+//!
+//! ## Types
+//!
+//! * `DirectMessage`/`DMEntities`: A single DM and its associated entities. The `DMEntities`
+//!   struct contains information about URLs, user mentions, and hashtags in the DM.
+//! * `Timeline`: Effectively the same as `tweet::Timeline`, but returns `DirectMessage`s instead.
+//!   Returned by functions that traverse collections of DMs.
+//!
+//! ## Functions
+//!
+//! ### Lookup
+//!
+//! These functions pull a user's DMs for viewing. `sent` and `received` can be cursored with
+//! sub-views like with tweets, so they return a `Timeline` instance that can be navigated at will.
+//!
+//! * `sent`
+//! * `received`
+//! * `show`
+//!
+//! ### Actions
+//!
+//! These functions are your basic write access to DMs. As a DM does not carry as much metadata as
+//! a tweet, the `send` action does not go through a builder struct like with `DraftTweet`.
+//!
+//! * `send`
+//! * `delete`
 
 use common::*;
 
@@ -25,8 +52,9 @@ pub use self::fun::*;
 
 ///Represents a single direct message.
 ///
-///The structure of a single DM is fairly simple, as it doesn't have the same amount of metadata a
-///regular tweet does. This means there are much fewer fields of this struct.
+///As a DM has far less metadata than a regular tweet, the structure consequently contains far
+///fewer fields. The basic fields are `id`, `text`, `entities`, and `created_at`; everything else
+///either refers to the sender or receiver in some manner.
 pub struct DirectMessage {
     ///Numeric ID for this DM.
     pub id: i64,
@@ -51,6 +79,15 @@ pub struct DirectMessage {
 }
 
 ///Container for URL, hashtag, mention, and media information associated with a direct message.
+///
+///As far as entities are concerned, a DM can contain nearly everything a tweet can. The only thing
+///that isn't present here is the "extended media" that would be on the tweet's `extended_entities`
+///field. A user can attach a single picture to a DM via the Twitter website or official apps, so
+///if that is present, it will be available in `media`. (Note that the functionality to send
+///pictures through a DM is unavailable on the public API; only viewing them is possible.)
+///
+///For all other fields, if the message contains no hashtags, financial symbols ("cashtags"),
+///links, or mentions, those corresponding fields will still be present, just empty.
 pub struct DMEntities {
     ///Collection of hashtags parsed from the DM.
     pub hashtags: Vec<entities::HashtagEntity>,
