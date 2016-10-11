@@ -59,6 +59,50 @@
 //! field to get the output of whatever method you called.
 //!
 //! [`Response`]: struct.Response.html
+//!
+//! ## Modules
+//!
+//! As there are many actions available in the Twitter API, egg-mode divides them roughly into
+//! several modules by their shared purpose. Here's a sort of high-level overview, in rough order
+//! from "most important" to "less directly used":
+//!
+//! ### Primary actions
+//!
+//! These could be considered the "core" actions within the Twitter API that egg-mode has made
+//! available.
+//!
+//! * `tweet`: This module lets you act on tweets. Here you can find actions to load a user's
+//!   timeline, post a new tweet, or like and retweet individual posts.
+//! * `user`: This module lets you act on users, be it by following or unfollowing them, loading
+//!   their profile information, blocking or muting them, or showing the relationship between two
+//!   users.
+//! * `search`: Due to the complexity of searching for tweets, it gets its own module.
+//! * `direct`: Here you can work with a user's Direct Messages, either by loading DMs they've sent
+//!   or received, or by sending new ones.
+//!
+//! ### Secondary actions
+//!
+//! These modules still contain direct actions for Twitter, but they can be considered as having
+//! more of a helper role than something you might use directly.
+//!
+//! * `place`: Here are actions that look up physical locations that can be attached to tweets, as
+//!   well at the `Place` struct that appears on tweets with locations attached.
+//! * `service`: These are some miscellaneous methods that show information about the Twitter
+//!   service as a whole, like loading the maximum length of t.co URLs or loading the current Terms
+//!   of Service or Privacy Policy.
+//!
+//! ### Helper structs
+//!
+//! These modules contain some implementations that wrap some pattern seen in multiple "action"
+//! modules.
+//!
+//! * `cursor`: This contains a helper trait and some helper structs that allow effective cursoring
+//!   through certain collections of results from Twitter.
+//! * `entities`: Whenever some text can be returned that may contain links, hashtags, media, or
+//!   user mentions, its metadata is parsed into something that lives in this module.
+//! * `error`: Any interaction with Twitter may result in an error condition, be it from finding a
+//!   tweet or user that doesn't exist or the network connection being unavailable. All the error
+//!   types are aggregated into an enum in this module.
 
 #![warn(missing_docs)]
 #![warn(unused_extern_crates)]
