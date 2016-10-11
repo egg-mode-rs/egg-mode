@@ -65,3 +65,8 @@ pub mod direct {
     pub const SEND: &'static str = "https://api.twitter.com/1.1/direct_messages/new.json";
     pub const DELETE: &'static str = "https://api.twitter.com/1.1/direct_messages/destroy.json";
 }
+
+pub mod service {
+    pub const TERMS: &'static str = "https://api.twitter.com/1.1/help/tos.json";
+    pub const PRIVACY: &'static str = "https://api.twitter.com/1.1/help/privacy.json";
+}

@@ -135,8 +135,8 @@ tokens.
 - [ ] application/rate\_limit\_status
 - [ ] help/languages
 - [ ] help/configuration
-- [ ] help/privacy
-- [ ] help/tos
+- [x] help/privacy (`service::privacy`)
+- [x] help/tos (`service::terms`)
 
 - [x] account/verify\_credentials (`verify_tokens`)
 

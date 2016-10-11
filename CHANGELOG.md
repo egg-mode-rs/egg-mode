@@ -9,6 +9,7 @@
 - New function to load DMs sent by the authenticated user (`sent`)
 - New function to send a DM (`send`)
 - New function to delete a previously-sent DM (`delete`)
+- New module `service` for miscellaneous broad methods about Twitter as a whole
 
 ### Changed
 - All `created_at` timestamps are now parsed through `chrono`

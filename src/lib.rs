@@ -83,6 +83,7 @@ pub mod tweet;
 pub mod search;
 pub mod place;
 pub mod direct;
+pub mod service;
 mod links;
 mod common;
 
