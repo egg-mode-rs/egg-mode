@@ -134,7 +134,7 @@ tokens.
 
 - [ ] application/rate\_limit\_status
 - [ ] help/languages
-- [ ] help/configuration
+- [x] help/configuration (`service::config`)
 - [x] help/privacy (`service::privacy`)
 - [x] help/tos (`service::terms`)
 
