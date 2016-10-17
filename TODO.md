@@ -132,7 +132,7 @@ tokens.
 - [ ] account/update\_profile\_banner
 - [ ] account/remove\_profile\_banner
 
-- [ ] application/rate\_limit\_status
+- [x] application/rate\_limit\_status (`service::rate_limit_status`)
 - [ ] help/languages
 - [x] help/configuration (`service::config`)
 - [x] help/privacy (`service::privacy`)
