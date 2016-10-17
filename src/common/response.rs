@@ -7,7 +7,7 @@ use std::io::Read;
 use hyper::client::response::Response as HyperResponse;
 use hyper::status::StatusCode;
 use rustc_serialize::json;
-use super::{FromJson};
+use super::{FromJson, field};
 use error::{self, TwitterErrors};
 use error::Error::*;
 
@@ -26,6 +26,23 @@ pub struct Response<T> {
     pub rate_limit_reset: i32,
     ///The decoded response from the request.
     pub response: T,
+}
+
+//This impl is used for service::rate_limit_status, to represent the individual method statuses
+impl FromJson for Response<()> {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse("Response<()> received json that wasn't an object",
+                                       Some(input.to_string())));
+        }
+
+        Ok(Response {
+            rate_limit: try!(field(input, "limit")),
+            rate_limit_remaining: try!(field(input, "remaining")),
+            rate_limit_reset: try!(field(input, "reset")),
+            response: (),
+        })
+    }
 }
 
 ///Iterator returned by calling `.into_iter()` on a `Response<Vec<T>>`.

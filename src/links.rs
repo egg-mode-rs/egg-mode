@@ -70,4 +70,5 @@ pub mod service {
     pub const TERMS: &'static str = "https://api.twitter.com/1.1/help/tos.json";
     pub const PRIVACY: &'static str = "https://api.twitter.com/1.1/help/privacy.json";
     pub const CONFIG: &'static str = "https://api.twitter.com/1.1/help/configuration.json";
+    pub const RATE_LIMIT_STATUS: &'static str = "https://api.twitter.com/1.1/application/rate_limit_status.json";
 }
