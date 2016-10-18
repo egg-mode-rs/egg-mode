@@ -307,12 +307,7 @@ impl<'a, T> Iterator for CursorIter<'a, T>
                 self.previous_cursor = resp.response.previous_cursor_id();
                 self.next_cursor = resp.response.next_cursor_id();
 
-                let resp = Response {
-                    rate_limit: resp.rate_limit,
-                    rate_limit_remaining: resp.rate_limit_remaining,
-                    rate_limit_reset: resp.rate_limit_reset,
-                    response: resp.response.into_inner(),
-                };
+                let resp = Response::map(resp, |r| r.into_inner());
 
                 let mut iter = resp.into_iter();
                 let first = iter.next();

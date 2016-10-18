@@ -116,12 +116,7 @@ pub fn lookup_map(ids: &[i64], con_token: &auth::Token, access_token: &auth::Tok
         }
     }
 
-    Ok(Response {
-        rate_limit: parsed.rate_limit,
-        rate_limit_remaining: parsed.rate_limit_remaining,
-        rate_limit_reset: parsed.rate_limit_reset,
-        response: map,
-    })
+    Ok(Response::map(parsed, |_| map))
 }
 
 ///Make a `Timeline` struct for navigating the collection of tweets posted by the authenticated

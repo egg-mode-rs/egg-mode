@@ -4,6 +4,7 @@
 use std::vec;
 use std::iter::FromIterator;
 use std::io::Read;
+use std::ops::{Deref, DerefMut};
 use hyper::client::response::Response as HyperResponse;
 use hyper::status::StatusCode;
 use rustc_serialize::json;
@@ -16,6 +17,13 @@ header! { (XRateLimitRemaining, "X-Rate-Limit-Remaining") => [i32] }
 header! { (XRateLimitReset, "X-Rate-Limit-Reset") => [i32] }
 
 ///A helper struct to wrap response data with accompanying rate limit information.
+///
+///This is returned by any function that calls a rate-limited method on Twitter, to allow for
+///inline checking of the rate-limit information without an extra call to
+///`service::rate_limit_info`.
+///
+///As this implements `Deref` and `DerefMut`, you can transparently use the contained `response`'s
+///methods as if they were methods on this struct.
 #[derive(Debug)]
 pub struct Response<T> {
     ///The rate limit ceiling for the given request.
@@ -26,6 +34,24 @@ pub struct Response<T> {
     pub rate_limit_reset: i32,
     ///The decoded response from the request.
     pub response: T,
+}
+
+impl<T> Response<T> {
+    ///Convert a `Response<T>` to a `Response<U>` by running its contained response through the
+    ///given function. This preserves its rate-limit information.
+    ///
+    ///Note that this is not a member function, so as to not conflict with potential methods on the
+    ///contained `T`.
+    pub fn map<F, U>(src: Response<T>, fun: F) -> Response<U>
+        where F: FnOnce(T) -> U
+    {
+        Response {
+            rate_limit: src.rate_limit,
+            rate_limit_remaining: src.rate_limit_remaining,
+            rate_limit_reset: src.rate_limit_reset,
+            response: fun(src.response)
+        }
+    }
 }
 
 //This impl is used for service::rate_limit_status, to represent the individual method statuses
@@ -42,6 +68,20 @@ impl FromJson for Response<()> {
             rate_limit_reset: try!(field(input, "reset")),
             response: (),
         })
+    }
+}
+
+impl<T> Deref for Response<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.response
+    }
+}
+
+impl<T> DerefMut for Response<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.response
     }
 }
 

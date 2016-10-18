@@ -18,12 +18,8 @@ pub fn terms(con_token: &auth::Token, access_token: &auth::Token) -> WebResponse
 
     let ret = try!(parse_response::<json::Json>(&mut resp));
 
-    Ok(Response {
-        response: try!(field(&ret.response, "tos")),
-        rate_limit: ret.rate_limit,
-        rate_limit_remaining: ret.rate_limit_remaining,
-        rate_limit_reset: ret.rate_limit_reset,
-    })
+    let tos = try!(field(&ret.response, "tos"));
+    Ok(Response::map(ret, |_| tos))
 }
 
 ///Returns the current Twitter Privacy Policy as plain text.
@@ -32,12 +28,8 @@ pub fn privacy(con_token: &auth::Token, access_token: &auth::Token) -> WebRespon
 
     let ret = try!(parse_response::<json::Json>(&mut resp));
 
-    Ok(Response {
-        response: try!(field(&ret.response, "privacy")),
-        rate_limit: ret.rate_limit,
-        rate_limit_remaining: ret.rate_limit_remaining,
-        rate_limit_reset: ret.rate_limit_reset,
-    })
+    let privacy = try!(field(&ret.response, "privacy"));
+    Ok(Response::map(ret, |_| privacy))
 }
 
 ///Return the current configuration from Twitter, including the maximum length of a t.co URL and

@@ -16,6 +16,7 @@
   - This is a notable **breaking change** if you were handling this parsing yourself
 - `tweet::source` is now a new `TweetSource` struct and no longer an HTML String
   - This is a notable **breaking change** if you were parsing this yourself
+- `Response<T>` now implements Deref, so you don't have to use `.response` all the time
 
 ## [0.5.0] - 2016-10-02
 ### Added
