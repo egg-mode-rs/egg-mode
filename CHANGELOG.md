@@ -3,13 +3,16 @@
 ## Pending
 ### Added
 - New module `direct` and `DirectMessage`/`DMEntities` structs
-- New struct `direct::Timeline` that is like `tweet::Timeline`, but for DMs
-- New function to load a single direct message (`show`)
-- New function to load DMs received by the authenticated user (`received`)
-- New function to load DMs sent by the authenticated user (`sent`)
-- New function to send a DM (`send`)
-- New function to delete a previously-sent DM (`delete`)
+  - New function to load a single direct message (`show`)
+  - New function to load DMs received by the authenticated user (`received`)
+  - New function to load DMs sent by the authenticated user (`sent`)
+  - New function to send a DM (`send`)
+  - New function to delete a previously-sent DM (`delete`)
 - New module `service` for miscellaneous broad methods about Twitter as a whole
+  - New function `terms` to load the Terms of Service
+  - New function `privacy` to load the Privacy Policy
+  - New function `config` to load broad service-level configuration elements
+  - New function `rate_limit_status` to load current rate-limit information for most methods
 
 ### Changed
 - All `created_at` timestamps are now parsed through `chrono`
