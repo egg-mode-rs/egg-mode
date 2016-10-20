@@ -1,4 +1,16 @@
 //! Methods to inquire about the Twitter service itself.
+//!
+//! The functions included in this module are supplementary queries that are less about specific
+//! actions, and more about your interaction with the Twitter service as a whole. For example, this
+//! module includes methods to load the [Terms of Service][terms] or [Privacy Policy][privacy], or
+//! to ask about many methods' [rate-limit status][] or receive information about [various
+//! configuration elements][config] for broad service-level values. All the structs and enums
+//! contained in this module are connected to one of these methods.
+//!
+//! [terms]: fn.terms.html
+//! [privacy]: fn.privacy.html
+//! [rate-limit status]: fn.rate_limit_status.html
+//! [config]: fn.config.html
 
 use std::str::FromStr;
 use std::collections::HashMap;
@@ -13,6 +25,9 @@ use links;
 use common::*;
 
 ///Returns the current Twitter Terms of Service as plain text.
+///
+///While the official home of Twitter's TOS is https://twitter.com/tos, this allows you to obtain a
+///plain-text copy of it to display in your application.
 pub fn terms(con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<String> {
     let mut resp = try!(auth::get(links::service::TERMS, con_token, access_token, None));
 
@@ -23,6 +38,9 @@ pub fn terms(con_token: &auth::Token, access_token: &auth::Token) -> WebResponse
 }
 
 ///Returns the current Twitter Privacy Policy as plain text.
+///
+///While the official home of Twitter's Privacy Policy is https://twitter.com/privacy, this allows
+///you to obtain a plain-text copy of it to display in your application.
 pub fn privacy(con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<String> {
     let mut resp = try!(auth::get(links::service::PRIVACY, con_token, access_token, None));
 
@@ -37,6 +55,11 @@ pub fn privacy(con_token: &auth::Token, access_token: &auth::Token) -> WebRespon
 ///
 ///From Twitter: "It is recommended applications request this endpoint when they are loaded, but no
 ///more than once a day."
+///
+///See the documentation for the [`Configuration`][] struct for a discussion of what individual
+///fields returned by this function mean.
+///
+///[`Configuration`]: struct.Configuration.html
 pub fn config(con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Configuration> {
     let mut resp = try!(auth::get(links::service::CONFIG, con_token, access_token, None));
 
@@ -44,6 +67,12 @@ pub fn config(con_token: &auth::Token, access_token: &auth::Token) -> WebRespons
 }
 
 ///Return the current rate-limit status for all available methods from the authenticated user.
+///
+///The struct returned by this method is organized by what module in egg-mode a given method
+///appears in. Note that not every method's status is available through this method; see the
+///documentation for [`RateLimitStatus`][] and its associated enums for more information.
+///
+///[`RateLimitStatus`]: struct.RateLimitStatus.html
 pub fn rate_limit_status(con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<RateLimitStatus> {
     let mut resp = try!(auth::get(links::service::RATE_LIMIT_STATUS, con_token, access_token, None));
 
@@ -51,20 +80,43 @@ pub fn rate_limit_status(con_token: &auth::Token, access_token: &auth::Token) ->
 }
 
 ///Represents a service configuration from Twitter.
+///
+///The values returned in this struct are various pieces of information that, while they don't
+///change often, have the opportunity to change over time and affect things like character counting
+///or whether to route a twitter.com URL to a user lookup or a browser.
+///
+///While tweets themselves still have a fixed 140-character limit, direct messages have had their
+///text limit expanded to 10,000 characters, and that length is communicated here, in
+///`dm_text_character_limit`.
+///
+///For `photo_sizes`, note that if your image is smaller than the dimensions given for a particular
+///size, that size variant will simply return your source image as-is. If either dimension is
+///larger than its corresponding dimension here, it will be scaled according to the included
+///`resize` property. In practice this usually means `thumb` will crop to its dimensions, and each
+///other variant will resize down, keeping its aspect ratio.
+///
+///For best ways to handle the `short_url_length` fields, see Twitter's documentation on [t.co
+///URLs][]. In short, every URL Twitter detects in a new tweet or direct message gets a new t.co
+///URL created for it, which replaces the original URL in the given text. This affects character
+///counts for these fields, so if your app is counting characters and detects a URL for these
+///fields, treat the whole URL as if it were as long as the number of characters given in this
+///struct.
+///
+///[t.co URLs]: https://dev.twitter.com/overview/t.co
+///
+///Finally, loading `non_username_paths` allows you to handle `twitter.com/[name]` links as if they
+///were a user mention, while still keeping site-level links working properly.
 #[derive(Debug)]
 pub struct Configuration {
     ///The character limit in direct messages.
     pub dm_text_character_limit: i32,
-    ///The maximum photo sizes for received media. If an uploaded photo is above the dimensions for
-    ///a given size category, it will be scaled to that size according to the `resize` property on
-    ///each entry.
+    ///The maximum dimensions for each photo size variant.
     pub photo_sizes: entities::MediaSizes,
     ///The maximum length for a t.co URL when given a URL with protocol `http`.
     pub short_url_length: i32,
     ///The maximum length for a t.co URL when given a URL with protocol `https`.
     pub short_url_length_https: i32,
-    ///A list of URL slugs that are not valid usernames when in a URL like
-    ///`https://twitter.com/[slug]`.
+    ///A list of URL slugs that are not valid usernames when in a URL like `twitter.com/[slug]`.
     pub non_username_paths: Vec<String>,
 }
 
@@ -86,6 +138,25 @@ impl FromJson for Configuration {
 }
 
 ///Represents the current rate-limit status of many Twitter API calls.
+///
+///This is organized by module, so for example, if you wanted to see your rate-limit status for
+///`tweet::home_timeline`, you could access it like this:
+///
+///```rust,no_run
+///# let c = egg_mode::Token::new("", "");
+///# let a = egg_mode::Token::new("", "");
+///# let status = egg_mode::service::rate_limit_status(&c, &a).unwrap();
+///use egg_mode::service::TweetMethod;
+///println!("home_timeline calls remaining: {}",
+///         status.tweet[&TweetMethod::HomeTimeline].rate_limit_remaining);
+///```
+///
+///It's important to note that not every API method is available through this call. Namely, most
+///calls that require a POST under-the-hood (those that add or modify data with the Twitter
+///service) are not shown through this method. For a listing of methods available for rate-limit
+///querying, see the `*Method` enums available in [`egg_mode::service`][].
+///
+///[`egg_mode::service`]: index.html
 #[derive(Debug)]
 pub struct RateLimitStatus {
     ///The rate-limit status for methods in the `direct` module.
