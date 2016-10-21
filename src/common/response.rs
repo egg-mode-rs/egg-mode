@@ -1,7 +1,7 @@
 //! Infrastructure types related to packaging rate-limit information alongside responses from
 //! Twitter.
 
-use std::vec;
+use std::{slice, vec};
 use std::iter::FromIterator;
 use std::io::Read;
 use std::ops::{Deref, DerefMut};
@@ -54,6 +54,30 @@ impl<T> Response<T> {
     }
 }
 
+impl<T> Response<Vec<T>> {
+    ///Returns an iterator that yields references into the returned collection, alongside
+    ///rate-limit information for the whole method call.
+    pub fn iter(&self) -> ResponseIterRef<T> {
+        ResponseIterRef {
+            rate_limit: self.rate_limit,
+            rate_limit_remaining: self.rate_limit_remaining,
+            rate_limit_reset: self.rate_limit_reset,
+            resp_iter: self.response.iter(),
+        }
+    }
+
+    ///Returns an iterator that yields mutable references into the returned collection, alongside
+    ///rate-limit information for the whole method call.
+    pub fn iter_mut(&mut self) -> ResponseIterMut<T> {
+        ResponseIterMut {
+            rate_limit: self.rate_limit,
+            rate_limit_remaining: self.rate_limit_remaining,
+            rate_limit_reset: self.rate_limit_reset,
+            resp_iter: self.response.iter_mut(),
+        }
+    }
+}
+
 //This impl is used for service::rate_limit_status, to represent the individual method statuses
 impl FromJson for Response<()> {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
@@ -82,6 +106,137 @@ impl<T> Deref for Response<T> {
 impl<T> DerefMut for Response<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.response
+    }
+}
+
+///Iterator returned by calling `.iter()` on a `Response<Vec<T>>`.
+///
+///This provides a convenient method to iterate over a response that returned a collection, while
+///copying rate-limit information across the entire iteration.
+pub struct ResponseIterRef<'a, T> where T: 'a {
+    rate_limit: i32,
+    rate_limit_remaining: i32,
+    rate_limit_reset: i32,
+    resp_iter: slice::Iter<'a, T>,
+}
+
+impl<'a, T> Iterator for ResponseIterRef<'a, T> where T: 'a {
+    type Item = Response<&'a T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(resp) = self.resp_iter.next() {
+            Some(Response {
+                rate_limit: self.rate_limit,
+                rate_limit_remaining: self.rate_limit_remaining,
+                rate_limit_reset: self.rate_limit_reset,
+                response: resp,
+            })
+        }
+        else {
+            None
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.resp_iter.size_hint()
+    }
+}
+
+impl<'a, T> DoubleEndedIterator for ResponseIterRef<'a, T> where T: 'a {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if let Some(resp) = self.resp_iter.next_back() {
+            Some(Response {
+                rate_limit: self.rate_limit,
+                rate_limit_remaining: self.rate_limit_remaining,
+                rate_limit_reset: self.rate_limit_reset,
+                response: resp,
+            })
+        }
+        else {
+            None
+        }
+    }
+}
+
+impl<'a, T> ExactSizeIterator for ResponseIterRef<'a, T> where T: 'a {
+    fn len(&self) -> usize {
+        self.resp_iter.len()
+    }
+}
+
+///Iteration over a response that returned a collection, while leaving the response in place.
+impl<'a, T> IntoIterator for &'a Response<Vec<T>> where T: 'a {
+    type Item = Response<&'a T>;
+    type IntoIter = ResponseIterRef<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+///Iterator returned by calling `.iter()` on a `Response<Vec<T>>`.
+///
+///This provides a convenient method to iterate over a response that returned a collection, while
+///copying rate-limit information across the entire iteration.
+pub struct ResponseIterMut<'a, T> where T: 'a {
+    rate_limit: i32,
+    rate_limit_remaining: i32,
+    rate_limit_reset: i32,
+    resp_iter: slice::IterMut<'a, T>,
+}
+
+impl<'a, T> Iterator for ResponseIterMut<'a, T> where T: 'a {
+    type Item = Response<&'a mut T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(resp) = self.resp_iter.next() {
+            Some(Response {
+                rate_limit: self.rate_limit,
+                rate_limit_remaining: self.rate_limit_remaining,
+                rate_limit_reset: self.rate_limit_reset,
+                response: resp,
+            })
+        }
+        else {
+            None
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.resp_iter.size_hint()
+    }
+}
+
+impl<'a, T> DoubleEndedIterator for ResponseIterMut<'a, T> where T: 'a {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if let Some(resp) = self.resp_iter.next_back() {
+            Some(Response {
+                rate_limit: self.rate_limit,
+                rate_limit_remaining: self.rate_limit_remaining,
+                rate_limit_reset: self.rate_limit_reset,
+                response: resp,
+            })
+        }
+        else {
+            None
+        }
+    }
+}
+
+impl<'a, T> ExactSizeIterator for ResponseIterMut<'a, T> where T: 'a {
+    fn len(&self) -> usize {
+        self.resp_iter.len()
+    }
+}
+
+///Mutable iteration over a response that returned a collection, while leaving the response in
+///place.
+impl<'a, T> IntoIterator for &'a mut Response<Vec<T>> where T: 'a {
+    type Item = Response<&'a mut T>;
+    type IntoIter = ResponseIterMut<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
     }
 }
 

@@ -11,6 +11,8 @@ fn main() {
     let status = egg_mode::tweet::show(tweet_id, &config.con_token, &config.access_token).unwrap().response;
     common::print_tweet(&status);
 
+    //TODO: Starting in 0.7.0 these loops will be able to drop the `.response` at the end
+
     println!("");
     println!("Loading retweets of an individual tweet:");
     for rt in &egg_mode::tweet::retweets_of(tweet_id, 5, &config.con_token, &config.access_token).unwrap().response {

@@ -1,5 +1,10 @@
 # Changelog for egg-mode
 
+## Pending
+### Added
+- New iterator structs `ResponseIterRef` and `ResponseIterMut` to iterate over
+  references in a response
+
 ## [0.6.0] - 2016-10-20
 ### Added
 - New module `direct` and `DirectMessage`/`DMEntities` structs
