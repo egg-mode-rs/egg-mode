@@ -40,14 +40,14 @@ fn main() {
     let mut thread_ids = HashSet::new();
 
     let start_tweet = tweet::show(start_id, &c.con_token, &c.access_token).unwrap();
-    let thread_user = start_tweet.response.user.id;
-    thread_ids.insert(start_tweet.response.id);
+    let thread_user = start_tweet.user.id;
+    thread_ids.insert(start_tweet.id);
     thread.push_front(start_tweet.response);
 
     for _ in 0..10 {
         if let Some(id) = thread.front().and_then(|t| t.in_reply_to_status_id) {
             let parent = tweet::show(id, &c.con_token, &c.access_token).unwrap();
-            thread_ids.insert(parent.response.id);
+            thread_ids.insert(parent.id);
             thread.push_front(parent.response);
         }
         else {
@@ -58,9 +58,9 @@ fn main() {
     let replies = tweet::user_timeline(thread_user, true, false, &c.con_token, &c.access_token);
 
     for tweet in replies.call(Some(start_id), None).unwrap().into_iter().rev() {
-        if let Some(reply_id) = tweet.response.in_reply_to_status_id {
+        if let Some(reply_id) = tweet.in_reply_to_status_id {
             if thread_ids.contains(&reply_id) {
-                thread_ids.insert(tweet.response.id);
+                thread_ids.insert(tweet.id);
                 thread.push_back(tweet.response);
             }
         }

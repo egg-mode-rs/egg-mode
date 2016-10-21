@@ -612,11 +612,11 @@ impl<'a> Timeline<'a> {
 /// let tweet = draft.send(&con_token, &access_token).unwrap();
 ///
 /// let draft = DraftTweet::new("You see, I have a lot of things to say.")
-///                        .in_reply_to(tweet.response.id);
+///                        .in_reply_to(tweet.id);
 /// let tweet = draft.send(&con_token, &access_token).unwrap();
 ///
 /// let draft = DraftTweet::new("Thank you for your time.")
-///                        .in_reply_to(tweet.response.id);
+///                        .in_reply_to(tweet.id);
 /// let tweet = draft.send(&con_token, &access_token).unwrap();
 /// ```
 #[derive(Debug)]

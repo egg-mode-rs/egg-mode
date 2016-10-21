@@ -15,7 +15,7 @@
 //!                     .call(&con_token, &access_token)
 //!                     .unwrap();
 //!
-//! for tweet in &search.response.statuses {
+//! for tweet in &search.statuses {
 //!     println!("(@{}) {}", tweet.user.screen_name, tweet.text);
 //! }
 //! ```
@@ -210,7 +210,7 @@ impl<'a> SearchBuilder<'a> {
         let mut resp = try!(auth::get(links::statuses::SEARCH, con_token, access_token, Some(&params)));
 
         let mut ret: Response<SearchResult> = try!(parse_response(&mut resp));
-        ret.response.params = Some(params);
+        ret.params = Some(params);
         Ok(ret)
     }
 }
@@ -262,7 +262,7 @@ impl<'a> SearchResult<'a> {
         let mut resp = try!(auth::get(links::statuses::SEARCH, con_token, access_token, Some(&params)));
 
         let mut ret: Response<SearchResult> = try!(parse_response(&mut resp));
-        ret.response.params = Some(params);
+        ret.params = Some(params);
         Ok(ret)
     }
 
@@ -281,7 +281,7 @@ impl<'a> SearchResult<'a> {
         let mut resp = try!(auth::get(links::statuses::SEARCH, con_token, access_token, Some(&params)));
 
         let mut ret: Response<SearchResult> = try!(parse_response(&mut resp));
-        ret.response.params = Some(params);
+        ret.params = Some(params);
         Ok(ret)
     }
 }

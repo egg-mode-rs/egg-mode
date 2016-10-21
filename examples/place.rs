@@ -12,9 +12,9 @@ fn main() {
                                  .max_results(10)
                                  .call(&config.con_token, &config.access_token).unwrap();
 
-    println!("{} results for \"columbia\", administrative regions or larger:", result.response.results.len());
+    println!("{} results for \"columbia\", administrative regions or larger:", result.results.len());
 
-    for place in &result.response.results {
+    for place in &result.results {
         println!("{}", place.full_name);
     }
     println!("");
@@ -23,10 +23,10 @@ fn main() {
                                  .granularity(PlaceType::City)
                                  .call(&config.con_token, &config.access_token).unwrap();
 
-    println!("{} results for reverse-geocoding {}, {}:", result.response.results.len(),
+    println!("{} results for reverse-geocoding {}, {}:", result.results.len(),
                                                          51.507222, -0.1275);
 
-    for place in &result.response.results {
+    for place in &result.results {
         println!("{}", place.full_name);
     }
 }

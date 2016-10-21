@@ -14,7 +14,7 @@ fn main() {
                         .call(&config.con_token, &config.access_token)
                         .unwrap();
 
-    for tweet in &search.response.statuses {
+    for tweet in &search.statuses {
         common::print_tweet(tweet);
     }
 }

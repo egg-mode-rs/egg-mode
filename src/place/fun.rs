@@ -20,7 +20,7 @@ use super::PlaceQuery;
 ///                                   &con_token, &access_token)
 ///                             .unwrap();
 ///
-///assert!(result.response.full_name == "Dallas, TX");
+///assert!(result.full_name == "Dallas, TX");
 ///```
 pub fn show(id: &str, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Place> {
     let url = format!("{}/{}.json", links::place::SHOW_STEM, id);
@@ -43,7 +43,7 @@ pub fn show(id: &str, con_token: &auth::Token, access_token: &auth::Token) -> We
 ///                   .call(&con_token, &access_token)
 ///                   .unwrap();
 ///
-///assert!(result.response.results.iter().any(|pl| pl.full_name == "London, England"));
+///assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
 ///```
 pub fn reverse_geocode(latitude: f64, longitude: f64) -> GeocodeBuilder
 {
@@ -110,7 +110,7 @@ pub fn reverse_geocode_url(url: &str, con_token: &auth::Token, access_token: &au
 ///                   .call(&con_token, &access_token)
 ///                   .unwrap();
 ///
-///assert!(result.response.results.iter().any(|pl| pl.full_name == "London, England"));
+///assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
 ///```
 pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder<'static> {
     SearchBuilder::new(PlaceQuery::LatLon(latitude, longitude))
@@ -129,7 +129,7 @@ pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder<'static> {
 ///                   .call(&con_token, &access_token)
 ///                   .unwrap();
 ///
-///assert!(result.response.results.iter().any(|pl| pl.full_name == "British Columbia, Canada"));
+///assert!(result.results.iter().any(|pl| pl.full_name == "British Columbia, Canada"));
 ///```
 pub fn search_query<'a>(query: &'a str) -> SearchBuilder<'a> {
     SearchBuilder::new(PlaceQuery::Query(query))

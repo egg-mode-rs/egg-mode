@@ -24,7 +24,7 @@ fn main() {
 
     println!("{} accounts that you follow follow you back.", reciprocals.len());
 
-    for user in user::lookup(&reciprocals, &config.con_token, &config.access_token).unwrap().response {
+    for user in user::lookup(&reciprocals, &config.con_token, &config.access_token).unwrap() {
         println!("{} (@{})", user.name, user.screen_name);
     }
 }

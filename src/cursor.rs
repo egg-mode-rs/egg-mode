@@ -304,8 +304,8 @@ impl<'a, T> Iterator for CursorIter<'a, T>
 
         match self.call() {
             Ok(resp) => {
-                self.previous_cursor = resp.response.previous_cursor_id();
-                self.next_cursor = resp.response.next_cursor_id();
+                self.previous_cursor = resp.previous_cursor_id();
+                self.next_cursor = resp.next_cursor_id();
 
                 let resp = Response::map(resp, |r| r.into_inner());
 
