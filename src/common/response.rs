@@ -174,7 +174,7 @@ impl<'a, T> IntoIterator for &'a Response<Vec<T>> where T: 'a {
     }
 }
 
-///Iterator returned by calling `.iter()` on a `Response<Vec<T>>`.
+///Iterator returned by calling `.iter_mut()` on a `Response<Vec<T>>`.
 ///
 ///This provides a convenient method to iterate over a response that returned a collection, while
 ///copying rate-limit information across the entire iteration.
