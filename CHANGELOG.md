@@ -1,6 +1,6 @@
 # Changelog for egg-mode
 
-## Pending
+## [0.6.0] - 2016-10-20
 ### Added
 - New module `direct` and `DirectMessage`/`DMEntities` structs
   - New function to load a single direct message (`show`)
