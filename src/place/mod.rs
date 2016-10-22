@@ -60,7 +60,7 @@ pub struct Place {
     ///The type of location represented by this place.
     pub place_type: PlaceType,
     ///If present, the country or administrative region that contains this place.
-    pub contained_within: Option<Box<Place>>,
+    pub contained_within: Option<Vec<Place>>,
 }
 
 ///Represents the type of region represented by a given place.
@@ -427,7 +427,7 @@ impl FromJson for Place {
             full_name: try!(field(input, "full_name")),
             name: try!(field(input, "name")),
             place_type: try!(field(input, "place_type")),
-            contained_within: field(input, "contained_within").ok(),
+            contained_within: try!(field(input, "contained_within")),
         })
     }
 }
