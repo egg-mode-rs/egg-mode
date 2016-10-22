@@ -334,11 +334,11 @@ impl FromJson for TwitterUser {
             created_at: try!(field(input, "created_at")),
             default_profile: try!(field(input, "default_profile")),
             default_profile_image: try!(field(input, "default_profile_image")),
-            description: field(input, "description").ok(),
+            description: try!(field(input, "description")),
             entities: try!(field(input, "entities")),
             favourites_count: try!(field(input, "favourites_count")),
-            follow_request_sent: field(input, "follow_request_sent").ok(),
-            following: field(input, "following").ok(),
+            follow_request_sent: try!(field(input, "follow_request_sent")),
+            following: try!(field(input, "following")),
             followers_count: try!(field(input, "followers_count")),
             friends_count: try!(field(input, "friends_count")),
             geo_enabled: try!(field(input, "geo_enabled")),
@@ -346,14 +346,14 @@ impl FromJson for TwitterUser {
             is_translator: try!(field(input, "is_translator")),
             lang: try!(field(input, "lang")),
             listed_count: try!(field(input, "listed_count")),
-            location: field(input, "location").ok(),
+            location: try!(field(input, "location")),
             name: try!(field(input, "name")),
-            notifications: field(input, "notifications").ok(),
+            notifications: try!(field(input, "notifications")),
             profile_background_color: try!(field(input, "profile_background_color")),
-            profile_background_image_url: field(input, "profile_background_image_url").ok(),
-            profile_background_image_url_https: field(input, "profile_background_image_url_https").ok(),
-            profile_background_tile: field(input, "profile_background_tile").ok(),
-            profile_banner_url: field(input, "profile_banner_url").ok(),
+            profile_background_image_url: try!(field(input, "profile_background_image_url")),
+            profile_background_image_url_https: try!(field(input, "profile_background_image_url_https")),
+            profile_background_tile: try!(field(input, "profile_background_tile")),
+            profile_banner_url: try!(field(input, "profile_banner_url")),
             profile_image_url: try!(field(input, "profile_image_url")),
             profile_image_url_https: try!(field(input, "profile_image_url_https")),
             profile_link_color: try!(field(input, "profile_link_color")),
@@ -363,17 +363,17 @@ impl FromJson for TwitterUser {
             profile_use_background_image: try!(field(input, "profile_use_background_image")),
             protected: try!(field(input, "protected")),
             screen_name: try!(field(input, "screen_name")),
-            show_all_inline_media: field(input, "show_all_inline_media").ok(),
-            status: field(input, "status").map(Box::new).ok(),
+            show_all_inline_media: try!(field(input, "show_all_inline_media")),
+            status: try!(field(input, "status")),
             statuses_count: try!(field(input, "statuses_count")),
-            time_zone: field(input, "time_zone").ok(),
-            url: field(input, "url").ok(),
-            utc_offset: field(input, "utc_offset").ok(),
+            time_zone: try!(field(input, "time_zone")),
+            url: try!(field(input, "url")),
+            utc_offset: try!(field(input, "utc_offset")),
             verified: try!(field(input, "verified")),
             withheld_in_countries: input.find("withheld_in_countries").and_then(|f| f.as_array())
                                         .and_then(|arr| arr.iter().map(|x| x.as_string().map(|x| x.to_string()))
                                                            .collect::<Option<Vec<String>>>()),
-            withheld_scope: field(input, "withheld_scope").ok(),
+            withheld_scope: try!(field(input, "withheld_scope")),
         })
     }
 }
@@ -386,7 +386,7 @@ impl FromJson for UserEntities {
 
         Ok(UserEntities {
             description: try!(field(input, "description")),
-            url: field(input, "url").ok(),
+            url: try!(field(input, "url")),
         })
     }
 }
@@ -685,11 +685,11 @@ impl FromJson for RelationSource {
             following: try!(field(input, "following")),
             followed_by: try!(field(input, "followed_by")),
             can_dm: try!(field(input, "can_dm")),
-            blocking: field(input, "blocking").ok(),
-            marked_spam: field(input, "marked_spam").ok(),
-            all_replies: field(input, "all_replies").ok(),
-            want_retweets: field(input, "want_retweets").ok(),
-            notifications_enabled: field(input, "notifications_enabled").ok(),
+            blocking: try!(field(input, "blocking")),
+            marked_spam: try!(field(input, "marked_spam")),
+            all_replies: try!(field(input, "all_replies")),
+            want_retweets: try!(field(input, "want_retweets")),
+            notifications_enabled: try!(field(input, "notifications_enabled")),
         })
     }
 }

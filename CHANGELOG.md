@@ -5,6 +5,10 @@
 - New iterator structs `ResponseIterRef` and `ResponseIterMut` to iterate over
   references in a response
 
+### Changed
+- `Place::contained_within` is now a `Option<Vec<Place>>`, because I had the wrong type for that before
+  - This is a **breaking change** if you were examining that field as a single location before
+
 ## [0.6.0] - 2016-10-20
 ### Added
 - New module `direct` and `DirectMessage`/`DMEntities` structs

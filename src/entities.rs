@@ -225,7 +225,7 @@ impl FromJson for MediaEntity {
             media_url: try!(field(input, "media_url")),
             media_url_https: try!(field(input, "media_url_https")),
             sizes: try!(field(input, "sizes")),
-            source_status_id: field(input, "source_status_id").ok(),
+            source_status_id: try!(field(input, "source_status_id")),
             media_type: try!(field(input, "type")),
             url: try!(field(input, "url")),
             video_info: None,
@@ -326,7 +326,7 @@ impl FromJson for VideoInfo {
 
         Ok(VideoInfo {
             aspect_ratio: try!(field(input, "aspect_ratio")),
-            duration_millis: field(input, "duration_millis").ok(),
+            duration_millis: try!(field(input, "duration_millis")),
             variants: try!(field(input, "variants")),
         })
     }
@@ -339,7 +339,7 @@ impl FromJson for VideoVariant {
         }
 
         Ok(VideoVariant {
-            bitrate: field(input, "bitrate").ok(),
+            bitrate: try!(field(input, "bitrate")),
             content_type: try!(field(input, "content_type")),
             url: try!(field(input, "url")),
         })

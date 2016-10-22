@@ -136,7 +136,7 @@ impl FromJson for DMEntities {
             symbols: try!(field(input, "symbols")),
             urls: try!(field(input, "urls")),
             user_mentions: try!(field(input, "user_mentions")),
-            media: field(input, "media").ok(),
+            media: try!(field(input, "media")),
         })
     }
 }

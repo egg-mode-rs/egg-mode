@@ -3,7 +3,7 @@
 use rustc_serialize::json;
 use chrono::{self, TimeZone};
 use error;
-use error::Error::{InvalidResponse, MissingValue};
+use error::Error::InvalidResponse;
 use mime;
 
 ///Helper trait to provide a general interface for deserializing Twitter API data structures.
@@ -24,6 +24,25 @@ impl<T> FromJson for Vec<T> where T: FromJson {
         let arr = try!(input.as_array().ok_or_else(|| InvalidResponse("expected an array", Some(input.to_string()))));
 
         arr.iter().map(|x| T::from_json(x)).collect()
+    }
+}
+
+impl<T> FromJson for Option<T> where T: FromJson {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if input.is_null() {
+            return Ok(None);
+        }
+
+        if let Some(arr) = input.as_array() {
+            if arr.is_empty() {
+                return Ok(None);
+            }
+        }
+
+        match T::from_json(input) {
+            Ok(val) => Ok(Some(val)),
+            Err(err) => Err(err),
+        }
     }
 }
 
@@ -138,5 +157,5 @@ impl FromJson for chrono::DateTime<chrono::UTC> {
 }
 
 pub fn field<T: FromJson>(input: &json::Json, field: &'static str) -> Result<T, error::Error> {
-    T::from_json(try!(input.find(field).ok_or(MissingValue(field))))
+    T::from_json(input.find(field).unwrap_or(&json::Json::Null))
 }

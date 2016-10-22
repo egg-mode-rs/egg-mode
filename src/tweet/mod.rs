@@ -234,39 +234,39 @@ impl FromJson for Tweet {
         //TODO: when i start building streams, i want to extract "extended_tweet" and use its
         //fields here
 
-        let coords = field(input, "coordinates").ok();
+        let coords: Option<(f64, f64)> = try!(field(input, "coordinates"));
 
         Ok(Tweet {
             //contributors: Option<Contributors>,
             coordinates: coords.map(|(lon, lat)| (lat, lon)),
             created_at: try!(field(input, "created_at")),
             current_user_retweet: try!(current_user_retweet(input, "current_user_retweet")),
-            display_text_range: field(input, "display_text_range").ok(),
+            display_text_range: try!(field(input, "display_text_range")),
             entities: try!(field(input, "entities")),
-            extended_entities: field(input, "extended_entities").ok(),
+            extended_entities: try!(field(input, "extended_entities")),
             favorite_count: field(input, "favorite_count").unwrap_or(0),
-            favorited: field(input, "favorited").ok(),
+            favorited: try!(field(input, "favorited")),
             //filter_level: FilterLevel,
             id: try!(field(input, "id")),
-            in_reply_to_user_id: field(input, "in_reply_to_user_id").ok(),
-            in_reply_to_screen_name: field(input, "in_reply_to_screen_name").ok(),
-            in_reply_to_status_id: field(input, "in_reply_to_status_id").ok(),
+            in_reply_to_user_id: try!(field(input, "in_reply_to_user_id")),
+            in_reply_to_screen_name: try!(field(input, "in_reply_to_screen_name")),
+            in_reply_to_status_id: try!(field(input, "in_reply_to_status_id")),
             lang: try!(field(input, "lang")),
-            place: field(input, "place").ok(),
-            possibly_sensitive: field(input, "possibly_sensitive").ok(),
-            quoted_status_id: field(input, "quoted_status_id").ok(),
-            quoted_status: field(input, "quoted_status").map(Box::new).ok(),
+            place: try!(field(input, "place")),
+            possibly_sensitive: try!(field(input, "possibly_sensitive")),
+            quoted_status_id: try!(field(input, "quoted_status_id")),
+            quoted_status: try!(field(input, "quoted_status")),
             //scopes: Option<Scopes>,
             retweet_count: try!(field(input, "retweet_count")),
-            retweeted: field(input, "retweeted").ok(),
-            retweeted_status: field(input, "retweeted_status").map(Box::new).ok(),
+            retweeted: try!(field(input, "retweeted")),
+            retweeted_status: try!(field(input, "retweeted_status")),
             source: try!(field(input, "source")),
             text: try!(field(input, "full_text").or(field(input, "text"))),
             truncated: try!(field(input, "truncated")),
             user: try!(field(input, "user").map(Box::new)),
             withheld_copyright: field(input, "withheld_copyright").unwrap_or(false),
-            withheld_in_countries: field(input, "withheld_in_countries").ok(),
-            withheld_scope: field(input, "withheld_scope").ok(),
+            withheld_in_countries: try!(field(input, "withheld_in_countries")),
+            withheld_scope: try!(field(input, "withheld_scope")),
         })
     }
 }
@@ -372,7 +372,7 @@ impl FromJson for TweetEntities {
             symbols: try!(field(input, "symbols")),
             urls: try!(field(input, "urls")),
             user_mentions: try!(field(input, "user_mentions")),
-            media: field(input, "media").ok(),
+            media: try!(field(input, "media")),
         })
     }
 }
