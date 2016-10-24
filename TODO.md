@@ -172,3 +172,20 @@ them.
 - [ ] statuses/sample
 - [ ] statuses/filter
 - [ ] user
+
+## [twitter-text](https://github.com/twitter/twitter-text)
+
+From various excursions into the official twitter-text implementations, it seems that the JavaScript
+version of twitter-text includes some helper functions to auto-format URLs and possibly other
+HTML-focused helper functions. Upon request, I could include some or all of these helpers (if I had
+some guidance about the requested methods >_>). The functions listed below are based on the
+Objective-C implementation, which has a much more trimmed-down interface.
+
+- [ ] "character count"
+- [ ] "extract URL entities"
+- [ ] "extract hashtag entities"
+- [ ] "extract symbol ("cashtag") entities"
+- [ ] "extract user mention entities"
+- [ ] "extract user and list mention entities"
+- [ ] "extract leading mention from reply"
+- [ ] "extract all entities"
