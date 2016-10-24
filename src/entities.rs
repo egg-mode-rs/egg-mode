@@ -13,12 +13,9 @@
 //! ## Using indices and URLs
 //!
 //! When displaying text with accompanied entities, be wary about how you use the accompanied
-//! indices. The indices given by Twitter reference the *graphemes* in the tweet, so something like
-//! `char_indices` will fall flat when faced with text that uses combining characters. The
-//! [unicode-segmentation][] crate provides a means to iterate over the graphemes of a string,
-//! allowing you to make sure you hyperlink the right range of characters in the text.
-//!
-//! [unicode-segmentation]: https://crates.io/crates/unicode-segmentation
+//! indices. The indices given by Twitter reference *codepoints* within the tweet, so you'll need
+//! to use something like .char_indices().enumerate() to turn them into byte offsets or to replace
+//! the character range with another substring.
 //!
 //! Alternately, when substituting URLs for display, `str::replace` works just fine.
 //!
