@@ -4,6 +4,8 @@
 ### Added
 - New iterator structs `ResponseIterRef` and `ResponseIterMut` to iterate over
   references in a response
+- New module `text` to handle entity extraction and character count of arbitrary text
+  - New function `url_entities` to parse URLs from given text
 
 ### Changed
 - `Place::contained_within` is now a `Option<Vec<Place>>`, because I had the wrong type for that before

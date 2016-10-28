@@ -128,6 +128,7 @@ pub mod search;
 pub mod place;
 pub mod direct;
 pub mod service;
+pub mod text;
 mod links;
 mod common;
 

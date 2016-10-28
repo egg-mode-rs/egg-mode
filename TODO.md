@@ -182,7 +182,7 @@ some guidance about the requested methods >_>). The functions listed below are b
 Objective-C implementation, which has a much more trimmed-down interface.
 
 - [ ] "character count"
-- [ ] "extract URL entities"
+- [x] "extract URL entities" (`text::url_entities`)
 - [ ] "extract hashtag entities"
 - [ ] "extract symbol ("cashtag") entities"
 - [ ] "extract user mention entities"
