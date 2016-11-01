@@ -117,6 +117,7 @@ extern crate rustc_serialize;
 extern crate mime;
 extern crate chrono;
 extern crate regex;
+extern crate unicode_normalization;
 
 #[macro_use] mod common;
 mod auth;

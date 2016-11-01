@@ -23,6 +23,8 @@
 //! * `remainingCharacterCount`: string -> int (like above, includes alternate version with URL
 //!   lengths)
 
+use unicode_normalization::UnicodeNormalization;
+
 mod regexen;
 
 ///Represents the kinds of entities that can be extracted from a given text.
@@ -178,4 +180,40 @@ pub fn url_entities(text: &str) -> Vec<Entity> {
     }
 
     results
+}
+
+///Returns how many characters the given text would be, after accounting for URL shortening.
+pub fn character_count(text: &str, http_url_len: i32, https_url_len: i32) -> usize {
+    //twitter uses code point counts after NFC normalization
+    let mut text = text.nfc().collect::<String>();
+
+    if text.is_empty() {
+        return 0;
+    }
+
+    let mut url_offset = 0usize;
+    let entities = url_entities(&text);
+
+    for url in &entities {
+        let substr = &text[url.range.0..url.range.1];
+        if substr.contains("https") {
+            url_offset += https_url_len as usize;
+        }
+        else {
+            url_offset += http_url_len as usize;
+        }
+    }
+
+    //put character removal in a second pass so we don't mess up the byte offsets
+    for url in entities.iter().rev() {
+        text.drain(url.range.0..url.range.1);
+    }
+
+    text.len() + url_offset
+}
+
+///Returns how many characters would remain in a traditional 140-character tweet with the given
+///text.
+pub fn characters_remaining(text: &str, http_url_len: i32, https_url_len: i32) -> usize {
+    140 - character_count(text, http_url_len, https_url_len)
 }

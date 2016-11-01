@@ -6,6 +6,10 @@
   references in a response
 - New module `text` to handle entity extraction and character count of arbitrary text
   - New function `url_entities` to parse URLs from given text
+  - New function `character_count` to count characters in the given text after
+    accounting for URL shortening
+  - New function `characters_remaining` to provide a convenience method for displaying
+    the number of characters remaining in a 140-character tweet after including the given text
 
 ### Changed
 - `Place::contained_within` is now a `Option<Vec<Place>>`, because I had the wrong type for that before

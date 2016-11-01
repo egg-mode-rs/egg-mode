@@ -178,10 +178,10 @@ them.
 From various excursions into the official twitter-text implementations, it seems that the JavaScript
 version of twitter-text includes some helper functions to auto-format URLs and possibly other
 HTML-focused helper functions. Upon request, I could include some or all of these helpers (if I had
-some guidance about the requested methods >_>). The functions listed below are based on the
+some guidance about the requested methods `>_>`). The functions listed below are based on the
 Objective-C implementation, which has a much more trimmed-down interface.
 
-- [ ] "character count"
+- [x] "character count" (`text::character_count`, `text::characters_remaining`)
 - [x] "extract URL entities" (`text::url_entities`)
 - [ ] "extract hashtag entities"
 - [ ] "extract symbol ("cashtag") entities"
