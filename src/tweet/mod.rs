@@ -429,7 +429,7 @@ impl FromJson for ExtendedTweetEntities {
 ///                                .with_page_size(10);
 ///
 /// for tweet in &timeline.start().unwrap().response {
-///     println!("<@{}> {}", tweet.user.screen_name, tweet.text);
+///     println!("<@{}> {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
 /// }
 /// ```
 ///
@@ -442,7 +442,7 @@ impl FromJson for ExtendedTweetEntities {
 /// # let mut timeline = egg_mode::tweet::home_timeline(&con_token, &access_token);
 /// # timeline.start().unwrap();
 /// for tweet in &timeline.older(None).unwrap().response {
-///     println!("<@{}> {}", tweet.user.screen_name, tweet.text);
+///     println!("<@{}> {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
 /// }
 /// ```
 ///
@@ -823,7 +823,8 @@ mod tests {
 
         assert_eq!(sample.text,
                    ".@Serrayak said he’d use what-ev-er I came up with as his Halloween avatar so I’m just making sure you all know he said that https://t.co/MvgxCwDwSa");
-        assert_eq!(sample.user.screen_name, "0xabad1dea");
+        assert!(sample.user.is_some());
+        assert_eq!(sample.user.unwrap().screen_name, "0xabad1dea");
         assert_eq!(sample.id, 782349500404862976);
         assert_eq!(sample.source.name, "Tweetbot for iΟS");
         assert_eq!(sample.source.url, "http://tapbots.com/tweetbot");

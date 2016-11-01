@@ -40,7 +40,7 @@ fn main() {
     let mut thread_ids = HashSet::new();
 
     let start_tweet = tweet::show(start_id, &c.con_token, &c.access_token).unwrap();
-    let thread_user = start_tweet.user.id;
+    let thread_user = start_tweet.user.as_ref().unwrap().id;
     thread_ids.insert(start_tweet.id);
     thread.push_front(start_tweet.response);
 

@@ -16,7 +16,7 @@
 //!                     .unwrap();
 //!
 //! for tweet in &search.statuses {
-//!     println!("(@{}) {}", tweet.user.screen_name, tweet.text);
+//!     println!("(@{}) {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
 //! }
 //! ```
 //!
