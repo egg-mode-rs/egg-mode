@@ -201,6 +201,9 @@ impl FromJson for HashtagEntity {
             return Err(InvalidResponse("HashtagEntity received json that wasn't an object", Some(input.to_string())));
         }
 
+        field_present!(input, indices);
+        field_present!(input, text);
+
         Ok(HashtagEntity {
             indices: try!(field(input, "indices")),
             text: try!(field(input, "text")),
@@ -213,6 +216,16 @@ impl FromJson for MediaEntity {
         if !input.is_object() {
             return Err(InvalidResponse("MediaEntity received json that wasn't an object", Some(input.to_string())));
         }
+
+        field_present!(input, display_url);
+        field_present!(input, expanded_url);
+        field_present!(input, id);
+        field_present!(input, indices);
+        field_present!(input, media_url);
+        field_present!(input, media_url_https);
+        field_present!(input, sizes);
+        field_present!(input, type);
+        field_present!(input, url);
 
         Ok(MediaEntity {
             display_url: try!(field(input, "display_url")),
@@ -277,6 +290,10 @@ impl FromJson for MediaSize {
             return Err(InvalidResponse("MediaSize received json that wasn't an object", Some(input.to_string())));
         }
 
+        field_present!(input, w);
+        field_present!(input, h);
+        field_present!(input, resize);
+
         Ok(MediaSize {
             w: try!(field(input, "w")),
             h: try!(field(input, "h")),
@@ -290,6 +307,11 @@ impl FromJson for MediaSizes {
         if !input.is_object() {
             return Err(InvalidResponse("MediaSizes received json that wasn't an object", Some(input.to_string())));
         }
+
+        field_present!(input, thumb);
+        field_present!(input, small);
+        field_present!(input, medium);
+        field_present!(input, large);
 
         Ok(MediaSizes {
             thumb: try!(field(input, "thumb")),
@@ -306,11 +328,32 @@ impl FromJson for UrlEntity {
             return Err(InvalidResponse("UrlEntity received json that wasn't an object", Some(input.to_string())));
         }
 
+        field_present!(input, indices);
+
+        //i have, somehow, run into a user whose profile url arrived in a UrlEntity that didn't
+        //include display_url or expanded_url fields. in this case let's just populate those fields
+        //with the full url and carry on.
+        let url: String = try!(field(input, "url"));
+
+        let display_url = if (|| { field_present!(input, display_url); Ok(()) })().is_ok() {
+            try!(field(input, "display_url"))
+        }
+        else {
+            url.clone()
+        };
+
+        let expanded_url = if (|| { field_present!(input, expanded_url); Ok(()) })().is_ok() {
+            try!(field(input, "expanded_url"))
+        }
+        else {
+            url.clone()
+        };
+
         Ok(UrlEntity {
-            display_url: try!(field(input, "display_url")),
-            expanded_url: try!(field(input, "expanded_url")),
+            display_url: display_url,
+            expanded_url: expanded_url,
             indices: try!(field(input, "indices")),
-            url: try!(field(input, "url")),
+            url: url,
         })
     }
 }
@@ -320,6 +363,9 @@ impl FromJson for VideoInfo {
         if !input.is_object() {
             return Err(InvalidResponse("VideoInfo received json that wasn't an object", Some(input.to_string())));
         }
+
+        field_present!(input, aspect_ratio);
+        field_present!(input, variants);
 
         Ok(VideoInfo {
             aspect_ratio: try!(field(input, "aspect_ratio")),
@@ -335,6 +381,9 @@ impl FromJson for VideoVariant {
             return Err(InvalidResponse("VideoVariant received json that wasn't an object", Some(input.to_string())));
         }
 
+        field_present!(input, content_type);
+        field_present!(input, url);
+
         Ok(VideoVariant {
             bitrate: try!(field(input, "bitrate")),
             content_type: try!(field(input, "content_type")),
@@ -348,6 +397,11 @@ impl FromJson for MentionEntity {
         if !input.is_object() {
             return Err(InvalidResponse("MentionEntity received json that wasn't an object", Some(input.to_string())));
         }
+
+        field_present!(input, id);
+        field_present!(input, indices);
+        field_present!(input, name);
+        field_present!(input, screen_name);
 
         Ok(MentionEntity {
             id: try!(field(input, "id")),

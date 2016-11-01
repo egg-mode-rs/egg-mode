@@ -127,6 +127,12 @@ impl FromJson for Configuration {
                                        Some(input.to_string())));
         }
 
+        field_present!(input, dm_text_character_limit);
+        field_present!(input, photo_sizes);
+        field_present!(input, short_url_length);
+        field_present!(input, short_url_length_https);
+        field_present!(input, non_username_paths);
+
         Ok(Configuration {
             dm_text_character_limit: try!(field(input, "dm_text_character_limit")),
             photo_sizes: try!(field(input, "photo_sizes")),

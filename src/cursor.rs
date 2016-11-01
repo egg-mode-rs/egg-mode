@@ -53,6 +53,10 @@ impl FromJson for UserCursor {
             return Err(InvalidResponse("UserCursor received json that wasn't an object", Some(input.to_string())));
         }
 
+        field_present!(input, previous_cursor);
+        field_present!(input, next_cursor);
+        field_present!(input, users);
+
         Ok(UserCursor {
             previous_cursor: try!(field(input, "previous_cursor")),
             next_cursor: try!(field(input, "next_cursor")),
@@ -97,6 +101,10 @@ impl FromJson for IDCursor {
         if !input.is_object() {
             return Err(InvalidResponse("IDCursor received json that wasn't an object", Some(input.to_string())));
         }
+
+        field_present!(input, previous_cursor);
+        field_present!(input, next_cursor);
+        field_present!(input, ids);
 
         Ok(IDCursor {
             previous_cursor: try!(field(input, "previous_cursor")),

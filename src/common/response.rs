@@ -86,6 +86,10 @@ impl FromJson for Response<()> {
                                        Some(input.to_string())));
         }
 
+        field_present!(input, limit);
+        field_present!(input, remaining);
+        field_present!(input, reset);
+
         Ok(Response {
             rate_limit: try!(field(input, "limit")),
             rate_limit_remaining: try!(field(input, "remaining")),

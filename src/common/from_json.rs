@@ -6,6 +6,22 @@ use error;
 use error::Error::InvalidResponse;
 use mime;
 
+///Helper macro to return MissingValue for null/absent fields that aren't optional.
+macro_rules! field_present {
+    ($input:ident, $field:ident) => {
+        {
+            if $input.find(stringify!($field)).is_none() {
+                return Err(::error::Error::MissingValue(stringify!($field)));
+            }
+            else if let Some(val) = $input.find(stringify!($field)) {
+                if val.is_null() {
+                    return Err(::error::Error::MissingValue(stringify!($field)));
+                }
+            }
+        }
+    };
+}
+
 ///Helper trait to provide a general interface for deserializing Twitter API data structures.
 pub trait FromJson : Sized {
     ///Parse the given Json object into a data structure.

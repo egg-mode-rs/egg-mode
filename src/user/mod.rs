@@ -329,6 +329,33 @@ impl FromJson for TwitterUser {
             return Err(InvalidResponse("TwitterUser received json that wasn't an object", Some(input.to_string())));
         }
 
+        field_present!(input, contributors_enabled);
+        field_present!(input, created_at);
+        field_present!(input, default_profile);
+        field_present!(input, default_profile_image);
+        field_present!(input, entities);
+        field_present!(input, favourites_count);
+        field_present!(input, followers_count);
+        field_present!(input, friends_count);
+        field_present!(input, geo_enabled);
+        field_present!(input, id);
+        field_present!(input, is_translator);
+        field_present!(input, lang);
+        field_present!(input, listed_count);
+        field_present!(input, name);
+        field_present!(input, profile_background_color);
+        field_present!(input, profile_image_url);
+        field_present!(input, profile_image_url_https);
+        field_present!(input, profile_link_color);
+        field_present!(input, profile_sidebar_border_color);
+        field_present!(input, profile_sidebar_fill_color);
+        field_present!(input, profile_text_color);
+        field_present!(input, profile_use_background_image);
+        field_present!(input, protected);
+        field_present!(input, screen_name);
+        field_present!(input, statuses_count);
+        field_present!(input, verified);
+
         Ok(TwitterUser {
             contributors_enabled: field(input, "contributors_enabled").unwrap_or(false),
             created_at: try!(field(input, "created_at")),
@@ -383,6 +410,8 @@ impl FromJson for UserEntities {
         if !input.is_object() {
             return Err(InvalidResponse("UserEntities received json that wasn't an object", Some(input.to_string())));
         }
+
+        field_present!(input, description);
 
         Ok(UserEntities {
             description: try!(field(input, "description")),
@@ -591,6 +620,9 @@ impl FromJson for Relationship {
         }
 
         if let Some(relation) = input.find("relationship") {
+            field_present!(relation, target);
+            field_present!(relation, source);
+
             Ok(Relationship {
                 target: try!(field(relation, "target")),
                 source: try!(field(relation, "source")),
@@ -621,6 +653,11 @@ impl FromJson for RelationTarget {
         if !input.is_object() {
             return Err(InvalidResponse("RelationTarget received json that wasn't an object", Some(input.to_string())));
         }
+
+        field_present!(input, id);
+        field_present!(input, screen_name);
+        field_present!(input, followed_by);
+        field_present!(input, following);
 
         Ok(RelationTarget {
             id: try!(field(input, "id")),
@@ -679,6 +716,12 @@ impl FromJson for RelationSource {
             return Err(InvalidResponse("RelationSource received json that wasn't an object", Some(input.to_string())));
         }
 
+        field_present!(input, id);
+        field_present!(input, screen_name);
+        field_present!(input, following);
+        field_present!(input, followed_by);
+        field_present!(input, can_dm);
+
         Ok(RelationSource {
             id: try!(field(input, "id")),
             screen_name: try!(field(input, "screen_name")),
@@ -718,6 +761,11 @@ impl FromJson for RelationLookup {
         if !input.is_object() {
             return Err(InvalidResponse("RelationLookup received json that wasn't an object", Some(input.to_string())));
         }
+
+        field_present!(input, name);
+        field_present!(input, screen_name);
+        field_present!(input, id);
+        field_present!(input, connections);
 
         Ok(RelationLookup {
             name: try!(field(input, "name")),

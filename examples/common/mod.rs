@@ -100,14 +100,18 @@ impl Config {
 }
 
 pub fn print_tweet(tweet: &egg_mode::tweet::Tweet) {
-    println!("{} (@{}) posted at {}", tweet.user.name, tweet.user.screen_name, tweet.created_at.with_timezone(&chrono::Local));
+    if let Some(ref user) = tweet.user {
+        println!("{} (@{}) posted at {}", user.name, user.screen_name, tweet.created_at.with_timezone(&chrono::Local));
+    }
 
     if let Some(ref screen_name) = tweet.in_reply_to_screen_name {
         println!("--> in reply to @{}", screen_name);
     }
 
     if let Some(ref status) = tweet.retweeted_status {
-        println!("Retweeted from {}:", status.user.name);
+        if let Some(ref user) = status.user {
+            println!("Retweeted from {}:", user.name);
+        }
         print_tweet(status);
         return;
     }

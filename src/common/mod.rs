@@ -8,8 +8,8 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use user;
 
+#[macro_use] mod from_json;
 mod response;
-mod from_json;
 
 pub use common::response::*;
 pub use common::from_json::*;

@@ -211,7 +211,7 @@ pub struct Tweet {
     ///full text is longer than 140 characters.
     pub truncated: bool,
     ///The user who posted this tweet.
-    pub user: Box<user::TwitterUser>,
+    pub user: Option<Box<user::TwitterUser>>,
     ///If present and `true`, indicates that this tweet has been withheld due to a DMCA complaint.
     pub withheld_copyright: bool,
     ///If present, contains two-letter country codes indicating where this tweet is being withheld.
@@ -234,7 +234,20 @@ impl FromJson for Tweet {
         //TODO: when i start building streams, i want to extract "extended_tweet" and use its
         //fields here
 
-        let coords: Option<(f64, f64)> = try!(field(input, "coordinates"));
+        let coords: Option<(f64, f64)> = if let Some(geo) = input.find("coordinates") {
+            try!(field(geo, "coordinates"))
+        }
+        else {
+            None
+        };
+
+        field_present!(input, created_at);
+        field_present!(input, entities);
+        field_present!(input, id);
+        field_present!(input, lang);
+        field_present!(input, retweet_count);
+        field_present!(input, source);
+        field_present!(input, truncated);
 
         Ok(Tweet {
             //contributors: Option<Contributors>,
@@ -263,7 +276,7 @@ impl FromJson for Tweet {
             source: try!(field(input, "source")),
             text: try!(field(input, "full_text").or(field(input, "text"))),
             truncated: try!(field(input, "truncated")),
-            user: try!(field(input, "user").map(Box::new)),
+            user: try!(field(input, "user")),
             withheld_copyright: field(input, "withheld_copyright").unwrap_or(false),
             withheld_in_countries: try!(field(input, "withheld_in_countries")),
             withheld_scope: try!(field(input, "withheld_scope")),

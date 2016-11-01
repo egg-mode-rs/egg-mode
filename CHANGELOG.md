@@ -10,6 +10,12 @@
 ### Changed
 - `Place::contained_within` is now a `Option<Vec<Place>>`, because I had the wrong type for that before
   - This is a **breaking change** if you were examining that field as a single location before
+- Struct fields which are optional now only return None for their absence, instead of absorbing all their errors
+  - This led to the following two changes:
+- `Tweet::user` is now optional
+  - Twitter stopped returning users for the tweet in `TwitterUser::status`, so that field is optional now
+  - This is a **breaking change**
+- `Tweet::coordinates` is now properly parsed
 
 ## [0.6.0] - 2016-10-20
 ### Added

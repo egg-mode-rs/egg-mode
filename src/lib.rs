@@ -118,6 +118,7 @@ extern crate mime;
 extern crate chrono;
 extern crate regex;
 
+#[macro_use] mod common;
 mod auth;
 pub mod error;
 pub mod user;
@@ -130,7 +131,6 @@ pub mod direct;
 pub mod service;
 pub mod text;
 mod links;
-mod common;
 
 pub use auth::{Token, request_token, authorize_url, authenticate_url, access_token, verify_tokens};
 pub use common::{Response, ResponseIter, ResponseIterRef, ResponseIterMut, WebResponse};

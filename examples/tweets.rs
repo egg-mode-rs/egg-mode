@@ -16,7 +16,9 @@ fn main() {
     println!("");
     println!("Loading retweets of an individual tweet:");
     for rt in &egg_mode::tweet::retweets_of(tweet_id, 5, &config.con_token, &config.access_token).unwrap().response {
-        println!("{} (@{})", rt.user.name, rt.user.screen_name);
+        if let Some(ref user) = rt.user {
+            println!("{} (@{})", user.name, user.screen_name);
+        }
     }
 
     println!("");

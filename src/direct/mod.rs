@@ -109,6 +109,17 @@ impl FromJson for DirectMessage {
                                        Some(input.to_string())));
         }
 
+        field_present!(input, id);
+        field_present!(input, created_at);
+        field_present!(input, text);
+        field_present!(input, entities);
+        field_present!(input, sender_screen_name);
+        field_present!(input, sender_id);
+        field_present!(input, sender);
+        field_present!(input, recipient_screen_name);
+        field_present!(input, recipient_id);
+        field_present!(input, recipient);
+
         Ok(DirectMessage {
             id: try!(field(input, "id")),
             created_at: try!(field(input, "created_at")),
@@ -130,6 +141,11 @@ impl FromJson for DMEntities {
             return Err(InvalidResponse("DMEntities received json that wasn't an object",
                                        Some(input.to_string())));
         }
+
+        field_present!(input, hashtags);
+        field_present!(input, symbols);
+        field_present!(input, urls);
+        field_present!(input, user_mentions);
 
         Ok(DMEntities {
             hashtags: try!(field(input, "hashtags")),

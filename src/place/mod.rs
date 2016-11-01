@@ -418,6 +418,13 @@ impl FromJson for Place {
             return Err(MissingValue("bounding_box"));
         };
 
+        field_present!(input, id);
+        field_present!(input, country);
+        field_present!(input, country_code);
+        field_present!(input, full_name);
+        field_present!(input, name);
+        field_present!(input, place_type);
+
         Ok(Place {
             id: try!(field(input, "id")),
             attributes: attributes,
@@ -441,6 +448,8 @@ impl FromJson for SearchResult {
 
         let query = try!(input.find("query").ok_or(MissingValue("query")));
         let result = try!(input.find("result").ok_or(MissingValue("result")));
+
+        field_present!(query, url);
 
         Ok(SearchResult {
             url: try!(field(query, "url")),
