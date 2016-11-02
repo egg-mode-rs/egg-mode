@@ -210,7 +210,8 @@ pub struct Tweet {
     ///Indicates whether this tweet is a truncated "compatibility" form of an extended tweet whose
     ///full text is longer than 140 characters.
     pub truncated: bool,
-    ///The user who posted this tweet.
+    ///The user who posted this tweet. This field will be absent on tweets included as part of a
+    ///`TwitterUser`.
     pub user: Option<Box<user::TwitterUser>>,
     ///If present and `true`, indicates that this tweet has been withheld due to a DMCA complaint.
     pub withheld_copyright: bool,
