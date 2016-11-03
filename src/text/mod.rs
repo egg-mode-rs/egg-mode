@@ -28,7 +28,7 @@ use unicode_normalization::UnicodeNormalization;
 mod regexen;
 
 ///Represents the kinds of entities that can be extracted from a given text.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum EntityKind {
     ///A URL.
     Url,
@@ -238,6 +238,15 @@ pub fn mention_list_entities(text: &str) -> Vec<Entity> {
             cursor += 1;
         }
     }
+
+    results
+}
+
+///Parses the given string for user mentions.
+pub fn mention_entities(text: &str) -> Vec<Entity> {
+    let mut results = mention_list_entities(text);
+
+    results.retain(|e| e.kind == EntityKind::ScreenName);
 
     results
 }

@@ -11,6 +11,7 @@
   - New function `characters_remaining` to provide a convenience method for displaying
     the number of characters remaining in a 140-character tweet after including the given text
   - New function `mention_list_entities` to parse user and list mentions from given text
+  - New function `mention_entities` to parse just user mentions from given text
 
 ### Changed
 - `Place::contained_within` is now a `Option<Vec<Place>>`, because I had the wrong type for that before
