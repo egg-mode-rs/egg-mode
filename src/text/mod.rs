@@ -73,13 +73,11 @@ pub fn url_entities(text: &str) -> Vec<Entity> {
 
         let caps = regexen::RE_SIMPLIFIED_VALID_URL.captures(substr);
         if caps.is_none() {
-            println!("no simplified url in '{}'", substr);
             break;
         }
         let caps = caps.unwrap();
 
         if caps.len() < 9 {
-            println!("not enough captures in simplified url: {}", caps.len());
             break;
         }
 
@@ -176,6 +174,68 @@ pub fn url_entities(text: &str) -> Vec<Entity> {
                 kind: EntityKind::Url,
                 range: (url_range.0 + current_cursor, url_range.1 + current_cursor),
             });
+        }
+    }
+
+    results
+}
+
+///Parses the given string for user and list mentions.
+pub fn mention_list_entities(text: &str) -> Vec<Entity> {
+    if text.is_empty() {
+        return Vec::new();
+    }
+
+    let mut results = Vec::new();
+    let mut cursor = 0usize;
+
+    loop {
+        if cursor >= text.len() {
+            break;
+        }
+
+        //save our matching substring since we modify cursor below
+        let substr = &text[cursor..];
+
+        let caps = regexen::RE_VALID_MENTION_OR_LIST.captures(substr);
+        if caps.is_none() {
+            break;
+        }
+        let caps = caps.unwrap();
+
+        if caps.len() < 5 {
+            break;
+        }
+
+        let current_cursor = cursor;
+        cursor += caps.pos(0).unwrap().1;
+
+        if !regexen::RE_END_MENTION.is_match(&text[cursor..]) {
+            let at_sign_range = caps.pos(2);
+            let screen_name_range = caps.pos(3);
+            let list_name_range = caps.pos(4);
+
+            if at_sign_range.is_none() {
+                continue;
+            }
+            let at_sign_range = at_sign_range.unwrap();
+
+            if let Some((_, end)) = list_name_range {
+                results.push(Entity {
+                    kind: EntityKind::ListName,
+                    range: (current_cursor + at_sign_range.0, current_cursor + end),
+                });
+            }
+            else if let Some((_, end)) = screen_name_range {
+                results.push(Entity {
+                    kind: EntityKind::ScreenName,
+                    range: (current_cursor + at_sign_range.0, current_cursor + end),
+                });
+            }
+        }
+        else {
+            //Avoid matching the second username in @username@username
+            cursor += 1;
         }
     }
 

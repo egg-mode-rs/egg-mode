@@ -186,6 +186,6 @@ Objective-C implementation, which has a much more trimmed-down interface.
 - [ ] "extract hashtag entities"
 - [ ] "extract symbol ("cashtag") entities"
 - [ ] "extract user mention entities"
-- [ ] "extract user and list mention entities"
+- [x] "extract user and list mention entities" (`text::mention_list_entities`)
 - [ ] "extract leading mention from reply"
 - [ ] "extract all entities"

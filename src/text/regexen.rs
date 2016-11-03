@@ -317,6 +317,33 @@ macro_rules! simplified_valid_url {
     };
 }
 
+///Regex substring containing a character class matching valid characters that can come before a
+///user mention.
+macro_rules! valid_mention_preceding_chars {
+    () => { "(?:[^a-zA-Z0-9_!#$%&*@＠]|^|(?:^|[^a-zA-Z0-9_+~.-])RT:?)" };
+}
+///Regex substring containing a character class matching valid at-signs that can be part of a user
+///mention.
+macro_rules! at_signs {
+    () => { "[@＠]" };
+}
+///Regex matching characters that can occur immediately after a user or list mention.
+macro_rules! end_mention_match {
+    () => {
+        concat!(r"\A(?:", at_signs!(), "|[", latin_accents!(), "]|://)")
+    };
+}
+
+///Regex matching a valid user or list mention.
+macro_rules! valid_mention_or_list {
+    () => {
+        concat!("(", valid_mention_preceding_chars!(), ")",
+                "(", at_signs!(), ")",
+                "([a-zA-Z0-9_]{1,20})",
+                "(/[a-zA-Z][a-zA-Z0-9_-]{0,24})?")
+    };
+}
+
 lazy_static! {
     pub static ref RE_SIMPLIFIED_VALID_URL: Regex =
         RegexBuilder::new(simplified_valid_url!()).case_insensitive(true).compile().unwrap();
@@ -332,4 +359,8 @@ lazy_static! {
         RegexBuilder::new(invalid_short_domain!()).case_insensitive(true).compile().unwrap();
     pub static ref RE_VALID_SPECIAL_SHORT_DOMAIN: Regex =
         RegexBuilder::new(valid_special_short_domain!()).case_insensitive(true).compile().unwrap();
+    pub static ref RE_VALID_MENTION_OR_LIST: Regex =
+        RegexBuilder::new(valid_mention_or_list!()).case_insensitive(true).compile().unwrap();
+    pub static ref RE_END_MENTION: Regex =
+        RegexBuilder::new(end_mention_match!()).case_insensitive(true).compile().unwrap();
 }
