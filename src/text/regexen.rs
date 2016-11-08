@@ -344,6 +344,51 @@ macro_rules! valid_mention_or_list {
     };
 }
 
+///Character class substring containing special characters that can appear within a hashtag.
+macro_rules! hashtag_special_chars {
+    () => { "_\u{200c}\u{200d}\u{a67e}\u{05be}\u{05f3}\u{05f4}\u{ff5e}\u{301c}\u{309b}\u{309c}\u{30a0}\u{30fb}\u{3003}\u{0f0b}\u{0f0c}\u{00b7}" };
+}
+///Regex substring containing a character class matching letters that must appear in a hashtag for
+///it to be valid.
+macro_rules! hashtag_alpha {
+    () => { r"[\p{L}\p{M}]" };
+}
+///Regex substring containing a character class matching alphanumeric characters allowed in a
+///hashtag.
+macro_rules! hashtag_alphanumeric {
+    () => { concat!(r"[\p{L}\p{M}\p{Nd}", hashtag_special_chars!(), "]") };
+}
+///Character class substring containing characters that cannot appear at the boundary of a hashtag.
+macro_rules! hashtag_boundary_invalid_chars {
+    () => { concat!(r"&\p{L}\p{M}\p{Nd}", hashtag_special_chars!()) };
+}
+///Regex substring matching the beginning or end of a hashtag.
+macro_rules! hashtag_boundary {
+    () => { concat!("^|$|[^", hashtag_boundary_invalid_chars!(), "]") };
+}
+///Regex matching characters that are not allowed to be at the beginning of a hashtag.
+///
+///This regex is not from the original Objective-C implementation; it's included here due to the
+///regex crate's lack of lookahead assertions.
+macro_rules! hashtag_invalid_initial_chars {
+    () => { "\\A[\u{fe0f}\u{20e3}]" };
+}
+
+///Regex matching a valid hashtag.
+macro_rules! valid_hashtag {
+    () => {
+        concat!("(?:", hashtag_boundary!(), ")",
+                "(",
+                    "[#＃]",
+                    "(", hashtag_alphanumeric!(), "*", hashtag_alpha!(), hashtag_alphanumeric!(), "*", ")",
+                ")")
+    };
+}
+///Regex matching characters that can appear after a hashtag.
+macro_rules! end_hashtag_match {
+    () => { r"\A(?:[#＃]|://)" };
+}
+
 lazy_static! {
     pub static ref RE_SIMPLIFIED_VALID_URL: Regex =
         RegexBuilder::new(simplified_valid_url!()).case_insensitive(true).compile().unwrap();
@@ -363,4 +408,10 @@ lazy_static! {
         RegexBuilder::new(valid_mention_or_list!()).case_insensitive(true).compile().unwrap();
     pub static ref RE_END_MENTION: Regex =
         RegexBuilder::new(end_mention_match!()).case_insensitive(true).compile().unwrap();
+    pub static ref RE_VALID_HASHTAG: Regex =
+        RegexBuilder::new(valid_hashtag!()).case_insensitive(true).compile().unwrap();
+    pub static ref RE_END_HASHTAG: Regex =
+        RegexBuilder::new(end_hashtag_match!()).case_insensitive(true).compile().unwrap();
+    pub static ref RE_HASHTAG_INVALID_INITIAL_CHARS: Regex =
+        Regex::new(hashtag_invalid_initial_chars!()).unwrap();
 }

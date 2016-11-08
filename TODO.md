@@ -183,7 +183,7 @@ Objective-C implementation, which has a much more trimmed-down interface.
 
 - [x] "character count" (`text::character_count`, `text::characters_remaining`)
 - [x] "extract URL entities" (`text::url_entities`)
-- [ ] "extract hashtag entities"
+- [x] "extract hashtag entities" (`text::hashtag_entities`)
 - [ ] "extract symbol ("cashtag") entities"
 - [x] "extract user mention entities" (`text::mention_entities`)
 - [x] "extract user and list mention entities" (`text::mention_list_entities`)

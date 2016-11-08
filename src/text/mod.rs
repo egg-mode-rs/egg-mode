@@ -50,7 +50,7 @@ pub struct Entity {
     ///The byte offsets between which the entity text is. The first index indicates the byte at the
     ///beginning of the extracted entity, but the second one is the byte index for the first
     ///character after the extracted entity (or one past the end of the string if the entity was at
-    ///the end of the string).
+    ///the end of the string). For hashtags and symbols, the range includes the # or $ character.
     pub range: (usize, usize),
 }
 
@@ -247,6 +247,99 @@ pub fn mention_entities(text: &str) -> Vec<Entity> {
     let mut results = mention_list_entities(text);
 
     results.retain(|e| e.kind == EntityKind::ScreenName);
+
+    results
+}
+
+///Parses the given string for hashtags, optionally leaving out those that are part of URLs.
+pub fn hashtag_entities(text: &str, check_url_overlap: bool) -> Vec<Entity> {
+    if text.is_empty() {
+        return Vec::new();
+    }
+
+    let url_entities = if check_url_overlap {
+        url_entities(text)
+    }
+    else {
+        Vec::new()
+    };
+
+    extract_hashtags(text, &url_entities)
+}
+
+fn extract_hashtags(text: &str, url_entities: &[Entity]) -> Vec<Entity> {
+    if text.is_empty() {
+        return Vec::new();
+    }
+
+    let mut results = Vec::new();
+    let mut cursor = 0usize;
+
+    loop {
+        if cursor >= text.len() {
+            break;
+        }
+
+        let substr = &text[cursor..];
+
+        let caps = regexen::RE_VALID_HASHTAG.captures(substr);
+        if caps.is_none() {
+            break;
+        }
+        let caps = caps.unwrap();
+
+        if caps.len() < 3 {
+            break;
+        }
+
+        let current_cursor = cursor;
+        cursor += caps.pos(0).unwrap().1;
+
+        let hashtag_range = caps.pos(1);
+        let text_range = caps.pos(2);
+
+        if hashtag_range.is_none() {
+            break;
+        }
+        let hashtag_range = hashtag_range.unwrap();
+
+        if text_range.is_none() {
+            break;
+        }
+        let text_range = text_range.unwrap();
+
+        //note: check character after the # to make sure it's not \u{fe0f} or \u{20e3}
+        //this is because the regex crate doesn't have lookahead assertions, which the objc impl
+        //used to check for this
+        if regexen::RE_HASHTAG_INVALID_INITIAL_CHARS.is_match(&substr[text_range.0..text_range.1]) {
+            break;
+        }
+
+        let mut match_ok = true;
+
+        for url in url_entities {
+            if (hashtag_range.0 + current_cursor) <= url.range.1 &&
+                url.range.0 <= (hashtag_range.1 + current_cursor)
+            {
+                //this hashtag is part of a url in the same text, skip it
+                match_ok = false;
+                break;
+            }
+        }
+
+        if match_ok {
+            if regexen::RE_END_HASHTAG.is_match(&substr[hashtag_range.1..]) {
+                match_ok = false;
+            }
+        }
+
+        if match_ok {
+            results.push(Entity {
+                kind: EntityKind::Hashtag,
+                range: (hashtag_range.0 + current_cursor, hashtag_range.1 + current_cursor),
+            });
+        }
+    }
 
     results
 }
