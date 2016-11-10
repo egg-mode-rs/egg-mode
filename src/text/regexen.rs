@@ -389,6 +389,20 @@ macro_rules! end_hashtag_match {
     () => { r"\A(?:[#＃]|://)" };
 }
 
+///Regex substring matching the text of a financial symbol ("cashtag").
+macro_rules! symbol {
+    () => { "((?:[a-z]{1,2}[:._-][0-9]{1,6})|(?:[a-z]{1,6}(?:[:._-](?:[a-z]|[0-9]){1,6})?)|(?:[0-9]{1,6}[:._-][a-z]{1,2}))" };
+}
+///Regex matching a valid financial symbol ("cashtag"), including the `$` and boundary text
+///checking.
+macro_rules! valid_symbol {
+    () => {
+        concat!("(?:^|[", unicode_spaces!(), "])",
+                r"(\$", symbol!(), ")",
+                r"(?:$|\s|[", punctuation_chars!(), "])")
+    };
+}
+
 lazy_static! {
     pub static ref RE_SIMPLIFIED_VALID_URL: Regex =
         RegexBuilder::new(simplified_valid_url!()).case_insensitive(true).compile().unwrap();
@@ -414,4 +428,6 @@ lazy_static! {
         RegexBuilder::new(end_hashtag_match!()).case_insensitive(true).compile().unwrap();
     pub static ref RE_HASHTAG_INVALID_INITIAL_CHARS: Regex =
         Regex::new(hashtag_invalid_initial_chars!()).unwrap();
+    pub static ref RE_VALID_SYMBOL: Regex =
+        RegexBuilder::new(valid_symbol!()).case_insensitive(true).compile().unwrap();
 }

@@ -344,6 +344,74 @@ fn extract_hashtags(text: &str, url_entities: &[Entity]) -> Vec<Entity> {
     results
 }
 
+///Parses the given string for financial symbols ("cashtags"), optionally leaving out those that
+///are part of URLs.
+pub fn symbol_entities(text: &str, check_url_overlap: bool) -> Vec<Entity> {
+    if text.is_empty() {
+        return Vec::new();
+    }
+
+    let url_entities = if check_url_overlap {
+        url_entities(text)
+    }
+    else {
+        Vec::new()
+    };
+
+    extract_symbols(text, &url_entities)
+}
+
+fn extract_symbols(text: &str, url_entities: &[Entity]) -> Vec<Entity> {
+    if text.is_empty() {
+        return Vec::new();
+    }
+
+    let mut results = Vec::new();
+    let mut cursor = 0usize;
+
+    loop {
+        if cursor >= text.len() {
+            break;
+        }
+
+        let substr = &text[cursor..];
+
+        let caps = if let Some(caps) = regexen::RE_VALID_SYMBOL.captures(substr) {
+            caps
+        } else { break; };
+
+        if caps.len() < 2 { break; }
+
+        let symbol_range = if let Some(range) = caps.pos(1) {
+            range
+        } else { break; };
+
+        let current_cursor = cursor;
+        cursor += symbol_range.1;
+
+        let mut match_ok = true;
+
+        for url in url_entities {
+            if (symbol_range.0 + current_cursor) <= url.range.1 &&
+                url.range.0 <= (symbol_range.1 + current_cursor)
+            {
+                //this symbol is part of a url in the same text, skip it
+                match_ok = false;
+                break;
+            }
+        }
+
+        if match_ok {
+            results.push(Entity {
+                kind: EntityKind::Symbol,
+                range: (symbol_range.0 + current_cursor, symbol_range.1 + current_cursor),
+            });
+        }
+    }
+
+    results
+}
+
 ///Returns how many characters the given text would be, after accounting for URL shortening.
 pub fn character_count(text: &str, http_url_len: i32, https_url_len: i32) -> usize {
     //twitter uses code point counts after NFC normalization
