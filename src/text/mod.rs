@@ -23,6 +23,26 @@
 //! * `remainingCharacterCount`: string -> int (like above, includes alternate version with URL
 //!   lengths)
 
+///A convenience macro to break loops if the given value is `None`.
+macro_rules! break_opt {
+    ($input:expr) => {{
+        if let Some(val) = $input {
+            val
+        }
+        else { break; }
+    }};
+}
+
+///A convenience macro to continue loops if the given value is `None`.
+macro_rules! continue_opt {
+    ($input:expr) => {{
+        if let Some(val) = $input {
+            val
+        }
+        else { continue; }
+    }};
+}
+
 use unicode_normalization::UnicodeNormalization;
 
 mod regexen;
@@ -71,11 +91,7 @@ pub fn url_entities(text: &str) -> Vec<Entity> {
         //save our matching substring since we modify cursor below
         let substr = &text[cursor..];
 
-        let caps = regexen::RE_SIMPLIFIED_VALID_URL.captures(substr);
-        if caps.is_none() {
-            break;
-        }
-        let caps = caps.unwrap();
+        let caps = break_opt!(regexen::RE_SIMPLIFIED_VALID_URL.captures(substr));
 
         if caps.len() < 9 {
             break;
@@ -99,8 +115,7 @@ pub fn url_entities(text: &str) -> Vec<Entity> {
                 }
             }
 
-            if domain_range.is_none() { continue; }
-            let mut domain_range = domain_range.unwrap();
+            let mut domain_range = continue_opt!(domain_range);
 
             let mut loop_inserted = false;
 
@@ -157,10 +172,8 @@ pub fn url_entities(text: &str) -> Vec<Entity> {
             }
         }
         else {
-            if url_range.is_none() { continue; }
-            if domain_range.is_none() { continue; }
-            let mut url_range = url_range.unwrap();
-            let domain_range = domain_range.unwrap();
+            let mut url_range = continue_opt!(url_range);
+            let domain_range = continue_opt!(domain_range);
 
             //in case of t.co URLs, don't allow additional path characters
             if let Some((_, to)) = regexen::RE_VALID_TCO_URL.find(&substr[url_range.0..url_range.1]) {
@@ -197,11 +210,7 @@ pub fn mention_list_entities(text: &str) -> Vec<Entity> {
         //save our matching substring since we modify cursor below
         let substr = &text[cursor..];
 
-        let caps = regexen::RE_VALID_MENTION_OR_LIST.captures(substr);
-        if caps.is_none() {
-            break;
-        }
-        let caps = caps.unwrap();
+        let caps = break_opt!(regexen::RE_VALID_MENTION_OR_LIST.captures(substr));
 
         if caps.len() < 5 {
             break;
@@ -211,14 +220,9 @@ pub fn mention_list_entities(text: &str) -> Vec<Entity> {
         cursor += caps.pos(0).unwrap().1;
 
         if !regexen::RE_END_MENTION.is_match(&text[cursor..]) {
-            let at_sign_range = caps.pos(2);
+            let at_sign_range = continue_opt!(caps.pos(2));
             let screen_name_range = caps.pos(3);
             let list_name_range = caps.pos(4);
-
-            if at_sign_range.is_none() {
-                continue;
-            }
-            let at_sign_range = at_sign_range.unwrap();
 
             if let Some((_, end)) = list_name_range {
                 results.push(Entity {
@@ -282,11 +286,7 @@ fn extract_hashtags(text: &str, url_entities: &[Entity]) -> Vec<Entity> {
 
         let substr = &text[cursor..];
 
-        let caps = regexen::RE_VALID_HASHTAG.captures(substr);
-        if caps.is_none() {
-            break;
-        }
-        let caps = caps.unwrap();
+        let caps = break_opt!(regexen::RE_VALID_HASHTAG.captures(substr));
 
         if caps.len() < 3 {
             break;
@@ -295,18 +295,8 @@ fn extract_hashtags(text: &str, url_entities: &[Entity]) -> Vec<Entity> {
         let current_cursor = cursor;
         cursor += caps.pos(0).unwrap().1;
 
-        let hashtag_range = caps.pos(1);
-        let text_range = caps.pos(2);
-
-        if hashtag_range.is_none() {
-            break;
-        }
-        let hashtag_range = hashtag_range.unwrap();
-
-        if text_range.is_none() {
-            break;
-        }
-        let text_range = text_range.unwrap();
+        let hashtag_range = break_opt!(caps.pos(1));
+        let text_range = break_opt!(caps.pos(2));
 
         //note: check character after the # to make sure it's not \u{fe0f} or \u{20e3}
         //this is because the regex crate doesn't have lookahead assertions, which the objc impl
@@ -376,15 +366,11 @@ fn extract_symbols(text: &str, url_entities: &[Entity]) -> Vec<Entity> {
 
         let substr = &text[cursor..];
 
-        let caps = if let Some(caps) = regexen::RE_VALID_SYMBOL.captures(substr) {
-            caps
-        } else { break; };
+        let caps = break_opt!(regexen::RE_VALID_SYMBOL.captures(substr));
 
         if caps.len() < 2 { break; }
 
-        let symbol_range = if let Some(range) = caps.pos(1) {
-            range
-        } else { break; };
+        let symbol_range = break_opt!(caps.pos(1));
 
         let current_cursor = cursor;
         cursor += symbol_range.1;
