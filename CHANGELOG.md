@@ -15,6 +15,7 @@
   - New function `hashtag_entities` to parse just hashtags from given text
   - New function `symbol_entities` to parse just cashtags from given text
   - New function `reply_mention_entity` to parse a screen name if the given text is a reply
+  - New function `entities` to parse out all of the above
 
 ### Changed
 - `Place::contained_within` is now a `Option<Vec<Place>>`, because I had the wrong type for that before

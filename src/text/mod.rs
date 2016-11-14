@@ -58,7 +58,7 @@ use unicode_normalization::UnicodeNormalization;
 mod regexen;
 
 ///Represents the kinds of entities that can be extracted from a given text.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub enum EntityKind {
     ///A URL.
     Url,
@@ -73,7 +73,7 @@ pub enum EntityKind {
 }
 
 ///Represents an entity extracted from a given text.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct Entity {
     ///The kind of entity that was extracted.
     pub kind: EntityKind,
@@ -82,6 +82,39 @@ pub struct Entity {
     ///character after the extracted entity (or one past the end of the string if the entity was at
     ///the end of the string). For hashtags and symbols, the range includes the # or $ character.
     pub range: (usize, usize),
+}
+
+///Parses the given string for all entities: URLs, hashtags, financial symbols ("cashtags"), user
+///mentions, and list mentions.
+pub fn entities(text: &str) -> Vec<Entity> {
+    if text.is_empty() {
+        return Vec::new();
+    }
+
+    let mut results = url_entities(text);
+
+    let urls = results.clone();
+
+    results.extend(extract_hashtags(text, &urls));
+    results.extend(extract_symbols(text, &urls));
+
+    for mention in mention_list_entities(text) {
+        let mut found = false;
+
+        for existing in &results {
+            if mention.range.0 <= existing.range.1 && existing.range.0 <= mention.range.1 {
+                found = true;
+                break;
+            }
+        }
+
+        if !found {
+            results.push(mention);
+        }
+    }
+
+    results.sort();
+    results
 }
 
 ///Parses the given string for URLs.

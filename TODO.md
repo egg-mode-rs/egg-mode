@@ -188,4 +188,4 @@ Objective-C implementation, which has a much more trimmed-down interface.
 - [x] "extract user mention entities" (`text::mention_entities`)
 - [x] "extract user and list mention entities" (`text::mention_list_entities`)
 - [x] "extract leading mention from reply" (`text::reply_mention_entity`)
-- [ ] "extract all entities"
+- [x] "extract all entities" (`text::entities`)
