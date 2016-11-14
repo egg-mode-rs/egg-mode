@@ -343,6 +343,11 @@ macro_rules! valid_mention_or_list {
                 "(/[a-zA-Z][a-zA-Z0-9_-]{0,24})?")
     };
 }
+macro_rules! valid_reply {
+    () => {
+        concat!(r"\A(?:[", unicode_spaces!(), "])*", at_signs!(), "([a-zA-Z0-9_]{1,20})")
+    };
+}
 
 ///Character class substring containing special characters that can appear within a hashtag.
 macro_rules! hashtag_special_chars {
@@ -420,6 +425,8 @@ lazy_static! {
         RegexBuilder::new(valid_special_short_domain!()).case_insensitive(true).compile().unwrap();
     pub static ref RE_VALID_MENTION_OR_LIST: Regex =
         RegexBuilder::new(valid_mention_or_list!()).case_insensitive(true).compile().unwrap();
+    pub static ref RE_VALID_REPLY: Regex =
+        RegexBuilder::new(valid_reply!()).case_insensitive(true).compile().unwrap();
     pub static ref RE_END_MENTION: Regex =
         RegexBuilder::new(end_mention_match!()).case_insensitive(true).compile().unwrap();
     pub static ref RE_VALID_HASHTAG: Regex =

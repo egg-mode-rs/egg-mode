@@ -43,6 +43,16 @@ macro_rules! continue_opt {
     }};
 }
 
+///A convenience macro to unwrap a given Option or return None from the containining function.
+macro_rules! try_opt {
+    ($input:expr) => {{
+        if let Some(val) = $input {
+            val
+        }
+        else { return None; }
+    }};
+}
+
 use unicode_normalization::UnicodeNormalization;
 
 mod regexen;
@@ -253,6 +263,29 @@ pub fn mention_entities(text: &str) -> Vec<Entity> {
     results.retain(|e| e.kind == EntityKind::ScreenName);
 
     results
+}
+
+///Parses the given string for a user mention at the beginning of the text, if present.
+pub fn reply_mention_entity(text: &str) -> Option<Entity> {
+    if text.is_empty() {
+        return None;
+    }
+
+    let caps = try_opt!(regexen::RE_VALID_REPLY.captures(text));
+    if caps.len() < 2 {
+        return None;
+    }
+
+    let reply_range = try_opt!(caps.pos(1));
+
+    if regexen::RE_END_MENTION.is_match(&text[reply_range.1..]) {
+        return None;
+    }
+
+    Some(Entity {
+        kind: EntityKind::ScreenName,
+        range: reply_range,
+    })
 }
 
 ///Parses the given string for hashtags, optionally leaving out those that are part of URLs.
