@@ -21,3 +21,6 @@ chrono = "0.2.25"
 regex = "0.1.77"
 lazy_static = "0.2.1"
 unicode-normalization = "0.1.2"
+
+[dev-dependencies]
+yaml-rust = "0.3.4"

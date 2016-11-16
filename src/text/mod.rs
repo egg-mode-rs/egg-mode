@@ -58,7 +58,7 @@ use unicode_normalization::UnicodeNormalization;
 mod regexen;
 
 ///Represents the kinds of entities that can be extracted from a given text.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
 pub enum EntityKind {
     ///A URL.
     Url,
@@ -73,7 +73,7 @@ pub enum EntityKind {
 }
 
 ///Represents an entity extracted from a given text.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
 pub struct Entity {
     ///The kind of entity that was extracted.
     pub kind: EntityKind,
@@ -423,30 +423,23 @@ fn extract_symbols(text: &str, url_entities: &[Entity]) -> Vec<Entity> {
     }
 
     let mut results = Vec::new();
-    let mut cursor = 0usize;
 
-    loop {
-        if cursor >= text.len() {
-            break;
-        }
-
-        let substr = &text[cursor..];
-
-        let caps = break_opt!(regexen::RE_VALID_SYMBOL.captures(substr));
-
+    for caps in regexen::RE_VALID_SYMBOL.captures_iter(text) {
         if caps.len() < 2 { break; }
 
+        let text_range = break_opt!(caps.pos(0));
         let symbol_range = break_opt!(caps.pos(1));
-
-        let current_cursor = cursor;
-        cursor += symbol_range.1;
-
         let mut match_ok = true;
 
+        //check the text after the match to see if it's valid; this is because i can't use
+        //lookahead assertions in the regex crate and this is how it's implemented in the obj-c
+        //version
+        if !regexen::RE_END_SYMBOL.is_match(&text[text_range.1..]) {
+            match_ok = false;
+        }
+
         for url in url_entities {
-            if (symbol_range.0 + current_cursor) <= url.range.1 &&
-                url.range.0 <= (symbol_range.1 + current_cursor)
-            {
+            if symbol_range.0 <= url.range.1 && url.range.0 <= symbol_range.1 {
                 //this symbol is part of a url in the same text, skip it
                 match_ok = false;
                 break;
@@ -456,7 +449,7 @@ fn extract_symbols(text: &str, url_entities: &[Entity]) -> Vec<Entity> {
         if match_ok {
             results.push(Entity {
                 kind: EntityKind::Symbol,
-                range: (symbol_range.0 + current_cursor, symbol_range.1 + current_cursor),
+                range: symbol_range,
             });
         }
     }
@@ -498,4 +491,77 @@ pub fn character_count(text: &str, http_url_len: i32, https_url_len: i32) -> usi
 ///text.
 pub fn characters_remaining(text: &str, http_url_len: i32, https_url_len: i32) -> usize {
     140 - character_count(text, http_url_len, https_url_len)
+}
+
+#[cfg(test)]
+mod test {
+    extern crate yaml_rust;
+    use super::*;
+
+    use std::collections::HashSet;
+
+    const EXTRACT: &'static str = include_str!("extract.yml");
+
+    #[test]
+    fn extract() {
+        let tests = yaml_rust::YamlLoader::load_from_str(EXTRACT).unwrap();
+        let tests = tests.first().unwrap();
+        let ref tests = tests["tests"];
+
+        assert!(tests.as_hash().is_some(), "could not load tests document");
+
+        for test in tests["cashtags"].as_vec().expect("tests 'cashtags' could not be loaded") {
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_vec().expect("test was missing 'expected'");
+            let expected = expected.iter()
+                                   .map(|s| s.as_str().expect("non-string found in 'expected'"))
+                                   .collect::<HashSet<_>>();
+            let actual = symbol_entities(text, true).into_iter().map(|e| text[e.range.0..e.range.1].trim_matches('$')).collect::<HashSet<_>>();
+
+            for extra in actual.difference(&expected) {
+                panic!("test \"{}\" failed on text \"{}\": extracted erroneous symbol \"{}\"",
+                       description, text, extra);
+            }
+
+            for missed in expected.difference(&actual) {
+                panic!("test \"{}\" failed on text \"{}\": did not extract symbol \"{}\"",
+                       description, text, missed);
+            }
+        }
+
+        for test in tests["cashtags_with_indices"].as_vec().expect("tests 'cashtags_with_indices' could not be loaded") {
+            fn cashtag_pair(input: &yaml_rust::Yaml) -> (&str, [usize; 2]) {
+                let tag = input["cashtag"].as_str().expect("test was missing 'expected.cashtag'");
+                let indices = input["indices"].as_vec().expect("test was missing 'expected.indices'");
+                let indices = indices.iter()
+                                     .map(|it| it.as_i64().expect("'expected.indices' was not an int") as usize)
+                                     .collect::<Vec<_>>();
+
+                (tag, [indices[0], indices[1]])
+            }
+
+            fn cashtag_entity<'a>(input: Entity, text: &'a str) -> (&'a str, [usize; 2]) {
+                (text[input.range.0..input.range.1].trim_matches('$'), [input.range.0, input.range.1])
+            }
+
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_vec().expect("test was missing 'expected'");
+            let expected = expected.iter().map(cashtag_pair).collect::<HashSet<_>>();
+            let actual = symbol_entities(text, true).into_iter()
+                                                    .map(|s| cashtag_entity(s, text))
+                                                    .collect::<HashSet<_>>();
+
+            for extra in actual.difference(&expected) {
+                panic!("test \"{}\" failed on text \"{}\": extracted erroneous symbol \"{:?}\"",
+                       description, text, extra);
+            }
+
+            for missed in expected.difference(&actual) {
+                panic!("test \"{}\" failed on text \"{}\": did not extract symbol \"{:?}\"",
+                       description, text, missed);
+            }
+        }
+    }
 }

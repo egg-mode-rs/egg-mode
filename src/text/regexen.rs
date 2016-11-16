@@ -403,9 +403,12 @@ macro_rules! symbol {
 macro_rules! valid_symbol {
     () => {
         concat!("(?:^|[", unicode_spaces!(), "])",
-                r"(\$", symbol!(), ")",
-                r"(?:$|\s|[", punctuation_chars!(), "])")
+                r"(\$", symbol!(), ")")
     };
+}
+///Regex matching characters that can appear after a financial symbol ("cashtag").
+macro_rules! end_symbol_match {
+    () => { concat!(r"\A(?:$|\s|[", punctuation_chars!(), "])") };
 }
 
 lazy_static! {
@@ -437,4 +440,6 @@ lazy_static! {
         Regex::new(hashtag_invalid_initial_chars!()).unwrap();
     pub static ref RE_VALID_SYMBOL: Regex =
         RegexBuilder::new(valid_symbol!()).case_insensitive(true).compile().unwrap();
+    pub static ref RE_END_SYMBOL: Regex =
+        RegexBuilder::new(end_symbol_match!()).case_insensitive(true).compile().unwrap();
 }
