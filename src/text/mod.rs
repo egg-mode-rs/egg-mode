@@ -257,7 +257,12 @@ pub fn mention_list_entities(text: &str) -> Vec<Entity> {
         }
         else {
             //Avoid matching the second username in @username@username
-            cursor += 1;
+            cursor += if let Some(ch) = text[cursor..].chars().next() {
+                ch.len_utf8()
+            }
+            else {
+                1
+            };
         }
     }
 
@@ -650,6 +655,146 @@ mod test {
             for missed in expected.difference(&actual) {
                 panic!("test \"{}\" failed on text \"{}\": did not extract hashtag \"{:?}\"",
                        description, text, missed);
+            }
+        }
+
+        for test in tests["mentions"].as_vec().expect("tests 'mentions' could not be loaded") {
+            fn is_at(input: char) -> bool {
+                match input {
+                    '@' | '＠' => true,
+                    _ => false,
+                }
+            }
+
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_vec().expect("test was missing 'expected'");
+            let expected = expected.iter()
+                                   .map(|s| s.as_str().expect("non-string found in 'expected'"))
+                                   .collect::<HashSet<_>>();
+            let actual = mention_entities(text).into_iter()
+                                               .map(|e| text[e.range.0..e.range.1].trim_matches(is_at))
+                                               .collect::<HashSet<_>>();
+
+            for extra in actual.difference(&expected) {
+                panic!("test \"{}\" failed on text \"{}\": extracted erroneous mention \"{}\"",
+                       description, text, extra);
+            }
+
+            for missed in expected.difference(&actual) {
+                panic!("test \"{}\" failed on text \"{}\": did not extract mention \"{}\"",
+                       description, text, missed);
+            }
+        }
+
+        for test in tests["mentions_with_indices"].as_vec().expect("tests 'mentions_with_indices' could not be loaded") {
+            fn is_at(input: char) -> bool {
+                match input {
+                    '@' | '＠' => true,
+                    _ => false,
+                }
+            }
+
+            fn mention_pair(input: &yaml_rust::Yaml) -> (&str, [usize; 2]) {
+                let name = input["screen_name"].as_str().expect("test was missing 'expected.screen_name'");
+                let indices = input["indices"].as_vec().expect("test was missing 'expected.indices'");
+                let indices = indices.iter()
+                                     .map(|it| it.as_i64().expect("'expected.indices' was not an int") as usize)
+                                     .collect::<Vec<_>>();
+
+                (name, [indices[0], indices[1]])
+            }
+
+            fn mention_entity<'a>(input: Entity, text: &'a str) -> (&'a str, [usize; 2]) {
+                (text[input.range.0..input.range.1].trim_matches(is_at),
+                 [byte_to_char(text, input.range.0), byte_to_char(text, input.range.1)])
+            }
+
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_vec().expect("test was missing 'expected'");
+            let expected = expected.iter().map(mention_pair).collect::<HashSet<_>>();
+            let actual = mention_entities(text).into_iter()
+                                               .map(|e| mention_entity(e, text))
+                                               .collect::<HashSet<_>>();
+
+            for extra in actual.difference(&expected) {
+                panic!("test \"{}\" failed on text \"{}\": extracted erroneous mention \"{:?}\"",
+                       description, text, extra);
+            }
+
+            for missed in expected.difference(&actual) {
+                panic!("test \"{}\" failed on text \"{}\": did not extract mention \"{:?}\"",
+                       description, text, missed);
+            }
+        }
+
+        for test in tests["mentions_or_lists_with_indices"].as_vec().expect("tests 'mentions_or_lists_with_indices' could not be loaded") {
+            fn is_at(input: char) -> bool {
+                match input {
+                    '@' | '＠' => true,
+                    _ => false,
+                }
+            }
+
+            fn mention_pair(input: &yaml_rust::Yaml) -> (String, [usize; 2]) {
+                let name = input["screen_name"].as_str().expect("test was missing 'expected.screen_name'");
+                let list = input["list_slug"].as_str().expect("test was missing 'expected.list_slug'");
+                let name = name.to_owned() + list;
+                let indices = input["indices"].as_vec().expect("test was missing 'expected.indices'");
+                let indices = indices.iter()
+                                     .map(|it| it.as_i64().expect("'expected.indices' was not an int") as usize)
+                                     .collect::<Vec<_>>();
+
+                (name, [indices[0], indices[1]])
+            }
+
+            fn mention_entity(input: Entity, text: &str) -> (String, [usize; 2]) {
+                (text[input.range.0..input.range.1].trim_matches(is_at).to_owned(),
+                 [byte_to_char(text, input.range.0), byte_to_char(text, input.range.1)])
+            }
+
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_vec().expect("test was missing 'expected'");
+            let expected = expected.iter().map(mention_pair).collect::<HashSet<_>>();
+            let actual = mention_list_entities(text).into_iter()
+                                                    .map(|e| mention_entity(e, text))
+                                                    .collect::<HashSet<_>>();
+
+            for extra in actual.difference(&expected) {
+                panic!("test \"{}\" failed on text \"{}\": extracted erroneous mention \"{:?}\"",
+                       description, text, extra);
+            }
+
+            for missed in expected.difference(&actual) {
+                panic!("test \"{}\" failed on text \"{}\": did not extract mention \"{:?}\"",
+                       description, text, missed);
+            }
+        }
+
+        for test in tests["replies"].as_vec().expect("tests 'replies' could not be loaded") {
+            use self::yaml_rust::Yaml;
+
+            fn is_at(input: char) -> bool {
+                match input {
+                    '@' | '＠' => true,
+                    _ => false,
+                }
+            }
+
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = match test["expected"] {
+                Yaml::String(ref val) => Some(&val[..]),
+                Yaml::Null | Yaml::BadValue => None,
+                _ => panic!("unexpected value for 'expected'"),
+            };
+            let actual = reply_mention_entity(text).map(|s| text[s.range.0..s.range.1].trim_matches(is_at));
+
+            if expected != actual {
+                panic!("test \"{}\" failed on text \"{}\": expected '{:?}', exracted '{:?}'",
+                       description, text, expected, actual);
             }
         }
     }
