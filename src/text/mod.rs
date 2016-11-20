@@ -124,11 +124,18 @@ pub fn url_entities(text: &str) -> Vec<Entity> {
     }
 
     let mut results: Vec<Entity> = Vec::new();
+    let mut cursor = 0;
 
-    for caps in regexen::RE_SIMPLIFIED_VALID_URL.captures_iter(text) {
+    while cursor < text.len() {
+        let substr = &text[cursor..];
+        let current_cursor = cursor;
+
+        let caps = break_opt!(regexen::RE_SIMPLIFIED_VALID_URL.captures(substr));
         if caps.len() < 9 {
             break;
         }
+
+        cursor += caps.pos(0).unwrap().1;
 
         let preceding_text = caps.at(2);
         let url_range = caps.pos(3);
@@ -140,7 +147,7 @@ pub fn url_entities(text: &str) -> Vec<Entity> {
         //domains.
         if protocol_range.is_none() {
             if let Some(preceding) = preceding_text {
-                if regexen::RE_URL_WO_PROTOCOL_INVALID_PRECEDING_CHARS.is_match(preceding) {
+                if !preceding.is_empty() && regexen::RE_URL_WO_PROTOCOL_INVALID_PRECEDING_CHARS.is_match(preceding) {
                     continue;
                 }
             }
@@ -151,26 +158,28 @@ pub fn url_entities(text: &str) -> Vec<Entity> {
 
             while domain_range.0 < domain_range.1 {
                 //include succeeding character for validation
-                let extra_char = if let Some(ch) = text[domain_range.1..].chars().next() {
+                let extra_char = if let Some(ch) = substr[domain_range.1..].chars().next() {
                     ch.len_utf8()
                 }
                 else {
                     0
                 };
 
-                let domain_test = &text[domain_range.0..(domain_range.1+extra_char)];
+                let domain_test = &substr[domain_range.0..(domain_range.1+extra_char)];
                 let caps = break_opt!(regexen::RE_VALID_ASCII_DOMAIN.captures(domain_test));
                 let url_range = break_opt!(caps.pos(1));
+                let ascii_url = &domain_test[url_range.0..url_range.1];
 
                 if path_range.is_some() ||
-                   regexen::RE_VALID_SPECIAL_SHORT_DOMAIN.is_match(&domain_test[url_range.0..url_range.1]) ||
-                   !regexen::RE_INVALID_SHORT_DOMAIN.is_match(&domain_test[url_range.0..url_range.1])
+                   regexen::RE_VALID_SPECIAL_SHORT_DOMAIN.is_match(ascii_url) ||
+                   !regexen::RE_INVALID_SHORT_DOMAIN.is_match(ascii_url)
                 {
                     loop_inserted = true;
 
                     results.push(Entity {
                         kind: EntityKind::Url,
-                        range: (url_range.0 + domain_range.0, url_range.1 + domain_range.0),
+                        range: (current_cursor + domain_range.0 + url_range.0,
+                                current_cursor + domain_range.0 + url_range.1),
                     });
                 }
 
@@ -183,10 +192,12 @@ pub fn url_entities(text: &str) -> Vec<Entity> {
 
             if let Some(last_entity) = results.last_mut() {
                 if let Some(path_range) = path_range {
-                    if last_entity.range.1 == path_range.0 {
+                    if last_entity.range.1 == (current_cursor + path_range.0) {
                         last_entity.range.1 += path_range.1 - path_range.0;
                     }
                 }
+
+                cursor = last_entity.range.1;
             }
         }
         else {
@@ -194,16 +205,17 @@ pub fn url_entities(text: &str) -> Vec<Entity> {
             let domain_range = continue_opt!(domain_range);
 
             //in case of t.co URLs, don't allow additional path characters
-            if let Some((_, to)) = regexen::RE_VALID_TCO_URL.find(&text[url_range.0..url_range.1]) {
-                url_range.1 = to;
+            if let Some((_, to)) = regexen::RE_VALID_TCO_URL.find(&substr[url_range.0..url_range.1]) {
+                url_range.1 = url_range.0 + to;
             }
-            else if !regexen::RE_URL_FOR_VALIDATION.is_match(&text[domain_range.0..domain_range.1]) {
+            else if !regexen::RE_URL_FOR_VALIDATION.is_match(&substr[domain_range.0..domain_range.1]) {
                 continue;
             }
 
             results.push(Entity {
                 kind: EntityKind::Url,
-                range: url_range,
+                range: (current_cursor + url_range.0,
+                        current_cursor + url_range.1),
             });
         }
     }
@@ -795,6 +807,63 @@ mod test {
             if expected != actual {
                 panic!("test \"{}\" failed on text \"{}\": expected '{:?}', exracted '{:?}'",
                        description, text, expected, actual);
+            }
+        }
+
+        for test in tests["urls"].as_vec().expect("tests 'urls' could not be loaded") {
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_vec().expect("test was missing 'expected'");
+            let expected = expected.iter()
+                                   .map(|s| s.as_str().expect("non-string found in 'expected'"))
+                                   .collect::<HashSet<_>>();
+            let actual = url_entities(text).into_iter()
+                                               .map(|e| &text[e.range.0..e.range.1])
+                                               .collect::<HashSet<_>>();
+
+            for extra in actual.difference(&expected) {
+                panic!("test \"{}\" failed on text \"{}\": extracted erroneous url \"{}\"",
+                       description, text, extra);
+            }
+
+            for missed in expected.difference(&actual) {
+                panic!("test \"{}\" failed on text \"{}\": did not extract url \"{}\"",
+                       description, text, missed);
+            }
+        }
+
+        for test in tests["urls_with_indices"].as_vec().expect("tests 'urls_with_indices' could not be loaded") {
+            fn url_pair(input: &yaml_rust::Yaml) -> (&str, [usize; 2]) {
+                let name = input["url"].as_str().expect("test was missing 'expected.url'");
+                let indices = input["indices"].as_vec().expect("test was missing 'expected.indices'");
+                let indices = indices.iter()
+                                     .map(|it| it.as_i64().expect("'expected.indices' was not an int") as usize)
+                                     .collect::<Vec<_>>();
+
+                (name, [indices[0], indices[1]])
+            }
+
+            fn url_entity<'a>(input: Entity, text: &'a str) -> (&'a str, [usize; 2]) {
+                (&text[input.range.0..input.range.1],
+                 [byte_to_char(text, input.range.0), byte_to_char(text, input.range.1)])
+            }
+
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_vec().expect("test was missing 'expected'");
+            let expected = expected.iter().map(url_pair).collect::<HashSet<_>>();
+            let actual = url_entities(text).into_iter()
+                                           .map(|e| url_entity(e, text))
+                                           .collect::<HashSet<_>>();
+
+            for extra in actual.difference(&expected) {
+                panic!("test \"{}\" failed on text \"{}\": extracted erroneous url \"{:?}\"",
+                       description, text, extra);
+            }
+
+            for missed in expected.difference(&actual) {
+                panic!("test \"{}\" failed on text \"{}\": did not extract url \"{:?}\"",
+                       description, text, missed);
             }
         }
     }

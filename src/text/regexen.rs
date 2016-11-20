@@ -246,8 +246,8 @@ macro_rules! simplified_valid_domain {
 macro_rules! valid_ascii_domain {
     () => {
         concat!("(",
-                    r"(?:[-a-zA-Z0-9][a-zA-Z0-9_", latin_accents!(), r"]*\.)+",
-                    "(?:", valid_gtld!(), "|", valid_cctld!(), valid_punycode!(), ")",
+                    r"(?:[a-zA-Z0-9][-a-zA-Z0-9_", latin_accents!(), r"]*\.)+",
+                    "(?:", valid_gtld!(), "|", valid_cctld!(), "|", valid_punycode!(), ")",
                 ")",
                 "(?:[^0-9a-z@]|$)")
     };
@@ -419,7 +419,7 @@ lazy_static! {
     pub static ref RE_URL_FOR_VALIDATION: Regex =
         RegexBuilder::new(url_domain_for_validation!()).case_insensitive(true).compile().unwrap();
     pub static ref RE_URL_WO_PROTOCOL_INVALID_PRECEDING_CHARS: Regex =
-        Regex::new("[-_./]$").unwrap();
+        Regex::new(r"[-_./]\z").unwrap();
     pub static ref RE_VALID_ASCII_DOMAIN: Regex =
         RegexBuilder::new(valid_ascii_domain!()).case_insensitive(true).compile().unwrap();
     pub static ref RE_INVALID_SHORT_DOMAIN: Regex =
