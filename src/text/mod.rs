@@ -477,7 +477,8 @@ pub fn character_count(text: &str, http_url_len: i32, https_url_len: i32) -> (us
         text.drain(url.range.0..url.range.1);
     }
 
-    let len = text.len() + url_offset;
+    //make sure to count codepoints, not bytes
+    let len = text.chars().count() + url_offset;
 
     (len, len > 0 && len <= 140)
 }
@@ -497,9 +498,10 @@ mod test {
 
     use std::collections::HashSet;
 
-    //file copied from https://github.com/twitter/twitter-text/tree/master/conformance
+    //files copied from https://github.com/twitter/twitter-text/tree/master/conformance
     //as of 2016-11-14
     const EXTRACT: &'static str = include_str!("extract.yml");
+    const VALIDATE: &'static str = include_str!("validate.yml");
 
     fn byte_to_char(text: &str, byte_offset: usize) -> usize {
         if byte_offset == text.len() {
@@ -870,6 +872,40 @@ mod test {
                 panic!("test \"{}\" failed on text \"{}\": did not extract url \"{:?}\"",
                        description, text, missed);
             }
+        }
+    }
+
+    #[test]
+    fn validate() {
+        let tests = yaml_rust::YamlLoader::load_from_str(VALIDATE).unwrap();
+        let tests = tests.first().unwrap();
+        let ref tests = tests["tests"];
+
+        assert!(tests.as_hash().is_some(), "could not load tests document");
+
+        for test in tests["tweets"].as_vec().expect("tests 'tweets' could not be loaded") {
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_bool().expect("test was missing 'expected'");
+
+            //23 is the default character count in the obj-c implementation, tho at time of writing
+            //(2016-11-21) i think these lengths have bumped up to 24
+            let (count, is_valid) = character_count(text, 23, 23);
+
+            assert_eq!(expected, is_valid, "test '{}' failed with text '{}', counted {} characters",
+                       description, text, count);
+        }
+
+        for test in tests["lengths"].as_vec().expect("tests 'lengths' could not be loaded") {
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_i64().expect("test was missing 'expected'");
+
+            //23 is the default character count in the obj-c implementation, tho at time of writing
+            //(2016-11-21) i think these lengths have bumped up to 24
+            let (count, _) = character_count(text, 23, 23);
+
+            assert_eq!(expected as usize, count, "test '{}' failed with text '{}'", description, text);
         }
     }
 }
