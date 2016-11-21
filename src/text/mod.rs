@@ -907,5 +907,49 @@ mod test {
 
             assert_eq!(expected as usize, count, "test '{}' failed with text '{}'", description, text);
         }
+
+        for test in tests["usernames"].as_vec().expect("tests 'usernames' could not be loaded") {
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_bool().expect("test was missing 'expected'");
+
+            let actual = mention_entities(text);
+
+            match actual.first() {
+                Some(entity) => {
+                    let name = &text[entity.range.0..entity.range.1];
+                    if (name == text) != expected {
+                        panic!("test '{}' failed: extracted username '{}' from '{}' failed to match expectation {}",
+                               description, name, text, expected);
+                    }
+                },
+                None => if expected {
+                    panic!("test '{}' failed: failed to extract valid username from '{}'",
+                           description, text);
+                },
+            }
+        }
+
+        for test in tests["lists"].as_vec().expect("tests 'lists' could not be loaded") {
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_bool().expect("test was missing 'expected'");
+
+            let actual = mention_list_entities(text);
+
+            match actual.first() {
+                Some(entity) if entity.kind == EntityKind::ListName => {
+                    let name = &text[entity.range.0..entity.range.1];
+                    if (name == text) != expected {
+                        panic!("test '{}' failed: extracted list name '{}' from '{}' failed to match expectation {}",
+                               description, name, text, expected);
+                    }
+                },
+                _ => if expected {
+                    panic!("test '{}' failed: failed to extract valid list name from '{}'",
+                           description, text);
+                },
+            }
+        }
     }
 }
