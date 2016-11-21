@@ -449,13 +449,14 @@ fn extract_symbols(text: &str, url_entities: &[Entity]) -> Vec<Entity> {
     results
 }
 
-///Returns how many characters the given text would be, after accounting for URL shortening.
-pub fn character_count(text: &str, http_url_len: i32, https_url_len: i32) -> usize {
+///Returns how many characters the given text would be, after accounting for URL shortening. Also
+///returns an indicator of whether the given text is a valid length for a tweet.
+pub fn character_count(text: &str, http_url_len: i32, https_url_len: i32) -> (usize, bool) {
     //twitter uses code point counts after NFC normalization
     let mut text = text.nfc().collect::<String>();
 
     if text.is_empty() {
-        return 0;
+        return (0, false);
     }
 
     let mut url_offset = 0usize;
@@ -476,13 +477,17 @@ pub fn character_count(text: &str, http_url_len: i32, https_url_len: i32) -> usi
         text.drain(url.range.0..url.range.1);
     }
 
-    text.len() + url_offset
+    let len = text.len() + url_offset;
+
+    (len, len > 0 && len <= 140)
 }
 
 ///Returns how many characters would remain in a traditional 140-character tweet with the given
-///text.
-pub fn characters_remaining(text: &str, http_url_len: i32, https_url_len: i32) -> usize {
-    140 - character_count(text, http_url_len, https_url_len)
+///text. Also returns an indicator of whether the given text is a valid length for a tweet.
+pub fn characters_remaining(text: &str, http_url_len: i32, https_url_len: i32) -> (usize, bool) {
+    let (len, is_valid) = character_count(text, http_url_len, https_url_len);
+
+    (140 - len, is_valid)
 }
 
 #[cfg(test)]
