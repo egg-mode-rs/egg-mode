@@ -175,12 +175,6 @@ them.
 
 ## [twitter-text](https://github.com/twitter/twitter-text)
 
-From various excursions into the official twitter-text implementations, it seems that the JavaScript
-version of twitter-text includes some helper functions to auto-format URLs and possibly other
-HTML-focused helper functions. Upon request, I could include some or all of these helpers (if I had
-some guidance about the requested methods `>_>`). The functions listed below are based on the
-Objective-C implementation, which has a much more trimmed-down interface.
-
 - [x] "character count" (`text::character_count`, `text::characters_remaining`)
 - [x] "extract URL entities" (`text::url_entities`)
 - [x] "extract hashtag entities" (`text::hashtag_entities`)
@@ -189,3 +183,5 @@ Objective-C implementation, which has a much more trimmed-down interface.
 - [x] "extract user and list mention entities" (`text::mention_list_entities`)
 - [x] "extract leading mention from reply" (`text::reply_mention_entity`)
 - [x] "extract all entities" (`text::entities`)
+- [ ] "given text, insert hyperlinks for URLs/mentions/hashtags/cashtags"
+- [ ] "given text and tweet entities, insert hyperlinks for URLS/mentions/hashtags/cashtags"
