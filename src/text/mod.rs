@@ -502,6 +502,7 @@ mod test {
     //as of 2016-11-14
     const EXTRACT: &'static str = include_str!("extract.yml");
     const VALIDATE: &'static str = include_str!("validate.yml");
+    const TLDS: &'static str = include_str!("tlds.yml");
 
     fn byte_to_char(text: &str, byte_offset: usize) -> usize {
         if byte_offset == text.len() {
@@ -971,6 +972,55 @@ mod test {
                     panic!("test '{}' failed: failed to extract valid hashtag from '{}'",
                            description, text);
                 },
+            }
+        }
+    }
+
+    #[test]
+    fn tlds() {
+        let tests = yaml_rust::YamlLoader::load_from_str(TLDS).unwrap();
+        let tests = tests.first().unwrap();
+        let ref tests = tests["tests"];
+
+        assert!(tests.as_hash().is_some(), "could not load tests document");
+
+        for test in tests["country"].as_vec().expect("tests 'country' could not be loaded") {
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_vec().expect("test was missing 'expected'");
+            let expected = expected.iter()
+                                   .map(|s| s.as_str().expect("non-string found in 'expected'"))
+                                   .collect::<HashSet<_>>();
+            let actual = url_entities(text).into_iter().map(|e| &text[e.range.0..e.range.1]).collect::<HashSet<_>>();
+
+            for extra in actual.difference(&expected) {
+                panic!("test \"{}\" failed on text \"{}\": extracted erroneous symbol \"{}\"",
+                       description, text, extra);
+            }
+
+            for missed in expected.difference(&actual) {
+                panic!("test \"{}\" failed on text \"{}\": did not extract symbol \"{}\"",
+                       description, text, missed);
+            }
+        }
+
+        for test in tests["generic"].as_vec().expect("tests 'generic' could not be loaded") {
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_vec().expect("test was missing 'expected'");
+            let expected = expected.iter()
+                                   .map(|s| s.as_str().expect("non-string found in 'expected'"))
+                                   .collect::<HashSet<_>>();
+            let actual = url_entities(text).into_iter().map(|e| &text[e.range.0..e.range.1]).collect::<HashSet<_>>();
+
+            for extra in actual.difference(&expected) {
+                panic!("test \"{}\" failed on text \"{}\": extracted erroneous symbol \"{}\"",
+                       description, text, extra);
+            }
+
+            for missed in expected.difference(&actual) {
+                panic!("test \"{}\" failed on text \"{}\": did not extract symbol \"{}\"",
+                       description, text, missed);
             }
         }
     }
