@@ -951,5 +951,27 @@ mod test {
                 },
             }
         }
+
+        for test in tests["hashtags"].as_vec().expect("tests 'hashtags' could not be loaded") {
+            let description = test["description"].as_str().expect("test was missing 'description");
+            let text = test["text"].as_str().expect("test was missing 'text'");
+            let expected = test["expected"].as_bool().expect("test was missing 'expected'");
+
+            let actual = hashtag_entities(text, false);
+
+            match actual.first() {
+                Some(entity) => {
+                    let name = &text[entity.range.0..entity.range.1];
+                    if (name == text) != expected {
+                        panic!("test '{}' failed: extracted hashtag '{}' from '{}' failed to match expectation {}",
+                               description, name, text, expected);
+                    }
+                },
+                None => if expected {
+                    panic!("test '{}' failed: failed to extract valid hashtag from '{}'",
+                           description, text);
+                },
+            }
+        }
     }
 }
