@@ -1,6 +1,6 @@
 # Changelog for egg-mode
 
-## Pending
+## [0.7.0] - 2016-11-30
 ### Added
 - New iterator structs `ResponseIterRef` and `ResponseIterMut` to iterate over
   references in a response
