@@ -1,27 +1,25 @@
 //! Helper methods for character counting and entity extraction.
 //!
-//! According to the official twitter-text Objective-C implementation [(GitHub)][twitter-text], the
-//! publicly-exported methods are the following:
+//! This is an implementation of the [twitter-text][] library that Twitter makes available as
+//! reference code to demonstrate how they count characters in tweets and parse links, hashtags,
+//! and user mentions.
 //!
-//! [twitter-text]: https://github.com/twitter/twitter-text/tree/master/objc
+//! [twitter-text]: https://github.com/twitter/twitter-text
 //!
-//! * `entitiesInText`: string -> array (presumably all extracted entities)
-//! * `urlsInText`: string -> array (presumably all the URLs)
-//! * `hashtagsInText`: string, bool -> array (presumably all the hashtags)
-//!   * boolean `checkingURLOverlap` parameter extracts URLs first and ignores tags it finds
-//!     inside if set (i think?)
-//! * `symbolsInText`: string, bool -> array (presumably all the cashtags)
-//!   * boolean `checkingURLOverlap` parameter extracts URLs first and ignores tags it finds
-//!     inside if set (i think?)
-//! * `mentionedScreenNamesInText`: string -> array (presumably all the mentions)
-//! * `mentionsOrListsInText`: string -> array (presumably like above, but also @user/list slugs
-//!   too)
-//! * `repliedScreenNameInText`: string -> single entity (presumably the first mention if in reply
-//!   position)
+//! The most likely entry point into this module is `character_count` or its close sibling,
+//! `characters_remaining`. These functions parse the given text for URLs and returns a character
+//! count according to [the rules set up by Twitter][character-counting], with the parsed URLs only
+//! accounting for the given short-URL lengths. The remaining `*_entities` functions allow you to
+//! parse a given text to see what entities of a given kind Twitter would extract from it, or for
+//! all entities with the `entities` function.  These can be used, for example, to provide
+//! auto-completion for a screen name or hashtag when composing a tweet.
 //!
-//! * `tweetLength`: string -> int (also includes version with http and https URL lengths)
-//! * `remainingCharacterCount`: string -> int (like above, includes alternate version with URL
-//!   lengths)
+//! [character-counting]: https://dev.twitter.com/basics/counting-characters
+//!
+//! As the entities parsed by this module are simplified compared to the entities returned via the
+//! Twitter API, they have been combined into one simplified `Entity` struct, with a companion
+//! `EntityKind` enum to differentiate between them. See the struct documentation for `Entity` for
+//! examples of how to use one.
 
 ///A convenience macro to break loops if the given value is `None`.
 macro_rules! break_opt {
@@ -73,6 +71,50 @@ pub enum EntityKind {
 }
 
 ///Represents an entity extracted from a given text.
+///
+///This struct is meant to be returned from the entity parsing functions and linked to the source
+///string that was parsed from the function in question. This is because the Entity struct itself
+///only contains byte offsets for the string in question.
+///
+///# Examples
+///
+///To load the string in question, you can use the byte offsets directly, or use the `substr`
+///method on the Entity itself:
+///
+///```rust
+/// use egg_mode::text::hashtag_entities;
+///
+/// let text = "this is a #hashtag";
+/// let results = hashtag_entities(text, true);
+/// let entity = results.first().unwrap();
+///
+/// assert_eq!(&text[entity.range.0..entity.range.1], "#hashtag");
+/// assert_eq!(entity.substr(text), "#hashtag");
+///```
+///
+///Just having the byte offsets may seem like a roundabout way to store the extracted string, but
+///with the byte offsets, you can also substitute in text decoration, like HTML links:
+///
+///```rust
+/// use egg_mode::text::hashtag_entities;
+///
+/// let text = "this is a #hashtag";
+/// let results = hashtag_entities(text, true);
+/// let mut output = String::new();
+/// let mut last_pos = 0;
+///
+/// for entity in results {
+///     output.push_str(&text[last_pos..entity.range.0]);
+///     //NOTE: this doesn't URL-encode the hashtag for the link
+///     let tag = entity.substr(text);
+///     let link = format!("<a href='https://twitter.com/#!/search?q={0}'>{0}</a>", tag);
+///     output.push_str(&link);
+///     last_pos = entity.range.1;
+/// }
+/// output.push_str(&text[last_pos..]);
+///
+/// assert_eq!(output, "this is a <a href='https://twitter.com/#!/search?q=#hashtag'>#hashtag</a>");
+///```
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
 pub struct Entity {
     ///The kind of entity that was extracted.
@@ -84,8 +126,45 @@ pub struct Entity {
     pub range: (usize, usize),
 }
 
+impl Entity {
+    ///Returns the substring matching this entity's byte offsets from the given text.
+    ///
+    ///# Panics
+    ///
+    ///This function will panic if the byte offsets in this entity do not match codepoint
+    ///boundaries in the given text. This can happen if the text is not the original string that
+    ///this entity was parsed from.
+    pub fn substr<'a>(&self, text: &'a str) -> &'a str {
+        &text[self.range.0..self.range.1]
+    }
+}
+
 ///Parses the given string for all entities: URLs, hashtags, financial symbols ("cashtags"), user
 ///mentions, and list mentions.
+///
+///This function is a shorthand for calling `url_entities`, `mention_list_entities`,
+///`hashtag_entities`, and `symbol_entities` before merging the results together into a single Vec.
+///The output is sorted so that entities are in that order (and individual kinds are ordered
+///according to their appearance within the string) before exiting.
+///
+///# Example
+///
+///```rust
+/// use egg_mode::text::{EntityKind, entities};
+///
+/// let text = "sample #text with a link to twitter.com";
+/// let mut results = entities(text).into_iter();
+///
+/// let entity = results.next().unwrap();
+/// assert_eq!(entity.kind, EntityKind::Url);
+/// assert_eq!(entity.substr(text), "twitter.com");
+///
+/// let entity = results.next().unwrap();
+/// assert_eq!(entity.kind, EntityKind::Hashtag);
+/// assert_eq!(entity.substr(text), "#text");
+///
+/// assert_eq!(results.next(), None);
+///```
 pub fn entities(text: &str) -> Vec<Entity> {
     if text.is_empty() {
         return Vec::new();
@@ -118,6 +197,28 @@ pub fn entities(text: &str) -> Vec<Entity> {
 }
 
 ///Parses the given string for URLs.
+///
+///The entities returned from this function can be used to determine whether a url will be
+///automatically shortened with a t.co link (in fact, this function is called from
+///`character_count`), or to automatically add hyperlinks to URLs in a text if it hasn't been sent
+///to Twitter yet.
+///
+///# Example
+///
+///```rust
+/// use egg_mode::text::url_entities;
+///
+/// let text = "sample text with a link to twitter.com and one to rust-lang.org as well";
+/// let mut results = url_entities(text).into_iter();
+///
+/// let entity = results.next().unwrap();
+/// assert_eq!(entity.substr(text), "twitter.com");
+///
+/// let entity = results.next().unwrap();
+/// assert_eq!(entity.substr(text), "rust-lang.org");
+///
+/// assert_eq!(results.next(), None);
+///```
 pub fn url_entities(text: &str) -> Vec<Entity> {
     if text.is_empty() {
         return Vec::new();
@@ -224,6 +325,32 @@ pub fn url_entities(text: &str) -> Vec<Entity> {
 }
 
 ///Parses the given string for user and list mentions.
+///
+///As the parsing rules for user mentions and list mentions, this function is able to extract both
+///kinds at once. To differentiate between the two, check the entity's `kind` field.
+///
+///The entities returned by this function can be used to find mentions for hyperlinking, as well as
+///to provide an autocompletion facility, if the byte-offset position of the cursor is known with
+///relation to the full text.
+///
+///# Example
+///
+///```rust
+/// use egg_mode::text::{EntityKind, mention_list_entities};
+///
+/// let text = "sample text with a mention for @twitter and a link to @rustlang/fakelist";
+/// let mut results = mention_list_entities(text).into_iter();
+///
+/// let entity = results.next().unwrap();
+/// assert_eq!(entity.kind, EntityKind::ScreenName);
+/// assert_eq!(entity.substr(text), "@twitter");
+///
+/// let entity = results.next().unwrap();
+/// assert_eq!(entity.kind, EntityKind::ListName);
+/// assert_eq!(entity.substr(text), "@rustlang/fakelist");
+///
+/// assert_eq!(results.next(), None);
+///```
 pub fn mention_list_entities(text: &str) -> Vec<Entity> {
     if text.is_empty() {
         return Vec::new();
@@ -282,6 +409,25 @@ pub fn mention_list_entities(text: &str) -> Vec<Entity> {
 }
 
 ///Parses the given string for user mentions.
+///
+///This is given as a convenience function for uses where mentions are needed but list mentions are
+///not. This function effectively returns the same set as `mention_list_entities` but with list
+///mentions removed.
+///
+///# Example
+///
+///```rust
+/// use egg_mode::text::{EntityKind, mention_entities};
+///
+/// let text = "sample text with a mention for @twitter and a link to @rustlang/fakelist";
+/// let mut results = mention_entities(text).into_iter();
+///
+/// let entity = results.next().unwrap();
+/// assert_eq!(entity.kind, EntityKind::ScreenName);
+/// assert_eq!(entity.substr(text), "@twitter");
+///
+/// assert_eq!(results.next(), None);
+///```
 pub fn mention_entities(text: &str) -> Vec<Entity> {
     let mut results = mention_list_entities(text);
 
@@ -291,6 +437,26 @@ pub fn mention_entities(text: &str) -> Vec<Entity> {
 }
 
 ///Parses the given string for a user mention at the beginning of the text, if present.
+///
+///This function is provided as a convenience method to see whether the given text counts as a
+///tweet reply. If this function returns `Some` for a given draft tweet, then the final tweet is
+///counted as a direct reply.
+///
+///Note that the entity returned by this function does not include the @-sign at the beginning of
+///the mention.
+///
+///# Examples
+///
+///```rust
+/// use egg_mode::text::reply_mention_entity;
+///
+/// let text = "@rustlang this is a reply";
+/// let reply = reply_mention_entity(text).unwrap();
+/// assert_eq!(reply.substr(text), "rustlang");
+///
+/// let text = ".@rustlang this is not a reply";
+/// assert_eq!(reply_mention_entity(text), None);
+///```
 pub fn reply_mention_entity(text: &str) -> Option<Entity> {
     if text.is_empty() {
         return None;
@@ -314,6 +480,44 @@ pub fn reply_mention_entity(text: &str) -> Option<Entity> {
 }
 
 ///Parses the given string for hashtags, optionally leaving out those that are part of URLs.
+///
+///The entities returned by this function can be used to find hashtags for hyperlinking, as well as
+///to provide an autocompletion facility, if the byte-offset position of the cursor is known with
+///relation to the full text.
+///
+///# Example
+///
+///With the `check_url_overlap` parameter, you can make sure you don't include text anchors from
+///URLs:
+///
+///```rust
+/// use egg_mode::text::hashtag_entities;
+///
+/// let text = "some #hashtag with a link to twitter.com/#anchor";
+/// let mut results = hashtag_entities(text, true).into_iter();
+///
+/// let tag = results.next().unwrap();
+/// assert_eq!(tag.substr(text), "#hashtag");
+///
+/// assert_eq!(results.next(), None);
+///```
+///
+///If you pass `false` for that parameter, it won't parse for URLs to check for overlap:
+///
+///```rust
+/// use egg_mode::text::hashtag_entities;
+///
+/// let text = "some #hashtag with a link to twitter.com/#anchor";
+/// let mut results = hashtag_entities(text, false).into_iter();
+///
+/// let tag = results.next().unwrap();
+/// assert_eq!(tag.substr(text), "#hashtag");
+///
+/// let tag = results.next().unwrap();
+/// assert_eq!(tag.substr(text), "#anchor");
+///
+/// assert_eq!(results.next(), None);
+///```
 pub fn hashtag_entities(text: &str, check_url_overlap: bool) -> Vec<Entity> {
     if text.is_empty() {
         return Vec::new();
@@ -394,6 +598,28 @@ fn extract_hashtags(text: &str, url_entities: &[Entity]) -> Vec<Entity> {
 
 ///Parses the given string for financial symbols ("cashtags"), optionally leaving out those that
 ///are part of URLs.
+///
+///The entities returned by this function can be used to find symbols for hyperlinking, as well as
+///to provide an autocompletion facility, if the byte-offset position of the cursor is known with
+///relation to the full text.
+///
+///The `check_url_overlap` parameter behaves the same way as in `hashtag_entities`; when `true`, it
+///will parse URLs from the text first and check symbols to make sure they don't overlap with any
+///extracted URLs.
+///
+///# Example
+///
+///```rust
+/// use egg_mode::text::symbol_entities;
+///
+/// let text = "some $stock symbol";
+/// let mut results = symbol_entities(text, true).into_iter();
+///
+/// let tag = results.next().unwrap();
+/// assert_eq!(tag.substr(text), "$stock");
+///
+/// assert_eq!(results.next(), None);
+///```
 pub fn symbol_entities(text: &str, check_url_overlap: bool) -> Vec<Entity> {
     if text.is_empty() {
         return Vec::new();
@@ -451,6 +677,32 @@ fn extract_symbols(text: &str, url_entities: &[Entity]) -> Vec<Entity> {
 
 ///Returns how many characters the given text would be, after accounting for URL shortening. Also
 ///returns an indicator of whether the given text is a valid length for a tweet.
+///
+///For the `http_url_len` and `https_url_len` parameters, call [`service::config`][] and use the
+///`short_url_len` and `short_url_len_https` fields on the struct that's returned. If you want to
+///perform these checks offline, twitter-text's sample code and tests assume 23 characters for both
+///sizes. At the time of this writing (2016-11-28), those numbers were also being returned from the
+///service itself.
+///
+///[`service::config`]: ../service/fn.config.html
+///
+///# Examples
+///
+///```rust
+/// use egg_mode::text::character_count;
+///
+/// let (count, _) = character_count("This is a test.", 23, 23);
+/// assert_eq!(count, 15);
+///
+/// // URLs get replaced by a t.co URL of the given length
+/// let (count, _) = character_count("test.com", 23, 23);
+/// assert_eq!(count, 23);
+///
+/// // Multiple URLs get shortened individually
+/// let (count, _) =
+///     character_count("Test https://test.com test https://test.com test.com test", 23, 23);
+/// assert_eq!(count, 86);
+///```
 pub fn character_count(text: &str, http_url_len: i32, https_url_len: i32) -> (usize, bool) {
     //twitter uses code point counts after NFC normalization
     let mut text = text.nfc().collect::<String>();
@@ -485,6 +737,42 @@ pub fn character_count(text: &str, http_url_len: i32, https_url_len: i32) -> (us
 
 ///Returns how many characters would remain in a traditional 140-character tweet with the given
 ///text. Also returns an indicator of whether the given text is a valid length for a tweet.
+///
+///This function exists as a sort of convenience method to allow clients to call one uniform method
+///to show a remaining character count on a tweet compose box, and to conditionally enable a
+///"submit" button.
+///
+///For the `http_url_len` and `https_url_len` parameters, call [`service::config`][] and use the
+///`short_url_len` and `short_url_len_https` fields on the struct that's returned. If you want to
+///perform these checks offline, twitter-text's sample code and tests assume 23 characters for both
+///sizes. At the time of this writing (2016-11-28), those numbers were also being returned from the
+///service itself.
+///
+///If you're writing text for a direct message and want to know how many characters are available
+///in that context, see [`service::config`][] and the `dm_text_character_limit` on the struct
+///returned by that function, then call [`character_count`][] and subtract the result from the
+///configuration value.
+///
+///[`service::config`]: ../service/fn.config.html
+///[`character_count`]: fn.character_count.html
+///
+///# Examples
+///
+///```rust
+/// use egg_mode::text::characters_remaining;
+///
+/// let (count, _) = characters_remaining("This is a test.", 23, 23);
+/// assert_eq!(count, 140 - 15);
+///
+/// // URLs get replaced by a t.co URL of the given length
+/// let (count, _) = characters_remaining("test.com", 23, 23);
+/// assert_eq!(count, 140 - 23);
+///
+/// // Multiple URLs get shortened individually
+/// let (count, _) =
+///     characters_remaining("Test https://test.com test https://test.com test.com test", 23, 23);
+/// assert_eq!(count, 140 - 86);
+///```
 pub fn characters_remaining(text: &str, http_url_len: i32, https_url_len: i32) -> (usize, bool) {
     let (len, is_valid) = character_count(text, http_url_len, https_url_len);
 
@@ -531,7 +819,7 @@ mod test {
             let expected = expected.iter()
                                    .map(|s| s.as_str().expect("non-string found in 'expected'"))
                                    .collect::<HashSet<_>>();
-            let actual = symbol_entities(text, true).into_iter().map(|e| text[e.range.0..e.range.1].trim_matches('$')).collect::<HashSet<_>>();
+            let actual = symbol_entities(text, true).into_iter().map(|e| e.substr(text).trim_matches('$')).collect::<HashSet<_>>();
 
             for extra in actual.difference(&expected) {
                 panic!("test \"{}\" failed on text \"{}\": extracted erroneous symbol \"{}\"",
@@ -556,7 +844,7 @@ mod test {
             }
 
             fn cashtag_entity<'a>(input: Entity, text: &'a str) -> (&'a str, [usize; 2]) {
-                (text[input.range.0..input.range.1].trim_matches('$'), [input.range.0, input.range.1])
+                (input.substr(text).trim_matches('$'), [input.range.0, input.range.1])
             }
 
             let description = test["description"].as_str().expect("test was missing 'description");
@@ -593,7 +881,7 @@ mod test {
                                    .map(|s| s.as_str().expect("non-string found in 'expected'"))
                                    .collect::<HashSet<_>>();
             let actual = hashtag_entities(text, true).into_iter()
-                                                     .map(|e| text[e.range.0..e.range.1].trim_matches(is_hash))
+                                                     .map(|e| e.substr(text).trim_matches(is_hash))
                                                      .collect::<HashSet<_>>();
 
             for extra in actual.difference(&expected) {
@@ -622,7 +910,7 @@ mod test {
                                    .map(|s| s.as_str().expect("non-string found in 'expected'"))
                                    .collect::<HashSet<_>>();
             let actual = hashtag_entities(text, true).into_iter()
-                                                     .map(|e| text[e.range.0..e.range.1].trim_matches(is_hash))
+                                                     .map(|e| e.substr(text).trim_matches(is_hash))
                                                      .collect::<HashSet<_>>();
 
             for extra in actual.difference(&expected) {
@@ -655,7 +943,7 @@ mod test {
             }
 
             fn hashtag_entity<'a>(input: Entity, text: &'a str) -> (&'a str, [usize; 2]) {
-                (text[input.range.0..input.range.1].trim_matches(is_hash),
+                (input.substr(text).trim_matches(is_hash),
                  [byte_to_char(text, input.range.0), byte_to_char(text, input.range.1)])
             }
 
@@ -693,7 +981,7 @@ mod test {
                                    .map(|s| s.as_str().expect("non-string found in 'expected'"))
                                    .collect::<HashSet<_>>();
             let actual = mention_entities(text).into_iter()
-                                               .map(|e| text[e.range.0..e.range.1].trim_matches(is_at))
+                                               .map(|e| e.substr(text).trim_matches(is_at))
                                                .collect::<HashSet<_>>();
 
             for extra in actual.difference(&expected) {
@@ -726,7 +1014,7 @@ mod test {
             }
 
             fn mention_entity<'a>(input: Entity, text: &'a str) -> (&'a str, [usize; 2]) {
-                (text[input.range.0..input.range.1].trim_matches(is_at),
+                (input.substr(text).trim_matches(is_at),
                  [byte_to_char(text, input.range.0), byte_to_char(text, input.range.1)])
             }
 
@@ -770,7 +1058,7 @@ mod test {
             }
 
             fn mention_entity(input: Entity, text: &str) -> (String, [usize; 2]) {
-                (text[input.range.0..input.range.1].trim_matches(is_at).to_owned(),
+                (input.substr(text).trim_matches(is_at).to_owned(),
                  [byte_to_char(text, input.range.0), byte_to_char(text, input.range.1)])
             }
 
@@ -810,7 +1098,7 @@ mod test {
                 Yaml::Null | Yaml::BadValue => None,
                 _ => panic!("unexpected value for 'expected'"),
             };
-            let actual = reply_mention_entity(text).map(|s| text[s.range.0..s.range.1].trim_matches(is_at));
+            let actual = reply_mention_entity(text).map(|s| s.substr(text).trim_matches(is_at));
 
             if expected != actual {
                 panic!("test \"{}\" failed on text \"{}\": expected '{:?}', exracted '{:?}'",
@@ -826,7 +1114,7 @@ mod test {
                                    .map(|s| s.as_str().expect("non-string found in 'expected'"))
                                    .collect::<HashSet<_>>();
             let actual = url_entities(text).into_iter()
-                                               .map(|e| &text[e.range.0..e.range.1])
+                                               .map(|e| e.substr(text))
                                                .collect::<HashSet<_>>();
 
             for extra in actual.difference(&expected) {
@@ -852,7 +1140,7 @@ mod test {
             }
 
             fn url_entity<'a>(input: Entity, text: &'a str) -> (&'a str, [usize; 2]) {
-                (&text[input.range.0..input.range.1],
+                (input.substr(text),
                  [byte_to_char(text, input.range.0), byte_to_char(text, input.range.1)])
             }
 
@@ -918,7 +1206,7 @@ mod test {
 
             match actual.first() {
                 Some(entity) => {
-                    let name = &text[entity.range.0..entity.range.1];
+                    let name = entity.substr(text);
                     if (name == text) != expected {
                         panic!("test '{}' failed: extracted username '{}' from '{}' failed to match expectation {}",
                                description, name, text, expected);
@@ -940,7 +1228,7 @@ mod test {
 
             match actual.first() {
                 Some(entity) if entity.kind == EntityKind::ListName => {
-                    let name = &text[entity.range.0..entity.range.1];
+                    let name = entity.substr(text);
                     if (name == text) != expected {
                         panic!("test '{}' failed: extracted list name '{}' from '{}' failed to match expectation {}",
                                description, name, text, expected);
@@ -962,7 +1250,7 @@ mod test {
 
             match actual.first() {
                 Some(entity) => {
-                    let name = &text[entity.range.0..entity.range.1];
+                    let name = entity.substr(text);
                     if (name == text) != expected {
                         panic!("test '{}' failed: extracted hashtag '{}' from '{}' failed to match expectation {}",
                                description, name, text, expected);
@@ -991,7 +1279,7 @@ mod test {
             let expected = expected.iter()
                                    .map(|s| s.as_str().expect("non-string found in 'expected'"))
                                    .collect::<HashSet<_>>();
-            let actual = url_entities(text).into_iter().map(|e| &text[e.range.0..e.range.1]).collect::<HashSet<_>>();
+            let actual = url_entities(text).into_iter().map(|e| e.substr(text)).collect::<HashSet<_>>();
 
             for extra in actual.difference(&expected) {
                 panic!("test \"{}\" failed on text \"{}\": extracted erroneous symbol \"{}\"",
@@ -1011,7 +1299,7 @@ mod test {
             let expected = expected.iter()
                                    .map(|s| s.as_str().expect("non-string found in 'expected'"))
                                    .collect::<HashSet<_>>();
-            let actual = url_entities(text).into_iter().map(|e| &text[e.range.0..e.range.1]).collect::<HashSet<_>>();
+            let actual = url_entities(text).into_iter().map(|e| e.substr(text)).collect::<HashSet<_>>();
 
             for extra in actual.difference(&expected) {
                 panic!("test \"{}\" failed on text \"{}\": extracted erroneous symbol \"{}\"",

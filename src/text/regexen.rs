@@ -343,6 +343,7 @@ macro_rules! valid_mention_or_list {
                 "(/[a-zA-Z][a-zA-Z0-9_-]{0,24})?")
     };
 }
+///Regex matching the screen name at the beginning of a direct reply.
 macro_rules! valid_reply {
     () => {
         concat!(r"\A(?:[", unicode_spaces!(), "])*", at_signs!(), "([a-zA-Z0-9_]{1,20})")
