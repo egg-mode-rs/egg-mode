@@ -440,9 +440,11 @@ impl FromJson for UserEntityDetail {
 ///[`search`]: fn.search.html
 ///
 ///```rust,no_run
-///# let con_token = egg_mode::Token::new("", "");
-///# let access_token = egg_mode::Token::new("", "");
-///for name in egg_mode::user::search("rustlang", &con_token, &access_token)
+///# let token = egg_mode::Token::Access {
+///#     consumer: egg_mode::KeyPair::new("", ""),
+///#     access: egg_mode::KeyPair::new("", ""),
+///# };
+///for name in egg_mode::user::search("rustlang", &token)
 ///                                  .map(|u| u.unwrap().response.screen_name).take(10) {
 ///    println!("{}", name);
 ///}
@@ -452,14 +454,16 @@ impl FromJson for UserEntityDetail {
 ///entire search setup:
 ///
 ///```rust,no_run
-///# let con_token = egg_mode::Token::new("", "");
-///# let access_token = egg_mode::Token::new("", "");
+///# let token = egg_mode::Token::Access {
+///#     consumer: egg_mode::KeyPair::new("", ""),
+///#     access: egg_mode::KeyPair::new("", ""),
+///# };
 ///use egg_mode::Response;
 ///use egg_mode::user::TwitterUser;
 ///use egg_mode::error::Error;
 ///
 ///let names: Result<Response<Vec<TwitterUser>>, Error> =
-///    egg_mode::user::search("rustlang", &con_token, &access_token).take(10).collect();
+///    egg_mode::user::search("rustlang", &token).take(10).collect();
 ///```
 ///
 ///`UserSearch` has a couple adaptors of its own that you can use before consuming it.
@@ -482,9 +486,11 @@ impl FromJson for UserEntityDetail {
 ///you can have full control over when the network calls happen:
 ///
 ///```rust,no_run
-///# let con_token = egg_mode::Token::new("", "");
-///# let access_token = egg_mode::Token::new("", "");
-///let mut search = egg_mode::user::search("rustlang", &con_token, &access_token).with_page_size(20);
+///# let token = egg_mode::Token::Access {
+///#     consumer: egg_mode::KeyPair::new("", ""),
+///#     access: egg_mode::KeyPair::new("", ""),
+///# };
+///let mut search = egg_mode::user::search("rustlang", &token).with_page_size(20);
 ///let resp = search.call().unwrap();
 ///
 ///for user in resp.response {
@@ -500,8 +506,7 @@ impl FromJson for UserEntityDetail {
 ///```
 #[must_use = "search iterators are lazy and do nothing unless consumed"]
 pub struct UserSearch<'a> {
-    con_token: &'a auth::Token<'a>,
-    access_token: &'a auth::Token<'a>,
+    token: &'a auth::Token<'a>,
     query: &'a str,
     ///The current page of results being returned, starting at 1.
     pub page_num: i32,
@@ -546,16 +551,15 @@ impl<'a> UserSearch<'a> {
         add_param(&mut params, "page", self.page_num.to_string());
         add_param(&mut params, "count", self.page_size.to_string());
 
-        let mut resp = try!(auth::get(links::users::SEARCH, self.con_token, self.access_token, Some(&params)));
+        let mut resp = try!(auth::get(links::users::SEARCH, self.token, Some(&params)));
 
         parse_response(&mut resp)
     }
 
     ///Returns a new UserSearch with the given query and tokens, with the default page size of 10.
-    fn new(query: &'a str, con_token: &'a auth::Token, access_token: &'a auth::Token) -> UserSearch<'a> {
+    fn new(query: &'a str, token: &'a auth::Token) -> UserSearch<'a> {
         UserSearch {
-            con_token: con_token,
-            access_token: access_token,
+            token: token,
             query: query,
             page_num: 1,
             page_size: 10,

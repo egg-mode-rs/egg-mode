@@ -133,29 +133,43 @@ impl Scheme for TwitterOAuth {
 }
 
 ///A key/secret pair representing an OAuth token.
-pub struct Token<'a> {
+#[derive(Debug, Clone)]
+pub struct KeyPair<'a> {
     ///A key used to identify an application or user.
     pub key: Cow<'a, str>,
     ///A private key used to sign messages from an application or user.
     pub secret: Cow<'a, str>,
 }
 
-impl<'a> Token<'a> {
-    ///Creates a Token with the given key and secret.
+impl<'a> KeyPair<'a> {
+    ///Creates a KeyPair with the given key and secret.
     ///
     ///This can be called with either `&str` or `String`. In the former
-    ///case the resulting Token will have the same lifetime as the given
-    ///reference. If two Strings are given, the Token effectively has
+    ///case the resulting KeyPair will have the same lifetime as the given
+    ///reference. If two Strings are given, the KeyPair effectively has
     ///lifetime `'static`.
-    pub fn new<K, S>(key: K, secret: S) -> Token<'a>
+    pub fn new<K, S>(key: K, secret: S) -> KeyPair<'a>
         where K: Into<Cow<'a, str>>,
               S: Into<Cow<'a, str>>
     {
-        Token {
+        KeyPair {
             key: key.into(),
             secret: secret.into(),
         }
     }
+}
+
+///A token that can be used to sign requests to Twitter.
+#[derive(Debug, Clone)]
+pub enum Token<'a> {
+    ///An OAuth Access token indicating the request is coming from a specific user.
+    Access {
+        ///A "consumer" key/secret that represents the application sending the request.
+        consumer: KeyPair<'a>,
+        ///An "access" key/secret that represents the user's authorization of the application.
+        access: KeyPair<'a>,
+    },
+    //Bearer(Cow<'a, str>),
 }
 
 ///With the given OAuth header and method parameters, create an OAuth
@@ -164,8 +178,8 @@ fn sign(header: TwitterOAuth,
         method: Method,
         uri: &str,
         params: Option<&ParamList>,
-        con_token: &Token,
-        access_token: Option<&Token>) -> TwitterOAuth {
+        con_token: &KeyPair,
+        access_token: Option<&KeyPair>) -> TwitterOAuth {
     let query_string = {
         let mut sig_params = params.cloned().unwrap_or_default();
 
@@ -201,7 +215,7 @@ fn sign(header: TwitterOAuth,
                            percent_encode(&query_string));
     let key = format!("{}&{}",
                       percent_encode(&con_token.secret),
-                      percent_encode(&access_token.unwrap_or(&Token::new("", "")).secret));
+                      percent_encode(&access_token.unwrap_or(&KeyPair::new("", "")).secret));
 
     let mut sig = Hmac::new(Sha1::new(), key.as_bytes());
     sig.input(base_str.as_bytes());
@@ -214,21 +228,16 @@ fn sign(header: TwitterOAuth,
     };
 
     TwitterOAuth {
-        consumer_key: header.consumer_key,
-        nonce: header.nonce,
         signature: Some(sig.result().code().to_base64(config)),
-        timestamp: header.timestamp,
-        token: header.token,
-        callback: header.callback,
-        verifier: header.verifier,
+        ..header
     }
 }
 
 ///With the given method parameters, return a signed OAuth header.
 fn get_header(method: Method,
               uri: &str,
-              con_token: &Token,
-              access_token: Option<&Token>,
+              con_token: &KeyPair,
+              access_token: Option<&KeyPair>,
               callback: Option<String>,
               verifier: Option<String>,
               params: Option<&ParamList>) -> TwitterOAuth {
@@ -250,12 +259,8 @@ fn get_header(method: Method,
 }
 
 pub fn get(uri: &str,
-           con_token: &Token,
-           access_token: &Token,
+           token: &Token,
            params: Option<&ParamList>) -> Result<HyperResponse, error::Error> {
-    let header = get_header(Method::Get, uri, con_token, Some(access_token),
-                            None, None, params);
-
     let full_url = if let Some(p) = params {
         let query = p.iter()
                      .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
@@ -265,17 +270,26 @@ pub fn get(uri: &str,
         format!("{}?{}", uri, query)
     }
     else { uri.to_string() };
+
     let client = hyper::Client::new();
-    Ok(try!(client.get(&full_url).header(Authorization(header)).send()))
+
+    let request = match *token {
+        Token::Access {
+            consumer: ref con_token,
+            access: ref access_token,
+        } => {
+            let header = get_header(Method::Get, uri, con_token, Some(access_token),
+                                    None, None, params);
+            client.get(&full_url).header(Authorization(header))
+        },
+    };
+
+    Ok(try!(request.send()))
 }
 
 pub fn post(uri: &str,
-            con_token: &Token,
-            access_token: &Token,
+            token: &Token,
             params: Option<&ParamList>) -> Result<HyperResponse, error::Error> {
-    let header = get_header(Method::Post, uri, con_token, Some(access_token),
-                            None, None, params);
-
     let content: Mime = "application/x-www-form-urlencoded".parse().unwrap();
     let body = if let Some(p) = params {
         p.iter()
@@ -284,27 +298,41 @@ pub fn post(uri: &str,
          .join("&")
     }
     else { "".to_string() };
+
     let client = hyper::Client::new();
-    Ok(try!(client.post(uri).body(body.as_bytes())
-                  .header(Authorization(header))
-                  .header(ContentType(content))
-                  .send()))
+    let request = client.post(uri).body(body.as_bytes())
+                                  .header(ContentType(content));
+
+    let request = match *token {
+        Token::Access {
+            consumer: ref con_token,
+            access: ref access_token,
+        } => {
+            let header = get_header(Method::Post, uri, con_token, Some(access_token),
+                                    None, None, params);
+
+            request.header(Authorization(header))
+        },
+    };
+
+
+    Ok(try!(request.send()))
 }
 
-///With the given consumer Token, ask Twitter for a request Token that can be
+///With the given consumer KeyPair, ask Twitter for a request KeyPair that can be
 ///used to request access to the user's account.
 ///
 ///This can be considered Step 1 in obtaining access to a user's account. With
-///this Token, a web-based application can use `authenticate_url`, and a
+///this KeyPair, a web-based application can use `authenticate_url`, and a
 ///desktop-based application can use `authorize_url` to perform the authorization
 ///request.
 ///
 ///The parameter `callback` is used to provide an OAuth Callback URL for a web-
 ///or mobile-based application to receive the results of the authorization request.
 ///To use the PIN-Based Auth request, this must be set to `"oob"`. The resulting
-///Token can be passed to `authorize_url` to give the user a means to accept the
+///KeyPair can be passed to `authorize_url` to give the user a means to accept the
 ///request.
-pub fn request_token<S: Into<String>>(con_token: &Token, callback: S) -> Result<Token<'static>, error::Error> {
+pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Result<KeyPair<'static>, error::Error> {
     let header = get_header(Method::Post, links::auth::REQUEST_TOKEN,
                             con_token, None, Some(callback.into()), None, None);
 
@@ -328,11 +356,11 @@ pub fn request_token<S: Into<String>>(con_token: &Token, callback: S) -> Result<
         }
     }
 
-    Ok(Token::new(try!(key.ok_or(error::Error::MissingValue("oauth_token"))),
-                  try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")))))
+    Ok(KeyPair::new(try!(key.ok_or(error::Error::MissingValue("oauth_token"))),
+                    try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")))))
 }
 
-///With the given request Token, return a URL that a user can access to
+///With the given request KeyPair, return a URL that a user can access to
 ///accept or reject an authorization request.
 ///
 ///This can be considered Step 2 in obtaining access to a user's account.
@@ -342,11 +370,11 @@ pub fn request_token<S: Into<String>>(con_token: &Token, callback: S) -> Result<
 ///Verifier to `access_token`.
 ///
 ///[Pin-Based Auth]: https://dev.twitter.com/oauth/pin-based
-pub fn authorize_url(request_token: &Token) -> String {
+pub fn authorize_url(request_token: &KeyPair) -> String {
     format!("{}?oauth_token={}", links::auth::AUTHORIZE, request_token.key)
 }
 
-///With the given request Token, return a URL to redirect a user to so they
+///With the given request KeyPair, return a URL to redirect a user to so they
 ///can accept or reject an authorization request.
 ///
 ///This can be considered Step 2 in obtaining access to a user's account.
@@ -358,15 +386,15 @@ pub fn authorize_url(request_token: &Token) -> String {
 ///given to `access_token` to complete authorization.
 ///
 ///[Sign in with Twitter]: https://dev.twitter.com/web/sign-in
-pub fn authenticate_url(request_token: &Token) -> String {
+pub fn authenticate_url(request_token: &KeyPair) -> String {
     format!("{}?oauth_token={}", links::auth::AUTHENTICATE, request_token.key)
 }
 
 ///With the given OAuth tokens and verifier, ask Twitter for an access
-///Token that can be used to sign further requests to the Twitter API.
+///KeyPair that can be used to sign further requests to the Twitter API.
 ///
 ///This can be considered Step 3 in obtaining access to a user's account.
-///The Token this function returns represents the user's authorization
+///The KeyPair this function returns represents the user's authorization
 ///that your app can use their account, and needs to be given to all other
 ///functions in the Twitter API.
 ///
@@ -376,11 +404,11 @@ pub fn authenticate_url(request_token: &Token) -> String {
 ///
 ///This function also returns the User ID and Username of the authenticated
 ///user.
-pub fn access_token<S: Into<String>>(con_token: &Token,
-                                     request_token: &Token,
-                                     verifier: S) -> Result<(Token<'static>, i64, String), error::Error> {
+pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
+                                     request_token: &KeyPair,
+                                     verifier: S) -> Result<(Token<'a>, i64, String), error::Error> {
     let header = get_header(Method::Post, links::auth::ACCESS_TOKEN,
-                            con_token, Some(request_token), None, Some(verifier.into()), None);
+                            &con_token, Some(request_token), None, Some(verifier.into()), None);
 
     let client = hyper::Client::new();
     let mut resp = try!(client.post(links::auth::ACCESS_TOKEN)
@@ -406,17 +434,22 @@ pub fn access_token<S: Into<String>>(con_token: &Token,
         }
     }
 
-    Ok((Token::new(try!(key.ok_or(error::Error::MissingValue("oauth_token"))),
-                  try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")))),
+    let access_key = try!(key.ok_or(error::Error::MissingValue("oauth_token")));
+    let access_secret = try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")));
+
+    Ok((Token::Access {
+            consumer: con_token,
+            access: KeyPair::new(access_key, access_secret),
+        },
         try!(id.ok_or(error::Error::MissingValue("user_id"))),
         try!(username.ok_or(error::Error::MissingValue("screen_name")))))
 }
 
 ///If the given tokens are valid, return the user information for the authenticated user.
-pub fn verify_tokens(con_token: &Token, access_token: &Token)
+pub fn verify_tokens(token: &Token)
     -> WebResponse<::user::TwitterUser>
 {
-    let mut resp = try!(get(links::auth::VERIFY_CREDENTIALS, con_token, access_token, None));
+    let mut resp = try!(get(links::auth::VERIFY_CREDENTIALS, token, None));
 
     parse_response(&mut resp)
 }

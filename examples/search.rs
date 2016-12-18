@@ -11,7 +11,7 @@ fn main() {
     let search = search::search("rustlang")
                         .result_type(ResultType::Recent)
                         .count(10)
-                        .call(&config.con_token, &config.access_token)
+                        .call(&config.token)
                         .unwrap();
 
     for tweet in &search.statuses {

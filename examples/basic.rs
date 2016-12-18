@@ -14,31 +14,31 @@ fn main() {
     users.push(config.user_id.into());
     users.push("SwiftOnSecurity".into());
 
-    for user in egg_mode::user::lookup(&users, &config.con_token, &config.access_token).unwrap().response.iter() {
+    for user in egg_mode::user::lookup(&users, &config.token).unwrap().response.iter() {
         print_user(user)
     }
 
     println!("");
     println!("Searching based on a term: (here, it's 'rustlang')");
-    for resp in egg_mode::user::search("rustlang", &config.con_token, &config.access_token).with_page_size(5).take(5) {
+    for resp in egg_mode::user::search("rustlang", &config.token).with_page_size(5).take(5) {
         print_user(&resp.unwrap().response);
     }
 
     println!("");
     println!("Who do you follow?");
-    for resp in egg_mode::user::friends_of(config.user_id, &config.con_token, &config.access_token).with_page_size(5).take(5) {
+    for resp in egg_mode::user::friends_of(config.user_id, &config.token).with_page_size(5).take(5) {
         print_user(&resp.unwrap().response);
     }
 
     println!("");
     println!("Who follows you?");
-    for resp in egg_mode::user::followers_of(config.user_id, &config.con_token, &config.access_token).with_page_size(5).take(5) {
+    for resp in egg_mode::user::followers_of(config.user_id, &config.token).with_page_size(5).take(5) {
         print_user(&resp.unwrap().response);
     }
 
     println!("");
     println!("Who have you blocked?");
-    for resp in egg_mode::user::blocks(&config.con_token, &config.access_token).take(5) {
+    for resp in egg_mode::user::blocks(&config.token).take(5) {
         print_user(&resp.unwrap().response);
     }
 }

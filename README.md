@@ -47,6 +47,11 @@ let (access_token, user_id, username) = egg_mode::access_token(&consumer_token, 
 As the last line shows, this also returns the User ID and username of the user that authenticated
 with your application. With this access token, all of the other Twitter functions become available.
 
+**NOTE**: Starting in 0.8, the method of authenticating calls is changing slightly.
+`egg_mode::access_token` will take ownership of the consumer token passed in, so that it can return
+a new Token enum that contains both the consumer and access tokens. This combined Token is then
+passed to all the library functions in lieu of the separate key pairs.
+
 For more examples of how to use this library, check the files in the examples folder.
 
 ## License

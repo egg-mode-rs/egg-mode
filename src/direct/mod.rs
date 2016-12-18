@@ -167,9 +167,11 @@ impl FromJson for DMEntities {
 /// `start` to load the first page of results:
 ///
 /// ```rust,no_run
-/// # let con_token = egg_mode::Token::new("", "");
-/// # let access_token = egg_mode::Token::new("", "");
-/// let mut timeline = egg_mode::direct::received(&con_token, &access_token)
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
+/// let mut timeline = egg_mode::direct::received(&token)
 ///                                .with_page_size(10);
 ///
 /// for dm in &timeline.start().unwrap().response {
@@ -181,9 +183,11 @@ impl FromJson for DMEntities {
 /// IDs it tracks:
 ///
 /// ```rust,no_run
-/// # let con_token = egg_mode::Token::new("", "");
-/// # let access_token = egg_mode::Token::new("", "");
-/// # let mut timeline = egg_mode::direct::received(&con_token, &access_token);
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
+/// # let mut timeline = egg_mode::direct::received(&token);
 /// # timeline.start().unwrap();
 /// for dm in &timeline.older(None).unwrap().response {
 ///     println!("<@{}> {}", dm.sender_screen_name, dm.text);
@@ -198,9 +202,11 @@ impl FromJson for DMEntities {
 /// load only those messages you need like this:
 ///
 /// ```rust,no_run
-/// # let con_token = egg_mode::Token::new("", "");
-/// # let access_token = egg_mode::Token::new("", "");
-/// let mut timeline = egg_mode::direct::received(&con_token, &access_token)
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
+/// let mut timeline = egg_mode::direct::received(&token)
 ///                                .with_page_size(10);
 ///
 /// timeline.start().unwrap();
@@ -231,10 +237,8 @@ impl FromJson for DMEntities {
 pub struct Timeline<'a> {
     ///The URL to request DMs from.
     link: &'static str,
-    ///The consumer token to authenticate requests with.
-    con_token: &'a auth::Token<'a>,
-    ///The access token to authenticate requests with.
-    access_token: &'a auth::Token<'a>,
+    ///The token used to authenticate requests with.
+    token: &'a auth::Token<'a>,
     ///Optional set of params to include prior to adding lifetime navigation parameters.
     params_base: Option<ParamList<'a>>,
     ///The maximum number of messages to return in a single call. Twitter doesn't guarantee
@@ -300,7 +304,7 @@ impl<'a> Timeline<'a> {
             add_param(&mut params, "max_id", id.to_string());
         }
 
-        let mut resp = try!(auth::get(self.link, self.con_token, self.access_token, Some(&params)));
+        let mut resp = try!(auth::get(self.link, self.token, Some(&params)));
 
         parse_response(&mut resp)
     }
@@ -320,12 +324,10 @@ impl<'a> Timeline<'a> {
     }
 
     ///Create an instance of `Timeline` with the given link and tokens.
-    fn new(link: &'static str, params_base: Option<ParamList<'a>>,
-               con_token: &'a auth::Token, access_token: &'a auth::Token) -> Self {
+    fn new(link: &'static str, params_base: Option<ParamList<'a>>, token: &'a auth::Token) -> Self {
         Timeline {
             link: link,
-            con_token: con_token,
-            access_token: access_token,
+            token: token,
             params_base: params_base,
             count: 20,
             max_id: None,

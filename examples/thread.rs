@@ -39,14 +39,14 @@ fn main() {
     let mut thread = VecDeque::with_capacity(21);
     let mut thread_ids = HashSet::new();
 
-    let start_tweet = tweet::show(start_id, &c.con_token, &c.access_token).unwrap();
+    let start_tweet = tweet::show(start_id, &c.token).unwrap();
     let thread_user = start_tweet.user.as_ref().unwrap().id;
     thread_ids.insert(start_tweet.id);
     thread.push_front(start_tweet.response);
 
     for _ in 0..10 {
         if let Some(id) = thread.front().and_then(|t| t.in_reply_to_status_id) {
-            let parent = tweet::show(id, &c.con_token, &c.access_token).unwrap();
+            let parent = tweet::show(id, &c.token).unwrap();
             thread_ids.insert(parent.id);
             thread.push_front(parent.response);
         }
@@ -55,7 +55,7 @@ fn main() {
         }
     }
 
-    let replies = tweet::user_timeline(thread_user, true, false, &c.con_token, &c.access_token);
+    let replies = tweet::user_timeline(thread_user, true, false, &c.token);
 
     for tweet in replies.call(Some(start_id), None).unwrap().into_iter().rev() {
         if let Some(reply_id) = tweet.in_reply_to_status_id {

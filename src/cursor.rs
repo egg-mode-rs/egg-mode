@@ -137,9 +137,11 @@ impl Cursor for IDCursor {
 ///that all the standard iterator adaptors can be used to work with the results:
 ///
 ///```rust,no_run
-///# let con_token = egg_mode::Token::new("", "");
-///# let access_token = egg_mode::Token::new("", "");
-///for name in egg_mode::user::followers_of("rustlang", &con_token, &access_token)
+///# let token = egg_mode::Token::Access {
+///#     consumer: egg_mode::KeyPair::new("", ""),
+///#     access: egg_mode::KeyPair::new("", ""),
+///# };
+///for name in egg_mode::user::followers_of("rustlang", &token)
 ///                                        .map(|u| u.unwrap().response.screen_name).take(10) {
 ///    println!("{}", name);
 ///}
@@ -149,14 +151,16 @@ impl Cursor for IDCursor {
 ///entire search setup:
 ///
 ///```rust,no_run
-///# let con_token = egg_mode::Token::new("", "");
-///# let access_token = egg_mode::Token::new("", "");
+///# let token = egg_mode::Token::Access {
+///#     consumer: egg_mode::KeyPair::new("", ""),
+///#     access: egg_mode::KeyPair::new("", ""),
+///# };
 ///use egg_mode::Response;
 ///use egg_mode::user::TwitterUser;
 ///use egg_mode::error::Error;
 ///
 ///let names: Result<Response<Vec<TwitterUser>>, Error> =
-///    egg_mode::user::followers_of("rustlang", &con_token, &access_token).take(10).collect();
+///    egg_mode::user::followers_of("rustlang", &token).take(10).collect();
 ///```
 ///
 ///`CursorIter` has a couple adaptors of its own that you can use before consuming it.
@@ -184,9 +188,11 @@ impl Cursor for IDCursor {
 ///needed:
 ///
 ///```rust,no_run
-///# let con_token = egg_mode::Token::new("", "");
-///# let access_token = egg_mode::Token::new("", "");
-///let mut list = egg_mode::user::followers_of("rustlang", &con_token, &access_token).with_page_size(20);
+///# let token = egg_mode::Token::Access {
+///#     consumer: egg_mode::KeyPair::new("", ""),
+///#     access: egg_mode::KeyPair::new("", ""),
+///# };
+///let mut list = egg_mode::user::followers_of("rustlang", &token).with_page_size(20);
 ///let resp = list.call().unwrap();
 ///
 ///for user in resp.response.users {
@@ -205,8 +211,7 @@ pub struct CursorIter<'a, T>
     where T: Cursor + FromJson
 {
     link: &'static str,
-    con_token: &'a auth::Token<'a>,
-    access_token: &'a auth::Token<'a>,
+    token: &'a auth::Token<'a>,
     params_base: Option<ParamList<'a>>,
     ///The number of results returned in one network call.
     ///
@@ -269,7 +274,7 @@ impl<'a, T> CursorIter<'a, T>
             add_param(&mut params, "count", count.to_string());
         }
 
-        let mut resp = try!(auth::get(self.link, self.con_token, self.access_token, Some(&params)));
+        let mut resp = try!(auth::get(self.link, self.token, Some(&params)));
 
         parse_response(&mut resp)
     }
@@ -279,12 +284,11 @@ impl<'a, T> CursorIter<'a, T>
     ///This is essentially an internal infrastructure function, not meant to be used from consumer
     ///code.
     #[doc(hidden)]
-    pub fn new(link: &'static str, con_token: &'a auth::Token, access_token: &'a auth::Token,
+    pub fn new(link: &'static str, token: &'a auth::Token,
                params_base: Option<ParamList<'a>>, page_size: Option<i32>) -> CursorIter<'a, T> {
         CursorIter {
             link: link,
-            con_token: con_token,
-            access_token: access_token,
+            token: token,
             params_base: params_base,
             page_size: page_size,
             previous_cursor: -1,

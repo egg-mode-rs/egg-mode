@@ -8,14 +8,14 @@ fn main() {
 
     println!("");
     println!("Load up an individual tweet:");
-    let status = egg_mode::tweet::show(tweet_id, &config.con_token, &config.access_token).unwrap().response;
+    let status = egg_mode::tweet::show(tweet_id, &config.token).unwrap().response;
     common::print_tweet(&status);
 
     //TODO: Starting in 0.7.0 these loops will be able to drop the `.response` at the end
 
     println!("");
     println!("Loading retweets of an individual tweet:");
-    for rt in &egg_mode::tweet::retweets_of(tweet_id, 5, &config.con_token, &config.access_token).unwrap().response {
+    for rt in &egg_mode::tweet::retweets_of(tweet_id, 5, &config.token).unwrap().response {
         if let Some(ref user) = rt.user {
             println!("{} (@{})", user.name, user.screen_name);
         }
@@ -23,7 +23,7 @@ fn main() {
 
     println!("");
     println!("Loading the user's home timeline:");
-    let mut home = egg_mode::tweet::home_timeline(&config.con_token, &config.access_token).with_page_size(5);
+    let mut home = egg_mode::tweet::home_timeline(&config.token).with_page_size(5);
     for status in &home.start().unwrap().response {
         common::print_tweet(&status);
         println!("");
@@ -31,7 +31,7 @@ fn main() {
 
     println!("");
     println!("Loading the user's mentions timeline:");
-    let mut home = egg_mode::tweet::mentions_timeline(&config.con_token, &config.access_token).with_page_size(5);
+    let mut home = egg_mode::tweet::mentions_timeline(&config.token).with_page_size(5);
     for status in &home.start().unwrap().response {
         common::print_tweet(&status);
         println!("");
@@ -40,7 +40,7 @@ fn main() {
     println!("");
     println!("Loading the user's timeline:");
     let mut home = egg_mode::tweet::user_timeline(config.user_id, true, true,
-                                                  &config.con_token, &config.access_token).with_page_size(5);
+                                                  &config.token).with_page_size(5);
     for status in &home.start().unwrap().response {
         common::print_tweet(&status);
         println!("");

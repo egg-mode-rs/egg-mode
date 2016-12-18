@@ -1,5 +1,21 @@
 # Changelog for egg-mode
 
+## Pending
+### Changed
+- The Great Token Refactor of 0.8
+  - Rather than forcing consumers of the library to handle their consumer token and access token
+    separately, the key/token pairs have been renamed to `KeyPair` while the `Token` struct has been
+    turned into an enum that contains the two `KeyPair`s necessary to authenticate to Twitter.
+  - Every function that connects to twitter no longer takes the consumer token and access token
+    separately, instead taking the new `Token` enum to authenticate.
+  - The `access_token` function now returns the `Token` enum which includes the newly-minted access
+    token, in addition to consuming the consumer token given to it.
+  - `KeyPair` and `Token` implement Clone, so the consumer token can be cloned when given to
+    `access_token` if multiple account support is necessary.
+  - All of the above amounts to **an enormous breaking change**, for which I must apologize. It's
+    this way so I can support application-only authentication. Hopefully the loss of extra text for
+    all those function calls can make up for it.
+
 ## [0.7.0] - 2016-11-30
 ### Added
 - New iterator structs `ResponseIterRef` and `ResponseIterMut` to iterate over

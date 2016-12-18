@@ -6,13 +6,15 @@
 //! page of results, hand your tokens to `call`.
 //!
 //! ```rust,no_run
-//! # let con_token = egg_mode::Token::new("", "");
-//! # let access_token = egg_mode::Token::new("", "");
+//! # let token = egg_mode::Token::Access {
+//! #     consumer: egg_mode::KeyPair::new("", ""),
+//! #     access: egg_mode::KeyPair::new("", ""),
+//! # };
 //! use egg_mode::search::{self, ResultType};
 //!
 //! let search = search::search("rustlang")
 //!                     .result_type(ResultType::Recent)
-//!                     .call(&con_token, &access_token)
+//!                     .call(&token)
 //!                     .unwrap();
 //!
 //! for tweet in &search.statuses {
@@ -171,7 +173,7 @@ impl<'a> SearchBuilder<'a> {
     }
 
     ///Finalize the search terms and return the first page of responses.
-    pub fn call(self, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<SearchResult<'a>> {
+    pub fn call(self, token: &auth::Token) -> WebResponse<SearchResult<'a>> {
         let mut params = HashMap::new();
 
         add_param(&mut params, "q", self.query);
@@ -207,7 +209,7 @@ impl<'a> SearchBuilder<'a> {
             add_param(&mut params, "max_id", max_id.to_string());
         }
 
-        let mut resp = try!(auth::get(links::statuses::SEARCH, con_token, access_token, Some(&params)));
+        let mut resp = try!(auth::get(links::statuses::SEARCH, token, Some(&params)));
 
         let mut ret: Response<SearchResult> = try!(parse_response(&mut resp));
         ret.params = Some(params);
@@ -248,7 +250,7 @@ impl<'a> FromJson for SearchResult<'a> {
 
 impl<'a> SearchResult<'a> {
     ///Load the next page of search results for the same query.
-    pub fn older(&self, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<SearchResult> {
+    pub fn older(&self, token: &auth::Token) -> WebResponse<SearchResult> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("since_id");
 
@@ -259,7 +261,7 @@ impl<'a> SearchResult<'a> {
             params.remove("max_id");
         }
 
-        let mut resp = try!(auth::get(links::statuses::SEARCH, con_token, access_token, Some(&params)));
+        let mut resp = try!(auth::get(links::statuses::SEARCH, token, Some(&params)));
 
         let mut ret: Response<SearchResult> = try!(parse_response(&mut resp));
         ret.params = Some(params);
@@ -267,7 +269,7 @@ impl<'a> SearchResult<'a> {
     }
 
     ///Load the previous page of search results for the same query.
-    pub fn newer(&self, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<SearchResult> {
+    pub fn newer(&self, token: &auth::Token) -> WebResponse<SearchResult> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("max_id");
 
@@ -278,7 +280,7 @@ impl<'a> SearchResult<'a> {
             params.remove("since_id");
         }
 
-        let mut resp = try!(auth::get(links::statuses::SEARCH, con_token, access_token, Some(&params)));
+        let mut resp = try!(auth::get(links::statuses::SEARCH, token, Some(&params)));
 
         let mut ret: Response<SearchResult> = try!(parse_response(&mut resp));
         ret.params = Some(params);

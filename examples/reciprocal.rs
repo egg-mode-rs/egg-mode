@@ -12,11 +12,11 @@ fn main() {
 
     println!("");
     let friends =
-        user::friends_ids(config.user_id, &config.con_token, &config.access_token)
+        user::friends_ids(config.user_id, &config.token)
               .map(|r| r.unwrap().response)
               .collect::<HashSet<i64>>();
     let followers =
-        user::followers_ids(config.user_id, &config.con_token, &config.access_token)
+        user::followers_ids(config.user_id, &config.token)
               .map(|r| r.unwrap().response)
               .collect::<HashSet<i64>>();
 
@@ -24,7 +24,7 @@ fn main() {
 
     println!("{} accounts that you follow follow you back.", reciprocals.len());
 
-    for user in user::lookup(&reciprocals, &config.con_token, &config.access_token).unwrap() {
+    for user in user::lookup(&reciprocals, &config.token).unwrap() {
         println!("{} (@{})", user.name, user.screen_name);
     }
 }

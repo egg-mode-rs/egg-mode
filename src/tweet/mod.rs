@@ -424,9 +424,11 @@ impl FromJson for ExtendedTweetEntities {
 /// `start` to load the first page of results:
 ///
 /// ```rust,no_run
-/// # let con_token = egg_mode::Token::new("", "");
-/// # let access_token = egg_mode::Token::new("", "");
-/// let mut timeline = egg_mode::tweet::home_timeline(&con_token, &access_token)
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
+/// let mut timeline = egg_mode::tweet::home_timeline(&token)
 ///                                .with_page_size(10);
 ///
 /// for tweet in &timeline.start().unwrap().response {
@@ -438,9 +440,11 @@ impl FromJson for ExtendedTweetEntities {
 /// tweet IDs it tracks:
 ///
 /// ```rust,no_run
-/// # let con_token = egg_mode::Token::new("", "");
-/// # let access_token = egg_mode::Token::new("", "");
-/// # let mut timeline = egg_mode::tweet::home_timeline(&con_token, &access_token);
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
+/// # let mut timeline = egg_mode::tweet::home_timeline(&token);
 /// # timeline.start().unwrap();
 /// for tweet in &timeline.older(None).unwrap().response {
 ///     println!("<@{}> {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
@@ -455,9 +459,11 @@ impl FromJson for ExtendedTweetEntities {
 /// hand, you can load only those tweets you need like this:
 ///
 /// ```rust,no_run
-/// # let con_token = egg_mode::Token::new("", "");
-/// # let access_token = egg_mode::Token::new("", "");
-/// let mut timeline = egg_mode::tweet::home_timeline(&con_token, &access_token)
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
+/// let mut timeline = egg_mode::tweet::home_timeline(&token)
 ///                                .with_page_size(10);
 ///
 /// timeline.start().unwrap();
@@ -488,10 +494,8 @@ impl FromJson for ExtendedTweetEntities {
 pub struct Timeline<'a> {
     ///The URL to request tweets from.
     link: &'static str,
-    ///The consumer token to authenticate requests with.
-    con_token: &'a auth::Token<'a>,
-    ///The access token to authenticate requests with.
-    access_token: &'a auth::Token<'a>,
+    ///The token to authorize requests with.
+    token: &'a auth::Token<'a>,
     ///Optional set of params to include prior to adding lifetime navigation parameters.
     params_base: Option<ParamList<'a>>,
     ///The maximum number of tweets to return in a single call. Twitter doesn't guarantee returning
@@ -558,7 +562,7 @@ impl<'a> Timeline<'a> {
             add_param(&mut params, "max_id", id.to_string());
         }
 
-        let mut resp = try!(auth::get(self.link, self.con_token, self.access_token, Some(&params)));
+        let mut resp = try!(auth::get(self.link, self.token, Some(&params)));
 
         parse_response(&mut resp)
     }
@@ -578,12 +582,10 @@ impl<'a> Timeline<'a> {
     }
 
     ///Create an instance of `Timeline` with the given link and tokens.
-    fn new(link: &'static str, params_base: Option<ParamList<'a>>,
-               con_token: &'a auth::Token, access_token: &'a auth::Token) -> Self {
+    fn new(link: &'static str, params_base: Option<ParamList<'a>>, token: &'a auth::Token) -> Self {
         Timeline {
             link: link,
-            con_token: con_token,
-            access_token: access_token,
+            token: token,
             params_base: params_base,
             count: 20,
             max_id: None,
@@ -606,11 +608,13 @@ impl<'a> Timeline<'a> {
 /// As-is, the draft won't do anything until you call `send` to post it:
 ///
 /// ```rust,no_run
-/// # let con_token = egg_mode::Token::new("", "");
-/// # let access_token = egg_mode::Token::new("", "");
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
 /// # use egg_mode::tweet::DraftTweet;
 /// # let draft = DraftTweet::new("This is an example status!");
-/// draft.send(&con_token, &access_token).unwrap();
+/// draft.send(&token).unwrap();
 /// ```
 ///
 /// Right now, the options for adding metadata to a post are pretty sparse. See the adaptor
@@ -618,20 +622,22 @@ impl<'a> Timeline<'a> {
 /// create a reply-chain like this:
 ///
 /// ```rust,no_run
-/// # let con_token = egg_mode::Token::new("", "");
-/// # let access_token = egg_mode::Token::new("", "");
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
 /// use egg_mode::tweet::DraftTweet;
 ///
 /// let draft = DraftTweet::new("I'd like to start a thread here.");
-/// let tweet = draft.send(&con_token, &access_token).unwrap();
+/// let tweet = draft.send(&token).unwrap();
 ///
 /// let draft = DraftTweet::new("You see, I have a lot of things to say.")
 ///                        .in_reply_to(tweet.id);
-/// let tweet = draft.send(&con_token, &access_token).unwrap();
+/// let tweet = draft.send(&token).unwrap();
 ///
 /// let draft = DraftTweet::new("Thank you for your time.")
 ///                        .in_reply_to(tweet.id);
-/// let tweet = draft.send(&con_token, &access_token).unwrap();
+/// let tweet = draft.send(&token).unwrap();
 /// ```
 #[derive(Debug)]
 pub struct DraftTweet<'a> {
@@ -759,7 +765,7 @@ impl<'a> DraftTweet<'a> {
     }
 
     ///Send the assembled tweet as the authenticated user.
-    pub fn send(&self, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Tweet> {
+    pub fn send(&self, token: &auth::Token) -> WebResponse<Tweet> {
         let mut params = HashMap::new();
         add_param(&mut params, "status", self.text);
 
@@ -793,7 +799,7 @@ impl<'a> DraftTweet<'a> {
             add_param(&mut params, "place_id", place_id);
         }
 
-        let mut resp = try!(auth::post(links::statuses::UPDATE, con_token, access_token, Some(&params)));
+        let mut resp = try!(auth::post(links::statuses::UPDATE, token, Some(&params)));
         parse_response(&mut resp)
     }
 }

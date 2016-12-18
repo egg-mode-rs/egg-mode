@@ -14,18 +14,18 @@ use super::PlaceQuery;
 ///## Examples
 ///
 ///```rust,no_run
-///# let con_token = egg_mode::Token::new("", "");
-///# let access_token = egg_mode::Token::new("", "");
-///let result = egg_mode::place::show("18810aa5b43e76c7",
-///                                   &con_token, &access_token)
-///                             .unwrap();
+///# let token = egg_mode::Token::Access {
+///#     consumer: egg_mode::KeyPair::new("", ""),
+///#     access: egg_mode::KeyPair::new("", ""),
+///# };
+///let result = egg_mode::place::show("18810aa5b43e76c7", &token).unwrap();
 ///
 ///assert!(result.full_name == "Dallas, TX");
 ///```
-pub fn show(id: &str, con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Place> {
+pub fn show(id: &str, token: &auth::Token) -> WebResponse<Place> {
     let url = format!("{}/{}.json", links::place::SHOW_STEM, id);
 
-    let mut resp = try!(auth::get(&url, con_token, access_token, None));
+    let mut resp = try!(auth::get(&url, token, None));
 
     parse_response(&mut resp)
 }
@@ -35,12 +35,14 @@ pub fn show(id: &str, con_token: &auth::Token, access_token: &auth::Token) -> We
 ///## Examples
 ///
 ///```rust,no_run
-///# let con_token = egg_mode::Token::new("", "");
-///# let access_token = egg_mode::Token::new("", "");
+///# let token = egg_mode::Token::Access {
+///#     consumer: egg_mode::KeyPair::new("", ""),
+///#     access: egg_mode::KeyPair::new("", ""),
+///# };
 ///use egg_mode::place::{self, PlaceType};
 ///let result = place::reverse_geocode(51.507222, -0.1275)
 ///                   .granularity(PlaceType::City)
-///                   .call(&con_token, &access_token)
+///                   .call(&token)
 ///                   .unwrap();
 ///
 ///assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
@@ -87,12 +89,12 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `reverse_geocode` query URL.
-pub fn reverse_geocode_url(url: &str, con_token: &auth::Token, access_token: &auth::Token)
+pub fn reverse_geocode_url(url: &str, token: &auth::Token)
     -> WebResponse<SearchResult>
 {
     let params = try!(parse_url(links::place::REVERSE_GEOCODE, url));
 
-    let mut resp = try!(auth::get(links::place::REVERSE_GEOCODE, con_token, access_token, Some(&params)));
+    let mut resp = try!(auth::get(links::place::REVERSE_GEOCODE, token, Some(&params)));
 
     parse_response(&mut resp)
 }
@@ -102,12 +104,14 @@ pub fn reverse_geocode_url(url: &str, con_token: &auth::Token, access_token: &au
 ///## Example
 ///
 ///```rust,no_run
-///# let con_token = egg_mode::Token::new("", "");
-///# let access_token = egg_mode::Token::new("", "");
+///# let token = egg_mode::Token::Access {
+///#     consumer: egg_mode::KeyPair::new("", ""),
+///#     access: egg_mode::KeyPair::new("", ""),
+///# };
 ///use egg_mode::place::{self, PlaceType};
 ///let result = place::search_point(51.507222, -0.1275)
 ///                   .granularity(PlaceType::City)
-///                   .call(&con_token, &access_token)
+///                   .call(&token)
 ///                   .unwrap();
 ///
 ///assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
@@ -121,12 +125,14 @@ pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder<'static> {
 ///## Example
 ///
 ///```rust,no_run
-///# let con_token = egg_mode::Token::new("", "");
-///# let access_token = egg_mode::Token::new("", "");
+///# let token = egg_mode::Token::Access {
+///#     consumer: egg_mode::KeyPair::new("", ""),
+///#     access: egg_mode::KeyPair::new("", ""),
+///# };
 ///use egg_mode::place::{self, PlaceType};
 ///let result = place::search_query("columbia")
 ///                   .granularity(PlaceType::Admin)
-///                   .call(&con_token, &access_token)
+///                   .call(&token)
 ///                   .unwrap();
 ///
 ///assert!(result.results.iter().any(|pl| pl.full_name == "British Columbia, Canada"));
@@ -146,12 +152,12 @@ pub fn search_ip<'a>(query: &'a str) -> SearchBuilder<'a> {
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `search` query URL.
-pub fn search_url(url: &str, con_token: &auth::Token, access_token: &auth::Token)
+pub fn search_url(url: &str, token: &auth::Token)
     -> WebResponse<SearchResult>
 {
     let params = try!(parse_url(links::place::SEARCH, url));
 
-    let mut resp = try!(auth::get(links::place::SEARCH, con_token, access_token, Some(&params)));
+    let mut resp = try!(auth::get(links::place::SEARCH, token, Some(&params)));
 
     parse_response(&mut resp)
 }

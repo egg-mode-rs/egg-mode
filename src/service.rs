@@ -28,8 +28,8 @@ use common::*;
 ///
 ///While the official home of Twitter's TOS is https://twitter.com/tos, this allows you to obtain a
 ///plain-text copy of it to display in your application.
-pub fn terms(con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<String> {
-    let mut resp = try!(auth::get(links::service::TERMS, con_token, access_token, None));
+pub fn terms(token: &auth::Token) -> WebResponse<String> {
+    let mut resp = try!(auth::get(links::service::TERMS, token, None));
 
     let ret = try!(parse_response::<json::Json>(&mut resp));
 
@@ -41,8 +41,8 @@ pub fn terms(con_token: &auth::Token, access_token: &auth::Token) -> WebResponse
 ///
 ///While the official home of Twitter's Privacy Policy is https://twitter.com/privacy, this allows
 ///you to obtain a plain-text copy of it to display in your application.
-pub fn privacy(con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<String> {
-    let mut resp = try!(auth::get(links::service::PRIVACY, con_token, access_token, None));
+pub fn privacy(token: &auth::Token) -> WebResponse<String> {
+    let mut resp = try!(auth::get(links::service::PRIVACY, token, None));
 
     let ret = try!(parse_response::<json::Json>(&mut resp));
 
@@ -60,8 +60,8 @@ pub fn privacy(con_token: &auth::Token, access_token: &auth::Token) -> WebRespon
 ///fields returned by this function mean.
 ///
 ///[`Configuration`]: struct.Configuration.html
-pub fn config(con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<Configuration> {
-    let mut resp = try!(auth::get(links::service::CONFIG, con_token, access_token, None));
+pub fn config(token: &auth::Token) -> WebResponse<Configuration> {
+    let mut resp = try!(auth::get(links::service::CONFIG, token, None));
 
     parse_response(&mut resp)
 }
@@ -73,8 +73,8 @@ pub fn config(con_token: &auth::Token, access_token: &auth::Token) -> WebRespons
 ///documentation for [`RateLimitStatus`][] and its associated enums for more information.
 ///
 ///[`RateLimitStatus`]: struct.RateLimitStatus.html
-pub fn rate_limit_status(con_token: &auth::Token, access_token: &auth::Token) -> WebResponse<RateLimitStatus> {
-    let mut resp = try!(auth::get(links::service::RATE_LIMIT_STATUS, con_token, access_token, None));
+pub fn rate_limit_status(token: &auth::Token) -> WebResponse<RateLimitStatus> {
+    let mut resp = try!(auth::get(links::service::RATE_LIMIT_STATUS, token, None));
 
     parse_response(&mut resp)
 }
@@ -149,9 +149,11 @@ impl FromJson for Configuration {
 ///`tweet::home_timeline`, you could access it like this:
 ///
 ///```rust,no_run
-///# let c = egg_mode::Token::new("", "");
-///# let a = egg_mode::Token::new("", "");
-///# let status = egg_mode::service::rate_limit_status(&c, &a).unwrap();
+///# let token = egg_mode::Token::Access {
+///#     consumer: egg_mode::KeyPair::new("", ""),
+///#     access: egg_mode::KeyPair::new("", ""),
+///# };
+///# let status = egg_mode::service::rate_limit_status(&token).unwrap();
 ///use egg_mode::service::TweetMethod;
 ///println!("home_timeline calls remaining: {}",
 ///         status.tweet[&TweetMethod::HomeTimeline].rate_limit_remaining);
