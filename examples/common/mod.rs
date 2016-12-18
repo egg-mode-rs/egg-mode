@@ -83,6 +83,7 @@ impl Config {
                     config.push('\n');
                     config.push_str(&access_token.secret);
                 },
+                _ => unreachable!(),
             }
 
             let mut f = std::fs::File::create("twitter_settings").unwrap();
