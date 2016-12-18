@@ -5,7 +5,7 @@ use std::time::{UNIX_EPOCH, SystemTime};
 use url::percent_encoding::{EncodeSet, utf8_percent_encode};
 use hyper;
 use hyper::client::response::Response as HyperResponse;
-use hyper::header::{Authorization, Scheme, ContentType};
+use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer};
 use hyper::method::Method;
 use mime::Mime;
 use rand::{self, Rng};
@@ -13,6 +13,7 @@ use crypto::hmac::Hmac;
 use crypto::mac::Mac;
 use crypto::sha1::Sha1;
 use rustc_serialize::base64::{self, ToBase64};
+use rustc_serialize::json;
 use super::{links, error};
 use super::common::*;
 
@@ -169,7 +170,11 @@ pub enum Token<'a> {
         ///An "access" key/secret that represents the user's authorization of the application.
         access: KeyPair<'a>,
     },
-    //Bearer(Cow<'a, str>),
+    ///An OAuth Bearer token indicating the request is coming from the application itself, not a
+    ///particular user. See [`bearer_token`] for more information.
+    ///
+    ///[`bearer_token`]: fn.bearer_token.html
+    Bearer(String),
 }
 
 ///With the given OAuth header and method parameters, create an OAuth
@@ -258,6 +263,23 @@ fn get_header(method: Method,
     sign(header, method, uri, params, con_token, access_token)
 }
 
+fn bearer_request(con_token: &KeyPair) -> Basic {
+    let config = base64::Config {
+        char_set: base64::CharacterSet::Standard,
+        newline: base64::Newline::LF,
+        pad: true,
+        line_length: None,
+    };
+    let req_token = format!("{}:{}",
+                            percent_encode(&con_token.key),
+                            percent_encode(&con_token.secret)).as_bytes().to_base64(config);
+
+    Basic {
+        username: req_token,
+        password: None,
+    }
+}
+
 pub fn get(uri: &str,
            token: &Token,
            params: Option<&ParamList>) -> Result<HyperResponse, error::Error> {
@@ -281,6 +303,9 @@ pub fn get(uri: &str,
             let header = get_header(Method::Get, uri, con_token, Some(access_token),
                                     None, None, params);
             client.get(&full_url).header(Authorization(header))
+        },
+        Token::Bearer(ref token) => {
+            client.get(&full_url).header(Authorization(Bearer { token: token.clone() }))
         },
     };
 
@@ -312,6 +337,9 @@ pub fn post(uri: &str,
                                     None, None, params);
 
             request.header(Authorization(header))
+        },
+        Token::Bearer(ref token) => {
+            request.header(Authorization(Bearer { token: token.clone() }))
         },
     };
 
@@ -443,6 +471,67 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
         },
         try!(id.ok_or(error::Error::MissingValue("user_id"))),
         try!(username.ok_or(error::Error::MissingValue("screen_name")))))
+}
+
+///With the given consumer KeyPair, ask Twitter for the current Bearer token for the application
+///represented by it.
+///
+///For more information, see the Twitter documentation about [Application-only
+///authentication][auth].
+///
+///[auth]: https://dev.twitter.com/oauth/application-only
+pub fn bearer_token(con_token: &KeyPair) -> Result<Token<'static>, error::Error> {
+    let auth_header = bearer_request(con_token);
+
+    let content: Mime = "application/x-www-form-urlencoded;charset=UTF-8".parse().unwrap();
+    let client = hyper::Client::new();
+    let mut resp = try!(client.post(links::auth::BEARER_TOKEN)
+                              .header(Authorization(auth_header))
+                              .header(ContentType(content))
+                              .body("grant_type=client_credentials".as_bytes())
+                              .send());
+    let full_resp = try!(response_raw(&mut resp));
+
+    let decoded = try!(json::Json::from_str(&full_resp));
+    let result = try!(decoded.find("access_token")
+                             .and_then(|s| s.as_string())
+                             .ok_or(error::Error::MissingValue("access_token")));
+
+    Ok(Token::Bearer(result.to_owned()))
+}
+
+///Invalidate the given Bearer token using the given consumer KeyPair. Upon success, returns the
+///Token that was just invalidated.
+///
+///# Errors
+///
+///If the Token passed in is not a Bearer token, this function will return a `MissingValue` error
+///referencing the "token", without calling Twitter.
+pub fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> Result<Token<'static>, error::Error> {
+    let token = if let Token::Bearer(ref token) = *token {
+        token
+    }
+    else {
+        return Err(error::Error::MissingValue("token"));
+    };
+
+    let auth_header = bearer_request(con_token);
+
+    let content: Mime = "application/x-www-form-urlencoded;charset=UTF-8".parse().unwrap();
+    let client = hyper::Client::new();
+    let mut resp = try!(client.post(links::auth::INVALIDATE_BEARER)
+                              .header(Authorization(auth_header))
+                              .header(ContentType(content))
+                              .body(format!("access_token={}", token).as_bytes())
+                              .send());
+    let full_resp = try!(response_raw(&mut resp));
+
+    let decoded = try!(json::Json::from_str(&full_resp));
+    let result = try!(decoded.find("access_token")
+                             .and_then(|s| s.as_string())
+                             .ok_or(error::Error::MissingValue("access_token")));
+
+    Ok(Token::Bearer(result.to_owned()))
 }
 
 ///If the given tokens are valid, return the user information for the authenticated user.

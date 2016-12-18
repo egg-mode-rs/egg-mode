@@ -135,5 +135,6 @@ pub mod service;
 pub mod text;
 mod links;
 
-pub use auth::{KeyPair, Token, request_token, authorize_url, authenticate_url, access_token, verify_tokens};
+pub use auth::{KeyPair, Token, request_token, authorize_url, authenticate_url,
+               access_token, verify_tokens, bearer_token, invalidate_bearer};
 pub use common::{Response, ResponseIter, ResponseIterRef, ResponseIterMut, WebResponse};

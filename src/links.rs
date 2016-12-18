@@ -1,6 +1,8 @@
 pub mod auth {
     pub const REQUEST_TOKEN: &'static str = "https://api.twitter.com/oauth/request_token";
     pub const ACCESS_TOKEN: &'static str = "https://api.twitter.com/oauth/access_token";
+    pub const BEARER_TOKEN: &'static str = "https://api.twitter.com/oauth2/token";
+    pub const INVALIDATE_BEARER: &'static str = "https://api.twitter.com/oauth2/invalidate_token";
     pub const AUTHORIZE: &'static str = "https://api.twitter.com/oauth/authorize";
     pub const AUTHENTICATE: &'static str = "https://api.twitter.com/oauth/authenticate";
     pub const VERIFY_CREDENTIALS: &'static str = "https://api.twitter.com/1.1/account/verify_credentials.json";

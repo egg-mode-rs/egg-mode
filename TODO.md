@@ -9,16 +9,12 @@ return a list of IDs of something are grouped in with the rest of the main struc
 
 ## [OAuth](https://dev.twitter.com/oauth/overview)
 
-Implementing OAuth2/Bearer tokens/Application-based auth would need some parallel infrastructure or
-some kind of overloading of Tokens, since they send a different header than regular consumer/access
-tokens.
-
 - [x] oauth/request\_token (`request_token`)
 - [x] oauth/authenticate (`authenticate_url`)
 - [x] oauth/authorize (`authorize_url`)
 - [x] oauth/access\_token (`access_token`)
-- [ ] oauth2/token
-- [ ] oauth2/invalidate\_token
+- [x] oauth2/token (`bearer_token`)
+- [x] oauth2/invalidate\_token (`invalidate_bearer`)
 
 ## [Public API](https://dev.twitter.com/rest/public)
 

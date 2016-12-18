@@ -1,6 +1,10 @@
 # Changelog for egg-mode
 
 ## Pending
+### Added
+- New authentication functions `bearer_token` and `invalidate_bearer`, to perform Application-only
+  authentication
+
 ### Changed
 - The Great Token Refactor of 0.8
   - Rather than forcing consumers of the library to handle their consumer token and access token
