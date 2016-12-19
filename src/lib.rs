@@ -51,6 +51,28 @@
 //! from earlier in the process with that verifier to request an [access token][]. This access
 //! token can then be saved and cached for future use.
 //!
+//! ### Alternate method: Bearer tokens
+//!
+//! If your only use for the Twitter API is to look at public data - things like public tweet
+//! searches, or viewing public user profiles - you may be interested in Application-only
+//! authentication. App-only auth provides a much easier way to authenticate API calls, with the
+//! restriction that the Bearer token it provides can only be used for calls that do not need a
+//! user context. For example, calls like `tweet::home_timeline`, which act on behalf of the
+//! authenticated user, will return an error if used with a Bearer token.
+//!
+//! If a Bearer token will work for your purposes, use the following steps to get a Token:
+//!
+//! 1. With the consumer key/secret obtained the same way as above, ask Twitter for the current
+//!    [Bearer token] for your application.
+//!
+//! [Bearer token]: fn.bearer_token.html
+//!
+//! And... that's it! This Bearer token can be cached and saved for future use. It will not expire
+//! until you ask Twitter to [invalidate] the token for you. Otherwise, this token can be used the
+//! same way as the [access token] from earlier, but with the restrictions mentioned above.
+//!
+//! [invalidate]: fn.invalidate_token.html
+//!
 //! ## `Response<T>`
 //!
 //! Every method that calls Twitter and carries rate-limit information wraps its return value in a

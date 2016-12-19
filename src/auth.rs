@@ -463,13 +463,34 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
         try!(username.ok_or(error::Error::MissingValue("screen_name")))))
 }
 
-///With the given consumer KeyPair, ask Twitter for the current Bearer token for the application
-///represented by it.
+/// With the given consumer KeyPair, request the current Bearer token to perform Application-only
+/// authentication.
 ///
-///For more information, see the Twitter documentation about [Application-only
-///authentication][auth].
+/// If you don't need to use the Twitter API to perform actions on or with specific users, app-only
+/// auth provides a much easier way to authenticate with the Twitter API. The Token given by this
+/// function can be used to authenticate requests as if there were coming from your app itself.
+/// This comes with an important restriction, though: any request that requires a user context -
+/// direct messages, viewing protected user profiles, functions like `tweet::home_timeline` that
+/// operate in terms of the authenticated user - will not work with just a Bearer token. Attempts
+/// to perform those actions will return an authentication error.
 ///
-///[auth]: https://dev.twitter.com/oauth/application-only
+/// Other things to note about Bearer tokens:
+///
+/// - Bearer tokens have a higher rate limit for the methods they can be used on, compared to
+///   regular Access tokens.
+/// - The bearer token returned by Twitter is the same token each time you call it. It can be
+///   cached and reused as long as you need it.
+/// - Since a Bearer token can be used to directly authenticate calls to Twitter, it should be
+///   treated with the same sensitivity as a password. If you believe your Bearer token to be
+///   compromised, call [`invalidate_bearer`] with your consumer KeyPair and the Bearer token you
+///   need to invalidate.  This will cause Twitter to generate a new Bearer token for your
+///   application, which will be returned the next time you call this function.
+///
+/// [`invalidate_bearer`]: fn.invalidate_bearer.html
+///
+/// For more information, see the Twitter documentation on [Application-only authentication][auth].
+///
+/// [auth]: https://dev.twitter.com/oauth/application-only
 pub fn bearer_token(con_token: &KeyPair) -> Result<Token<'static>, error::Error> {
     let auth_header = bearer_request(con_token);
 
