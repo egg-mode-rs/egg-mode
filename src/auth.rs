@@ -264,19 +264,9 @@ fn get_header(method: Method,
 }
 
 fn bearer_request(con_token: &KeyPair) -> Basic {
-    let config = base64::Config {
-        char_set: base64::CharacterSet::Standard,
-        newline: base64::Newline::LF,
-        pad: true,
-        line_length: None,
-    };
-    let req_token = format!("{}:{}",
-                            percent_encode(&con_token.key),
-                            percent_encode(&con_token.secret)).as_bytes().to_base64(config);
-
     Basic {
-        username: req_token,
-        password: None,
+        username: percent_encode(&con_token.key),
+        password: Some(percent_encode(&con_token.secret)),
     }
 }
 
@@ -541,4 +531,24 @@ pub fn verify_tokens(token: &Token)
     let mut resp = try!(get(links::auth::VERIFY_CREDENTIALS, token, None));
 
     parse_response(&mut resp)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::bearer_request;
+    use hyper::header::{Authorization, HeaderFormat};
+
+    #[test]
+    fn bearer_header() {
+        let con_key = "xvz1evFS4wEEPTGEFPHBog";
+        let con_secret = "L8qq9PZyRg6ieKGEKhZolGC0vJWLw8iEJ88DRdyOg";
+        let con_token = super::KeyPair::new(con_key, con_secret);
+
+        let header = Authorization(bearer_request(&con_token));
+        let test = &header as &(HeaderFormat + Send + Sync);
+
+        let output = test.to_string();
+
+        assert_eq!(output, "Basic eHZ6MWV2RlM0d0VFUFRHRUZQSEJvZzpMOHFxOVBaeVJnNmllS0dFS2hab2xHQzB2SldMdzhpRUo4OERSZHlPZw==");
+    }
 }
