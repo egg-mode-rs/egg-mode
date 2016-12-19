@@ -71,7 +71,7 @@
 //! until you ask Twitter to [invalidate] the token for you. Otherwise, this token can be used the
 //! same way as the [access token] from earlier, but with the restrictions mentioned above.
 //!
-//! [invalidate]: fn.invalidate_token.html
+//! [invalidate]: fn.invalidate_bearer.html
 //!
 //! ## `Response<T>`
 //!
