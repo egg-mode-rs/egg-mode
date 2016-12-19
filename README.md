@@ -52,7 +52,17 @@ with your application. With this access token, all of the other Twitter function
 a new Token enum that contains both the consumer and access tokens. This combined Token is then
 passed to all the library functions in lieu of the separate key pairs.
 
-For more examples of how to use this library, check the files in the examples folder.
+For more examples of how to use this library, check the files in the examples folder. The
+authentication code for most of them is in `examples/common/mod.rs`, though that's also mostly
+wrapped up in code to write the access token to disk and load it back in. `examples/bearer.rs` is an
+example of using application-only authentication to get a Bearer token and use it to load a user's
+posts. Other examples showcase a handful of actions from their related module. To run any of the
+examples for yourself, see the notes in `examples/common/mod.rs`.
+
+If you've found egg-mode useful, or just want to communicate your first impressions of it, please
+[track me down on Twitter][qm-twitter] and let me know!
+
+[qm-twitter]: https://twitter.com/QuietMisdreavus
 
 ## License
 
