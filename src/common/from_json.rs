@@ -68,6 +68,12 @@ impl<T> FromJson for Box<T> where T: FromJson {
     }
 }
 
+impl FromJson for usize {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        input.as_u64().map(|x| x as usize).ok_or_else(|| InvalidResponse("expected an usize", Some(input.to_string())))
+    }
+}
+
 impl FromJson for i64 {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         input.as_i64().ok_or_else(|| InvalidResponse("expected an i64", Some(input.to_string())))
@@ -98,6 +104,23 @@ impl FromJson for bool {
     }
 }
 
+impl FromJson for (usize, usize) {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        //assumptions: input is
+        // - an array
+        // - of integers
+        // - with exactly two entries
+        //any deviation from these assumptions will return an error.
+        let int_vec = try!(Vec::<usize>::from_json(input));
+
+        if int_vec.len() != 2 {
+            return Err(InvalidResponse("array for pair didn't have two entries", Some(input.to_string())));
+        }
+
+        Ok((int_vec[0], int_vec[1]))
+    }
+}
+
 impl FromJson for (i32, i32) {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         //assumptions: input is
@@ -105,19 +128,13 @@ impl FromJson for (i32, i32) {
         // - of integers
         // - with exactly two entries
         //any deviation from these assumptions will return an error.
-        let int_vec = try!(input.as_array()
-                                .ok_or_else(|| InvalidResponse("expected an array for a pair", Some(input.to_string())))
-                                .and_then(|v| v.iter()
-                                               .map(|i| i.as_i64())
-                                               .collect::<Option<Vec<_>>>()
-                                               .ok_or_else(|| InvalidResponse("array for pair was not fully integers",
-                                                                              Some(input.to_string())))));
+        let int_vec = try!(Vec::<i32>::from_json(input));
 
         if int_vec.len() != 2 {
             return Err(InvalidResponse("array for pair didn't have two entries", Some(input.to_string())));
         }
 
-        Ok((int_vec[0] as i32, int_vec[1] as i32))
+        Ok((int_vec[0], int_vec[1]))
     }
 }
 
@@ -128,13 +145,7 @@ impl FromJson for (f64, f64) {
         // - of floats
         // - with exactly two entries
         //any deviation from these assumptions will return an error.
-        let float_vec = try!(input.as_array()
-                                  .ok_or_else(|| InvalidResponse("expected an array for a pair", Some(input.to_string())))
-                                  .and_then(|v| v.iter()
-                                                 .map(|i| i.as_f64())
-                                                 .collect::<Option<Vec<_>>>()
-                                                 .ok_or_else(|| InvalidResponse("array for pair was not fully floats",
-                                                                                Some(input.to_string())))));
+        let float_vec = try!(Vec::<f64>::from_json(input));
 
         if float_vec.len() != 2 {
             return Err(InvalidResponse("array for pair didn't have two entries", Some(input.to_string())));

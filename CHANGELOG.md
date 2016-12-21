@@ -19,6 +19,9 @@
   - All of the above amounts to **an enormous breaking change**, for which I must apologize. It's
     this way so I can support application-only authentication. Hopefully the loss of extra text for
     all those function calls can make up for it.
+- Quality-of-life changes to various structs:
+  - `Tweet::display_text_range` is now `Option<(usize, usize)>` and counts byte offsets instead of
+	character indices
 
 ## [0.7.0] - 2016-11-30
 ### Added

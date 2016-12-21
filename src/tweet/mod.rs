@@ -148,9 +148,9 @@ pub struct Tweet {
     pub created_at: chrono::DateTime<chrono::UTC>,
     ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
     pub current_user_retweet: Option<i64>,
-    ///If this tweet is an extended tweet with "hidden" metadata and entities, contains the code
-    ///point indices where the "displayable" tweet text is.
-    pub display_text_range: Option<(i32, i32)>,
+    ///If this tweet is an extended tweet with "hidden" metadata and entities, contains the byte
+    ///offsets between which the "displayable" tweet text is.
+    pub display_text_range: Option<(usize, usize)>,
     ///Link, hashtag, and user mention information extracted from the tweet text.
     pub entities: TweetEntities,
     ///Extended media information attached to the tweet, if media is available.
@@ -250,12 +250,26 @@ impl FromJson for Tweet {
         field_present!(input, source);
         field_present!(input, truncated);
 
+        let text: String = try!(field(input, "full_text").or(field(input, "text")));
+        let mut display_text_range: Option<(usize, usize)> = try!(field(input, "display_text_range"));
+
+        if let Some((ref mut start, ref mut end)) = display_text_range {
+            for (ch_offset, (by_offset, _)) in text.char_indices().enumerate() {
+                if ch_offset == start {
+                    start = by_offset;
+                }
+                else if ch_offset == end {
+                    end = by_offset;
+                }
+            }
+        }
+
         Ok(Tweet {
             //contributors: Option<Contributors>,
             coordinates: coords.map(|(lon, lat)| (lat, lon)),
             created_at: try!(field(input, "created_at")),
             current_user_retweet: try!(current_user_retweet(input, "current_user_retweet")),
-            display_text_range: try!(field(input, "display_text_range")),
+            display_text_range: display_text_range,
             entities: try!(field(input, "entities")),
             extended_entities: try!(field(input, "extended_entities")),
             favorite_count: field(input, "favorite_count").unwrap_or(0),
@@ -275,7 +289,7 @@ impl FromJson for Tweet {
             retweeted: try!(field(input, "retweeted")),
             retweeted_status: try!(field(input, "retweeted_status")),
             source: try!(field(input, "source")),
-            text: try!(field(input, "full_text").or(field(input, "text"))),
+            text: text,
             truncated: try!(field(input, "truncated")),
             user: try!(field(input, "user")),
             withheld_copyright: field(input, "withheld_copyright").unwrap_or(false),
