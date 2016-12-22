@@ -104,8 +104,8 @@ pub struct SearchBuilder<'a> {
     count: Option<u32>,
     until: Option<(u32, u32, u32)>,
     geocode: Option<(f32, f32, Distance)>,
-    since_id: Option<i64>,
-    max_id: Option<i64>,
+    since_id: Option<u64>,
+    max_id: Option<u64>,
 }
 
 impl<'a> SearchBuilder<'a> {
@@ -156,7 +156,7 @@ impl<'a> SearchBuilder<'a> {
 
     ///Restricts results to those with higher IDs than (i.e. that were posted after) the given
     ///tweet ID.
-    pub fn since_tweet(self, since_id: i64) -> Self {
+    pub fn since_tweet(self, since_id: u64) -> Self {
         SearchBuilder {
             since_id: Some(since_id),
             ..self
@@ -165,7 +165,7 @@ impl<'a> SearchBuilder<'a> {
 
     ///Restricts results to those with IDs no higher than (i.e. were posted earlier than) the given
     ///tweet ID. Will include the given tweet in search results.
-    pub fn max_tweet(self, max_id: i64) -> Self {
+    pub fn max_tweet(self, max_id: u64) -> Self {
         SearchBuilder {
             max_id: Some(max_id),
             ..self
@@ -225,8 +225,8 @@ pub struct SearchResult<'a> {
     ///The query used to generate this page of results. Note that changing this will not affect the
     ///`next_page` method.
     pub query: String,
-    max_id: i64,
-    since_id: i64,
+    max_id: u64,
+    since_id: u64,
     params: Option<ParamList<'a>>,
 }
 

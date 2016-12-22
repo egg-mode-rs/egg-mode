@@ -8,7 +8,7 @@ use user::UserID;
 use super::*;
 
 ///Lookup a single DM by its numeric ID.
-pub fn show(id: i64, token: &auth::Token)
+pub fn show(id: u64, token: &auth::Token)
     -> WebResponse<DirectMessage>
 {
     let mut params = HashMap::new();
@@ -56,7 +56,7 @@ pub fn send<'a, T: Into<UserID<'a>>>(to: T, text: &str, token: &auth::Token)
 ///The authenticated user must be the sender of this DM for this call to be successful.
 ///
 ///On a successful deletion, returns the freshly-deleted message.
-pub fn delete(id: i64, token: &auth::Token)
+pub fn delete(id: u64, token: &auth::Token)
     -> WebResponse<DirectMessage>
 {
     let mut params = HashMap::new();

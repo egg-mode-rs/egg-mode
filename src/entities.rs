@@ -68,7 +68,7 @@ pub struct MediaEntity {
     ///An expanded version of `display_url`; links to the media display page.
     pub expanded_url: String,
     ///A numeric ID for the media.
-    pub id: i64,
+    pub id: u64,
     ///Character indices where the media URL is located. The first index is the location of the
     ///first character of the URL; the second is the location of the first character following the
     ///URL.
@@ -87,7 +87,7 @@ pub struct MediaEntity {
     pub sizes: MediaSizes,
     ///For tweets containing media that was originally associated with a different tweet, this
     ///contains the ID of the original tweet.
-    pub source_status_id: Option<i64>,
+    pub source_status_id: Option<u64>,
     ///The type of media being represented.
     pub media_type: MediaType,
     ///The t.co link from the original text.
@@ -184,7 +184,7 @@ pub struct UrlEntity {
 #[derive(Debug)]
 pub struct MentionEntity {
     ///Numeric ID of the mentioned user.
-    pub id: i64,
+    pub id: u64,
     ///Character indices where the user mention is located in the original text. The first index is
     ///the location of the @ symbol; the second is the location of the first character following
     ///the user screen name.

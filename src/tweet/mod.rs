@@ -147,7 +147,7 @@ pub struct Tweet {
     ///UTC timestamp from when the tweet was posted.
     pub created_at: chrono::DateTime<chrono::UTC>,
     ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
-    pub current_user_retweet: Option<i64>,
+    pub current_user_retweet: Option<u64>,
     ///If this tweet is an extended tweet with "hidden" metadata and entities, contains the byte
     ///offsets between which the "displayable" tweet text is.
     pub display_text_range: Option<(usize, usize)>,
@@ -168,13 +168,13 @@ pub struct Tweet {
     //this tweet.
     //pub filter_level: FilterLevel,
     ///Numeric ID for this tweet.
-    pub id: i64,
+    pub id: u64,
     ///If the tweet is a reply, contains the ID of the user that was replied to.
-    pub in_reply_to_user_id: Option<i64>,
+    pub in_reply_to_user_id: Option<u64>,
     ///If the tweet is a reply, contains the screen name of the user that was replied to.
     pub in_reply_to_screen_name: Option<String>,
     ///If the tweet is a reply, contains the ID of the tweet that was replied to.
-    pub in_reply_to_status_id: Option<i64>,
+    pub in_reply_to_status_id: Option<u64>,
     ///Can contain a language ID indicating the machine-detected language of the text, or "und" if
     ///no language could be detected.
     pub lang: String,
@@ -185,7 +185,7 @@ pub struct Tweet {
     ///identified as sensitive.
     pub possibly_sensitive: Option<bool>,
     ///If this tweet is quoting another by link, contains the ID of the quoted tweet.
-    pub quoted_status_id: Option<i64>,
+    pub quoted_status_id: Option<u64>,
     ///If this tweet is quoting another by link, contains the quoted tweet.
     pub quoted_status: Option<Box<Tweet>>,
     //"A set of key-value pairs indicating the intended contextual delivery of the containing
@@ -255,12 +255,16 @@ impl FromJson for Tweet {
 
         if let Some((ref mut start, ref mut end)) = display_text_range {
             for (ch_offset, (by_offset, _)) in text.char_indices().enumerate() {
-                if ch_offset == start {
-                    start = by_offset;
+                if ch_offset == *start {
+                    *start = by_offset;
                 }
-                else if ch_offset == end {
-                    end = by_offset;
+                else if ch_offset == *end {
+                    *end = by_offset;
                 }
+            }
+
+            if text.chars().count() == *end {
+                *end = text.len();
             }
         }
 
@@ -299,9 +303,9 @@ impl FromJson for Tweet {
     }
 }
 
-fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Option<i64>, error::Error> {
+fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Option<u64>, error::Error> {
     if let Some(obj) = input.find(field).and_then(|f| f.as_object()) {
-        match obj.get("id").and_then(|o| o.as_i64()) {
+        match obj.get("id").and_then(|o| o.as_u64()) {
             Some(id) => Ok(Some(id)),
             None => Err(InvalidResponse("invalid structure inside current_user_retweet", None)),
         }
@@ -517,9 +521,9 @@ pub struct Timeline<'a> {
     ///collection of tweets.
     pub count: i32,
     ///The largest/most recent tweet ID returned in the last call to `start`, `older`, or `newer`.
-    pub max_id: Option<i64>,
+    pub max_id: Option<u64>,
     ///The smallest/oldest tweet ID returned in the last call to `start`, `older`, or `newer`.
-    pub min_id: Option<i64>,
+    pub min_id: Option<u64>,
 }
 
 impl<'a> Timeline<'a> {
@@ -538,7 +542,7 @@ impl<'a> Timeline<'a> {
 
     ///Return the set of tweets older than the last set pulled, optionally placing a minimum tweet
     ///ID to bound with.
-    pub fn older(&mut self, since_id: Option<i64>) -> WebResponse<Vec<Tweet>> {
+    pub fn older(&mut self, since_id: Option<u64>) -> WebResponse<Vec<Tweet>> {
         let resp = try!(self.call(since_id, self.min_id.map(|id| id - 1)));
 
         self.map_ids(&resp.response);
@@ -548,7 +552,7 @@ impl<'a> Timeline<'a> {
 
     ///Return the set of tweets newer than the last set pulled, optionall placing a maximum tweet
     ///ID to bound with.
-    pub fn newer(&mut self, max_id: Option<i64>) -> WebResponse<Vec<Tweet>> {
+    pub fn newer(&mut self, max_id: Option<u64>) -> WebResponse<Vec<Tweet>> {
         let resp = try!(self.call(self.max_id, max_id));
 
         self.map_ids(&resp.response);
@@ -563,7 +567,7 @@ impl<'a> Timeline<'a> {
     ///
     ///If the range of tweets given by the IDs would return more than `self.count`, the newest set
     ///of tweets will be returned.
-    pub fn call(&self, since_id: Option<i64>, max_id: Option<i64>) -> WebResponse<Vec<Tweet>> {
+    pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>) -> WebResponse<Vec<Tweet>> {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
         add_param(&mut params, "count", self.count.to_string());
         add_param(&mut params, "tweet_mode", "extended");
@@ -658,13 +662,13 @@ pub struct DraftTweet<'a> {
     ///The text of the draft tweet.
     pub text: &'a str,
     ///If present, the ID of the tweet this draft is replying to.
-    pub in_reply_to: Option<i64>,
+    pub in_reply_to: Option<u64>,
     ///If present, whether to automatically fill reply mentions from the metadata of the
     ///`in_reply_to` tweet.
     pub auto_populate_reply_metadata: Option<bool>,
     ///If present, the list of user IDs to exclude from the automatically-populated metadata pulled
     ///when `auto_populate_reply_metadata` is true.
-    pub exclude_reply_user_ids: Option<&'a [i64]>,
+    pub exclude_reply_user_ids: Option<&'a [u64]>,
     ///If present, the tweet link to quote or a [DM deep link][] to include in the tweet's
     ///attachment metadata.
     ///
@@ -701,7 +705,7 @@ impl<'a> DraftTweet<'a> {
     ///
     ///Note that this will only properly take effect if the user who posted the given status is
     ///@mentioned in the status text, or if the given status was posted by the authenticated user.
-    pub fn in_reply_to(self, in_reply_to: i64) -> Self {
+    pub fn in_reply_to(self, in_reply_to: u64) -> Self {
         DraftTweet {
             in_reply_to: Some(in_reply_to),
             ..self
@@ -730,7 +734,7 @@ impl<'a> DraftTweet<'a> {
     ///
     ///Note that you cannot use this parameter to remove the author of the parent tweet from the
     ///reply list. Twitter will silently ignore the author's ID in that scenario.
-    pub fn exclude_reply_user_ids(self, user_ids: &'a [i64]) -> Self {
+    pub fn exclude_reply_user_ids(self, user_ids: &'a [u64]) -> Self {
         DraftTweet {
             exclude_reply_user_ids: Some(user_ids),
             ..self
@@ -847,7 +851,7 @@ mod tests {
         assert!(sample.user.is_some());
         assert_eq!(sample.user.unwrap().screen_name, "0xabad1dea");
         assert_eq!(sample.id, 782349500404862976);
-        assert_eq!(sample.source.name, "Tweetbot for iΟS");
+        assert_eq!(sample.source.name, "Tweetbot for iΟS"); //note that's an omicron, not an O
         assert_eq!(sample.source.url, "http://tapbots.com/tweetbot");
         assert_eq!(sample.created_at.weekday(), Weekday::Sat);
         assert_eq!(sample.created_at.year(), 2016);
@@ -869,7 +873,11 @@ mod tests {
         assert!(sample.entities.user_mentions.iter().any(|m| m.screen_name == "Serrayak"));
         assert!(sample.extended_entities.is_some());
         assert_eq!(sample.extended_entities.unwrap().media.len(), 1);
-        assert_eq!(sample.display_text_range, Some((0, 124)));
+
+        //text contains no leading mentions or extended link, so the display range is the whole
+        //tweet
+        let range = sample.display_text_range.unwrap();
+        assert_eq!(&sample.text[range.0..range.1], sample.text);
         assert_eq!(sample.truncated, false);
     }
 

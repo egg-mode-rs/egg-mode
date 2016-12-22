@@ -57,7 +57,7 @@ pub use self::fun::*;
 ///either refers to the sender or receiver in some manner.
 pub struct DirectMessage {
     ///Numeric ID for this DM.
-    pub id: i64,
+    pub id: u64,
     ///UTC timestamp from when this DM was created.
     pub created_at: chrono::DateTime<chrono::UTC>,
     ///The text of the DM.
@@ -67,13 +67,13 @@ pub struct DirectMessage {
     ///The screen name of the user who sent the DM.
     pub sender_screen_name: String,
     ///The ID of the user who sent the DM.
-    pub sender_id: i64,
+    pub sender_id: u64,
     ///Full information of the user who sent the DM.
     pub sender: Box<user::TwitterUser>,
     ///The screen name of the user who received the DM.
     pub recipient_screen_name: String,
     ///The ID of the user who received the DM.
-    pub recipient_id: i64,
+    pub recipient_id: u64,
     ///Full information for the user who received the DM.
     pub recipient: Box<user::TwitterUser>,
 }
@@ -246,9 +246,9 @@ pub struct Timeline<'a> {
     ///the initial collection of messages.
     pub count: i32,
     ///The largest/most recent DM ID returned in the last call to `start`, `older`, or `newer`.
-    pub max_id: Option<i64>,
+    pub max_id: Option<u64>,
     ///The smallest/oldest DM ID returned in the last call to `start`, `older`, or `newer`.
-    pub min_id: Option<i64>,
+    pub min_id: Option<u64>,
 }
 
 impl<'a> Timeline<'a> {
@@ -267,7 +267,7 @@ impl<'a> Timeline<'a> {
 
     ///Return the set of DMs older than the last set pulled, optionally placing a minimum DM ID to
     ///bound with.
-    pub fn older(&mut self, since_id: Option<i64>) -> WebResponse<Vec<DirectMessage>> {
+    pub fn older(&mut self, since_id: Option<u64>) -> WebResponse<Vec<DirectMessage>> {
         let resp = try!(self.call(since_id, self.min_id.map(|id| id - 1)));
 
         self.map_ids(&resp.response);
@@ -277,7 +277,7 @@ impl<'a> Timeline<'a> {
 
     ///Return the set of DMs newer than the last set pulled, optionally placing a maximum DM ID to
     ///bound with.
-    pub fn newer(&mut self, max_id: Option<i64>) -> WebResponse<Vec<DirectMessage>> {
+    pub fn newer(&mut self, max_id: Option<u64>) -> WebResponse<Vec<DirectMessage>> {
         let resp = try!(self.call(self.max_id, max_id));
 
         self.map_ids(&resp.response);
@@ -292,7 +292,7 @@ impl<'a> Timeline<'a> {
     ///
     ///If the range of DMs given by the IDs would return more than `self.count`, the newest set
     ///of messages will be returned.
-    pub fn call(&self, since_id: Option<i64>, max_id: Option<i64>) -> WebResponse<Vec<DirectMessage>> {
+    pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>) -> WebResponse<Vec<DirectMessage>> {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
         add_param(&mut params, "count", self.count.to_string());
 

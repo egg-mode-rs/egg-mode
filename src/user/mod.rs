@@ -72,19 +72,19 @@ pub use self::fun::*;
 #[derive(Debug, Clone)]
 pub enum UserID<'a> {
     ///Referring via the account's numeric ID.
-    ID(i64),
+    ID(u64),
     ///Referring via the account's screen name.
     ScreenName(&'a str),
 }
 
-impl<'a> From<i64> for UserID<'a> {
-    fn from(id: i64) -> UserID<'a> {
+impl<'a> From<u64> for UserID<'a> {
+    fn from(id: u64) -> UserID<'a> {
         UserID::ID(id)
     }
 }
 
-impl<'a> From<&'a i64> for UserID<'a> {
-    fn from(id: &'a i64) -> UserID<'a> {
+impl<'a> From<&'a u64> for UserID<'a> {
+    fn from(id: &'a u64) -> UserID<'a> {
         UserID::ID(*id)
     }
 }
@@ -199,7 +199,7 @@ pub struct TwitterUser {
     ///posting a new Tweet.
     pub geo_enabled: bool,
     ///Unique identifier for this user.
-    pub id: i64,
+    pub id: u64,
     ///Indicates whether the user participates in Twitter's translator community.
     pub is_translator: bool,
     ///Language code for the user's self-declared interface language.
@@ -643,7 +643,7 @@ impl FromJson for Relationship {
 #[derive(Debug)]
 pub struct RelationTarget {
     ///Numeric ID for this account.
-    pub id: i64,
+    pub id: u64,
     ///Screen name for this account.
     pub screen_name: String,
     ///Indicates whether the source account follows this target account.
@@ -682,7 +682,7 @@ impl FromJson for RelationTarget {
 #[derive(Debug)]
 pub struct RelationSource {
     ///Numeric ID for this account.
-    pub id: i64,
+    pub id: u64,
     ///Screen name for this account.
     pub screen_name: String,
     ///Indicates whether this source account follows the target account.
@@ -752,7 +752,7 @@ pub struct RelationLookup {
     ///The screen name of the target account.
     pub screen_name: String,
     ///The numeric ID of the target account.
-    pub id: i64,
+    pub id: u64,
     ///The ways the target account is connected to the authenticated user.
     ///
     ///If the target account has no relation to the authenticated user, this will not be empty; its

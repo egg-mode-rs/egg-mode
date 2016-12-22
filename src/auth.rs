@@ -48,7 +48,7 @@ struct TwitterOAuth {
     consumer_key: String,
     nonce: String,
     signature: Option<String>,
-    timestamp: i64,
+    timestamp: u64,
     token: Option<String>,
     callback: Option<String>,
     verifier: Option<String>,
@@ -61,7 +61,7 @@ impl std::str::FromStr for TwitterOAuth {
         let mut consumer_key: Option<String> = None;
         let mut nonce: Option<String> = None;
         let mut signature: Option<String> = None;
-        let mut timestamp: Option<i64> = None;
+        let mut timestamp: Option<u64> = None;
         let mut token: Option<String> = None;
         let mut callback: Option<String> = None;
         let mut verifier: Option<String> = None;
@@ -72,7 +72,7 @@ impl std::str::FromStr for TwitterOAuth {
                 Some("oauth_consumer_key") => consumer_key = parts.next().map(str::to_string),
                 Some("oauth_nonce") => nonce = parts.next().map(str::to_string),
                 Some("oauth_signature") => signature = parts.next().map(str::to_string),
-                Some("oauth_timestamp") => match parts.next().map(<i64 as std::str::FromStr>::from_str) {
+                Some("oauth_timestamp") => match parts.next().map(<u64 as std::str::FromStr>::from_str) {
                     Some(Ok(n)) => timestamp = Some(n),
                     Some(Err(e)) => return Err(e.description().to_string()),
                     None => timestamp = None,
@@ -254,7 +254,7 @@ fn get_header(method: Method,
         consumer_key: con_token.key.to_string(),
         nonce: rand::thread_rng().gen_ascii_chars().take(32).collect::<String>(),
         signature: None,
-        timestamp: now_s as i64,
+        timestamp: now_s,
         token: access_token.map(|tok| tok.key.to_string()),
         callback: callback,
         verifier: verifier,
@@ -424,7 +424,7 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 ///user.
 pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
                                      request_token: &KeyPair,
-                                     verifier: S) -> Result<(Token<'a>, i64, String), error::Error> {
+                                     verifier: S) -> Result<(Token<'a>, u64, String), error::Error> {
     let header = get_header(Method::Post, links::auth::ACCESS_TOKEN,
                             &con_token, Some(request_token), None, Some(verifier.into()), None);
 
@@ -437,7 +437,7 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
 
     let mut key: Option<String> = None;
     let mut secret: Option<String> = None;
-    let mut id: Option<i64> = None;
+    let mut id: Option<u64> = None;
     let mut username: Option<String> = None;
 
     for elem in full_resp.split('&') {
@@ -445,7 +445,7 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
         match kv.next() {
             Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
             Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
-            Some("user_id") => id = kv.next().and_then(|s| i64::from_str_radix(s, 10).ok()),
+            Some("user_id") => id = kv.next().and_then(|s| u64::from_str_radix(s, 10).ok()),
             Some("screen_name") => username = kv.next().map(|s| s.to_string()),
             Some(_) => (),
             None => return Err(error::Error::InvalidResponse("unexpected end of response in access_token", None)),

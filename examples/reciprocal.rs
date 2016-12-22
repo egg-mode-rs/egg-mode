@@ -14,11 +14,11 @@ fn main() {
     let friends =
         user::friends_ids(config.user_id, &config.token)
               .map(|r| r.unwrap().response)
-              .collect::<HashSet<i64>>();
+              .collect::<HashSet<u64>>();
     let followers =
         user::followers_ids(config.user_id, &config.token)
               .map(|r| r.unwrap().response)
-              .collect::<HashSet<i64>>();
+              .collect::<HashSet<u64>>();
 
     let reciprocals = friends.intersection(&followers).cloned().collect::<Vec<_>>();
 

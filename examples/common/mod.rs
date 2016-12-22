@@ -15,7 +15,7 @@ use egg_mode;
 
 pub struct Config {
     pub token: egg_mode::Token<'static>,
-    pub user_id: i64,
+    pub user_id: u64,
     pub screen_name: String,
 }
 
@@ -29,7 +29,7 @@ impl Config {
         let con_token = egg_mode::KeyPair::new(consumer_key, consumer_secret);
 
         let mut config = String::new();
-        let user_id: i64;
+        let user_id: u64;
         let username: String;
         let token: egg_mode::Token;
 
@@ -40,7 +40,7 @@ impl Config {
             let mut iter = config.split('\n');
 
             username = iter.next().unwrap().to_string();
-            user_id = i64::from_str_radix(&iter.next().unwrap(), 10).unwrap();
+            user_id = u64::from_str_radix(&iter.next().unwrap(), 10).unwrap();
             let access_token = egg_mode::KeyPair::new(iter.next().unwrap().to_string(),
                                                       iter.next().unwrap().to_string());
             token = egg_mode::Token::Access {

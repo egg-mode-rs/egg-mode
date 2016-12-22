@@ -6,6 +6,8 @@
 //! precisely what types come out of functions that return `CursorIter`.
 
 use std::marker::PhantomData;
+use std::u64::MAX as UINT64_MAX;
+
 use rustc_serialize::json;
 use common::*;
 use auth;
@@ -25,9 +27,9 @@ pub trait Cursor {
     type Item;
 
     ///Returns a numeric reference to the previous page of results.
-    fn previous_cursor_id(&self) -> i64;
+    fn previous_cursor_id(&self) -> u64;
     ///Returns a numeric reference to the next page of results.
-    fn next_cursor_id(&self) -> i64;
+    fn next_cursor_id(&self) -> u64;
     ///Consumes the cursor and returns the collection of results from inside.
     fn into_inner(self) -> Vec<Self::Item>;
 }
@@ -40,9 +42,9 @@ pub trait Cursor {
 ///[`CursorIter`]: struct.CursorIter.html
 pub struct UserCursor {
     ///Numeric reference to the previous page of results.
-    pub previous_cursor: i64,
+    pub previous_cursor: u64,
     ///Numeric reference to the next page of results.
-    pub next_cursor: i64,
+    pub next_cursor: u64,
     ///The list of users in this page of results.
     pub users: Vec<user::TwitterUser>,
 }
@@ -68,11 +70,11 @@ impl FromJson for UserCursor {
 impl Cursor for UserCursor {
     type Item = user::TwitterUser;
 
-    fn previous_cursor_id(&self) -> i64 {
+    fn previous_cursor_id(&self) -> u64 {
         self.previous_cursor
     }
 
-    fn next_cursor_id(&self) -> i64 {
+    fn next_cursor_id(&self) -> u64 {
         self.next_cursor
     }
 
@@ -89,11 +91,11 @@ impl Cursor for UserCursor {
 ///[`CursorIter`]: struct.CursorIter.html
 pub struct IDCursor {
     ///Numeric reference to the previous page of results.
-    pub previous_cursor: i64,
+    pub previous_cursor: u64,
     ///Numeric reference to the next page of results.
-    pub next_cursor: i64,
+    pub next_cursor: u64,
     ///The list of user IDs in this page of results.
-    pub ids: Vec<i64>,
+    pub ids: Vec<u64>,
 }
 
 impl FromJson for IDCursor {
@@ -115,13 +117,13 @@ impl FromJson for IDCursor {
 }
 
 impl Cursor for IDCursor {
-    type Item = i64;
+    type Item = u64;
 
-    fn previous_cursor_id(&self) -> i64 {
+    fn previous_cursor_id(&self) -> u64 {
         self.previous_cursor
     }
 
-    fn next_cursor_id(&self) -> i64 {
+    fn next_cursor_id(&self) -> u64 {
         self.next_cursor
     }
 
@@ -224,14 +226,14 @@ pub struct CursorIter<'a, T>
     ///This value is intended to be automatically set and used as part of this struct's Iterator
     ///implementation. It is made available for those who wish to manually manage network calls and
     ///pagination.
-    pub previous_cursor: i64,
+    pub previous_cursor: u64,
     ///Numeric reference to the next page of results. A value of zero indicates that the current
     ///page of results is the last page of the cursor.
     ///
     ///This value is intended to be automatically set and used as part of this struct's Iterator
     ///implementation. It is made available for those who wish to manually manage network calls and
     ///pagination.
-    pub next_cursor: i64,
+    pub next_cursor: u64,
     iter: Option<ResponseIter<T::Item>>,
     _marker: PhantomData<T>,
 }
@@ -251,8 +253,8 @@ impl<'a, T> CursorIter<'a, T>
         if self.page_size.is_some() {
             CursorIter {
                 page_size: Some(page_size),
-                previous_cursor: -1,
-                next_cursor: -1,
+                previous_cursor: UINT64_MAX,
+                next_cursor: UINT64_MAX,
                 iter: None,
                 ..self
             }
@@ -291,8 +293,8 @@ impl<'a, T> CursorIter<'a, T>
             token: token,
             params_base: params_base,
             page_size: page_size,
-            previous_cursor: -1,
-            next_cursor: -1,
+            previous_cursor: UINT64_MAX,
+            next_cursor: UINT64_MAX,
             iter: None,
             _marker: PhantomData,
         }

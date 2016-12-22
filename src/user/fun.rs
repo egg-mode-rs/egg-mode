@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::collections::HashMap;
 use common::*;
 use auth;
@@ -8,34 +7,6 @@ use cursor;
 pub use super::*;
 
 //---Groups of users---
-
-///Lookup a set of Twitter users by their numerical ID.
-#[deprecated(note = "you can call lookup with &[i64] now")]
-pub fn lookup_ids(ids: &[i64], token: &auth::Token)
-    -> WebResponse<Vec<TwitterUser>>
-{
-    let mut params = HashMap::new();
-    let id_param = ids.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
-    add_param(&mut params, "user_id", id_param);
-
-    let mut resp = try!(auth::post(links::users::LOOKUP, token, Some(&params)));
-
-    parse_response(&mut resp)
-}
-
-///Lookup a set of Twitter users by their screen name.
-#[deprecated(note = "you can call lookup with &[&str] and &[String] now")]
-pub fn lookup_names<S: Borrow<str>>(names: &[S], token: &auth::Token)
-    -> WebResponse<Vec<TwitterUser>>
-{
-    let mut params = HashMap::new();
-    let id_param = names.join(",");
-    add_param(&mut params, "screen_name", id_param);
-
-    let mut resp = try!(auth::post(links::users::LOOKUP, token, Some(&params)));
-
-    parse_response(&mut resp)
-}
 
 ///Lookup a set of Twitter users by either ID and screen name, as applicable.
 ///
@@ -49,7 +20,7 @@ pub fn lookup_names<S: Borrow<str>>(names: &[S], token: &auth::Token)
 ///#     consumer: egg_mode::KeyPair::new("", ""),
 ///#     access: egg_mode::KeyPair::new("", ""),
 ///# };
-///let mut list: Vec<i64> = Vec::new();
+///let mut list: Vec<u64> = Vec::new();
 ///
 ///list.push(1234);
 ///list.push(2345);
@@ -126,7 +97,7 @@ pub fn show<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
 ///
 ///Use `update_follow` to enable/disable viewing retweets from a specific user.
 pub fn friends_no_retweets(token: &auth::Token)
-    -> WebResponse<Vec<i64>>
+    -> WebResponse<Vec<u64>>
 {
     let mut resp = try!(auth::get(links::users::FRIENDS_NO_RETWEETS, token, None));
 

@@ -74,6 +74,12 @@ impl FromJson for usize {
     }
 }
 
+impl FromJson for u64 {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        input.as_u64().ok_or_else(|| InvalidResponse("expected a u64", Some(input.to_string())))
+    }
+}
+
 impl FromJson for i64 {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         input.as_i64().ok_or_else(|| InvalidResponse("expected an i64", Some(input.to_string())))

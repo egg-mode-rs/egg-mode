@@ -10,7 +10,7 @@ use common::*;
 use super::*;
 
 ///Lookup a single tweet by numeric ID.
-pub fn show(id: i64, token: &auth::Token)
+pub fn show(id: u64, token: &auth::Token)
     -> WebResponse<Tweet>
 {
     let mut params = HashMap::new();
@@ -27,7 +27,7 @@ pub fn show(id: i64, token: &auth::Token)
 ///
 ///Use the `count` parameter to indicate how many retweets you would like to retrieve. If `count`
 ///is 0 or greater than 100, it will be defaulted to 100 before making the call.
-pub fn retweets_of(id: i64, count: u32, token: &auth::Token)
+pub fn retweets_of(id: u64, count: u32, token: &auth::Token)
     -> WebResponse<Vec<Tweet>>
 {
     let mut params = HashMap::new();
@@ -53,7 +53,7 @@ pub fn retweets_of(id: i64, count: u32, token: &auth::Token)
 ///set the page size. Calling `with_page_size` on the iterator returned by this function will not
 ///change the page size used by the network call. Setting `page_size` manually may result in an
 ///error from Twitter.
-pub fn retweeters_of<'a>(id: i64, token: &'a auth::Token)
+pub fn retweeters_of<'a>(id: u64, token: &'a auth::Token)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
     let mut params = HashMap::new();
@@ -66,7 +66,7 @@ pub fn retweeters_of<'a>(id: i64, token: &'a auth::Token)
 ///This function differs from `lookup_map` in how it handles protected or nonexistent tweets.
 ///`lookup` simply returns a Vec of all the tweets it could find, leaving out any that it couldn't
 ///find.
-pub fn lookup(ids: &[i64], token: &auth::Token)
+pub fn lookup(ids: &[u64], token: &auth::Token)
     -> WebResponse<Vec<Tweet>>
 {
     let mut params = HashMap::new();
@@ -86,8 +86,8 @@ pub fn lookup(ids: &[i64], token: &auth::Token)
 ///`lookup_map` returns a map containing every ID in the input slice; tweets that don't exist or
 ///can't be read by the authenticated user store `None` in the map, whereas tweets that could be
 ///loaded store `Some` and the requested status.
-pub fn lookup_map(ids: &[i64], token: &auth::Token)
-    -> WebResponse<HashMap<i64, Option<Tweet>>>
+pub fn lookup_map(ids: &[u64], token: &auth::Token)
+    -> WebResponse<HashMap<u64, Option<Tweet>>>
 {
     let mut params = HashMap::new();
     let id_param = ids.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
@@ -105,7 +105,7 @@ pub fn lookup_map(ids: &[i64], token: &auth::Token)
                                  .and_then(|v| v.as_object())
                                  .ok_or_else(|| InvalidResponse("unexpected response for lookup_map",
                                                                 Some(parsed.response.to_string())))) {
-        let id = try!(key.parse::<i64>().or(Err(InvalidResponse("could not parse id as integer",
+        let id = try!(key.parse::<u64>().or(Err(InvalidResponse("could not parse id as integer",
                                                                 Some(key.to_string())))));
         if val.is_null() {
             map.insert(id, None);
@@ -185,7 +185,7 @@ pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token)
 ///Retweet the given status as the authenticated user.
 ///
 ///On success, returns the retweet, with the original status contained in `retweeted_status`.
-pub fn retweet(id: i64, token: &auth::Token) -> WebResponse<Tweet> {
+pub fn retweet(id: u64, token: &auth::Token) -> WebResponse<Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "tweet_mode", "extended");
 
@@ -202,7 +202,7 @@ pub fn retweet(id: i64, token: &auth::Token) -> WebResponse<Tweet> {
 ///it.
 ///
 ///On success, returns the original tweet.
-pub fn unretweet(id: i64, token: &auth::Token) -> WebResponse<Tweet> {
+pub fn unretweet(id: u64, token: &auth::Token) -> WebResponse<Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "tweet_mode", "extended");
 
@@ -216,7 +216,7 @@ pub fn unretweet(id: i64, token: &auth::Token) -> WebResponse<Tweet> {
 ///Like the given status as the authenticated user.
 ///
 ///On success, returns the liked tweet.
-pub fn like(id: i64, token: &auth::Token) -> WebResponse<Tweet> {
+pub fn like(id: u64, token: &auth::Token) -> WebResponse<Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
     add_param(&mut params, "tweet_mode", "extended");
@@ -229,7 +229,7 @@ pub fn like(id: i64, token: &auth::Token) -> WebResponse<Tweet> {
 ///Clears a like of the given status as the authenticated user.
 ///
 ///On success, returns the given tweet.
-pub fn unlike(id: i64, token: &auth::Token) -> WebResponse<Tweet> {
+pub fn unlike(id: u64, token: &auth::Token) -> WebResponse<Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
     add_param(&mut params, "tweet_mode", "extended");
@@ -242,7 +242,7 @@ pub fn unlike(id: i64, token: &auth::Token) -> WebResponse<Tweet> {
 ///Delete the given tweet. The authenticated user must be the user who posted the given tweet.
 ///
 ///On success, returns the given tweet.
-pub fn delete(id: i64, token: &auth::Token) -> WebResponse<Tweet> {
+pub fn delete(id: u64, token: &auth::Token) -> WebResponse<Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "tweet_mode", "extended");
 

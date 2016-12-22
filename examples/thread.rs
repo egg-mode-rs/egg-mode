@@ -31,8 +31,8 @@ fn main() {
 
     //The example post used in this demo is the fourth post in a seven-post thread I
     //(@QuietMisdreavus) posted shortly before writing this. You can easily extrapolate this into a
-    //function that takes i64 as needed.
-    let start_id: i64 = 773236818921873409;
+    //function that takes u64 as needed.
+    let start_id: u64 = 773236818921873409;
 
     println!("Let's reconstruct a tweet thread!");
 
