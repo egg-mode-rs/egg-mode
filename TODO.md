@@ -89,9 +89,6 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [ ] users/suggestions/:slug
 - [ ] users/suggestions/:slug/members
 
-- [ ] account/update\_profile
-- [ ] account/update\_profile\_image
-
 ### Lists
 
 - [ ] lists/list
@@ -123,6 +120,10 @@ return a list of IDs of something are grouped in with the rest of the main struc
 
 - [ ] account/settings (GET)
 - [ ] account/settings (POST)
+
+- [ ] account/update\_profile
+- [ ] account/update\_profile\_image
+- [ ] account/update\_profile\_background\_image
 
 - [ ] account/profile\_banner
 - [ ] account/update\_profile\_banner
