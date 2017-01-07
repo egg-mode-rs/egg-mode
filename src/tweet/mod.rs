@@ -253,18 +253,34 @@ impl FromJson for Tweet {
         let text: String = try!(field(input, "full_text").or(field(input, "text")));
         let mut display_text_range: Option<(usize, usize)> = try!(field(input, "display_text_range"));
 
-        if let Some((ref mut start, ref mut end)) = display_text_range {
-            for (ch_offset, (by_offset, _)) in text.char_indices().enumerate() {
-                if ch_offset == *start {
-                    *start = by_offset;
-                }
-                else if ch_offset == *end {
-                    *end = by_offset;
-                }
-            }
+        if let Some(ref mut range) = display_text_range {
+            codepoints_to_bytes(range, &text);
+        }
 
-            if text.chars().count() == *end {
-                *end = text.len();
+        let mut entities: TweetEntities = try!(field(input, "entities"));
+        let mut extended_entities: Option<ExtendedTweetEntities> = try!(field(input, "extended_entities"));
+
+        for entity in &mut entities.hashtags {
+            codepoints_to_bytes(&mut entity.range, &text);
+        }
+        for entity in &mut entities.symbols {
+            codepoints_to_bytes(&mut entity.range, &text);
+        }
+        for entity in &mut entities.urls {
+            codepoints_to_bytes(&mut entity.range, &text);
+        }
+        for entity in &mut entities.user_mentions {
+            codepoints_to_bytes(&mut entity.range, &text);
+        }
+        if let Some(ref mut media) = entities.media {
+            for entity in media.iter_mut() {
+                codepoints_to_bytes(&mut entity.range, &text);
+            }
+        }
+
+        if let Some(ref mut entities) = extended_entities {
+            for entity in entities.media.iter_mut() {
+                codepoints_to_bytes(&mut entity.range, &text);
             }
         }
 
@@ -274,8 +290,8 @@ impl FromJson for Tweet {
             created_at: try!(field(input, "created_at")),
             current_user_retweet: try!(current_user_retweet(input, "current_user_retweet")),
             display_text_range: display_text_range,
-            entities: try!(field(input, "entities")),
-            extended_entities: try!(field(input, "extended_entities")),
+            entities: entities,
+            extended_entities: extended_entities,
             favorite_count: field(input, "favorite_count").unwrap_or(0),
             favorited: try!(field(input, "favorited")),
             //filter_level: FilterLevel,

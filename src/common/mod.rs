@@ -34,3 +34,18 @@ pub fn add_name_param<'a>(list: &mut ParamList<'a>, id: &user::UserID<'a>) -> Op
 
 ///Type alias for responses from Twitter.
 pub type WebResponse<T> = Result<Response<T>, ::error::Error>;
+
+pub fn codepoints_to_bytes(&mut (ref mut start, ref mut end): &mut (usize, usize), text: &str) {
+    for (ch_offset, (by_offset, _)) in text.char_indices().enumerate() {
+        if ch_offset == *start {
+            *start = by_offset;
+        }
+        else if ch_offset == *end {
+            *end = by_offset;
+        }
+    }
+
+    if text.chars().count() == *end {
+        *end = text.len();
+    }
+}

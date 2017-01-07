@@ -120,11 +120,32 @@ impl FromJson for DirectMessage {
         field_present!(input, recipient_id);
         field_present!(input, recipient);
 
+        let text: String = try!(field(input, "text"));
+        let mut entities: DMEntities = try!(field(input, "entities"));
+
+        for entity in &mut entities.hashtags {
+            codepoints_to_bytes(&mut entity.range, &text);
+        }
+        for entity in &mut entities.symbols {
+            codepoints_to_bytes(&mut entity.range, &text);
+        }
+        for entity in &mut entities.urls {
+            codepoints_to_bytes(&mut entity.range, &text);
+        }
+        for entity in &mut entities.user_mentions {
+            codepoints_to_bytes(&mut entity.range, &text);
+        }
+        if let Some(ref mut media) = entities.media {
+            for entity in media.iter_mut() {
+                codepoints_to_bytes(&mut entity.range, &text);
+            }
+        }
+
         Ok(DirectMessage {
             id: try!(field(input, "id")),
             created_at: try!(field(input, "created_at")),
-            text: try!(field(input, "text")),
-            entities: try!(field(input, "entities")),
+            text: text,
+            entities: entities,
             sender_screen_name: try!(field(input, "sender_screen_name")),
             sender_id: try!(field(input, "sender_id")),
             sender: try!(field(input, "sender")),

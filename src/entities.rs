@@ -10,14 +10,19 @@
 //! [Entities]: https://dev.twitter.com/overview/api/entities
 //! [obj]: https://dev.twitter.com/overview/api/entities-in-twitter-objects
 //!
-//! ## Using indices and URLs
+//! ## Entity Ranges
 //!
-//! When displaying text with accompanied entities, be wary about how you use the accompanied
-//! indices. The indices given by Twitter reference *codepoints* within the tweet, so you'll need
-//! to use something like .char_indices().enumerate() to turn them into byte offsets or to replace
-//! the character range with another substring.
+//! Entities that refer to elements within a text have a `range` field that contains the text span
+//! that is being referenced. The numbers in question are byte offsets, so if you have an entity
+//! that you'd like to slice out of the source text, you can use the indices directly in slicing
+//! operations:
 //!
-//! Alternately, when substituting URLs for display, `str::replace` works just fine.
+//! ```rust
+//! # use egg_mode::entities::HashtagEntity;
+//! # let entity = HashtagEntity { range: (0, 0), text: "".to_string() };
+//! # let text = "asdf";
+//! let slice = &text[entity.range.0..entity.range.1];
+//! ```
 //!
 //! ### Shortened, Display, and Expanded URLs
 //!
@@ -42,9 +47,9 @@ use mime;
 ///Represents a hashtag or symbol extracted from another piece of text.
 #[derive(Debug)]
 pub struct HashtagEntity {
-    ///The character indices where the hashtag is located. The first index is the location of the #
-    ///or $ character; the second is the location of the first character following the hashtag.
-    pub indices: (i32, i32),
+    ///The byte offsets where the hashtag is located. The first index is the location of the # or $
+    ///character; the second is the location of the first character following the hashtag.
+    pub range: (usize, usize),
     ///The text of the hashtag, without the leading # or $ character.
     pub text: String,
 }
@@ -69,10 +74,10 @@ pub struct MediaEntity {
     pub expanded_url: String,
     ///A numeric ID for the media.
     pub id: u64,
-    ///Character indices where the media URL is located. The first index is the location of the
+    ///The byte offsets where the media URL is located. The first index is the location of the
     ///first character of the URL; the second is the location of the first character following the
     ///URL.
-    pub indices: (i32, i32),
+    pub range: (usize, usize),
     ///A URL pointing directly to the media file. Uses HTTP as the protocol.
     ///
     ///For videos and GIFs, this link will be to a thumbnail of the media, and the real video link
@@ -174,8 +179,8 @@ pub struct UrlEntity {
     ///
     ///Meant to be used as hover-text when a user mouses over a link.
     pub expanded_url: String,
-    ///The character positions in the companion text the URL was extracted from.
-    pub indices: (i32, i32),
+    ///The byte offsets in the companion text where the URL was extracted from.
+    pub range: (usize, usize),
     ///The t.co URL extracted from the companion text.
     pub url: String,
 }
@@ -185,10 +190,10 @@ pub struct UrlEntity {
 pub struct MentionEntity {
     ///Numeric ID of the mentioned user.
     pub id: u64,
-    ///Character indices where the user mention is located in the original text. The first index is
+    ///The byte offsets where the user mention is located in the original text. The first index is
     ///the location of the @ symbol; the second is the location of the first character following
     ///the user screen name.
-    pub indices: (i32, i32),
+    pub range: (usize, usize),
     ///Display name of the mentioned user.
     pub name: String,
     ///Screen name of the mentioned user, without the leading @ symbol.
@@ -205,7 +210,7 @@ impl FromJson for HashtagEntity {
         field_present!(input, text);
 
         Ok(HashtagEntity {
-            indices: try!(field(input, "indices")),
+            range: try!(field(input, "indices")),
             text: try!(field(input, "text")),
         })
     }
@@ -231,7 +236,7 @@ impl FromJson for MediaEntity {
             display_url: try!(field(input, "display_url")),
             expanded_url: try!(field(input, "expanded_url")),
             id: try!(field(input, "id")),
-            indices: try!(field(input, "indices")),
+            range: try!(field(input, "indices")),
             media_url: try!(field(input, "media_url")),
             media_url_https: try!(field(input, "media_url_https")),
             sizes: try!(field(input, "sizes")),
@@ -352,7 +357,7 @@ impl FromJson for UrlEntity {
         Ok(UrlEntity {
             display_url: display_url,
             expanded_url: expanded_url,
-            indices: try!(field(input, "indices")),
+            range: try!(field(input, "indices")),
             url: url,
         })
     }
@@ -405,7 +410,7 @@ impl FromJson for MentionEntity {
 
         Ok(MentionEntity {
             id: try!(field(input, "id")),
-            indices: try!(field(input, "indices")),
+            range: try!(field(input, "indices")),
             name: try!(field(input, "name")),
             screen_name: try!(field(input, "screen_name")),
         })

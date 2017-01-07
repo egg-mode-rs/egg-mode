@@ -356,13 +356,28 @@ impl FromJson for TwitterUser {
         field_present!(input, statuses_count);
         field_present!(input, verified);
 
+        let description: Option<String> = try!(field(input, "description"));
+        let url: Option<String> = try!(field(input, "url"));
+        let mut entities: UserEntities = try!(field(input, "entities"));
+
+        if let Some(ref text) = description {
+            for entity in entities.description.urls.iter_mut() {
+                codepoints_to_bytes(&mut entity.range, &text);
+            }
+        }
+        if let (&Some(ref text), &mut Some(ref mut entities)) = (&url, &mut entities.url) {
+            for entity in entities.urls.iter_mut() {
+                codepoints_to_bytes(&mut entity.range, &text);
+            }
+        }
+
         Ok(TwitterUser {
             contributors_enabled: field(input, "contributors_enabled").unwrap_or(false),
             created_at: try!(field(input, "created_at")),
             default_profile: try!(field(input, "default_profile")),
             default_profile_image: try!(field(input, "default_profile_image")),
-            description: try!(field(input, "description")),
-            entities: try!(field(input, "entities")),
+            description: description,
+            entities: entities,
             favourites_count: try!(field(input, "favourites_count")),
             follow_request_sent: try!(field(input, "follow_request_sent")),
             following: try!(field(input, "following")),
@@ -394,7 +409,7 @@ impl FromJson for TwitterUser {
             status: try!(field(input, "status")),
             statuses_count: try!(field(input, "statuses_count")),
             time_zone: try!(field(input, "time_zone")),
-            url: try!(field(input, "url")),
+            url: url,
             utc_offset: try!(field(input, "utc_offset")),
             verified: try!(field(input, "verified")),
             withheld_in_countries: input.find("withheld_in_countries").and_then(|f| f.as_array())
