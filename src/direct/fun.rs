@@ -66,3 +66,9 @@ pub fn delete(id: u64, token: &auth::Token)
 
     parse_response(&mut resp)
 }
+
+///Create a `ConversationTimeline` loader that can load direct messages as a collection of
+///pre-sorted conversations.
+pub fn conversations<'a>(token: &'a auth::Token) -> ConversationTimeline<'a> {
+    ConversationTimeline::new(token)
+}

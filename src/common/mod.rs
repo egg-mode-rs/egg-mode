@@ -6,6 +6,7 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::iter::Peekable;
 use user;
 
 #[macro_use] mod from_json;
@@ -47,5 +48,89 @@ pub fn codepoints_to_bytes(&mut (ref mut start, ref mut end): &mut (usize, usize
 
     if text.chars().count() == *end {
         *end = text.len();
+    }
+}
+
+///A clone of MergeBy from Itertools.
+pub struct MergeBy<Iter, Fun>
+    where Iter: Iterator
+{
+    left: Peekable<Iter>,
+    right: Peekable<Iter>,
+    comp: Fun,
+    fused: Option<bool>,
+}
+
+impl<Iter, Fun> Iterator for MergeBy<Iter, Fun>
+    where Iter: Iterator,
+          Fun: FnMut(&Iter::Item, &Iter::Item) -> bool
+{
+    type Item = Iter::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let is_left = match self.fused {
+            Some(lt) => lt,
+            None => match (self.left.peek(), self.right.peek()) {
+                (Some(a), Some(b)) => (self.comp)(a, b),
+                (Some(_), None) => {
+                    self.fused = Some(true);
+                    true
+                },
+                (None, Some(_)) => {
+                    self.fused = Some(false);
+                    false
+                },
+                (None, None) => return None,
+            },
+        };
+
+        if is_left {
+            self.left.next()
+        }
+        else {
+            self.right.next()
+        }
+    }
+}
+
+pub fn merge_by<Iter, Fun>(left: Iter, right: Iter, comp: Fun) -> MergeBy<Iter::IntoIter, Fun>
+    where Iter: IntoIterator,
+          Fun: FnMut(&Iter::Item, &Iter::Item) -> bool
+{
+    MergeBy {
+        left: left.into_iter().peekable(),
+        right: right.into_iter().peekable(),
+        comp: comp,
+        fused: None,
+    }
+}
+
+pub fn max_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
+    match (left, right) {
+        (Some(left), Some(right)) => {
+            if left >= right {
+                Some(left)
+            }
+            else {
+                Some(right)
+            }
+        },
+        (left, None) => left,
+        (None, right) => right,
+    }
+}
+
+pub fn min_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
+    match (left, right) {
+        (Some(left), Some(right)) => {
+            if left <= right {
+                Some(left)
+            }
+            else {
+                Some(right)
+            }
+        },
+        (left, None) => left,
+        (None, right) => right,
     }
 }

@@ -4,6 +4,8 @@
 ### Added
 - New authentication functions `bearer_token` and `invalidate_bearer`, to perform Application-only
   authentication
+- New function `direct::conversations` and related structs `ConversationTimeline` and
+  `DMConversations` to load direct messages as a pre-sorted set of conversation threads
 
 ### Changed
 - The Great Token Refactor of 0.8

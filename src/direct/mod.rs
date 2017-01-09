@@ -37,6 +37,10 @@
 
 use common::*;
 
+use std::collections::HashMap;
+use std::mem;
+use std::ops::{Deref, DerefMut};
+
 use rustc_serialize::json;
 use chrono;
 
@@ -354,5 +358,141 @@ impl<'a> Timeline<'a> {
             max_id: None,
             min_id: None,
         }
+    }
+}
+
+///Wrapper around a collection of direct messages, sorted by their recipient.
+pub struct DMConversations(pub HashMap<u64, Vec<DirectMessage>>);
+
+impl DMConversations {
+    ///Load the given set of conversations into this set.
+    fn merge(&mut self, conversations: HashMap<u64, Vec<DirectMessage>>) {
+        for (id, convo) in conversations {
+            let messages = self.0.entry(id).or_insert(Vec::new());
+            let cap = convo.len() + messages.len();
+            let old_convo = mem::replace(messages, Vec::with_capacity(cap));
+
+            //ASSUMPTION: these conversation threads are disjoint
+            if old_convo.first().map(|m| m.id).unwrap_or(0) >
+                convo.first().map(|m| m.id).unwrap_or(0)
+            {
+                messages.extend(old_convo);
+                messages.extend(convo);
+            }
+            else {
+                messages.extend(convo);
+                messages.extend(old_convo);
+            }
+        }
+    }
+}
+
+impl Deref for DMConversations {
+    type Target = HashMap<u64, Vec<DirectMessage>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for DMConversations {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+///Helper struct to load both sent and received direct messages, pre-sorting them into
+///conversations by their recipient.
+pub struct ConversationTimeline<'a> {
+    sent: Timeline<'a>,
+    received: Timeline<'a>,
+    ///The message ID of the most recent sent message in the current conversation set.
+    pub last_sent: Option<u64>,
+    ///The message ID of the most recent received message in the current conversation set.
+    pub last_received: Option<u64>,
+    ///The message ID of the oldest sent message in the current conversation set.
+    pub first_sent: Option<u64>,
+    ///The message ID of the oldest received message in the current conversation set.
+    pub first_received: Option<u64>,
+    ///The number of messages loaded per API call.
+    pub count: u32,
+    ///The conversation threads that have been loaded so far.
+    pub conversations: DMConversations,
+}
+
+impl<'a> ConversationTimeline<'a> {
+    fn new(token: &'a auth::Token) -> ConversationTimeline<'a> {
+        ConversationTimeline {
+            sent: sent(token),
+            received: received(token),
+            last_sent: None,
+            last_received: None,
+            first_sent: None,
+            first_received: None,
+            count: 20,
+            conversations: DMConversations(HashMap::new()),
+        }
+    }
+
+    fn merge(&mut self, sent: Vec<DirectMessage>, received: Vec<DirectMessage>) {
+        self.last_sent = max_opt(self.last_sent, sent.first().map(|m| m.id));
+        self.last_received = max_opt(self.last_received, received.first().map(|m| m.id));
+        self.first_sent = min_opt(self.first_sent, sent.last().map(|m| m.id));
+        self.first_received = min_opt(self.first_received, received.last().map(|m| m.id));
+
+        let sender = sent.first().map(|m| m.sender_id);
+        let receiver = received.first().map(|m| m.recipient_id);
+
+        if let Some(me_id) = sender.or(receiver) {
+            let mut new_convo = HashMap::new();
+
+            for msg in merge_by(sent, received, |left, right| left.id > right.id) {
+                let recipient = if msg.sender_id == me_id {
+                    msg.recipient_id
+                }
+                else {
+                    msg.sender_id
+                };
+
+                let thread = new_convo.entry(recipient).or_insert(Vec::new());
+                thread.push(msg);
+            }
+
+            self.conversations.merge(new_convo);
+        }
+    }
+
+    ///Builder function to set the number of messages pulled in a single request.
+    pub fn with_page_size(self, page_size: u32) -> ConversationTimeline<'a> {
+        ConversationTimeline {
+            count: page_size,
+            ..self
+        }
+    }
+
+    ///Load messages newer than the currently-loaded set, or the newset set if no messages have
+    ///been loaded yet. Returns the complete conversation set after loading.
+    pub fn newest(&mut self) -> Result<&DMConversations, error::Error> {
+        self.sent.reset();
+        self.received.reset();
+        let sent = try!(self.sent.older(self.last_sent));
+        let received = try!(self.received.older(self.last_received));
+
+        self.merge(sent.response, received.response);
+
+        Ok(&self.conversations)
+    }
+
+    ///Load messages older than the currently-loaded set, or the newest set if no messages have
+    ///been loaded. Returns the complete conversation set after loading.
+    pub fn next(&mut self) -> Result<&DMConversations, error::Error> {
+        self.sent.reset();
+        self.received.reset();
+        let sent = try!(self.sent.newer(self.last_sent));
+        let received = try!(self.received.newer(self.last_received));
+
+        self.merge(sent.response, received.response);
+
+        Ok(&self.conversations)
     }
 }
