@@ -8,7 +8,7 @@ fn main() {
 
     let mut convos = egg_mode::direct::conversations(&c.token);
 
-    for (id, convo) in &convos.newest().unwrap().0 {
+    for (id, convo) in convos.newest().unwrap() {
         let user = egg_mode::user::show(id, &c.token).unwrap();
         println!("-----");
         println!("Conversation with @{}:", user.screen_name);

@@ -39,7 +39,6 @@ use common::*;
 
 use std::collections::HashMap;
 use std::mem;
-use std::ops::{Deref, DerefMut};
 
 use rustc_serialize::json;
 use chrono;
@@ -362,42 +361,26 @@ impl<'a> Timeline<'a> {
 }
 
 ///Wrapper around a collection of direct messages, sorted by their recipient.
-pub struct DMConversations(pub HashMap<u64, Vec<DirectMessage>>);
+pub type DMConversations = HashMap<u64, Vec<DirectMessage>>;
 
-impl DMConversations {
-    ///Load the given set of conversations into this set.
-    fn merge(&mut self, conversations: HashMap<u64, Vec<DirectMessage>>) {
-        for (id, convo) in conversations {
-            let messages = self.0.entry(id).or_insert(Vec::new());
-            let cap = convo.len() + messages.len();
-            let old_convo = mem::replace(messages, Vec::with_capacity(cap));
+///Load the given set of conversations into this set.
+fn merge(this: &mut DMConversations, conversations: DMConversations) {
+    for (id, convo) in conversations {
+        let messages = this.entry(id).or_insert(Vec::new());
+        let cap = convo.len() + messages.len();
+        let old_convo = mem::replace(messages, Vec::with_capacity(cap));
 
-            //ASSUMPTION: these conversation threads are disjoint
-            if old_convo.first().map(|m| m.id).unwrap_or(0) >
-                convo.first().map(|m| m.id).unwrap_or(0)
-            {
-                messages.extend(old_convo);
-                messages.extend(convo);
-            }
-            else {
-                messages.extend(convo);
-                messages.extend(old_convo);
-            }
+        //ASSUMPTION: these conversation threads are disjoint
+        if old_convo.first().map(|m| m.id).unwrap_or(0) >
+            convo.first().map(|m| m.id).unwrap_or(0)
+        {
+            messages.extend(old_convo);
+            messages.extend(convo);
         }
-    }
-}
-
-impl Deref for DMConversations {
-    type Target = HashMap<u64, Vec<DirectMessage>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for DMConversations {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        else {
+            messages.extend(convo);
+            messages.extend(old_convo);
+        }
     }
 }
 
@@ -430,7 +413,7 @@ impl<'a> ConversationTimeline<'a> {
             first_sent: None,
             first_received: None,
             count: 20,
-            conversations: DMConversations(HashMap::new()),
+            conversations: HashMap::new(),
         }
     }
 
@@ -458,7 +441,7 @@ impl<'a> ConversationTimeline<'a> {
                 thread.push(msg);
             }
 
-            self.conversations.merge(new_convo);
+            merge(&mut self.conversations, new_convo);
         }
     }
 
