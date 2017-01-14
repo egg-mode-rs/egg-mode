@@ -136,7 +136,7 @@
 #[macro_use] extern crate lazy_static;
 extern crate url;
 extern crate rand;
-extern crate crypto;
+extern crate ring;
 extern crate rustc_serialize;
 extern crate mime;
 extern crate chrono;

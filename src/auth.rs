@@ -9,9 +9,7 @@ use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer};
 use hyper::method::Method;
 use mime::Mime;
 use rand::{self, Rng};
-use crypto::hmac::Hmac;
-use crypto::mac::Mac;
-use crypto::sha1::Sha1;
+use ring::{digest, hmac};
 use rustc_serialize::base64::{self, ToBase64};
 use rustc_serialize::json;
 use super::{links, error};
@@ -222,8 +220,8 @@ fn sign(header: TwitterOAuth,
                       percent_encode(&con_token.secret),
                       percent_encode(&access_token.unwrap_or(&KeyPair::new("", "")).secret));
 
-    let mut sig = Hmac::new(Sha1::new(), key.as_bytes());
-    sig.input(base_str.as_bytes());
+    let signing_key = hmac::SigningKey::new(&digest::SHA1, key.as_bytes());
+    let digest = hmac::sign(&signing_key, base_str.as_bytes());
 
     let config = base64::Config {
         char_set: base64::CharacterSet::Standard,
@@ -233,7 +231,7 @@ fn sign(header: TwitterOAuth,
     };
 
     TwitterOAuth {
-        signature: Some(sig.result().code().to_base64(config)),
+        signature: Some(digest.as_ref().to_base64(config)),
         ..header
     }
 }
