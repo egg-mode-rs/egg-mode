@@ -31,6 +31,8 @@
 - `user::lookup_ids` and `user::lookup_names`, which were deprecated in 0.4.0, have been removed, in
   favor of `user::lookup`
   - This is a **breaking change**
+- Updated `hyper` to 0.10 and added `hyper-native-tls` for TLS connections to Twitter
+  - This should allow for much easier building on Windows now!
 
 ## [0.7.0] - 2016-11-30
 ### Added
