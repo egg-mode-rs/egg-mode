@@ -7,6 +7,8 @@ use hyper;
 use hyper::client::response::Response as HyperResponse;
 use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer};
 use hyper::method::Method;
+use hyper::net::HttpsConnector;
+use hyper_native_tls::NativeTlsClient;
 use mime::Mime;
 use rand::{self, Rng};
 use crypto::hmac::Hmac;
@@ -283,7 +285,9 @@ pub fn get(uri: &str,
     }
     else { uri.to_string() };
 
-    let client = hyper::Client::new();
+    let ssl = try!(NativeTlsClient::new());
+    let connector = HttpsConnector::new(ssl);
+    let client = hyper::Client::with_connector(connector);
 
     let request = match *token {
         Token::Access {
@@ -314,7 +318,9 @@ pub fn post(uri: &str,
     }
     else { "".to_string() };
 
-    let client = hyper::Client::new();
+    let ssl = try!(NativeTlsClient::new());
+    let connector = HttpsConnector::new(ssl);
+    let client = hyper::Client::with_connector(connector);
     let request = client.post(uri).body(body.as_bytes())
                                   .header(ContentType(content));
 
@@ -354,7 +360,9 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Resul
     let header = get_header(Method::Post, links::auth::REQUEST_TOKEN,
                             con_token, None, Some(callback.into()), None, None);
 
-    let client = hyper::Client::new();
+    let ssl = try!(NativeTlsClient::new());
+    let connector = HttpsConnector::new(ssl);
+    let client = hyper::Client::with_connector(connector);
     let mut resp = try!(client.post(links::auth::REQUEST_TOKEN)
                           .header(Authorization(header))
                           .send());
@@ -428,7 +436,9 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
     let header = get_header(Method::Post, links::auth::ACCESS_TOKEN,
                             &con_token, Some(request_token), None, Some(verifier.into()), None);
 
-    let client = hyper::Client::new();
+    let ssl = try!(NativeTlsClient::new());
+    let connector = HttpsConnector::new(ssl);
+    let client = hyper::Client::with_connector(connector);
     let mut resp = try!(client.post(links::auth::ACCESS_TOKEN)
                           .header(Authorization(header))
                           .send());
@@ -495,7 +505,9 @@ pub fn bearer_token(con_token: &KeyPair) -> Result<Token<'static>, error::Error>
     let auth_header = bearer_request(con_token);
 
     let content: Mime = "application/x-www-form-urlencoded;charset=UTF-8".parse().unwrap();
-    let client = hyper::Client::new();
+    let ssl = try!(NativeTlsClient::new());
+    let connector = HttpsConnector::new(ssl);
+    let client = hyper::Client::with_connector(connector);
     let mut resp = try!(client.post(links::auth::BEARER_TOKEN)
                               .header(Authorization(auth_header))
                               .header(ContentType(content))
@@ -529,7 +541,9 @@ pub fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> Result<Token<'st
     let auth_header = bearer_request(con_token);
 
     let content: Mime = "application/x-www-form-urlencoded;charset=UTF-8".parse().unwrap();
-    let client = hyper::Client::new();
+    let ssl = try!(NativeTlsClient::new());
+    let connector = HttpsConnector::new(ssl);
+    let client = hyper::Client::with_connector(connector);
     let mut resp = try!(client.post(links::auth::INVALIDATE_BEARER)
                               .header(Authorization(auth_header))
                               .header(ContentType(content))

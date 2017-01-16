@@ -11,7 +11,9 @@ license = "Apache-2.0"
 readme = "README.md"
 
 [dependencies]
-hyper = "0.9.10"
+hyper = "0.10.0"
+hyper-native-tls = "0.2.1"
+native-tls = "0.1.1"
 url = "1.1.1"
 rand = "0.3.14"
 rust-crypto = "0.2.36"

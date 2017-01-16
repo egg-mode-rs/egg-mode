@@ -2,6 +2,7 @@
 
 use std::{self, fmt};
 use hyper;
+use native_tls;
 use rustc_serialize;
 use chrono;
 
@@ -69,6 +70,9 @@ pub enum Error {
     BadStatus(hyper::status::StatusCode),
     ///The web request experienced an error. The enclosed value was returned from hyper.
     NetError(hyper::error::Error),
+    ///The native TLS implementation returned an error. The enclosed value was returned from
+    ///native_tls.
+    TlsError(native_tls::Error),
     ///An error was experienced while processing the response stream. The enclosed value was
     ///returned from libstd.
     IOError(std::io::Error),
@@ -93,6 +97,7 @@ impl std::fmt::Display for Error {
             Error::RateLimit(ts) => write!(f, "Rate limit reached, hold until {}", ts),
             Error::BadStatus(ref val) => write!(f, "Error status received: {}", val),
             Error::NetError(ref err) => write!(f, "Network error: {}", err),
+            Error::TlsError(ref err) => write!(f, "TLS error: {}", err),
             Error::IOError(ref err) => write!(f, "IO error: {}", err),
             Error::JSONError(ref err) => write!(f, "JSON parse Error: {}", err),
             Error::DecodeError(ref err) => write!(f, "JSON decode error: {}", err),
@@ -111,6 +116,7 @@ impl std::error::Error for Error {
             Error::RateLimit(_) => "Rate limit for method reached",
             Error::BadStatus(_) => "Response included error code",
             Error::NetError(ref err) => err.description(),
+            Error::TlsError(ref err) => err.description(),
             Error::IOError(ref err) => err.description(),
             Error::JSONError(ref err) => err.description(),
             Error::DecodeError(ref err) => err.description(),
@@ -121,6 +127,7 @@ impl std::error::Error for Error {
     fn cause(&self) -> Option<&std::error::Error> {
         match *self {
             Error::NetError(ref err) => Some(err),
+            Error::TlsError(ref err) => Some(err),
             Error::IOError(ref err) => Some(err),
             Error::JSONError(ref err) => Some(err),
             Error::DecodeError(ref err) => Some(err),
@@ -133,6 +140,12 @@ impl std::error::Error for Error {
 impl From<hyper::error::Error> for Error {
     fn from(err: hyper::error::Error) -> Error {
         Error::NetError(err)
+    }
+}
+
+impl From<native_tls::Error> for Error {
+    fn from(err: native_tls::Error) -> Error {
+        Error::TlsError(err)
     }
 }
 

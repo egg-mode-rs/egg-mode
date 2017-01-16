@@ -134,6 +134,8 @@
 
 #[macro_use] extern crate hyper;
 #[macro_use] extern crate lazy_static;
+extern crate hyper_native_tls;
+extern crate native_tls;
 extern crate url;
 extern crate rand;
 extern crate crypto;
