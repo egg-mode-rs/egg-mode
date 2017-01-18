@@ -25,7 +25,8 @@
   not syntactically:
   - `Tweet::display_text_range` is now `Option<(usize, usize)>` and counts byte offsets instead of
     character indices
-  - All IDs used in any API struct are now u64
+  - All IDs used in any API struct are now u64, except for cursor IDs, since they need to be able to
+    be -1
   - All `indices` for Entity structs are now called `range`, are now `(usize, usize)`, and refer to
     byte offsets instead of codepoint offsets
 - `user::lookup_ids` and `user::lookup_names`, which were deprecated in 0.4.0, have been removed, in
