@@ -138,7 +138,7 @@ extern crate hyper_native_tls;
 extern crate native_tls;
 extern crate url;
 extern crate rand;
-extern crate crypto;
+extern crate ring;
 extern crate rustc_serialize;
 extern crate mime;
 extern crate chrono;
