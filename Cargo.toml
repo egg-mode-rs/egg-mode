@@ -1,14 +1,17 @@
 [package]
 name = "egg-mode"
 version = "0.7.0"
-authors = ["QuietMisdreavus <bryan@icesoldier.me>"]
+authors = ["QuietMisdreavus <grey@quietmisdreavus.net>"]
 description = "Library to interact with the Twitter API"
 documentation = "https://shiva.icesoldier.me/doc/egg_mode/"
-homepage = "https://github.com/QuietMisdreavus/twitter-rs"
 repository = "https://github.com/QuietMisdreavus/twitter-rs"
 keywords = ["twitter"]
+categories = ["api-bindings"]
 license = "Apache-2.0"
 readme = "README.md"
+
+[badges]
+travis-ci = { repository = "QuietMisdreavus/twitter-rs" }
 
 [dependencies]
 hyper = "0.10.0"
