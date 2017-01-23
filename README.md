@@ -8,11 +8,11 @@ another twitter library for rust [![Build Status](https://travis-ci.org/QuietMis
 [doc-dev]: https://shiva.icesoldier.me/doc-dev/egg_mode/
 
 This is a library for interacting with Twitter from Rust. You can see how much of the Public API is
-available in the file [TODO.md]. In addition to implementing the entire Public API, an explicit goal
-for egg-mode is to make it as easy as possible for a client of this library to interact with the
-Twitter API. Parts of this library are added as a convenience on top of the API mechanisms; for
-example, cursored lists of users and tweets can be used as an iterator in addition to being able to
-manually load a page at a time.
+available in the file [TODO.md]. In addition to eventually implementing the entire Public API, an
+explicit goal for egg-mode is to make it as easy as possible for a client of this library to
+interact with the Twitter API. Parts of this library are added as a convenience on top of the API
+mechanisms; for example, cursored lists of users and tweets can be used as an iterator in addition
+to being able to manually load a page at a time.
 
 [TODO.md]: https://github.com/QuietMisdreavus/twitter-rs/blob/master/TODO.md
 
