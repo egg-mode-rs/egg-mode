@@ -52,6 +52,11 @@ with your application. With this access token, all of the other Twitter function
 a new Token enum that contains both the consumer and access tokens. This combined Token is then
 passed to all the library functions in lieu of the separate key pairs.
 
+If you'd like to see the examples and implementation for the version currently on crates.io, check
+the [`v0.7.0`] tag.
+
+[`v0.7.0`]: https://github.com/QuietMisdreavus/twitter-rs/tree/v0.7.0
+
 For more examples of how to use this library, check the files in the examples folder. The
 authentication code for most of them is in `examples/common/mod.rs`, though that's also mostly
 wrapped up in code to write the access token to disk and load it back in. `examples/bearer.rs` is an
