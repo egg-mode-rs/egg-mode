@@ -2,7 +2,7 @@
 
 another twitter library for rust [![Build Status](https://travis-ci.org/QuietMisdreavus/twitter-rs.svg?branch=master)](https://travis-ci.org/QuietMisdreavus/twitter-rs)
 
-[Documentation][] | [(In-development pre-release documentation)][doc-dev]
+[v0.7.0 Documentation][] | [(Pending release documentation)][doc-dev]
 
 [Documentation]: https://shiva.icesoldier.me/doc/egg_mode/
 [doc-dev]: https://shiva.icesoldier.me/doc-dev/egg_mode/
