@@ -180,7 +180,10 @@ impl<'a> KeyPair<'a> {
 /// A Token is given at the end of the authentication process, and is what you use to authenticate
 /// every other call you make with Twitter. The process is different depending on whether you're
 /// wanting to operate on behalf of a user, and on how easily your application can open a web
-/// browser and/or redirect web requests to and from Twitter.
+/// browser and/or redirect web requests to and from Twitter. For more information, see Twitter's
+/// [OAuth documentation overview][OAuth].
+///
+/// [OAuth]: https://dev.twitter.com/oauth/overview
 ///
 /// The very first thing you'll need to do to get access to the Twitter API is to head to
 /// [Twitter's Application Manager][twitter-apps] and create an app. Once you've done that, there
@@ -216,24 +219,42 @@ impl<'a> KeyPair<'a> {
 /// [authenticate]: fn.authenticate_url.html
 /// [access token]: fn.access_token.html
 ///
-/// The process changes some smaller details depending on whether your application is web- or
-/// mobile-based, as opposed to desktop-based or in another situation where redirecting users to a
-/// web browser and back automatically is difficult or impossible. In the former case where URLs
-/// can be used to direct the user into and out of your app, give Twitter a "callback URL" when
-/// setting up your request token, and redirect the user to an [authenticate][] URL to grant your
-/// app permissions. When the user accepts the request, they will be redirected back to this URL to
-/// get back to your app, with the original request token and a verifier given to your app to
-/// signify their acceptance.
+/// Before you get too deep into the authentication process, it helps to know a couple things about
+/// the app you're writing:
 ///
-/// On the other hand, if you can't use the callback URL in this fashion, you can instead use the
-/// "PIN-based Auth" version of the flow. In this version, give a "callback URL" of "oob" when
-/// setting up your request token, and use an [authorize][] URL. When the user grants the
-/// permissions request in this fashion, they are given a numeric PIN that can be given back to
-/// your app to use as a verifier.
+/// * Is your app in an environment where directing users to and from a web page is easy? (e.g. a
+///   website, or a mobile app)
+/// * Are you using Twitter authentication as a substitute for user accounts, instead of just to
+///   interact with their Twitter account?
 ///
-/// Either way, when you have a "verifier" from either of these methods, you can use your Tokens
-/// from earlier in the process with that verifier to request an [access token][]. This access
-/// token can then be saved and cached for future use.
+/// Depending on your answer to the first question, you may need to use "PIN-Based Authorization",
+/// where the user completes the authentication/authorization process in a separate window and
+/// receives a numeric PIN in response that your app can use to complete the authentication
+/// process. The alternative to that is the standard OAuth flow, where a web browser is directed to
+/// Twitter to complete the login and authorization, then redirected back to your app to receive
+/// the access token proper. The way to signal one method or another is by the `callback` parameter
+/// to the [access token] request.
+///
+/// The second question informs *where* you send the user to authorize your app. Using the "Sign In
+/// With Twitter" flow, your app could be able to transparently request another access token
+/// without the user needing to accept the connection every time. This is ideal for websites where
+/// a "Sign In With Twitter" button could replace a regular login button, instead using a user's
+/// Twitter account in place for regular username/password credentials. To be able to use the "Sign
+/// In With Twitter" flow, you must first enable it for your app on Twitter's Application Manager.
+/// Then, for Step 2 of the authentication process, send the user to an [authenticate] URL.
+///
+/// The primary difference between the different URLs for Step 2 is that an [authenticate] URL
+/// allows the above behavior, whereas an [authorize] URL does not require the extra setting in the
+/// app manager and always requires the user to re-authorize the app every time they're sent
+/// through the authentication process. As access tokens can be cached indefinitely until the app's
+/// access is revoked, this is not necessarily as onerous as it sounds.
+///
+/// The end result of Step 2 is that your app receives a "verifier" to vouch for the user's
+/// acceptance of your app. With PIN-Based Authorization, the user receives a PIN from Twitter that
+/// acts as the verifier. With "Sign In With Twitter" and its counterpart, "3-Legged
+/// Authorization", the verifier is given as a query parameter to the callback URL given back in
+/// Step 1. With this verifier and the original request token, you can combine them with your app's
+/// consumer token to get the [access token] that opens up the rest of the Twitter API.
 ///
 /// ## Bearer Tokens
 ///
@@ -429,21 +450,55 @@ pub fn post(uri: &str,
         },
     };
 
-
     Ok(try!(request.send()))
 }
 
-///With the given consumer KeyPair, ask Twitter for a request KeyPair that can be used to request
-///access to the user's account.
+/// With the given consumer KeyPair, ask Twitter for a request KeyPair that can be used to request
+/// access to the user's account.
 ///
-///This can be considered Step 1 in obtaining access to a user's account. With this KeyPair, a
-///web-based application can use `authenticate_url`, and a desktop-based application can use
-///`authorize_url` to perform the authorization request.
+/// # Access Token Authentication
 ///
-///The parameter `callback` is used to provide an OAuth Callback URL for a web- or mobile-based
-///application to receive the results of the authorization request.  To use the PIN-Based Auth
-///request, this must be set to `"oob"`. The resulting KeyPair can be passed to `authorize_url` to
-///give the user a means to accept the request.
+/// [Authentication overview](enum.Token.html)
+///
+/// 1. **Request Token**: Authenticate your application
+/// 2. [Authorize]/[Authenticate]: Authenticate the user
+/// 3. [Access Token]: Combine the authentication
+///
+/// [Authorize]: fn.authorize_url.html
+/// [Authenticate]: fn.authenticate_url.html
+/// [Access Token]: fn.access_token.html
+///
+/// # Request Token: Authenticate your application
+///
+/// To begin the authentication process, first log your request with Twitter by authenticating your
+/// application by itself. This "request token" is used in later steps to match all the requests to
+/// the same authentication attempt.
+///
+/// The parameter `callback` is used differently based on how your program is set up, and which
+/// authentication process you'd like to use. For applications where directing users to and from
+/// another web page is difficult, you can use the special value `"oob"` to indicate that you would
+/// like to use PIN-Based Authentication.
+///
+/// Web-based applications and those that can handle web redirects transparently can instead supply
+/// a callback URL for that parameter. When the user completes the sign-in and authentication
+/// process, they will be directed to the provided URL with the information necessary to complete
+/// the authentication process. Depending on which Step 2 URL you use and whether you've enabled it
+/// for your app, this is called "Sign In With Twitter" or "3-Legged Authorization".
+///
+/// With this Request Token, you can assemble an [Authorize] or [Authenticate] URL that will allow
+/// the user to log in with Twitter and allow your app access to their account. See the
+/// Authentication Overview for more details, but the short version is that you want to use
+/// [Authenticate] for "Sign In With Twitter" functionality, and [Authorize] if not.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
+/// // for PIN-Based Auth
+/// let req_token = egg_mode::request_token(&con_token, "oob").unwrap();
+/// // for Sign In With Twitter/3-Legged Auth
+/// let req_token = egg_mode::request_token(&con_token, "https://myapp.io/auth").unwrap();
+/// ```
 pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Result<KeyPair<'static>, error::Error> {
     let header = get_header(Method::Post, links::auth::REQUEST_TOKEN,
                             con_token, None, Some(callback.into()), None, None);
@@ -452,8 +507,8 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Resul
     let connector = HttpsConnector::new(ssl);
     let client = hyper::Client::with_connector(connector);
     let mut resp = try!(client.post(links::auth::REQUEST_TOKEN)
-                          .header(Authorization(header))
-                          .send());
+                              .header(Authorization(header))
+                              .send());
 
     let full_resp = try!(response_raw(&mut resp));
 
@@ -474,48 +529,129 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Resul
                     try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")))))
 }
 
-///With the given request KeyPair, return a URL that a user can access to accept or reject an
-///authorization request.
+/// With the given request KeyPair, return a URL that a user can access to accept or reject an
+/// authorization request.
 ///
-///This can be considered Step 2 in obtaining access to a user's account.  Using [PIN-Based Auth][]
-///for desktop applications, give the URL that this function returns to the user so they can
-///process the authorization request. They will receive a PIN in return, that can be given as the
-///Verifier to `access_token`.
+/// # Access Token Authentication
 ///
-///[Pin-Based Auth]: https://dev.twitter.com/oauth/pin-based
+/// [Authentication overview](enum.Token.html)
+///
+/// 1. [Request Token]: Authenticate your application
+/// 2. **Authorize**/[Authenticate]: Authenticate the user
+/// 3. [Access Token]: Combine the authentication
+///
+/// [Request Token]: fn.request_token.html
+/// [Authenticate]: fn.authenticate_url.html
+/// [Access Token]: fn.access_token.html
+///
+/// # Authorize: Authenticate the user
+///
+/// This function is part of the step of authenticating a user with Twitter so they can authorize
+/// your application to access their account. This function generates a URL with the given request
+/// token that you must give to the user. What happens with this URL depends on what you used as
+/// the `callback` parameter for `request_token`.
+///
+/// If you gave a callback URL to `request_token`, Twitter will redirect the user to that URL after
+/// they log in and accept your app's permissions. There will be two query string parameters added
+/// to the URL for this redirect: `oauth_token`, which contains the `key` from the [request token]
+/// used here, and `oauth_verifier`, which contains a verifier string that can be used to create
+/// the final [access token]. Note that if this URL is used instead of [Authenticate], the user
+/// will need to accept the app's connection each time, even if they have connected the app
+/// previously and have not revoked the app's permissions. This process is called [3-legged
+/// authorization]. If you would like the user to transparently be redirected without confirmation
+/// if they've already accepted the connection, see the docs for [Authenticate] to read about "Sign
+/// In With Twitter".
+///
+/// [3-legged authorization]: https://dev.twitter.com/oauth/3-legged
+///
+/// If you gave the special value `"oob"` to `request_token`, this URL can be directly shown to the
+/// user, who can enter it into a separate web browser to complete the authorization. This is
+/// called [PIN-based authorization] and it's required for applications that cannot be reached by
+/// redirecting a URL from a web browser. When the user loads this URL, they can sign in with
+/// Twitter and grant your app access to their account. If they grant this access, they are given a
+/// numeric PIN that your app can use as the "verifier" to create the final [access token].
+///
+/// [Pin-Based authorization]: https://dev.twitter.com/oauth/pin-based
 pub fn authorize_url(request_token: &KeyPair) -> String {
     format!("{}?oauth_token={}", links::auth::AUTHORIZE, request_token.key)
 }
 
-///With the given request KeyPair, return a URL to redirect a user to so they can accept or reject
-///an authorization request.
+/// With the given request KeyPair, return a URL to redirect a user to so they can accept or reject
+/// an authorization request.
 ///
-///This can be considered Step 2 in obtaining access to a user's account.  Using the "[Sign in with
-///Twitter][]" authenication flow for websites, your application can redirect the user to the URL
-///returned by this function. Upon accepting the request, the user is redirected to the callback
-///URL given to `access_token`, with an `oauth_token` and `oauth_verifier` appended as a query
-///string. That Verifier can then be given to `access_token` to complete authorization.
+/// # Access Token Authentication
 ///
-///[Sign in with Twitter]: https://dev.twitter.com/web/sign-in
+/// [Authentication overview](enum.Token.html)
+///
+/// 1. [Request Token]: Authenticate your application
+/// 2. [Authorize]/ **Authenticate**: Authenticate the user
+/// 3. [Access Token]: Combine the authentication
+///
+/// [Request Token]: fn.request_token.html
+/// [Authorize]: fn.authorize_url.html
+/// [Access Token]: fn.access_token.html
+///
+/// # Authenticate: Authenticate the user (with Sign In To Twitter)
+///
+/// This function is part of the step of authenticating a user with Twitter so they can authorize
+/// your application to access their account. This function generates a URL with the given request
+/// token that you must give to the user.
+///
+/// The URL returned by this function acts the same as the [Authorize] URL, with one exception: If
+/// you have "[Sign In With Twitter]" enabled for your app, the user does not need to re-accept the
+/// app's connection if they've accepted it previously. If they're already logged in to Twitter,
+/// and have already accepted your app's access, they won't even see the redirect through Twitter.
+/// Twitter will immediately redirect the user to the `callback` URL given to the [request token].
+///
+/// [Sign In With Twitter]: https://dev.twitter.com/web/sign-in/implementing
+///
+/// If the user is redirected to a callback URL, Twitter will add two query string parameters:
+/// `oauth_token`, which contains the `key` from the [request token] used here, and
+/// `oauth_verifier`, which contains a verifier string that can be used to create the final [access
+/// token].
 pub fn authenticate_url(request_token: &KeyPair) -> String {
     format!("{}?oauth_token={}", links::auth::AUTHENTICATE, request_token.key)
 }
 
-///With the given OAuth tokens and verifier, ask Twitter for an access KeyPair that can be used to
-///sign further requests to the Twitter API.
+/// With the given OAuth tokens and verifier, ask Twitter for an access KeyPair that can be used to
+/// sign further requests to the Twitter API.
 ///
-///This can be considered Step 3 in obtaining access to a user's account.  The KeyPair this
-///function returns represents the user's authorization that your app can use their account, and
-///needs to be given to all other functions in the Twitter API.
+/// # Access Token Authentication
 ///
-///The OAuth Verifier this function takes is either given as a result of the OAuth Callback given
-///to `request_token`, or the PIN given to the user as a result of their access of the
-///`authorize_url`.
+/// [Authentication overview](enum.Token.html)
 ///
-///This function also returns the User ID and screen name of the authenticated user.
+/// 1. [Request Token]: Authenticate your application
+/// 2. [Authorize]/[Authenticate]: Authenticate the user
+/// 3. **Access Token**: Combine the authentication
+///
+/// [Request Token]: fn.request_token.html
+/// [Authorize]: fn.authorize_url.html
+/// [Authenticate]: fn.authenticate_url.html
+///
+/// # Access Token: Combine the app and user authentication
+///
+/// This is the final step in authenticating a user account to use your app. With this method, you
+/// combine the consumer `KeyPair` that represents your app, the [request token] that represents
+/// the session, and the "verifier" that represents the user's credentials and their acceptance of
+/// your app's access.
+///
+/// The `verifier` parameter comes from the Step 2 process you used. For PIN-Based Authorization,
+/// the verifier is the PIN returned to the user after they sign in. For "Sign In With Twitter" and
+/// 3-Legged Authorization, the verifier is the string passed by twitter to your app through the
+/// `oauth_verifier` query string parameter. For more information, see the documentation for the
+/// [Authorize] URL function.
+///
+/// Note that this function consumes `con_token`, because it is inserted into the `Token` that is
+/// returned. If you would like to use the consumer token to authenticate multiple accounts in the
+/// same session, clone the `KeyPair` when passing it into this function.
+///
+/// In addition to the final Access Token, this function also returns the User ID and screen name
+/// of the authenticated user.
 pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
-                                     request_token: &KeyPair,
-                                     verifier: S) -> Result<(Token<'a>, u64, String), error::Error> {
+                                         request_token: &KeyPair,
+                                         verifier: S)
+    -> Result<(Token<'a>, u64, String), error::Error>
+{
     let header = get_header(Method::Post, links::auth::ACCESS_TOKEN,
                             &con_token, Some(request_token), None, Some(verifier.into()), None);
 
@@ -643,6 +779,10 @@ pub fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> Result<Token<'st
 }
 
 ///If the given tokens are valid, return the user information for the authenticated user.
+///
+///If you have cached access tokens, using this method is a convenient way to make sure they're
+///still valid. If the user has revoked access from your app, this function will return an error
+///from Twitter indicating that you don't have access to the user.
 pub fn verify_tokens(token: &Token)
     -> WebResponse<::user::TwitterUser>
 {
