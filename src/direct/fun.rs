@@ -69,6 +69,11 @@ pub fn delete(id: u64, token: &auth::Token)
 
 ///Create a `ConversationTimeline` loader that can load direct messages as a collection of
 ///pre-sorted conversations.
+///
+///Note that this does not load any messages; you need to call `newest` or `next` for that. See
+///[`ConversationTimeline`] for details.
+///
+///[`ConversationTimeline`]: struct.ConversationTimeline.html
 pub fn conversations<'a>(token: &'a auth::Token) -> ConversationTimeline<'a> {
     ConversationTimeline::new(token)
 }

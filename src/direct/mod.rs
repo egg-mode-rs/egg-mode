@@ -361,6 +361,11 @@ impl<'a> Timeline<'a> {
 }
 
 ///Wrapper around a collection of direct messages, sorted by their recipient.
+///
+///The mapping exposed here is from a User ID to a listing of direct messages between the
+///authenticated user and that user. For more information, see the docs for [`ConversationTimeline`].
+///
+///[`ConversationTimeline`]: struct.ConversationTimeline.html
 pub type DMConversations = HashMap<u64, Vec<DirectMessage>>;
 
 ///Load the given set of conversations into this set.
@@ -384,8 +389,55 @@ fn merge(this: &mut DMConversations, conversations: DMConversations) {
     }
 }
 
-///Helper struct to load both sent and received direct messages, pre-sorting them into
-///conversations by their recipient.
+/// Helper struct to load both sent and received direct messages, pre-sorting them into
+/// conversations by their recipient.
+///
+/// This timeline loader is meant to get around a limitation of the direct message API endpoints:
+/// Twitter only gives endpoints to load all the messages sent my the authenticated user, or all
+/// the messages received by the authenticated user. However, the common user interface for DMs is
+/// to separate them by the other account in the conversation. This loader is a higher-level
+/// wrapper over the direct `sent` and `received` calls to achieve this interface without library
+/// users having to implement it themselves.
+///
+/// Much like [`Timeline`], simply receiving a `ConversationTimeline` from `conversations` does not
+/// load any messages on its own. This is to allow setting the page size before loading the first
+/// batch of messages.
+///
+/// [`Timeline`]: struct.Timeline.html
+///
+/// `ConversationTimeline` keeps a cache of all the messages its loaded, and returns a reference to
+/// that cache when it loads more messages. This means that every time you load more messages, you
+/// get the *complete* conversations view, not just the new messages.
+///
+/// There are two methods to load messages, and they operate by extending the cache by loading
+/// messages either older or newer than the extent of the cache.
+///
+/// **NOTE**: Twitter has different API limitations for sent versus received messages. You can only
+/// load the most recent 200 *received* messages through the public API, but you can load up to 800
+/// *sent* messages. This can create some strange user-interface if a user has some old
+/// conversations, as they can only see their own side of the conversation this way. If you'd like
+/// to load as many messages as possible, both API endpoints have a per-call limit of 200. Setting
+/// the page size to 200 prior to loading messages allows you to use one function call to load a
+/// fairly-complete view of the user's conversations.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
+/// let mut conversations = egg_mode::direct::conversations(&token);
+///
+/// // newest() returns a &HashMap, which can be iterated directly as a by-ref iterator
+/// for (id, convo) in conversations.newest().unwrap() {
+///     let user = egg_mode::user::show(id, &token).unwrap();
+///     println!("Conversation with @{}", user.screen_name);
+///     for msg in convo {
+///         println!("<@{}> {}", msg.sender_screen_name, msg.text);
+///     }
+/// }
+/// ```
 pub struct ConversationTimeline<'a> {
     sent: Timeline<'a>,
     received: Timeline<'a>,
