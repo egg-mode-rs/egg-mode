@@ -15,6 +15,8 @@
 //!   struct contains information about URLs, user mentions, and hashtags in the DM.
 //! * `Timeline`: Effectively the same as `tweet::Timeline`, but returns `DirectMessage`s instead.
 //!   Returned by functions that traverse collections of DMs.
+//! * `ConversationTimeline`/`DMConversations`: This struct and alias are part of the
+//!   "conversations" wrapper for loading direct messages into per-recipient threads.
 //!
 //! ## Functions
 //!
@@ -26,6 +28,7 @@
 //! * `sent`
 //! * `received`
 //! * `show`
+//! * `conversations`
 //!
 //! ### Actions
 //!
