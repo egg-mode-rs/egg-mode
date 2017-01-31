@@ -1,6 +1,6 @@
 # Changelog for egg-mode
 
-## Pending
+## [0.8.0] - 2016-01-30
 ### Added
 - New authentication functions `bearer_token` and `invalidate_bearer`, to perform Application-only
   authentication

@@ -2,7 +2,7 @@
 
 another twitter library for rust [![Build Status](https://travis-ci.org/QuietMisdreavus/twitter-rs.svg?branch=master)](https://travis-ci.org/QuietMisdreavus/twitter-rs)
 
-[v0.7.0 Documentation][documentation] | [(Pending release documentation)][doc-dev]
+[v0.8.0 Documentation][documentation] | [(Pending release documentation)][doc-dev]
 
 [Documentation]: https://shiva.icesoldier.me/doc/egg_mode/
 [doc-dev]: https://shiva.icesoldier.me/doc-dev/egg_mode/
@@ -20,7 +20,7 @@ To start using this library, put the following into your Cargo.toml:
 
 ```TOML
 [dependencies]
-egg-mode = "0.7.0"
+egg-mode = "0.8.0"
 ```
 
 ...and the following in your lib.rs or main.rs:
@@ -34,28 +34,24 @@ See available methods and tips to get started in the [Documentation][].
 To authenticate a user and request an access token:
 
 ```rust
-let consumer_token = egg_mode::Token::new(consumer_key, consumer_secret);
-let request_token = egg_mode::request_token(&consumer_token, "oob").unwrap();
-let authorize_url = egg_mode::authorize_url(&request_token);
+let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
+let request_token = egg_mode::request_token(&con_token, "oob").unwrap();
+let auth_url = egg_mode::authorize_url(&request_token);
 
-//show authorize_url to the user, have them sign in to Twitter there, and enter the PIN that
-//Twitter gives them
+// give auth_url to the user, they can sign in to Twitter and accept your app's permissions.
+// they'll receive a PIN in return, they need to give this to your application
 
-let (access_token, user_id, username) = egg_mode::access_token(&consumer_token, &request_token, pin).unwrap();
+let (token, user_id, screen_name) =
+    egg_mode::access_token(con_token, &request_token, pin).unwrap();
 ```
 
 As the last line shows, this also returns the User ID and username of the user that authenticated
 with your application. With this access token, all of the other Twitter functions become available.
 
-**NOTE**: Starting in 0.8, the method of authenticating calls is changing slightly.
-`egg_mode::access_token` will take ownership of the consumer token passed in, so that it can return
-a new Token enum that contains both the consumer and access tokens. This combined Token is then
-passed to all the library functions in lieu of the separate key pairs.
-
 If you'd like to see the examples and implementation for the version currently on crates.io, check
-the [`v0.7.0`] tag.
+the [`v0.8.0`] tag.
 
-[`v0.7.0`]: https://github.com/QuietMisdreavus/twitter-rs/tree/v0.7.0
+[`v0.8.0`]: https://github.com/QuietMisdreavus/twitter-rs/tree/v0.8.0
 
 For more examples of how to use this library, check the files in the examples folder. The
 authentication code for most of them is in `examples/common/mod.rs`, though that's also mostly
