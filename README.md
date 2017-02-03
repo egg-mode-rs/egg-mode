@@ -60,6 +60,9 @@ example of using application-only authentication to get a Bearer token and use i
 posts. Other examples showcase a handful of actions from their related module. To run any of the
 examples for yourself, see the notes in `examples/common/mod.rs`.
 
+A note about Windows: As egg-mode uses *ring* as a dependency, egg-mode will not build on
+windows-gnu targets. It builds just fine on windows-msvc targets, though.
+
 If you've found egg-mode useful, or just want to communicate your first impressions of it, please
 [track me down on Twitter][qm-twitter] and let me know!
 
