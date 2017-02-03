@@ -4,15 +4,21 @@ environment:
   - TARGET: stable-x86_64-pc-windows-msvc
   - TARGET: stable-i686-pc-windows-msvc
   - TARGET: stable-x86_64-pc-windows-gnu
+    MSYS_BITS: 64
   - TARGET: stable-i686-pc-windows-gnu
+    MSYS_BITS: 32
   - TARGET: beta-x86_64-pc-windows-msvc
   - TARGET: beta-i686-pc-windows-msvc
   - TARGET: beta-x86_64-pc-windows-gnu
+    MSYS_BITS: 64
   - TARGET: beta-i686-pc-windows-gnu
+    MSYS_BITS: 32
   - TARGET: nightly-x86_64-pc-windows-msvc
   - TARGET: nightly-i686-pc-windows-msvc
   - TARGET: nightly-x86_64-pc-windows-gnu
+    MSYS_BITS: 64
   - TARGET: nightly-i686-pc-windows-gnu
+    MSYS_BITS: 32
 
 matrix:
   allow_failures:
@@ -25,6 +31,7 @@ install:
   - curl -sSf -o rustup-init.exe https://win.rustup.rs/
   - rustup-init.exe -y --default-toolchain %TARGET%
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
+  - if defined MSYS_BITS set PATH=C:\msys64\mingw%MSYS_BITS%\bin;C:\msys64\usr\bin;%PATH%
   - rustc -vV
   - cargo -vV
 
