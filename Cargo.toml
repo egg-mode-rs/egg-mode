@@ -12,6 +12,7 @@ readme = "README.md"
 
 [badges]
 travis-ci = { repository = "QuietMisdreavus/twitter-rs" }
+appveyor = { repository = "QuietMisdreavus/twitter-rs" }
 
 [dependencies]
 hyper = "0.10.0"
