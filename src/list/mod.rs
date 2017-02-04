@@ -72,7 +72,6 @@ impl FromJson for ListInfo {
             return Err(InvalidResponse("List received json that wasn't an object", Some(input.to_string())));
         }
 
-        field_present!(input, contributors_enabled);
         field_present!(input, uri);
         field_present!(input, full_name);
         field_present!(input, description);
