@@ -53,6 +53,7 @@ impl<'a> ListID<'a> {
     }
 }
 
+#[derive(Clone)]
 pub struct ListInfo {
     pub name: String,
     pub slug: String,
@@ -98,7 +99,7 @@ impl FromJson for ListInfo {
 }
 
 impl ListInfo {
-    pub fn into_list<'a>(self, params_base: Option<ParamList<'a>>, token: &'a auth::Token<'a>) -> List<'a> {
+    pub fn into_list<'a>(&self, params_base: Option<ParamList<'a>>, token: &'a auth::Token<'a>) -> List<'a> {
         List {
             list_id: ListID::ListID(self.id),
             token: token,
@@ -108,7 +109,7 @@ impl ListInfo {
             min_id: None,
             user_count: 20,
             include_rts: false,
-            info: Some(self)
+            info: Some(self.clone())
         }
     }
 }
