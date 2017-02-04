@@ -91,16 +91,17 @@ return a list of IDs of something are grouped in with the rest of the main struc
 
 ### Lists
 
-- [ ] lists/list
-- [ ] lists/show
-- [ ] lists/statuses
-- [ ] lists/memberships
-- [ ] lists/subscriptions
-- [ ] lists/ownerships
+- [x] lists/list (`list::list`)
+- [x] lists/show (`list::show`)
+- [x] lists/statuses (`lists::statuses`)
+- [x] lists/memberships (`list::memberships`)
+- [x] lists/subscriptions (`list::subscriptions`)
+- [x] lists/ownerships (`list::ownerships`)
 - [ ] lists/create
 - [ ] lists/update
 - [ ] lists/destroy
-- [ ] lists/members
+- [x] lists/members (`list::members`)
+- [x] lists/members/show (`list::is_member`)
 - [ ] lists/members/create
 - [ ] lists/members/create\_all
 - [ ] lists/members/destroy
