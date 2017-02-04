@@ -18,7 +18,7 @@ pub fn ownerships<'a>(user: &'a user::UserID, token: &'a auth::Token) -> list::L
     list::ListIter::new(user, list::ListIterType::Ownerships, token)
 }
 
-pub fn show<'a>(list: &'a list::ListID<'a>, token: &'a auth::Token) -> WebResponse<list::ListInfo> {
+pub fn show<'a>(list: list::ListID<'a>, token: &'a auth::Token) -> WebResponse<list::ListInfo> {
     list.show(token)
 }
 

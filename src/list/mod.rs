@@ -32,9 +32,9 @@ impl<'a> ListID<'a> {
     pub fn from_slug_id(list_name: &'a str, owner_id: u64) -> ListID<'a> {
         ListID::SlugID(list_name, owner_id)
     }
-    pub fn show(&self, token: &'a auth::Token) -> WebResponse<ListInfo> {
+    pub fn show(self, token: &'a auth::Token) -> WebResponse<ListInfo> {
         let mut params = HashMap::new();
-        match self {
+        match &self {
             &ListID::SlugName(slug, list_owner) => {
                 add_param(&mut params, "slug", slug.to_string());
                 add_param(&mut params, "owner_screen_name", list_owner.to_string());
