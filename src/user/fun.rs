@@ -53,25 +53,12 @@ pub use super::*;
 ///
 ///let users = egg_mode::user::lookup(&list, &token).unwrap();
 ///```
-pub fn lookup<'a, T: 'a>(accts: &'a [T], token: &auth::Token)
+pub fn lookup<'a, T, I>(accts: I, token: &auth::Token)
     -> WebResponse<Vec<TwitterUser>>
-    where &'a T: Into<UserID<'a>>
+    where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
 {
     let mut params = HashMap::new();
-    let id_param = accts.iter()
-                        .filter_map(|x| match x.into() {
-                            UserID::ID(id) => Some(id.to_string()),
-                            _ => None,
-                        })
-                        .collect::<Vec<_>>()
-                        .join(",");
-    let name_param = accts.iter()
-                          .filter_map(|x| match x.into() {
-                              UserID::ScreenName(name) => Some(name),
-                              _ => None,
-                          })
-                          .collect::<Vec<_>>()
-                          .join(",");
+    let (id_param, name_param) = multiple_names_param(accts);
 
     add_param(&mut params, "user_id", id_param);
     add_param(&mut params, "screen_name", name_param);
@@ -126,25 +113,12 @@ pub fn relation<'a, F, T>(from: F, to: T, token: &auth::Token)
 }
 
 ///Lookup the relations between the authenticated user and the given accounts.
-pub fn relation_lookup<'a, T: 'a>(accts: &'a [T], token: &auth::Token)
+pub fn relation_lookup<'a, T, I>(accts: I, token: &auth::Token)
     -> WebResponse<Vec<RelationLookup>>
-    where &'a T: Into<UserID<'a>>
+    where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
 {
     let mut params = HashMap::new();
-    let id_param = accts.iter()
-                        .filter_map(|x| match x.into() {
-                            UserID::ID(id) => Some(id.to_string()),
-                            _ => None,
-                        })
-                        .collect::<Vec<_>>()
-                        .join(",");
-    let name_param = accts.iter()
-                          .filter_map(|x| match x.into() {
-                              UserID::ScreenName(name) => Some(name),
-                              _ => None,
-                          })
-                          .collect::<Vec<_>>()
-                          .join(",");
+    let (id_param, name_param) = multiple_names_param(accts);
 
     add_param(&mut params, "user_id", id_param);
     add_param(&mut params, "screen_name", name_param);
@@ -425,4 +399,20 @@ pub fn unmute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     let mut resp = try!(auth::post(links::users::UNMUTE, token, Some(&params)));
 
     parse_response(&mut resp)
+}
+
+fn multiple_names_param<'a, T, I>(accts: I) -> (String, String)
+    where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
+{
+    let mut ids = Vec::new();
+    let mut names = Vec::new();
+
+    for x in accts.into_iter() {
+        match x.into() {
+            UserID::ID(id) => ids.push(id.to_string()),
+            UserID::ScreenName(name) => names.push(name),
+        }
+    }
+
+    (ids.join(","), names.join(","))
 }

@@ -66,11 +66,11 @@ pub fn retweeters_of<'a>(id: u64, token: &'a auth::Token)
 ///This function differs from `lookup_map` in how it handles protected or nonexistent tweets.
 ///`lookup` simply returns a Vec of all the tweets it could find, leaving out any that it couldn't
 ///find.
-pub fn lookup(ids: &[u64], token: &auth::Token)
+pub fn lookup<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token)
     -> WebResponse<Vec<Tweet>>
 {
     let mut params = HashMap::new();
-    let id_param = ids.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
+    let id_param = ids.into_iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
     add_param(&mut params, "id", id_param);
     add_param(&mut params, "tweet_mode", "extended");
 
@@ -86,11 +86,11 @@ pub fn lookup(ids: &[u64], token: &auth::Token)
 ///`lookup_map` returns a map containing every ID in the input slice; tweets that don't exist or
 ///can't be read by the authenticated user store `None` in the map, whereas tweets that could be
 ///loaded store `Some` and the requested status.
-pub fn lookup_map(ids: &[u64], token: &auth::Token)
+pub fn lookup_map<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token)
     -> WebResponse<HashMap<u64, Option<Tweet>>>
 {
     let mut params = HashMap::new();
-    let id_param = ids.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
+    let id_param = ids.into_iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
     add_param(&mut params, "id", id_param);
     add_param(&mut params, "map", "true");
     add_param(&mut params, "tweet_mode", "extended");
