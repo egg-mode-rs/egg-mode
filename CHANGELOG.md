@@ -1,5 +1,13 @@
 # Changelog for egg-mode
 
+## Pending
+### Changed
+- `tweet::lookup`, `tweet::lookup_map`, `user::lookup`, and `user::relation_lookup` now all take
+  `IntoIterator`s instead of slices.
+  - Only a **breaking change** if something that coerces into a slice doesn't also impl
+    `IntoIterator<Item=&'a T>`. As Vecs and slices already do this, the common cases are
+    source-compatible.
+
 ## [0.8.0] - 2016-01-30
 ### Added
 - New authentication functions `bearer_token` and `invalidate_bearer`, to perform Application-only
