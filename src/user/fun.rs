@@ -10,8 +10,9 @@ pub use super::*;
 
 ///Lookup a set of Twitter users by either ID and screen name, as applicable.
 ///
-///This function is set up so it can be called with any number of slice types; whether just IDs,
-///just screen names, or even a mix of both (by using `&[UserID]` directly).
+///This function is set up so it can be called with a few different Item types; whether just IDs
+///with `u64`, just screen names with `&str` or `String`, or even a mix of both (by using `UserID`
+///directly).
 ///
 ///## Examples
 ///
@@ -33,10 +34,23 @@ pub use super::*;
 ///#     consumer: egg_mode::KeyPair::new("", ""),
 ///#     access: egg_mode::KeyPair::new("", ""),
 ///# };
+///let mut list: Vec<&str> = Vec::new();
+///
+///list.push("rustlang");
+///list.push("ThisWeekInRust");
+///
+///let users = egg_mode::user::lookup(&list, &token).unwrap();
+///```
+///
+///```rust,no_run
+///# let token = egg_mode::Token::Access {
+///#     consumer: egg_mode::KeyPair::new("", ""),
+///#     access: egg_mode::KeyPair::new("", ""),
+///# };
 ///let mut list: Vec<String> = Vec::new();
 ///
-///list.push("rustlang".into());
-///list.push("ThisWeekInRust".into());
+///list.push("rustlang".to_string());
+///list.push("ThisWeekInRust".to_string());
 ///
 ///let users = egg_mode::user::lookup(&list, &token).unwrap();
 ///```
