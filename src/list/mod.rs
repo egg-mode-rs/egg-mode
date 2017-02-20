@@ -3,7 +3,6 @@
 use common::*;
 
 use std::collections::HashMap;
-use std::io::Read;
 
 use rustc_serialize::json;
 use chrono;
@@ -40,16 +39,29 @@ impl<'a> ListID<'a> {
     }
 }
 
+///Represents the metadata for a list.
 #[derive(Clone)]
 pub struct ListInfo {
+    ///The name of the list.
     pub name: String,
+    ///The "slug" of a list, that can be combined with its creator's `UserID` to refer to the list.
     pub slug: String,
+    ///The numeric ID of the list.
     pub id: u64,
+    ///The number of accounts "subscribed" to the list, for whom it will appear in their collection
+    ///of available lists.
     pub subscriber_count: u64,
+    ///The number of accounts added to the list.
     pub member_count: u64,
+    ///The full name of the list, preceded by `@`, that can be used to link to the list as part of
+    ///a tweet, direct message, or other place on Twitter where @mentions are parsed.
     pub full_name: String,
+    ///The description of the list, as entered by its creator.
     pub description: String,
+    ///The full name of the list, preceded by `/`, that can be preceded with `https://twitter.com`
+    ///to create a link to the list.
     pub uri: String,
+    ///UTC timestamp of when the list was created.
     pub created_at: chrono::DateTime<chrono::UTC>,
 }
 
@@ -84,22 +96,6 @@ impl FromJson for ListInfo {
     }
 }
 
-impl ListInfo {
-    pub fn into_list<'a>(&self, params_base: Option<ParamList<'a>>, token: &'a auth::Token<'a>) -> List<'a> {
-        List {
-            list_id: ListID::ID(self.id),
-            token: token,
-            params_base: params_base,
-            count: 20,
-            max_id: None,
-            min_id: None,
-            user_count: 20,
-            include_rts: false,
-            info: Some(self.clone())
-        }
-    }
-}
-
 pub struct List<'a> {
     ///The list to use in requests
     list_id: ListID<'a>,
@@ -119,7 +115,7 @@ pub struct List<'a> {
     pub user_count: i32,
     /// Whether to get retweets from the list in addition to normal tweets
     pub include_rts: bool,
-
+    ///If available, the list's metadata.
     pub info: Option<ListInfo>
 }
 
@@ -148,7 +144,7 @@ impl<'a> List<'a> {
     ///
     ///If the range of tweets given by the IDs would return more than `self.count`, the newest set
     ///of tweets will be returned.
-    pub fn statuses(&self, since_id: Option<u64>, max_id: Option<u64>) -> WebResponse<Vec<tweet::Tweet>> {
+    fn statuses(&self, since_id: Option<u64>, max_id: Option<u64>) -> WebResponse<Vec<tweet::Tweet>> {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
         add_list_param(&mut params, &self.list_id);
         if self.include_rts         { add_param(&mut params, "include_rts", "true".to_string()); }
@@ -160,37 +156,7 @@ impl<'a> List<'a> {
         parse_response(&mut resp)
     }
 
-    pub fn is_member(&self, user: &user::UserID) -> bool {
-        let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
-        add_list_param(&mut params, &self.list_id);
-
-        match user {
-            &user::UserID::ID(id) => {
-                add_param(&mut params, "user_id", id.to_string());
-            },
-            &user::UserID::ScreenName(screen_name) => {
-                add_param(&mut params, "screen_name", screen_name.to_string());
-            }
-        };
-
-        let mut resp = auth::get(links::lists::LISTS_MEMBERS_SHOW, self.token, Some(&params)).unwrap();
-        let mut full_resp = String::new();
-        resp.read_to_string(&mut full_resp);
-
-        let json_resp_result = json::Json::from_str(&full_resp);
-
-        if let Ok(j) = json_resp_result {
-            if let Ok(_) = user::TwitterUser::from_json(&j) {
-                true
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    }
-
-    pub fn members(&self) -> CursorIter<'a, cursor::UserCursor> {
+    fn members(&self) -> CursorIter<'a, cursor::UserCursor> {
        if let Some(ref p) = self.params_base {
            let mut params = p.clone();
            add_list_param(&mut params, &self.list_id);
@@ -232,7 +198,7 @@ impl<'a> List<'a> {
     }
 }
 
-pub enum ListIterType {
+enum ListIterType {
     Ownerships,
     Subscriptions,
     Memberships,
@@ -280,7 +246,7 @@ impl<'a> ListIter<'a> {
     ///This will automatically be called if you use the `UserSearch` as an iterator. This method is
     ///made public for convenience if you want to manage the pagination yourself. Remember to
     ///change `page_num` between calls.
-    pub fn call_ownerships(&self) -> WebResponse<Vec<ListInfo>> {
+    fn call_ownerships(&self) -> WebResponse<Vec<ListInfo>> {
         let mut params = HashMap::new();
         add_param(&mut params, "cursor", self.page_num.to_string());
         add_param(&mut params, "count", self.page_size.to_string());
@@ -301,7 +267,7 @@ impl<'a> ListIter<'a> {
     ///This will automatically be called if you use the `UserSearch` as an iterator. This method is
     ///made public for convenience if you want to manage the pagination yourself. Remember to
     ///change `page_num` between calls.
-    pub fn call_subscriptions(&self) -> WebResponse<Vec<ListInfo>> {
+    fn call_subscriptions(&self) -> WebResponse<Vec<ListInfo>> {
         let mut params = HashMap::new();
         add_param(&mut params, "cursor", self.page_num.to_string());
         add_param(&mut params, "count", self.page_size.to_string());
@@ -322,7 +288,7 @@ impl<'a> ListIter<'a> {
     ///This will automatically be called if you use the `UserSearch` as an iterator. This method is
     ///made public for convenience if you want to manage the pagination yourself. Remember to
     ///change `page_num` between calls.
-    pub fn call_memberships(&self) -> WebResponse<Vec<ListInfo>> {
+    fn call_memberships(&self) -> WebResponse<Vec<ListInfo>> {
         let mut params = HashMap::new();
         add_param(&mut params, "cursor", self.page_num.to_string());
         add_param(&mut params, "count", self.page_size.to_string());
@@ -338,7 +304,7 @@ impl<'a> ListIter<'a> {
         parse_response(&mut resp)
     }
 
-    pub fn call_lists(&self) -> WebResponse<Vec<ListInfo>> {
+    fn call_lists(&self) -> WebResponse<Vec<ListInfo>> {
         let mut params = HashMap::new();
         add_param(&mut params, "cursor", self.page_num.to_string());
         add_param(&mut params, "count", self.page_size.to_string());
@@ -383,7 +349,7 @@ impl<'a> Iterator for ListIter<'a> {
             }
         }
 
-        let mut x = match self.iter_type {
+        let x = match self.iter_type {
             ListIterType::Subscriptions => self.call_subscriptions(),
             ListIterType::Ownerships => self.call_ownerships(),
             ListIterType::Memberships => self.call_memberships(),
