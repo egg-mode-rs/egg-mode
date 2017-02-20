@@ -8,6 +8,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::iter::Peekable;
 use user;
+use list;
 
 #[macro_use] mod from_json;
 mod response;
@@ -30,6 +31,25 @@ pub fn add_name_param<'a>(list: &mut ParamList<'a>, id: &user::UserID<'a>) -> Op
     match *id {
         user::UserID::ID(id) => add_param(list, "user_id", id.to_string()),
         user::UserID::ScreenName(name) => add_param(list, "screen_name", name),
+    }
+}
+
+pub fn add_list_param<'a>(params: &mut ParamList<'a>, list: &list::ListID<'a>) {
+    match *list {
+        list::ListID::Slug(ref owner, name) => {
+            match *owner {
+                user::UserID::ID(id) => {
+                    add_param(params, "owner_id", id.to_string());
+                },
+                user::UserID::ScreenName(name) => {
+                    add_param(params, "owner_screen_name", name);
+                },
+            }
+            add_param(params, "slug", name);
+        },
+        list::ListID::ID(id) => {
+            add_param(params, "list_id", id.to_string());
+        }
     }
 }
 

@@ -1,55 +1,42 @@
+//! Structs and functions for working with lists.
+
+use common::*;
+
 use std::collections::HashMap;
+use std::io::Read;
+
 use rustc_serialize::json;
+use chrono;
+
 use auth;
 use cursor;
 use cursor::CursorIter;
-use user::UserID;
-use user::UserSearch;
+use user;
 use error::Error::InvalidResponse;
 use links;
-use common::*;
-use std::io::Read;
 use tweet;
-use tweet::Tweet;
-use super::error;
-use super::*;
+use error;
 
-pub mod fun;
+mod fun;
+pub use self::fun::*;
 
+///Convenience enum to refer to a list via its owner and name or via numeric ID.
 pub enum ListID<'a> {
-    SlugName(&'a str, &'a str),
-    SlugID(&'a str, u64),
-    ListID(u64)
+    ///Referring via the list's owner and its "slug" or name.
+    Slug(user::UserID<'a>, &'a str),
+    ///Referring via the list's numeric ID.
+    ID(u64)
 }
 
 impl<'a> ListID<'a> {
-    pub fn from_slug_name(list_name: &'a str, list_owner: &'a str) -> ListID<'a> {
-        ListID::SlugName(list_name, list_owner)
+    ///Make a new `ListID` by supplying its owner and name.
+    pub fn from_slug<T: Into<user::UserID<'a>>>(owner: T, list_name: &'a str) -> ListID<'a> {
+        ListID::Slug(owner.into(), list_name)
     }
-    pub fn from_id(list_id: u64) -> ListID<'a> {
-        ListID::ListID(list_id)
-    }
-    pub fn from_slug_id(list_name: &'a str, owner_id: u64) -> ListID<'a> {
-        ListID::SlugID(list_name, owner_id)
-    }
-    pub fn show(self, token: &'a auth::Token) -> WebResponse<ListInfo> {
-        let mut params = HashMap::new();
-        match &self {
-            &ListID::SlugName(slug, list_owner) => {
-                add_param(&mut params, "slug", slug.to_string());
-                add_param(&mut params, "owner_screen_name", list_owner.to_string());
-            },
-            &ListID::SlugID(slug, owner_id) => {
-                add_param(&mut params, "slug", slug.to_string());
-                add_param(&mut params, "owner_id", owner_id.to_string());
-            },
-            &ListID::ListID(id) => {
-                add_param(&mut params, "list_id", id.to_string());
-            }
-        };
-        let mut resp = try!(auth::get(links::lists::LISTS_SHOW, token, Some(&params)));
 
-        parse_response(&mut resp)
+    ///Make a new `ListID` by supplying its numeric ID.
+    pub fn from_id(list_id: u64) -> ListID<'a> {
+        ListID::ID(list_id)
     }
 }
 
@@ -100,7 +87,7 @@ impl FromJson for ListInfo {
 impl ListInfo {
     pub fn into_list<'a>(&self, params_base: Option<ParamList<'a>>, token: &'a auth::Token<'a>) -> List<'a> {
         List {
-            list_id: ListID::ListID(self.id),
+            list_id: ListID::ID(self.id),
             token: token,
             params_base: params_base,
             count: 20,
@@ -146,7 +133,7 @@ impl<'a> List<'a> {
 
     ///Return the set of tweets newer than the last set pulled, optionall placing a maximum tweet
     ///ID to bound with.
-    pub fn newer_statuses(&mut self, max_id: Option<u64>) -> WebResponse<Vec<Tweet>> {
+    pub fn newer_statuses(&mut self, max_id: Option<u64>) -> WebResponse<Vec<tweet::Tweet>> {
         let resp = try!(self.statuses(self.max_id, max_id));
 
         self.map_ids(&resp.response);
@@ -161,9 +148,9 @@ impl<'a> List<'a> {
     ///
     ///If the range of tweets given by the IDs would return more than `self.count`, the newest set
     ///of tweets will be returned.
-    pub fn statuses(&self, since_id: Option<u64>, max_id: Option<u64>) -> WebResponse<Vec<Tweet>> {
+    pub fn statuses(&self, since_id: Option<u64>, max_id: Option<u64>) -> WebResponse<Vec<tweet::Tweet>> {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
-        self.add_list_params(&mut params);
+        add_list_param(&mut params, &self.list_id);
         if self.include_rts         { add_param(&mut params, "include_rts", "true".to_string()); }
         if let Some(id) = since_id  { add_param(&mut params, "since_id", id.to_string()); }
         if let Some(id) = max_id    { add_param(&mut params, "max_id", id.to_string()); }
@@ -175,7 +162,7 @@ impl<'a> List<'a> {
 
     pub fn is_member(&self, user: &user::UserID) -> bool {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
-        self.add_list_params(&mut params);
+        add_list_param(&mut params, &self.list_id);
 
         match user {
             &user::UserID::ID(id) => {
@@ -206,29 +193,13 @@ impl<'a> List<'a> {
     pub fn members(&self) -> CursorIter<'a, cursor::UserCursor> {
        if let Some(ref p) = self.params_base {
            let mut params = p.clone();
-           self.add_list_params(&mut params);
+           add_list_param(&mut params, &self.list_id);
            CursorIter::new(links::lists::LISTS_MEMBERS, self.token, Some(params), Some(self.user_count))
        } else {
            let mut params = HashMap::new();
-           self.add_list_params(&mut params);
+           add_list_param(&mut params, &self.list_id);
            CursorIter::new(links::lists::LISTS_MEMBERS, self.token, Some(params), Some(self.user_count))
         }
-    }
-
-    fn add_list_params(&self, params: &mut ParamList<'a>) {
-        match self.list_id {
-            ListID::SlugName(slug, list_owner) => {
-                add_param(params, "slug", slug.to_string());
-                add_param(params, "owner_screen_name", list_owner.to_string());
-            },
-            ListID::SlugID(slug, owner_id) => {
-                add_param(params, "slug", slug.to_string());
-                add_param(params, "owner_id", owner_id.to_string());
-            },
-            ListID::ListID(id) => {
-                add_param(params, "list_id", id.to_string());
-            }
-        };
     }
 
     ///Helper builder function to set the page size.
@@ -240,7 +211,7 @@ impl<'a> List<'a> {
     }
 
     ///With the returned slice of Tweets, set the min_id and max_id on self.
-    fn map_ids(&mut self, resp: &[Tweet]) {
+    fn map_ids(&mut self, resp: &[tweet::Tweet]) {
         self.max_id = resp.first().map(|status| status.id);
         self.min_id = resp.last().map(|status| status.id);
     }
