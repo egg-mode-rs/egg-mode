@@ -38,8 +38,12 @@ pub fn show<'a>(list: ListID<'a>, token: &'a auth::Token) -> WebResponse<ListInf
 }
 
 ///Look up the users that have been added to the given list.
-pub fn members<'a>(list: &'a List<'a>) -> CursorIter<'a, cursor::UserCursor> {
-    list.members()
+pub fn members<'a>(list: &'a ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, cursor::UserCursor> {
+    let mut params = HashMap::new();
+
+    add_list_param(&mut params, list);
+
+    CursorIter::new(links::lists::LISTS_MEMBERS, token, Some(params), Some(20))
 }
 
 ///Check whether the given user has been added to the given list.
@@ -66,8 +70,12 @@ pub fn is_member<'a>(user: &'a user::UserID, list: &'a ListID<'a>, token: &auth:
 }
 
 ///Begin navigating the collection of tweets made by the users added to the given list.
-pub fn statuses<'a>(list: &'a List<'a>, since_id: Option<u64>, max_id: Option<u64>)
-    -> WebResponse<Vec<tweet::Tweet>>
+pub fn statuses<'a>(list: &'a ListID<'a>, with_rts: bool, token: &'a auth::Token)
+    -> tweet::Timeline<'a>
 {
-    list.statuses(since_id, max_id)
+    let mut params = HashMap::new();
+    add_list_param(&mut params, list);
+    add_param(&mut params, "include_rts", with_rts.to_string());
+
+    tweet::Timeline::new(links::lists::LISTS_STATUSES, Some(params), token)
 }
