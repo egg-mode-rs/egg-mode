@@ -12,6 +12,7 @@ use common::*;
 use auth;
 use error;
 use error::Error::InvalidResponse;
+use list;
 use user;
 
 ///Trait to generalize over paginated views of API results.
@@ -128,6 +129,50 @@ impl Cursor for IDCursor {
 
     fn into_inner(self) -> Vec<Self::Item> {
         self.ids
+    }
+}
+
+///Represents a single-page view into a list of lists.
+pub struct ListCursor {
+    ///Numeric reference to the previous page of results.
+    pub previous_cursor: i64,
+    ///Numeric reference to the next page of results.
+    pub next_cursor: i64,
+    ///The list of lists in this page of results.
+    pub lists: Vec<list::ListInfo>,
+}
+
+impl FromJson for ListCursor {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if !input.is_object() {
+            return Err(InvalidResponse("ListCursor received json that wasn't an object", Some(input.to_string())));
+        }
+
+        field_present!(input, previous_cursor);
+        field_present!(input, next_cursor);
+        field_present!(input, lists);
+
+        Ok(ListCursor {
+            previous_cursor: try!(field(input, "previous_cursor")),
+            next_cursor: try!(field(input, "next_cursor")),
+            lists: try!(field(input, "lists")),
+        })
+    }
+}
+
+impl Cursor for ListCursor {
+    type Item = list::ListInfo;
+
+    fn previous_cursor_id(&self) -> i64 {
+        self.previous_cursor
+    }
+
+    fn next_cursor_id(&self) -> i64 {
+        self.next_cursor
+    }
+
+    fn into_inner(self) -> Vec<Self::Item> {
+        self.lists
     }
 }
 

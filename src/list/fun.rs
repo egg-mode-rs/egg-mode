@@ -4,26 +4,44 @@ use super::*;
 use std::collections::HashMap;
 
 use auth;
+use cursor::{CursorIter, UserCursor, ListCursor};
+use links;
 use user;
 
 ///Look up the lists the given user has been added to.
-pub fn memberships<'a>(user: &'a user::UserID, token: &'a auth::Token) -> ListIter<'a> {
-    ListIter::new(user, ListIterType::Memberships, token)
+pub fn memberships<'a>(user: &'a user::UserID, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+    let mut params = HashMap::new();
+    add_name_param(&mut params, user);
+    CursorIter::new(links::lists::LISTS_MEMBERSHIPS, token, Some(params), Some(20))
 }
 
-///Look up the lists the given user is subscribed to, including those the user made themselves.
-pub fn list<'a>(user: &'a user::UserID, token: &'a auth::Token) -> ListIter<'a> {
-    ListIter::new(user, ListIterType::Lists, token)
+///Return up to 100 lists the given user is subscribed to, including those the user made
+///themselves.
+///
+///TODO: this is not strictly `subscriptions` and `ownerships` blended
+pub fn list<'a>(user: &'a user::UserID, owned_first: bool, token: &'a auth::Token)
+    -> WebResponse<Vec<ListInfo>>
+{
+    let mut params = HashMap::new();
+    add_name_param(&mut params, user);
+    add_param(&mut params, "reverse", owned_first.to_string());
+
+    let mut resp = try!(auth::get(links::lists::LISTS_LIST, token, Some(&params)));
+    parse_response(&mut resp)
 }
 
 ///Look up the lists the given user is subscribed to, but not ones the user made themselves.
-pub fn subscriptions<'a>(user: &'a user::UserID, token: &'a auth::Token) -> ListIter<'a> {
-    ListIter::new(user, ListIterType::Subscriptions, token)
+pub fn subscriptions<'a>(user: &'a user::UserID, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+    let mut params = HashMap::new();
+    add_name_param(&mut params, user);
+    CursorIter::new(links::lists::LISTS_SUBSCRIPTIONS, token, Some(params), Some(20))
 }
 
 ///Look up the lists created by the given user.
-pub fn ownerships<'a>(user: &'a user::UserID, token: &'a auth::Token) -> ListIter<'a> {
-    ListIter::new(user, ListIterType::Ownerships, token)
+pub fn ownerships<'a>(user: &'a user::UserID, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+    let mut params = HashMap::new();
+    add_name_param(&mut params, user);
+    CursorIter::new(links::lists::LISTS_OWNERSHIPS, token, Some(params), Some(20))
 }
 
 ///Look up information for a single list.
@@ -38,7 +56,7 @@ pub fn show<'a>(list: ListID<'a>, token: &'a auth::Token) -> WebResponse<ListInf
 }
 
 ///Look up the users that have been added to the given list.
-pub fn members<'a>(list: &'a ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, cursor::UserCursor> {
+pub fn members<'a>(list: &'a ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
     let mut params = HashMap::new();
 
     add_list_param(&mut params, list);
