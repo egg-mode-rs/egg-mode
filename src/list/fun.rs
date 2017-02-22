@@ -20,7 +20,7 @@ pub fn memberships<'a>(user: &'a user::UserID, token: &'a auth::Token) -> Cursor
 ///
 ///TODO: this is not strictly `subscriptions` and `ownerships` blended
 pub fn list<'a>(user: &'a user::UserID, owned_first: bool, token: &'a auth::Token)
-    -> WebResponse<Vec<ListInfo>>
+    -> WebResponse<Vec<List>>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, user);
@@ -45,7 +45,7 @@ pub fn ownerships<'a>(user: &'a user::UserID, token: &'a auth::Token) -> CursorI
 }
 
 ///Look up information for a single list.
-pub fn show<'a>(list: ListID<'a>, token: &'a auth::Token) -> WebResponse<ListInfo> {
+pub fn show<'a>(list: ListID<'a>, token: &'a auth::Token) -> WebResponse<List> {
     let mut params = HashMap::new();
 
     add_list_param(&mut params, &list);

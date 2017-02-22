@@ -139,7 +139,7 @@ pub struct ListCursor {
     ///Numeric reference to the next page of results.
     pub next_cursor: i64,
     ///The list of lists in this page of results.
-    pub lists: Vec<list::ListInfo>,
+    pub lists: Vec<list::List>,
 }
 
 impl FromJson for ListCursor {
@@ -161,7 +161,7 @@ impl FromJson for ListCursor {
 }
 
 impl Cursor for ListCursor {
-    type Item = list::ListInfo;
+    type Item = list::List;
 
     fn previous_cursor_id(&self) -> i64 {
         self.previous_cursor

@@ -35,7 +35,7 @@ impl<'a> ListID<'a> {
 
 ///Represents the metadata for a list.
 #[derive(Clone)]
-pub struct ListInfo {
+pub struct List {
     ///The name of the list.
     pub name: String,
     ///The "slug" of a list, that can be combined with its creator's `UserID` to refer to the list.
@@ -59,7 +59,7 @@ pub struct ListInfo {
     pub created_at: chrono::DateTime<chrono::UTC>,
 }
 
-impl FromJson for ListInfo {
+impl FromJson for List {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
             return Err(InvalidResponse("List received json that wasn't an object", Some(input.to_string())));
@@ -76,7 +76,7 @@ impl FromJson for ListInfo {
         field_present!(input, name);
         field_present!(input, created_at);
 
-        Ok(ListInfo {
+        Ok(List {
             created_at: try!(field(input, "created_at")),
             name: try!(field(input, "name")),
             slug: try!(field(input, "slug")),
