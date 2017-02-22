@@ -1,6 +1,20 @@
 # Changelog for egg-mode
 
 ## Pending
+### Added
+- Added module `list` with `List` and `ListID` structs
+  - Thanks to @jkarns275 for the initial implementation!
+  - New function `show` to pull up information for a single list
+  - New function `ownerships` to pull up lists created by a given user
+  - New function `subscriptions` to pull up lists a given user is following that they didn't make
+    themselves
+  - New function `list` to pull up the combination of `ownerships` and `subscriptions`, up to 100
+    entries
+  - New function `members` to pull up the users included in a given list
+  - New function `memberships` to pull up lists the given user has been added to
+  - New function `is_member` to check whether a given user has been included in a given list
+  - New function `statuses` to load the tweets posted by the members of a given list
+
 ### Changed
 - `tweet::lookup`, `tweet::lookup_map`, `user::lookup`, and `user::relation_lookup` now all take
   `IntoIterator`s instead of slices.
