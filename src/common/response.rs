@@ -348,6 +348,15 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
     }
 }
 
+pub fn rate_headers(resp: &HyperResponse) -> Response<()> {
+    Response {
+        rate_limit: resp.headers.get::<XRateLimitLimit>().map_or(-1, |h| h.0),
+        rate_limit_remaining: resp.headers.get::<XRateLimitRemaining>().map_or(-1, |h| h.0),
+        rate_limit_reset: resp.headers.get::<XRateLimitReset>().map_or(-1, |h| h.0),
+        response: (),
+    }
+}
+
 ///With the given response struct, parse it into a String.
 pub fn response_raw(resp: &mut HyperResponse) -> Result<String, error::Error> {
     let mut full_resp = String::new();
@@ -379,11 +388,7 @@ pub fn response_raw(resp: &mut HyperResponse) -> Result<String, error::Error> {
 ///return it along with rate limit information.
 pub fn parse_response<T: FromJson>(resp: &mut HyperResponse) -> ::common::WebResponse<T> {
     let resp_str = try!(response_raw(resp));
+    let out = try!(T::from_str(&resp_str));
 
-    Ok(Response {
-        rate_limit: resp.headers.get::<XRateLimitLimit>().map_or(-1, |h| h.0),
-        rate_limit_remaining: resp.headers.get::<XRateLimitRemaining>().map_or(-1, |h| h.0),
-        rate_limit_reset: resp.headers.get::<XRateLimitReset>().map_or(-1, |h| h.0),
-        response: try!(T::from_str(&resp_str)),
-    })
+    Ok(Response::map(rate_headers(resp), |_| out))
 }

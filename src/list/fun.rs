@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 use auth;
 use cursor::{CursorIter, UserCursor, ListCursor};
+use error::Error::TwitterError;
 use links;
 use user;
 
@@ -56,43 +57,51 @@ pub fn show<'a>(list: ListID<'a>, token: &'a auth::Token) -> WebResponse<List> {
 }
 
 ///Look up the users that have been added to the given list.
-pub fn members<'a>(list: &'a ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
+pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
     let mut params = HashMap::new();
 
-    add_list_param(&mut params, list);
+    add_list_param(&mut params, &list);
 
     CursorIter::new(links::lists::LISTS_MEMBERS, token, Some(params), Some(20))
 }
 
 ///Check whether the given user has been added to the given list.
-pub fn is_member<'a>(user: &'a user::UserID, list: &'a ListID<'a>, token: &auth::Token) -> bool {
+pub fn is_member<'a, T: Into<user::UserID<'a>>>(user: T, list: ListID<'a>, token: &auth::Token) ->
+    WebResponse<bool>
+{
     let mut params = HashMap::new();
 
-    add_list_param(&mut params, list);
-    add_name_param(&mut params, user);
+    add_list_param(&mut params, &list);
+    add_name_param(&mut params, &user.into());
 
-    //TODO: this needs to properly expose errors/rate limit info/the user data twitter returns
-    let mut resp = auth::get(links::lists::LISTS_MEMBERS_SHOW, token, Some(&params)).unwrap();
+    let mut resp = try!(auth::get(links::lists::LISTS_MEMBERS_SHOW, token, Some(&params)));
 
-    let json_resp_result: WebResponse<json::Json> = parse_response(&mut resp);
+    let out: WebResponse<user::TwitterUser> = parse_response(&mut resp);
 
-    if let Ok(j) = json_resp_result {
-        if user::TwitterUser::from_json(&j).is_ok() {
-            true
-        } else {
-            false
-        }
-    } else {
-        false
+    match out {
+        Ok(user) => Ok(Response::map(user, |_| true)),
+        Err(TwitterError(terrs)) => {
+            if terrs.errors.iter().any(|e| e.code == 109) {
+                //here's a fun conundrum: since "is not in this list" is returned as an error code,
+                //the rate limit info that would otherwise be part of the response isn't there. the
+                //rate_headers method was factored out specifically for this location, since it's
+                //still there, just accompanying an error response instead of a user.
+                Ok(Response::map(rate_headers(&resp), |_| false))
+            }
+            else {
+                Err(TwitterError(terrs))
+            }
+        },
+        Err(err) => Err(err),
     }
 }
 
 ///Begin navigating the collection of tweets made by the users added to the given list.
-pub fn statuses<'a>(list: &'a ListID<'a>, with_rts: bool, token: &'a auth::Token)
+pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token)
     -> tweet::Timeline<'a>
 {
     let mut params = HashMap::new();
-    add_list_param(&mut params, list);
+    add_list_param(&mut params, &list);
     add_param(&mut params, "include_rts", with_rts.to_string());
 
     tweet::Timeline::new(links::lists::LISTS_STATUSES, Some(params), token)
