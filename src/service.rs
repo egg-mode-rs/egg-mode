@@ -79,6 +79,16 @@ pub fn rate_limit_status(token: &auth::Token) -> WebResponse<RateLimitStatus> {
     parse_response(&mut resp)
 }
 
+///Like `rate_limit_status`, but returns the raw JSON without processing it. Only intended to
+///return the full structure so that new methods can be added to `RateLimitStatus` and its
+///associated enums.
+#[doc(hidden)]
+pub fn rate_limit_status_raw(token: &auth::Token) -> WebResponse<json::Json> {
+    let mut resp = try!(auth::get(links::service::RATE_LIMIT_STATUS, token, None));
+
+    parse_response(&mut resp)
+}
+
 ///Represents a service configuration from Twitter.
 ///
 ///The values returned in this struct are various pieces of information that, while they don't
@@ -179,6 +189,8 @@ pub struct RateLimitStatus {
     pub tweet: HashMap<TweetMethod, Response<()>>,
     ///The rate-limit status for methods in the `user` module.
     pub user: HashMap<UserMethod, Response<()>>,
+    ///The rate-limit status for methods in the `list` module.
+    pub list: HashMap<ListMethod, Response<()>>,
 }
 
 impl FromJson for RateLimitStatus {
@@ -194,6 +206,7 @@ impl FromJson for RateLimitStatus {
         let mut service = HashMap::new();
         let mut tweet = HashMap::new();
         let mut user = HashMap::new();
+        let mut list = HashMap::new();
 
         let map = try!(input.find("resources").ok_or(MissingValue("resources")));
 
@@ -207,6 +220,7 @@ impl FromJson for RateLimitStatus {
                         Method::Service(s) => service.insert(s, try!(FromJson::from_json(v))),
                         Method::Tweet(t) => tweet.insert(t, try!(FromJson::from_json(v))),
                         Method::User(u) => user.insert(u, try!(FromJson::from_json(v))),
+                        Method::List(l) => list.insert(l, try!(FromJson::from_json(v))),
                     };
                 }
             }
@@ -223,6 +237,7 @@ impl FromJson for RateLimitStatus {
             service: service,
             tweet: tweet,
             user: user,
+            list: list,
         })
     }
 }
@@ -241,6 +256,8 @@ enum Method {
     Tweet(TweetMethod),
     ///A method from the `user` module.
     User(UserMethod),
+    ///A method from the `list` module.
+    List(ListMethod),
 }
 
 impl FromStr for Method {
@@ -291,6 +308,15 @@ impl FromStr for Method {
             "/mutes/users/ids" => Ok(Method::User(UserMethod::MutesIds)),
             "/friendships/show" => Ok(Method::User(UserMethod::Relation)),
             "/friendships/lookup" => Ok(Method::User(UserMethod::RelationLookup)),
+
+            "/lists/show" => Ok(Method::List(ListMethod::Show)),
+            "/lists/ownerships" => Ok(Method::List(ListMethod::Ownerships)),
+            "/lists/subscriptions" => Ok(Method::List(ListMethod::Subscriptions)),
+            "/lists/list" => Ok(Method::List(ListMethod::List)),
+            "/lists/members" => Ok(Method::List(ListMethod::Members)),
+            "/lists/memberships" => Ok(Method::List(ListMethod::Memberships)),
+            "/lists/members/show" => Ok(Method::List(ListMethod::IsMember)),
+            "/lists/statuses" => Ok(Method::List(ListMethod::Statuses)),
 
             _ => Err(()),
         }
@@ -402,4 +428,25 @@ pub enum UserMethod {
     OutgoingRequests,
     ///`user::report_spam`
     ReportSpam,
+}
+
+///Method identifiers from the `list` module, for use by `rate_limit_status`.
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub enum ListMethod {
+    ///`list::show`
+    Show,
+    ///`list::ownerships`
+    Ownerships,
+    ///`list::subscriptions`
+    Subscriptions,
+    ///`list::list`
+    List,
+    ///`list::members`
+    Members,
+    ///`list::memberships`
+    Memberships,
+    ///`list::is_member`
+    IsMember,
+    ///`list::statuses`
+    Statuses,
 }
