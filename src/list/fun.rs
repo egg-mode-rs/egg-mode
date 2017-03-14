@@ -66,6 +66,47 @@ pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, U
     CursorIter::new(links::lists::LISTS_MEMBERS, token, Some(params), Some(20))
 }
 
+///Look up the users that have subscribed to the given list.
+pub fn suscribers<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
+    let mut params = HashMap::new();
+
+    add_list_param(&mut params, &list);
+
+    CursorIter::new(links::lists::LISTS_SUBSCRIBERS, token, Some(params), Some(20))
+}
+
+///Check whether the given user is subscribed to the given list.
+pub fn is_subscribed<'a, T: Into<user::UserID<'a>>>(user: T, list: ListID<'a>, token: &auth::Token) ->
+    WebResponse<bool>
+{
+    let mut params = HashMap::new();
+
+    add_list_param(&mut params, &list);
+    add_name_param(&mut params, &user.into());
+
+    let mut resp = try!(auth::get(links::lists::LISTS_SUBSCRIBERS_SHOW, token, Some(&params)));
+
+    let out: WebResponse<user::TwitterUser> = parse_response(&mut resp);
+
+    match out {
+        Ok(user) => Ok(Response::map(user, |_| true)),
+        Err(TwitterError(terrs)) => {
+            //TODO: this is currently a copy of is_member, is the error code different?
+            if terrs.errors.iter().any(|e| e.code == 109) {
+                //here's a fun conundrum: since "is not in this list" is returned as an error code,
+                //the rate limit info that would otherwise be part of the response isn't there. the
+                //rate_headers method was factored out specifically for this location, since it's
+                //still there, just accompanying an error response instead of a user.
+                Ok(Response::map(rate_headers(&resp), |_| false))
+            }
+            else {
+                Err(TwitterError(terrs))
+            }
+        },
+        Err(err) => Err(err),
+    }
+}
+
 ///Check whether the given user has been added to the given list.
 pub fn is_member<'a, T: Into<user::UserID<'a>>>(user: T, list: ListID<'a>, token: &auth::Token) ->
     WebResponse<bool>
