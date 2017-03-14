@@ -7,7 +7,6 @@ use chrono;
 
 use user;
 use error::Error::InvalidResponse;
-use tweet;
 use error;
 
 mod fun;

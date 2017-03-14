@@ -8,6 +8,7 @@ use cursor::{CursorIter, UserCursor, ListCursor};
 use error::Error::TwitterError;
 use links;
 use user;
+use tweet;
 
 ///Look up the lists the given user has been added to.
 pub fn memberships<'a>(user: &'a user::UserID, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
