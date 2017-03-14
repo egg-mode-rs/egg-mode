@@ -106,8 +106,8 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [ ] lists/members/create\_all
 - [ ] lists/members/destroy
 - [ ] lists/members/destroy\_all
-- [ ] lists/subscribers
-- [ ] lists/subscribers/show
+- [x] lists/subscribers (`list::subscribers`)
+- [x] lists/subscribers/show (`list::is_subscribed`)
 - [ ] lists/subscribers/create
 - [ ] lists/subscribers/destroy
 

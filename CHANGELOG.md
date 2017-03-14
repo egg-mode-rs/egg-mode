@@ -14,6 +14,8 @@
   - New function `memberships` to pull up lists the given user has been added to
   - New function `is_member` to check whether a given user has been included in a given list
   - New function `statuses` to load the tweets posted by the members of a given list
+  - New function `subscribers` to pull up the users subscribed to a given list
+  - New function `is_subscribed` to check whether a given user is subscribed to a given list
 - New enum `service::ListMethod` and `list` field in `service::RateLimitStatus` to contain the rate
   limit info for these methods
 
