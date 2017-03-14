@@ -8,65 +8,65 @@ use super::*;
 
 //---Groups of users---
 
-///Lookup a set of Twitter users by either ID and screen name, as applicable.
+/// Lookup a set of Twitter users by either ID and screen name, as applicable.
 ///
-///This function is set up so it can be called with a few different Item types; whether just IDs
-///with `u64`, just screen names with `&str` or `String`, or even a mix of both (by using `UserID`
-///directly).
+/// This function is set up so it can be called with a few different Item types; whether just IDs
+/// with `u64`, just screen names with `&str` or `String`, or even a mix of both (by using `UserID`
+/// directly).
 ///
-///## Examples
+/// ## Examples
 ///
-///```rust,no_run
-///# let token = egg_mode::Token::Access {
-///#     consumer: egg_mode::KeyPair::new("", ""),
-///#     access: egg_mode::KeyPair::new("", ""),
-///# };
-///let mut list: Vec<u64> = Vec::new();
+/// ```rust,no_run
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
+/// let mut list: Vec<u64> = Vec::new();
 ///
-///list.push(1234);
-///list.push(2345);
+/// list.push(1234);
+/// list.push(2345);
 ///
-///let users = egg_mode::user::lookup(&list, &token).unwrap();
-///```
+/// let users = egg_mode::user::lookup(&list, &token).unwrap();
+/// ```
 ///
-///```rust,no_run
-///# let token = egg_mode::Token::Access {
-///#     consumer: egg_mode::KeyPair::new("", ""),
-///#     access: egg_mode::KeyPair::new("", ""),
-///# };
-///let mut list: Vec<&str> = Vec::new();
+/// ```rust,no_run
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
+/// let mut list: Vec<&str> = Vec::new();
 ///
-///list.push("rustlang");
-///list.push("ThisWeekInRust");
+/// list.push("rustlang");
+/// list.push("ThisWeekInRust");
 ///
-///let users = egg_mode::user::lookup(&list, &token).unwrap();
-///```
+/// let users = egg_mode::user::lookup(&list, &token).unwrap();
+/// ```
 ///
-///```rust,no_run
-///# let token = egg_mode::Token::Access {
-///#     consumer: egg_mode::KeyPair::new("", ""),
-///#     access: egg_mode::KeyPair::new("", ""),
-///# };
-///let mut list: Vec<String> = Vec::new();
+/// ```rust,no_run
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
+/// let mut list: Vec<String> = Vec::new();
 ///
-///list.push("rustlang".to_string());
-///list.push("ThisWeekInRust".to_string());
+/// list.push("rustlang".to_string());
+/// list.push("ThisWeekInRust".to_string());
 ///
-///let users = egg_mode::user::lookup(&list, &token).unwrap();
-///```
+/// let users = egg_mode::user::lookup(&list, &token).unwrap();
+/// ```
 ///
-///```rust,no_run
-///# let token = egg_mode::Token::Access {
-///#     consumer: egg_mode::KeyPair::new("", ""),
-///#     access: egg_mode::KeyPair::new("", ""),
-///# };
-///let mut list: Vec<egg_mode::user::UserID> = Vec::new();
+/// ```rust,no_run
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
+/// let mut list: Vec<egg_mode::user::UserID> = Vec::new();
 ///
-///list.push(1234.into());
-///list.push("rustlang".into());
+/// list.push(1234.into());
+/// list.push("rustlang".into());
 ///
-///let users = egg_mode::user::lookup(&list, &token).unwrap();
-///```
+/// let users = egg_mode::user::lookup(&list, &token).unwrap();
+/// ```
 pub fn lookup<'a, T, I>(accts: I, token: &auth::Token)
     -> WebResponse<Vec<TwitterUser>>
     where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
@@ -82,7 +82,7 @@ pub fn lookup<'a, T, I>(accts: I, token: &auth::Token)
     parse_response(&mut resp)
 }
 
-///Lookup user information for a single user.
+/// Lookup user information for a single user.
 pub fn show<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     -> WebResponse<TwitterUser>
 {
@@ -94,9 +94,9 @@ pub fn show<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     parse_response(&mut resp)
 }
 
-///Lookup the user IDs that the authenticating user has disabled retweets from.
+/// Lookup the user IDs that the authenticating user has disabled retweets from.
 ///
-///Use `update_follow` to enable/disable viewing retweets from a specific user.
+/// Use `update_follow` to enable/disable viewing retweets from a specific user.
 pub fn friends_no_retweets(token: &auth::Token)
     -> WebResponse<Vec<u64>>
 {
@@ -105,7 +105,7 @@ pub fn friends_no_retweets(token: &auth::Token)
     parse_response(&mut resp)
 }
 
-///Lookup relationship settings between two arbitrary users.
+/// Lookup relationship settings between two arbitrary users.
 pub fn relation<'a, F, T>(from: F, to: T, token: &auth::Token)
     -> WebResponse<Relationship>
     where F: Into<UserID<'a>>,
@@ -126,7 +126,7 @@ pub fn relation<'a, F, T>(from: F, to: T, token: &auth::Token)
     parse_response(&mut resp)
 }
 
-///Lookup the relations between the authenticated user and the given accounts.
+/// Lookup the relations between the authenticated user and the given accounts.
 pub fn relation_lookup<'a, T, I>(accts: I, token: &auth::Token)
     -> WebResponse<Vec<RelationLookup>>
     where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
@@ -144,24 +144,24 @@ pub fn relation_lookup<'a, T, I>(accts: I, token: &auth::Token)
 
 //---Cursored collections---
 
-///Lookup users based on the given search term.
+/// Lookup users based on the given search term.
 ///
-///This function returns an iterator over the `TwitterUser` objects returned by Twitter. Due to a
-///limitation in the API, you can only obtain the first 1000 search results. This method defaults
-///to returning 10 users in a single network call; the maximum is 20. See the [`UserSearch`][] page
-///for details.
+/// This function returns an iterator over the `TwitterUser` objects returned by Twitter. Due to a
+/// limitation in the API, you can only obtain the first 1000 search results. This method defaults
+/// to returning 10 users in a single network call; the maximum is 20. See the [`UserSearch`][] page
+/// for details.
 ///
-///[`UserSearch`]: struct.UserSearch.html
+/// [`UserSearch`]: struct.UserSearch.html
 pub fn search<'a>(query: &'a str, token: &'a auth::Token)
     -> UserSearch<'a>
 {
     UserSearch::new(query, token)
 }
 
-///Lookup the users a given account follows, also called their "friends" within the API.
+/// Lookup the users a given account follows, also called their "friends" within the API.
 ///
-///This function returns an iterator over the `TwitterUser` objects returned by Twitter. This
-///method defaults to returning 20 users in a single network call; the maximum is 200.
+/// This function returns an iterator over the `TwitterUser` objects returned by Twitter. This
+/// method defaults to returning 20 users in a single network call; the maximum is 200.
 pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token)
     -> cursor::CursorIter<'a, cursor::UserCursor>
 {
@@ -170,15 +170,15 @@ pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token)
     cursor::CursorIter::new(links::users::FRIENDS_LIST, token, Some(params), Some(20))
 }
 
-///Lookup the users a given account follows, also called their "friends" within the API, but only
-///return their user IDs.
+/// Lookup the users a given account follows, also called their "friends" within the API, but only
+/// return their user IDs.
 ///
-///This function returns an iterator over the User IDs returned by Twitter. This method defaults to
-///returning 500 IDs in a single network call; the maximum is 5000.
+/// This function returns an iterator over the User IDs returned by Twitter. This method defaults to
+/// returning 500 IDs in a single network call; the maximum is 5000.
 ///
-///Choosing only to load the user IDs instead of the full user information results in a call that
-///can return more accounts per-page, which can be useful if you anticipate having to page through
-///several results and don't need all the user information.
+/// Choosing only to load the user IDs instead of the full user information results in a call that
+/// can return more accounts per-page, which can be useful if you anticipate having to page through
+/// several results and don't need all the user information.
 pub fn friends_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
@@ -187,10 +187,10 @@ pub fn friends_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token)
     cursor::CursorIter::new(links::users::FRIENDS_IDS, token, Some(params), Some(500))
 }
 
-///Lookup the users that follow a given account.
+/// Lookup the users that follow a given account.
 ///
-///This function returns an iterator over the `TwitterUser` objects returned by Twitter. This
-///method defaults to returning 20 users in a single network call; the maximum is 200.
+/// This function returns an iterator over the `TwitterUser` objects returned by Twitter. This
+/// method defaults to returning 20 users in a single network call; the maximum is 200.
 pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token)
     -> cursor::CursorIter<'a, cursor::UserCursor>
 {
@@ -199,14 +199,14 @@ pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token)
     cursor::CursorIter::new(links::users::FOLLOWERS_LIST, token, Some(params), Some(20))
 }
 
-///Lookup the users that follow a given account, but only return their user IDs.
+/// Lookup the users that follow a given account, but only return their user IDs.
 ///
-///This function returns an iterator over the User IDs returned by Twitter. This method defaults to
-///returning 500 IDs in a single network call; the maximum is 5000.
+/// This function returns an iterator over the User IDs returned by Twitter. This method defaults to
+/// returning 500 IDs in a single network call; the maximum is 5000.
 ///
-///Choosing only to load the user IDs instead of the full user information results in a call that
-///can return more accounts per-page, which can be useful if you anticipate having to page through
-///several results and don't need all the user information.
+/// Choosing only to load the user IDs instead of the full user information results in a call that
+/// can return more accounts per-page, which can be useful if you anticipate having to page through
+/// several results and don't need all the user information.
 pub fn followers_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
@@ -215,65 +215,65 @@ pub fn followers_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token)
     cursor::CursorIter::new(links::users::FOLLOWERS_IDS, token, Some(params), Some(500))
 }
 
-///Lookup the users that have been blocked by the authenticated user.
+/// Lookup the users that have been blocked by the authenticated user.
 ///
-///Note that while loading a user's blocks list is a cursored search, it does not allow you to set
-///the page size. Calling `with_page_size` on the iterator returned by this function will not
-///change the page size used by the network call. Setting `page_size` manually may result in an
-///error from Twitter.
+/// Note that while loading a user's blocks list is a cursored search, it does not allow you to set
+/// the page size. Calling `with_page_size` on the iterator returned by this function will not
+/// change the page size used by the network call. Setting `page_size` manually may result in an
+/// error from Twitter.
 pub fn blocks<'a>(token: &'a auth::Token) -> cursor::CursorIter<'a, cursor::UserCursor> {
     cursor::CursorIter::new(links::users::BLOCKS_LIST, token, None, None)
 }
 
-///Lookup the users that have been blocked by the authenticated user, but only return their user
-///IDs.
+/// Lookup the users that have been blocked by the authenticated user, but only return their user
+/// IDs.
 ///
-///Choosing only to load the user IDs instead of the full user information results in a call that
-///can return more accounts per-page, which can be useful if you anticipate having to page through
-///several results and don't need all the user information.
+/// Choosing only to load the user IDs instead of the full user information results in a call that
+/// can return more accounts per-page, which can be useful if you anticipate having to page through
+/// several results and don't need all the user information.
 ///
-///Note that while loading a user's blocks list is a cursored search, it does not allow you to set
-///the page size. Calling `with_page_size` on the iterator returned by this function will not
-///change the page size used by the network call. Setting `page_size` manually may result in an
-///error from Twitter.
+/// Note that while loading a user's blocks list is a cursored search, it does not allow you to set
+/// the page size. Calling `with_page_size` on the iterator returned by this function will not
+/// change the page size used by the network call. Setting `page_size` manually may result in an
+/// error from Twitter.
 pub fn blocks_ids<'a>(token: &'a auth::Token) -> cursor::CursorIter<'a, cursor::IDCursor> {
     cursor::CursorIter::new(links::users::BLOCKS_IDS, token, None, None)
 }
 
-///Lookup the users that have been muted by the authenticated user.
+/// Lookup the users that have been muted by the authenticated user.
 ///
-///Note that while loading a user's mutes list is a cursored search, it does not allow you to set
-///the page size. Calling `with_page_size` on the iterator returned by this function will not
-///change the page size used by the network call. Setting `page_size` manually may result in an
-///error from Twitter.
+/// Note that while loading a user's mutes list is a cursored search, it does not allow you to set
+/// the page size. Calling `with_page_size` on the iterator returned by this function will not
+/// change the page size used by the network call. Setting `page_size` manually may result in an
+/// error from Twitter.
 pub fn mutes<'a>(token: &'a auth::Token) -> cursor::CursorIter<'a, cursor::UserCursor> {
     cursor::CursorIter::new(links::users::MUTES_LIST, token, None, None)
 }
 
-///Lookup the users that have been muted by the authenticated user, but only return their user IDs.
+/// Lookup the users that have been muted by the authenticated user, but only return their user IDs.
 ///
-///Choosing only to load the user IDs instead of the full user information results in a call that
-///can return more accounts per-page, which can be useful if you anticipate having to page through
-///several results and don't need all the user information.
+/// Choosing only to load the user IDs instead of the full user information results in a call that
+/// can return more accounts per-page, which can be useful if you anticipate having to page through
+/// several results and don't need all the user information.
 ///
-///Note that while loading a user's mutes list is a cursored search, it does not allow you to set
-///the page size. Calling `with_page_size` on the iterator returned by this function will not
-///change the page size used by the network call. Setting `page_size` manually may result in an
-///error from Twitter.
+/// Note that while loading a user's mutes list is a cursored search, it does not allow you to set
+/// the page size. Calling `with_page_size` on the iterator returned by this function will not
+/// change the page size used by the network call. Setting `page_size` manually may result in an
+/// error from Twitter.
 pub fn mutes_ids<'a>(token: &'a auth::Token) -> cursor::CursorIter<'a, cursor::IDCursor> {
     cursor::CursorIter::new(links::users::MUTES_IDS, token, None, None)
 }
 
-///Lookup the user IDs who have pending requests to follow the authenticated protected user.
+/// Lookup the user IDs who have pending requests to follow the authenticated protected user.
 ///
-///If the authenticated user is not a protected account, this will return an empty collection.
+/// If the authenticated user is not a protected account, this will return an empty collection.
 pub fn incoming_requests<'a>(token: &'a auth::Token)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
     cursor::CursorIter::new(links::users::FRIENDSHIPS_INCOMING, token, None, None)
 }
 
-///Lookup the user IDs with which the authenticating user has a pending follow request.
+/// Lookup the user IDs with which the authenticating user has a pending follow request.
 pub fn outgoing_requests<'a>(token: &'a auth::Token)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
@@ -282,15 +282,15 @@ pub fn outgoing_requests<'a>(token: &'a auth::Token)
 
 //---User actions---
 
-///Follow the given account with the authenticated user, and set whether device notifications
-///should be enabled.
+/// Follow the given account with the authenticated user, and set whether device notifications
+/// should be enabled.
 ///
-///Upon success, this function returns `Ok` with the user that was just followed, even when
-///following a protected account. In the latter case, this indicates that the follow request was
-///successfully sent.
+/// Upon success, this function returns `Ok` with the user that was just followed, even when
+/// following a protected account. In the latter case, this indicates that the follow request was
+/// successfully sent.
 ///
-///Calling this with an account the user already follows may return an error, or ("for performance
-///reasons") may return success without changing any account settings.
+/// Calling this with an account the user already follows may return an error, or ("for performance
+/// reasons") may return success without changing any account settings.
 pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool, token: &auth::Token)
     -> WebResponse<TwitterUser>
 {
@@ -303,12 +303,12 @@ pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool, token: &aut
     parse_response(&mut resp)
 }
 
-///Unfollow the given account with the authenticated user.
+/// Unfollow the given account with the authenticated user.
 ///
-///Upon success, this function returns `Ok` with the user that was just unfollowed.
+/// Upon success, this function returns `Ok` with the user that was just unfollowed.
 ///
-///Calling this with an account the user doesn't follow will return success, even though it doesn't
-///change any settings.
+/// Calling this with an account the user doesn't follow will return success, even though it doesn't
+/// change any settings.
 pub fn unfollow<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     -> WebResponse<TwitterUser>
 {
@@ -320,12 +320,12 @@ pub fn unfollow<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     parse_response(&mut resp)
 }
 
-///Update notification settings and reweet visibility for the given user.
+/// Update notification settings and reweet visibility for the given user.
 ///
-///Calling this for an account the authenticated user does not already follow will not cause them
-///to follow that user. It will return an error if you pass `Some(true)` for `notifications` or
-///`Some(false)` for `retweets`. Any other combination of arguments will return a `Relationship` as
-///if you had called `relation` between the authenticated user and the given user.
+/// Calling this for an account the authenticated user does not already follow will not cause them
+/// to follow that user. It will return an error if you pass `Some(true)` for `notifications` or
+/// `Some(false)` for `retweets`. Any other combination of arguments will return a `Relationship` as
+/// if you had called `relation` between the authenticated user and the given user.
 pub fn update_follow<'a, T>(acct: T, notifications: Option<bool>, retweets: Option<bool>,
                             token: &auth::Token)
     -> WebResponse<Relationship>
@@ -345,9 +345,9 @@ pub fn update_follow<'a, T>(acct: T, notifications: Option<bool>, retweets: Opti
     parse_response(&mut resp)
 }
 
-///Block the given account with the authenticated user.
+/// Block the given account with the authenticated user.
 ///
-///Upon success, this function returns `Ok` with the given user.
+/// Upon success, this function returns `Ok` with the given user.
 pub fn block<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     -> WebResponse<TwitterUser>
 {
@@ -359,9 +359,9 @@ pub fn block<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     parse_response(&mut resp)
 }
 
-///Block the given account and report it for spam, with the authenticated user.
+/// Block the given account and report it for spam, with the authenticated user.
 ///
-///Upon success, this function returns `Ok` with the given user.
+/// Upon success, this function returns `Ok` with the given user.
 pub fn report_spam<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     -> WebResponse<TwitterUser>
 {
@@ -373,9 +373,9 @@ pub fn report_spam<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     parse_response(&mut resp)
 }
 
-///Unblock the given user with the authenticated user.
+/// Unblock the given user with the authenticated user.
 ///
-///Upon success, this function returns `Ok` with the given user.
+/// Upon success, this function returns `Ok` with the given user.
 pub fn unblock<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     -> WebResponse<TwitterUser>
 {
@@ -387,9 +387,9 @@ pub fn unblock<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     parse_response(&mut resp)
 }
 
-///Mute the given user with the authenticated user.
+/// Mute the given user with the authenticated user.
 ///
-///Upon success, this function returns `Ok` with the given user.
+/// Upon success, this function returns `Ok` with the given user.
 pub fn mute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     -> WebResponse<TwitterUser>
 {
@@ -401,9 +401,9 @@ pub fn mute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     parse_response(&mut resp)
 }
 
-///Unmute the given user with the authenticated user.
+/// Unmute the given user with the authenticated user.
 ///
-///Upon success, this function returns `Ok` with the given user.
+/// Upon success, this function returns `Ok` with the given user.
 pub fn unmute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
     -> WebResponse<TwitterUser>
 {
