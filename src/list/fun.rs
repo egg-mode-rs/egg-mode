@@ -67,7 +67,7 @@ pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, U
 }
 
 ///Look up the users that have subscribed to the given list.
-pub fn suscribers<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
+pub fn subscribers<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
     let mut params = HashMap::new();
 
     add_list_param(&mut params, &list);
@@ -91,7 +91,6 @@ pub fn is_subscribed<'a, T: Into<user::UserID<'a>>>(user: T, list: ListID<'a>, t
     match out {
         Ok(user) => Ok(Response::map(user, |_| true)),
         Err(TwitterError(terrs)) => {
-            //TODO: this is currently a copy of is_member, is the error code different?
             if terrs.errors.iter().any(|e| e.code == 109) {
                 //here's a fun conundrum: since "is not in this list" is returned as an error code,
                 //the rate limit info that would otherwise be part of the response isn't there. the
