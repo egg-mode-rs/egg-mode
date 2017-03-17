@@ -11,9 +11,9 @@ use user::{UserID, TwitterUser};
 use tweet;
 
 ///Look up the lists the given user has been added to.
-pub fn memberships<'a>(user: &'a UserID, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
     let mut params = HashMap::new();
-    add_name_param(&mut params, user);
+    add_name_param(&mut params, &user.into());
     CursorIter::new(links::lists::MEMBERSHIPS, token, Some(params), Some(20))
 }
 
@@ -21,11 +21,11 @@ pub fn memberships<'a>(user: &'a UserID, token: &'a auth::Token) -> CursorIter<'
 ///themselves.
 ///
 ///TODO: this is not strictly `subscriptions` and `ownerships` blended
-pub fn list<'a>(user: &'a UserID, owned_first: bool, token: &'a auth::Token)
+pub fn list<'a, T: Into<UserID<'a>>>(user: T, owned_first: bool, token: &'a auth::Token)
     -> WebResponse<Vec<List>>
 {
     let mut params = HashMap::new();
-    add_name_param(&mut params, user);
+    add_name_param(&mut params, &user.into());
     add_param(&mut params, "reverse", owned_first.to_string());
 
     let mut resp = try!(auth::get(links::lists::LIST, token, Some(&params)));
@@ -33,16 +33,16 @@ pub fn list<'a>(user: &'a UserID, owned_first: bool, token: &'a auth::Token)
 }
 
 ///Look up the lists the given user is subscribed to, but not ones the user made themselves.
-pub fn subscriptions<'a>(user: &'a UserID, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
     let mut params = HashMap::new();
-    add_name_param(&mut params, user);
+    add_name_param(&mut params, &user.into());
     CursorIter::new(links::lists::SUBSCRIPTIONS, token, Some(params), Some(20))
 }
 
 ///Look up the lists created by the given user.
-pub fn ownerships<'a>(user: &'a UserID, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+pub fn ownerships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
     let mut params = HashMap::new();
-    add_name_param(&mut params, user);
+    add_name_param(&mut params, &user.into());
     CursorIter::new(links::lists::OWNERSHIPS, token, Some(params), Some(20))
 }
 
