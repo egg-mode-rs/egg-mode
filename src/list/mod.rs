@@ -33,7 +33,7 @@ impl<'a> ListID<'a> {
 }
 
 ///Represents the metadata for a list.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct List {
     ///The name of the list.
     pub name: String,

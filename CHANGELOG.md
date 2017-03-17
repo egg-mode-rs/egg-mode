@@ -16,6 +16,7 @@
   - New function `statuses` to load the tweets posted by the members of a given list
   - New function `subscribers` to pull up the users subscribed to a given list
   - New function `is_subscribed` to check whether a given user is subscribed to a given list
+  - New function `add` to add a user to a list
 - New enum `service::ListMethod` and `list` field in `service::RateLimitStatus` to contain the rate
   limit info for these methods
 

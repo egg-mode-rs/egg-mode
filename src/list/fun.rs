@@ -7,11 +7,11 @@ use auth;
 use cursor::{CursorIter, UserCursor, ListCursor};
 use error::Error::TwitterError;
 use links;
-use user;
+use user::{UserID, TwitterUser};
 use tweet;
 
 ///Look up the lists the given user has been added to.
-pub fn memberships<'a>(user: &'a user::UserID, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+pub fn memberships<'a>(user: &'a UserID, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
     let mut params = HashMap::new();
     add_name_param(&mut params, user);
     CursorIter::new(links::lists::MEMBERSHIPS, token, Some(params), Some(20))
@@ -21,7 +21,7 @@ pub fn memberships<'a>(user: &'a user::UserID, token: &'a auth::Token) -> Cursor
 ///themselves.
 ///
 ///TODO: this is not strictly `subscriptions` and `ownerships` blended
-pub fn list<'a>(user: &'a user::UserID, owned_first: bool, token: &'a auth::Token)
+pub fn list<'a>(user: &'a UserID, owned_first: bool, token: &'a auth::Token)
     -> WebResponse<Vec<List>>
 {
     let mut params = HashMap::new();
@@ -33,14 +33,14 @@ pub fn list<'a>(user: &'a user::UserID, owned_first: bool, token: &'a auth::Toke
 }
 
 ///Look up the lists the given user is subscribed to, but not ones the user made themselves.
-pub fn subscriptions<'a>(user: &'a user::UserID, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+pub fn subscriptions<'a>(user: &'a UserID, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
     let mut params = HashMap::new();
     add_name_param(&mut params, user);
     CursorIter::new(links::lists::SUBSCRIPTIONS, token, Some(params), Some(20))
 }
 
 ///Look up the lists created by the given user.
-pub fn ownerships<'a>(user: &'a user::UserID, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+pub fn ownerships<'a>(user: &'a UserID, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
     let mut params = HashMap::new();
     add_name_param(&mut params, user);
     CursorIter::new(links::lists::OWNERSHIPS, token, Some(params), Some(20))
@@ -76,7 +76,7 @@ pub fn subscribers<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'
 }
 
 ///Check whether the given user is subscribed to the given list.
-pub fn is_subscribed<'a, T: Into<user::UserID<'a>>>(user: T, list: ListID<'a>, token: &auth::Token) ->
+pub fn is_subscribed<'a, T: Into<UserID<'a>>>(user: T, list: ListID<'a>, token: &auth::Token) ->
     WebResponse<bool>
 {
     let mut params = HashMap::new();
@@ -86,7 +86,7 @@ pub fn is_subscribed<'a, T: Into<user::UserID<'a>>>(user: T, list: ListID<'a>, t
 
     let mut resp = try!(auth::get(links::lists::IS_SUBSCRIBER, token, Some(&params)));
 
-    let out: WebResponse<user::TwitterUser> = parse_response(&mut resp);
+    let out: WebResponse<TwitterUser> = parse_response(&mut resp);
 
     match out {
         Ok(user) => Ok(Response::map(user, |_| true)),
@@ -107,7 +107,7 @@ pub fn is_subscribed<'a, T: Into<user::UserID<'a>>>(user: T, list: ListID<'a>, t
 }
 
 ///Check whether the given user has been added to the given list.
-pub fn is_member<'a, T: Into<user::UserID<'a>>>(user: T, list: ListID<'a>, token: &auth::Token) ->
+pub fn is_member<'a, T: Into<UserID<'a>>>(user: T, list: ListID<'a>, token: &auth::Token) ->
     WebResponse<bool>
 {
     let mut params = HashMap::new();
@@ -117,7 +117,7 @@ pub fn is_member<'a, T: Into<user::UserID<'a>>>(user: T, list: ListID<'a>, token
 
     let mut resp = try!(auth::get(links::lists::IS_MEMBER, token, Some(&params)));
 
-    let out: WebResponse<user::TwitterUser> = parse_response(&mut resp);
+    let out: WebResponse<TwitterUser> = parse_response(&mut resp);
 
     match out {
         Ok(user) => Ok(Response::map(user, |_| true)),
@@ -146,4 +146,17 @@ pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token)
     add_param(&mut params, "include_rts", with_rts.to_string());
 
     tweet::Timeline::new(links::lists::STATUSES, Some(params), token)
+}
+
+///Adds the given user to the given list.
+pub fn add<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: &auth::Token)
+    -> WebResponse<List>
+{
+    let mut params = HashMap::new();
+    add_list_param(&mut params, &list);
+    add_name_param(&mut params, &user.into());
+
+    let mut resp = try!(auth::post(links::lists::ADD, token, Some(&params)));
+
+    parse_response(&mut resp)
 }

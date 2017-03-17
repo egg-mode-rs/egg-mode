@@ -102,7 +102,7 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [ ] lists/destroy
 - [x] lists/members (`list::members`)
 - [x] lists/members/show (`list::is_member`)
-- [ ] lists/members/create
+- [x] lists/members/create (`list::add`)
 - [ ] lists/members/create\_all
 - [ ] lists/members/destroy
 - [ ] lists/members/destroy\_all
