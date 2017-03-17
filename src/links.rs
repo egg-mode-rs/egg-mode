@@ -55,16 +55,16 @@ pub mod statuses {
 }
 
 pub mod lists {
-    pub const LISTS_STATUSES: &'static str = "https://api.twitter.com/1.1/lists/statuses.json";
-    pub const LISTS_MEMBERS: &'static str = "https://api.twitter.com/1.1/lists/members.json";
-    pub const LISTS_MEMBERS_SHOW: &'static str = "https://api.twitter.com/1.1/lists/members/show.json";
-    pub const LISTS_LIST: &'static str = "https://api.twitter.com/1.1/lists/list.json";
-    pub const LISTS_MEMBERSHIPS: &'static str = "https://api.twitter.com/1.1/lists/memberships.json";
-    pub const LISTS_OWNERSHIPS: &'static str = "https://api.twitter.com/1.1/lists/ownerships.json";
-    pub const LISTS_SHOW: &'static str = "https://api.twitter.com/1.1/lists/show.json";
-    pub const LISTS_SUBSCRIBERS: &'static str = "https://api.twitter.com/1.1/lists/subscribers.json";
-    pub const LISTS_SUBSCRIBERS_SHOW: &'static str = "https://api.twitter.com/1.1/lists/subscribers/show.json";
-    pub const LISTS_SUBSCRIPTIONS: &'static str = "https://api.twitter.com/1.1/lists/subscriptions.json";
+    pub const STATUSES: &'static str = "https://api.twitter.com/1.1/lists/statuses.json";
+    pub const MEMBERS: &'static str = "https://api.twitter.com/1.1/lists/members.json";
+    pub const IS_MEMBER: &'static str = "https://api.twitter.com/1.1/lists/members/show.json";
+    pub const LIST: &'static str = "https://api.twitter.com/1.1/lists/list.json";
+    pub const MEMBERSHIPS: &'static str = "https://api.twitter.com/1.1/lists/memberships.json";
+    pub const OWNERSHIPS: &'static str = "https://api.twitter.com/1.1/lists/ownerships.json";
+    pub const SHOW: &'static str = "https://api.twitter.com/1.1/lists/show.json";
+    pub const SUBSCRIBERS: &'static str = "https://api.twitter.com/1.1/lists/subscribers.json";
+    pub const IS_SUBSCRIBER: &'static str = "https://api.twitter.com/1.1/lists/subscribers/show.json";
+    pub const SUBSCRIPTIONS: &'static str = "https://api.twitter.com/1.1/lists/subscriptions.json";
 }
 
 pub mod place {
