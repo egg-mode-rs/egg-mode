@@ -111,7 +111,7 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [x] lists/ownerships (`list::ownerships`)
 - [x] lists/create (`list::create`)
 - [ ] lists/update
-- [ ] lists/destroy
+- [x] lists/destroy (`list::delete`)
 - [x] lists/members (`list::members`)
 - [x] lists/members/show (`list::is_member`)
 - [x] lists/members/create (`list::add_member`)

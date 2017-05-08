@@ -185,3 +185,15 @@ pub fn create(name: &str, public: bool, desc: Option<&str>, token: &auth::Token)
 
     parse_response(&mut resp)
 }
+
+///Deletes the given list.
+///
+///The authenticated user must have created the list.
+pub fn delete(list: ListID, token: &auth::Token) -> WebResponse<List> {
+    let mut params = HashMap::new();
+    add_list_param(&mut params, &list);
+
+    let mut resp = try!(auth::post(links::lists::DELETE, token, Some(&params)));
+
+    parse_response(&mut resp)
+}
