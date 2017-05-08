@@ -149,7 +149,7 @@ pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token)
 }
 
 ///Adds the given user to the given list.
-pub fn add<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: &auth::Token)
+pub fn add_member<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: &auth::Token)
     -> WebResponse<List>
 {
     let mut params = HashMap::new();
