@@ -37,12 +37,18 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [x] favorites/create (`tweet::like`)
 - [x] favorites/destroy (`tweet::unlike`)
 
+<!-- break these lists apart -->
+
 - [ ] statuses/oembed
+
+<!-- break these lists apart -->
 
 - [ ] saved\_searches/list
 - [ ] saved\_searches/show/:id
 - [ ] saved\_searches/create
 - [ ] saved\_searches/destroy/:id
+
+<!-- break these lists apart -->
 
 - [ ] trends/place
 - [ ] trends/available
@@ -81,9 +87,15 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [x] mutes/users/create (`user::mute`)
 - [x] mutes/users/destroy (`user::unmute`)
 
+<!-- break these lists apart -->
+
 - [x] friendships/show (`user::relation`)
 
+<!-- break these lists apart -->
+
 - [x] friendships/lookup (`user::relation_lookup`)
+
+<!-- break these lists apart -->
 
 - [ ] users/suggestions
 - [ ] users/suggestions/:slug
@@ -122,19 +134,27 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [ ] account/settings (GET)
 - [ ] account/settings (POST)
 
+<!-- break these lists apart -->
+
 - [ ] account/update\_profile
 - [ ] account/update\_profile\_image
 - [ ] account/update\_profile\_background\_image
 
+<!-- break these lists apart -->
+
 - [ ] account/profile\_banner
 - [ ] account/update\_profile\_banner
 - [ ] account/remove\_profile\_banner
+
+<!-- break these lists apart -->
 
 - [x] application/rate\_limit\_status (`service::rate_limit_status`)
 - [ ] help/languages
 - [x] help/configuration (`service::config`)
 - [x] help/privacy (`service::privacy`)
 - [x] help/tos (`service::terms`)
+
+<!-- break these lists apart -->
 
 - [x] account/verify\_credentials (`verify_tokens`)
 
