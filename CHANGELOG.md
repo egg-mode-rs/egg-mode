@@ -19,6 +19,7 @@
   - New function `add_member` to add a user to a list
   - New function `create` to create a new list
   - New function `delete` to delete a list
+  - New function `remove_member` to remove a member from a list
 - New enum `service::ListMethod` and `list` field in `service::RateLimitStatus` to contain the rate
   limit info for these methods
 

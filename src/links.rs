@@ -66,6 +66,7 @@ pub mod lists {
     pub const IS_SUBSCRIBER: &'static str = "https://api.twitter.com/1.1/lists/subscribers/show.json";
     pub const SUBSCRIPTIONS: &'static str = "https://api.twitter.com/1.1/lists/subscriptions.json";
     pub const ADD: &'static str = "https://api.twitter.com/1.1/lists/members/create.json";
+    pub const REMOVE_MEMBER: &'static str = "https://api.twitter.com/1.1/lists/members/destroy.json";
     pub const CREATE: &'static str = "https://api.twitter.com/1.1/lists/create.json";
     pub const DELETE: &'static str = "https://api.twitter.com/1.1/lists/destroy.json";
 }

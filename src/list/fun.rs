@@ -161,6 +161,19 @@ pub fn add_member<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: &au
     parse_response(&mut resp)
 }
 
+///Removes the given user from the given list.
+pub fn remove_member<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: &auth::Token)
+    -> WebResponse<List>
+{
+    let mut params = HashMap::new();
+    add_list_param(&mut params, &list);
+    add_name_param(&mut params, &user.into());
+
+    let mut resp = try!(auth::post(links::lists::REMOVE_MEMBER, token, Some(&params)));
+
+    parse_response(&mut resp)
+}
+
 ///Creates a list, with the given name, visibility, and description.
 ///
 ///The new list is owned by the authenticated user, and its slug can be created with their handle
