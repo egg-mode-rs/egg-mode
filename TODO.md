@@ -120,7 +120,7 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [ ] lists/members/destroy\_all
 - [x] lists/subscribers (`list::subscribers`)
 - [x] lists/subscribers/show (`list::is_subscribed`)
-- [ ] lists/subscribers/create
+- [x] lists/subscribers/create (`list::subscribe`)
 - [ ] lists/subscribers/destroy
 
 ### Places
