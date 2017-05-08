@@ -109,7 +109,7 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [x] lists/memberships (`list::memberships`)
 - [x] lists/subscriptions (`list::subscriptions`)
 - [x] lists/ownerships (`list::ownerships`)
-- [ ] lists/create
+- [x] lists/create (`list::create`)
 - [ ] lists/update
 - [ ] lists/destroy
 - [x] lists/members (`list::members`)

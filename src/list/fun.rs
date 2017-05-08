@@ -160,3 +160,28 @@ pub fn add<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: &auth::Tok
 
     parse_response(&mut resp)
 }
+
+///Creates a list, with the given name, visibility, and description.
+///
+///The new list is owned by the authenticated user, and its slug can be created with their handle
+///and the name given to `name`. Twitter places an upper limit on 1000 lists owned by a single
+///account.
+pub fn create(name: &str, public: bool, desc: Option<&str>, token: &auth::Token)
+    -> WebResponse<List>
+{
+    let mut params = HashMap::new();
+    add_param(&mut params, "name", name);
+    if public {
+        add_param(&mut params, "mode", "public");
+    }
+    else {
+        add_param(&mut params, "mode", "private");
+    }
+    if let Some(desc) = desc {
+        add_param(&mut params, "description", desc);
+    }
+
+    let mut resp = try!(auth::post(links::lists::CREATE, token, Some(&params)));
+
+    parse_response(&mut resp)
+}
