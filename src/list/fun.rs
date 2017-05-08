@@ -211,7 +211,7 @@ pub fn delete(list: ListID, token: &auth::Token) -> WebResponse<List> {
     parse_response(&mut resp)
 }
 
-///Subscribed the authenticated user to the given list.
+///Subscribes the authenticated user to the given list.
 ///
 ///Subscribing to a list is a way to make it available in the "Lists" section of a user's profile
 ///without having to create it themselves.
@@ -220,6 +220,16 @@ pub fn subscribe(list: ListID, token: &auth::Token) -> WebResponse<List> {
     add_list_param(&mut params, &list);
 
     let mut resp = try!(auth::post(links::lists::SUBSCRIBE, token, Some(&params)));
+
+    parse_response(&mut resp)
+}
+
+///Unsubscribes the authenticated user from the given list.
+pub fn unsubscribe(list: ListID, token: &auth::Token) -> WebResponse<List> {
+    let mut params = HashMap::new();
+    add_list_param(&mut params, &list);
+
+    let mut resp = try!(auth::post(links::lists::UNSUBSCRIBE, token, Some(&params)));
 
     parse_response(&mut resp)
 }

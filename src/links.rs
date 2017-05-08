@@ -70,6 +70,7 @@ pub mod lists {
     pub const CREATE: &'static str = "https://api.twitter.com/1.1/lists/create.json";
     pub const DELETE: &'static str = "https://api.twitter.com/1.1/lists/destroy.json";
     pub const SUBSCRIBE: &'static str = "https://api.twitter.com/1.1/lists/subscribers/create.json";
+    pub const UNSUBSCRIBE: &'static str = "https://api.twitter.com/1.1/lists/subscribers/destroy.json";
 }
 
 pub mod place {
