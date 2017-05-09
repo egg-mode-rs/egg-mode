@@ -161,6 +161,32 @@ pub fn add_member<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: &au
     parse_response(&mut resp)
 }
 
+///Adds a set of users to the given list.
+///
+///The `members` param can be used the same way as the `accts` param in [`user::lookup`]. See that
+///method's documentation for details.
+///
+///[`user::lookup`]: ../user/fn.lookup.html
+pub fn add_member_list<'a, T, I>(members: I, list: ListID<'a>, token: &auth::Token)
+    -> WebResponse<List>
+    where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
+{
+    let mut params = HashMap::new();
+    add_list_param(&mut params, &list);
+
+    let (id_param, name_param) = multiple_names_param(members);
+    if !id_param.is_empty() {
+        add_param(&mut params, "user_id", id_param);
+    }
+    if !name_param.is_empty() {
+        add_param(&mut params, "screen_name", name_param);
+    }
+
+    let mut resp = try!(auth::post(links::lists::ADD_LIST, token, Some(&params)));
+
+    parse_response(&mut resp)
+}
+
 ///Removes the given user from the given list.
 pub fn remove_member<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: &auth::Token)
     -> WebResponse<List>

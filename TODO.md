@@ -115,7 +115,7 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [x] lists/members (`list::members`)
 - [x] lists/members/show (`list::is_member`)
 - [x] lists/members/create (`list::add_member`)
-- [ ] lists/members/create\_all
+- [x] lists/members/create\_all (`list::add_member_list`)
 - [x] lists/members/destroy (`list::remove_member`)
 - [ ] lists/members/destroy\_all
 - [x] lists/subscribers (`list::subscribers`)

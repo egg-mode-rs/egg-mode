@@ -154,3 +154,19 @@ pub fn min_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
         (None, right) => right,
     }
 }
+
+pub fn multiple_names_param<'a, T, I>(accts: I) -> (String, String)
+    where T: Into<user::UserID<'a>>, I: IntoIterator<Item=T>
+{
+    let mut ids = Vec::new();
+    let mut names = Vec::new();
+
+    for x in accts {
+        match x.into() {
+            user::UserID::ID(id) => ids.push(id.to_string()),
+            user::UserID::ScreenName(name) => names.push(name),
+        }
+    }
+
+    (ids.join(","), names.join(","))
+}

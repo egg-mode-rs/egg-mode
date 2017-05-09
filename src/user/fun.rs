@@ -414,19 +414,3 @@ pub fn unmute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
 
     parse_response(&mut resp)
 }
-
-fn multiple_names_param<'a, T, I>(accts: I) -> (String, String)
-    where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
-{
-    let mut ids = Vec::new();
-    let mut names = Vec::new();
-
-    for x in accts.into_iter() {
-        match x.into() {
-            UserID::ID(id) => ids.push(id.to_string()),
-            UserID::ScreenName(name) => names.push(name),
-        }
-    }
-
-    (ids.join(","), names.join(","))
-}
