@@ -2,7 +2,7 @@
 
 another twitter library for rust [![Build Status](https://travis-ci.org/QuietMisdreavus/twitter-rs.svg?branch=master)](https://travis-ci.org/QuietMisdreavus/twitter-rs)
 
-[v0.8.0 Documentation][documentation] | [(Pending release documentation)][doc-dev]
+[v0.8.1 Documentation][documentation] | [(Pending release documentation)][doc-dev]
 
 [Documentation]: https://shiva.icesoldier.me/doc/egg_mode/
 [doc-dev]: https://shiva.icesoldier.me/doc-dev/egg_mode/
@@ -20,7 +20,7 @@ To start using this library, put the following into your Cargo.toml:
 
 ```TOML
 [dependencies]
-egg-mode = "0.8.0"
+egg-mode = "0.8.1"
 ```
 
 ...and the following in your lib.rs or main.rs:
@@ -49,9 +49,9 @@ As the last line shows, this also returns the User ID and username of the user t
 with your application. With this access token, all of the other Twitter functions become available.
 
 If you'd like to see the examples and implementation for the version currently on crates.io, check
-the [`v0.8.0`] tag.
+the [`v0.8.1`] tag.
 
-[`v0.8.0`]: https://github.com/QuietMisdreavus/twitter-rs/tree/v0.8.0
+[`v0.8.1`]: https://github.com/QuietMisdreavus/twitter-rs/tree/v0.8.1
 
 For more examples of how to use this library, check the files in the examples folder. The
 authentication code for most of them is in `examples/common/mod.rs`, though that's also mostly

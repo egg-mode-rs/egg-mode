@@ -1,6 +1,6 @@
 [package]
 name = "egg-mode"
-version = "0.8.0"
+version = "0.8.1"
 authors = ["QuietMisdreavus <grey@quietmisdreavus.net>"]
 description = "Library to interact with the Twitter API"
 documentation = "https://shiva.icesoldier.me/doc/egg_mode/"
@@ -12,6 +12,7 @@ readme = "README.md"
 
 [badges]
 travis-ci = { repository = "QuietMisdreavus/twitter-rs" }
+appveyor = { repository = "QuietMisdreavus/twitter-rs" }
 
 [dependencies]
 hyper = "0.10.0"
@@ -19,7 +20,7 @@ hyper-native-tls = "0.2.1"
 native-tls = "0.1.1"
 url = "1.1.1"
 rand = "0.3.14"
-ring = "0.6"
+ring = "0.9.4"
 rustc-serialize = "0.3.19"
 mime = "0.2.1"
 chrono = "0.2.25"
