@@ -37,7 +37,7 @@
 0.8.1 is a quick patch to update to `*ring*` version 0.9.4, to prevent linking issues when used with
 `*ring*` 0.9.x.
 
-## [0.8.0] - 2016-01-30
+## [0.8.0] - 2017-01-30
 ### Added
 - New authentication functions `bearer_token` and `invalidate_bearer`, to perform Application-only
   authentication
