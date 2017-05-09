@@ -24,6 +24,7 @@
   - New function `unsubscribe` to unsubscribe from a list
   - New function `add_member_list` to add multiple users to a list
   - New function `remove_member_list` to remove multiple users from a list
+  - New function `update` to update the name/visibility/description of an already-existing list
 - New enum `service::ListMethod` and `list` field in `service::RateLimitStatus` to contain the rate
   limit info for these methods
 

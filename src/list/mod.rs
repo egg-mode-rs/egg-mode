@@ -1,10 +1,14 @@
 //! Structs and functions for working with lists.
 
+use std::collections::HashMap;
+
 use common::*;
 
 use rustc_serialize::json;
 use chrono;
 
+use auth;
+use links;
 use user;
 use error::Error::InvalidResponse;
 use error;
@@ -86,5 +90,66 @@ impl FromJson for List {
             description: try!(field(input, "description")),
             uri: try!(field(input, "uri"))
         })
+    }
+}
+
+///Represents a pending update to a list's metadata.
+pub struct ListUpdate<'a> {
+    list: ListID<'a>,
+    name: Option<&'a str>,
+    public: Option<bool>,
+    desc: Option<&'a str>,
+}
+
+impl<'a> ListUpdate<'a> {
+    ///Updates the name of the list.
+    pub fn name(self, name: &'a str) -> ListUpdate<'a> {
+        ListUpdate {
+            name: Some(name),
+            ..self
+        }
+    }
+
+    ///Sets whether the list is public.
+    pub fn public(self, public: bool) -> ListUpdate<'a> {
+        ListUpdate {
+            public: Some(public),
+            ..self
+        }
+    }
+
+    ///Updates the description of the list.
+    pub fn desc(self, desc: &'a str) -> ListUpdate<'a> {
+        ListUpdate {
+            desc: Some(desc),
+            ..self
+        }
+    }
+
+    ///Sends the update request to Twitter.
+    pub fn send(self, token: &auth::Token) -> WebResponse<List> {
+        let mut params = HashMap::new();
+        add_list_param(&mut params, &self.list);
+
+        if let Some(name) = self.name {
+            add_param(&mut params, "name", name);
+        }
+
+        if let Some(public) = self.public {
+            if public {
+                add_param(&mut params, "mode", "public");
+            }
+            else {
+                add_param(&mut params, "mode", "private");
+            }
+        }
+
+        if let Some(desc) = self.desc {
+            add_param(&mut params, "description", desc);
+        }
+
+        let mut resp = try!(auth::post(links::lists::UPDATE, token, Some(&params)));
+
+        parse_response(&mut resp)
     }
 }

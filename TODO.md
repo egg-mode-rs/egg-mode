@@ -110,7 +110,7 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [x] lists/subscriptions (`list::subscriptions`)
 - [x] lists/ownerships (`list::ownerships`)
 - [x] lists/create (`list::create`)
-- [ ] lists/update
+- [x] lists/update (`list::update`)
 - [x] lists/destroy (`list::delete`)
 - [x] lists/members (`list::members`)
 - [x] lists/members/show (`list::is_member`)

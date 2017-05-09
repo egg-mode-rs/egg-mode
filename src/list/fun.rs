@@ -285,3 +285,13 @@ pub fn unsubscribe(list: ListID, token: &auth::Token) -> WebResponse<List> {
 
     parse_response(&mut resp)
 }
+
+///Begins updating a list's metadata.
+pub fn update<'a>(list: ListID<'a>) -> ListUpdate<'a> {
+    ListUpdate {
+        list: list,
+        name: None,
+        public: None,
+        desc: None,
+    }
+}
