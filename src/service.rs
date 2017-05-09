@@ -316,6 +316,8 @@ impl FromStr for Method {
             "/lists/members" => Ok(Method::List(ListMethod::Members)),
             "/lists/memberships" => Ok(Method::List(ListMethod::Memberships)),
             "/lists/members/show" => Ok(Method::List(ListMethod::IsMember)),
+            "/lists/subscribers" => Ok(Method::List(ListMethod::Subscribers)),
+            "/lists/subscribers/show" => Ok(Method::List(ListMethod::IsSubscribed)),
             "/lists/statuses" => Ok(Method::List(ListMethod::Statuses)),
 
             _ => Err(()),
@@ -447,6 +449,10 @@ pub enum ListMethod {
     Memberships,
     ///`list::is_member`
     IsMember,
+    ///`list::subscribers`
+    Subscribers,
+    ///`list::is_subscribed`
+    IsSubscribed,
     ///`list::statuses`
     Statuses,
 }
