@@ -104,6 +104,8 @@
 //! * `search`: Due to the complexity of searching for tweets, it gets its own module.
 //! * `direct`: Here you can work with a user's Direct Messages, either by loading DMs they've sent
 //!   or received, or by sending new ones.
+//! * `list`: This module lets you act on lists, from creating and deleting them, adding and
+//!   removing users, or loading the posts made by their members.
 //! * `text`: Text processing functions to count characters in new tweets and extract links and
 //!   hashtags for highlighting and linking.
 //!

@@ -1,4 +1,67 @@
 //! Structs and functions for working with lists.
+//!
+//! A list is a way to group accounts together, either as a way to highlight those accounts, or to
+//! view as a subset of or supplement to your main timeline. A list can be viewed in the same way
+//! as the user's own timelines, loading in pages with the same [`Timeline`] interface.
+//!
+//! [`Timeline`]: ../tweet/struct.Timeline.html
+//!
+//! Lists can be private or public. If a list if public, then other users can view the list's
+//! members and the statuses of those members. (Statuses by protected accounts can still only be
+//! read by approved followers.)
+//!
+//! A list has "members", those accounts that are tracked as part of the list. When you call
+//! `statuses` on a given list, you're looking at the recent posts by its members. Members can be
+//! added and removed either one at a time, or in batches. Protected accounts can only be added to
+//! a list if the user is an approved follower of that account.
+//!
+//! A user can "subscribe" to another user's list as a sort of bookmark. Doing this places the list
+//! in the "lists" section of their profile, and in the `subscriptions` and `list` sets available
+//! from the API. Note that you don't need to subscribe to a list to view the statuses or users in
+//! it; you can do that to any public or personally owned list anyway. Subscribing merely allows
+//! quick access in case you want to keep track of a list someone else made.
+//!
+//! If a list is public, then all metadata about that list is public. Protected accounts can be
+//! seen as members of a list, but their statuses are still only visible to approved followers.
+//! None of the user-focused queries in this module assume that they're about the authenticated
+//! user; they can all be called in reference to any user.
+//!
+//! ## Types
+//!
+//! - `List`: This is the list metadata returned from Twitter when requesting information about the
+//!   list itself, or when performing some modification to one.
+//! - `ListID`: There are two ways to reference a list in the Twitter API: Either via a unique
+//!   numeric ID, or with its "slug" combined with a reference to the user who created it. This
+//!   enum wraps that distinction into one type that all the methods take when they need to
+//!   reference a list like this. See the enum's documentation for details on how to create one.
+//! - `ListUpdate`: When updating a list's metadata, all the fields that can be updated are
+//!   optional, so the `update` function returns this builder struct so you don't have to provide
+//!   all the parameters if you don't need to.
+//!
+//! ## Functions
+//!
+//! ### Basic actions
+//!
+//! These functions perform basic write actions on lists as a whole. These all require write access
+//! to the authenticated user's account.
+//!
+//! - `create`/`delete`
+//! - `update` (see `ListUpdate` for full details)
+//! - `subscribe`/`unsubscribe`
+//! - `add_member`/`remove_member`
+//! - `add_member_list`/`remove_member_list`
+//!
+//! ### Basic queries
+//!
+//! These functions let you query information about lists, or related to lists somehow.
+//!
+//! - `ownerships`/`subscriptions`/`list`: Note that `list` will only return the most recent 100
+//!   lists in the `ownerships`/`subscriptions` sets.
+//! - `memberships`
+//! - `members`/`is_member`
+//! - `subscribers`/`is_subscriber`
+//! - `show`
+//! - `statuses`
 
 use std::collections::HashMap;
 
