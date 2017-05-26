@@ -79,7 +79,20 @@ use error;
 mod fun;
 pub use self::fun::*;
 
-///Convenience enum to refer to a list via its owner and name or via numeric ID.
+/// Convenience enum to refer to a list via its owner and name or via numeric ID.
+///
+/// Any API call that needs to reference a specific list has a set of parameters that collectively
+/// refer to it. Not only do lists have a unique numeric ID that refers to them, they have a "slug"
+/// that stands in as the list's unique name. This slug is only unique when taken in combination
+/// with the user that created it, though, so this leads to the raw API call having parameters that
+/// refer to the user by screen name or ID, or the list as a whole by this pair of slug parameters
+/// or the single ID parameter. egg-mode wraps this pattern with this `ListID` enum.
+///
+/// Because the slug is formed from two variables instead of one, this enum foregoes the many
+/// `From` implementations that `UserID` has and instead opts for two creation functions. If you
+/// have a user/name combo, use `ListID::from_slug` when looking for the list. If you have the
+/// list's ID instead, then you can use `ListID::from_id`.
+#[derive(Debug, Copy, Clone)]
 pub enum ListID<'a> {
     ///Referring via the list's owner and its "slug" or name.
     Slug(user::UserID<'a>, &'a str),
