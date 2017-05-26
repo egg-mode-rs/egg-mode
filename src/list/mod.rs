@@ -112,11 +112,29 @@ impl<'a> ListID<'a> {
     }
 }
 
-///Represents the metadata for a list.
+/// Represents the metadata for a list.
+///
+/// Because of the myriad ways to reference a list, there are a few seemingly-redundant fields on
+/// here. It's worthwhile to understand all the referential fields:
+///
+/// * `name` is the human-readable name of the list. Notably, this can contain spaces and uppercase
+///   letters.
+/// * `slug` is simply `name` converted to a format that can be put into a URL and used to
+///   reference the list for API calls.
+/// * `full_name` is how you'd link the list as a @mention, in the form `@screen_name/slug`.
+/// * `id` is the numeric ID, which can be used with `ListID::from_id` to make a `ListID` for the
+///   list.
+/// * `uri` is how you assemble a link to the list. Start with `"https://twitter.com"`, concat this
+///   field to the end, and you have a full URL. Note that the field does start with its own slash.
+/// * `user` is a mostly-populated `TwitterUser` corresponding to the creator of the list. If you
+///   combine `user.screen_name` or `user.id` with `slug`, you can send them to `ListID::from_slug`
+///   to make a `ListID` for the list.
 #[derive(Clone, Debug)]
 pub struct List {
     ///The name of the list.
     pub name: String,
+    ///The user who created the list.
+    pub user: user::TwitterUser,
     ///The "slug" of a list, that can be combined with its creator's `UserID` to refer to the list.
     pub slug: String,
     ///The numeric ID of the list.
