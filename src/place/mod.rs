@@ -38,7 +38,7 @@ mod fun;
 pub use self::fun::*;
 
 ///Represents a named location.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Place {
     ///Alphanumeric ID of the location.
     pub id: String,
@@ -64,7 +64,7 @@ pub struct Place {
 }
 
 ///Represents the type of region represented by a given place.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum PlaceType {
     ///A coordinate with no area.
     Point,
@@ -79,7 +79,7 @@ pub enum PlaceType {
 }
 
 ///Represents the accuracy of a GPS measurement, when being given to a location search.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Accuracy {
     ///Location accurate to the given number of meters.
     Meters(f64),

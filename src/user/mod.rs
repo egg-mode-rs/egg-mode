@@ -180,7 +180,7 @@ impl<'a> From<&'a UserID<'a>> for UserID<'a> {
 /// * `show_all_inline_media`
 /// * `time_zone`/`utc_offset`
 /// * `withheld_in_countries`/`withheld_scope`
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TwitterUser {
     /// Indicates this user has an account with "contributor mode" enabled, allowing
     /// for Tweets issued by the user to be co-authored by another account. Rarely `true`.
@@ -322,7 +322,7 @@ pub struct TwitterUser {
 }
 
 /// Container for URL entity information that may be paired with a user's profile.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UserEntities {
     /// URL information that has been parsed out of the user's `description`. If no URLs were
     /// detected, then the contained Vec will be empty.
@@ -336,7 +336,7 @@ pub struct UserEntities {
 }
 
 /// Represents a collection of URL entity information paired with a specific user profile field.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UserEntityDetail {
     /// Collection of URL entity information.
     ///

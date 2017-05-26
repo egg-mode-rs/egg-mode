@@ -45,7 +45,7 @@ use rustc_serialize::json;
 use mime;
 
 ///Represents a hashtag or symbol extracted from another piece of text.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HashtagEntity {
     ///The byte offsets where the hashtag is located. The first index is the location of the # or $
     ///character; the second is the location of the first character following the hashtag.
@@ -66,7 +66,7 @@ pub struct HashtagEntity {
 ///appending a colon and one of the available sizes in the `MediaSizes` struct. For example, the
 ///cropped thumbnail can be viewed by appending `:thumb` to the end of the URL, and the full-size
 ///image can be viewed by appending `:large`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MediaEntity {
     ///A shortened URL to display to clients.
     pub display_url: String,
@@ -103,7 +103,7 @@ pub struct MediaEntity {
 }
 
 ///Represents the types of media that can be attached to a tweet.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum MediaType {
     ///A static image.
     Photo,
@@ -114,7 +114,7 @@ pub enum MediaType {
 }
 
 ///Represents the available sizes for a media file.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct MediaSizes {
     ///Information for a thumbnail-sized version of the media.
     pub thumb: MediaSize,
@@ -127,7 +127,7 @@ pub struct MediaSizes {
 }
 
 ///Represents how an image has been resized for a given size variant.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum ResizeMode {
     ///The media was resized to fit one dimension, keeping its aspect ratio.
     Fit,
@@ -136,7 +136,7 @@ pub enum ResizeMode {
 }
 
 ///Represents the dimensions of a media file.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct MediaSize {
     ///The size variant's width in pixels.
     pub w: i32,
@@ -147,7 +147,7 @@ pub struct MediaSize {
 }
 
 ///Represents metadata specific to videos.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VideoInfo {
     ///The aspect ratio of the video.
     pub aspect_ratio: (i32, i32),
@@ -160,7 +160,7 @@ pub struct VideoInfo {
 }
 
 ///Represents information about a specific encoding of a video.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VideoVariant {
     ///The bitrate of the video. This value is present for GIFs, but it will be zero.
     pub bitrate: Option<i32>,
@@ -171,7 +171,7 @@ pub struct VideoVariant {
 }
 
 ///Represents a link extracted from another piece of text.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UrlEntity {
     ///A truncated URL meant to be displayed inline with the text.
     pub display_url: String,
@@ -186,7 +186,7 @@ pub struct UrlEntity {
 }
 
 ///Represnts a user mention extracted from another piece of text.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MentionEntity {
     ///Numeric ID of the mentioned user.
     pub id: u64,

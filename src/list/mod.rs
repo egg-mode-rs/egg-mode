@@ -172,12 +172,14 @@ impl FromJson for List {
         field_present!(input, id);
         field_present!(input, name);
         field_present!(input, created_at);
+        field_present!(input, user);
 
         Ok(List {
             created_at: try!(field(input, "created_at")),
             name: try!(field(input, "name")),
             slug: try!(field(input, "slug")),
             id: try!(field(input, "id")),
+            user: try!(field(input, "user")),
             subscriber_count: try!(field(input, "subscriber_count")),
             member_count: try!(field(input, "member_count")),
             full_name: try!(field(input, "full_name")),

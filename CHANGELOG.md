@@ -36,6 +36,7 @@
     source-compatible.
 - `user::UserID` is Copy now. It was originally Clone to support the `From<&UserID> for UserID`
   impl, but all the elements inside were Copy anyway, so it makes sense to add it there.
+- A bunch of structs and enums now impl Clone, and a few also now impl Copy, where applicable.
 
 ## [0.8.1] - 2017-05-18
 
