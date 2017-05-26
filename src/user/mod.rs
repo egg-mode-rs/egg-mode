@@ -69,7 +69,23 @@ mod fun;
 pub use self::fun::*;
 
 /// Convenience enum to generalize between referring to an account by numeric ID or by screen name.
-#[derive(Debug, Clone)]
+///
+/// Many API calls ask for a user either by either screen name (e.g. `rustlang`) or by a numeric ID
+/// assigned to the account (e.g. `165262228`). In egg-mode, these calls are abstracted around this
+/// enum, and can take any type that converts into it. This enum has `From` implementations for the
+/// following types:
+///
+/// * `u64`
+/// * `&u64` (convenient when used with iterators)
+/// * `&str`
+/// * `&&str` (convenient when used with iterators)
+/// * `&String` (to counteract the fact that deref coercion doesn't work with generics)
+/// * `&UserID` (convenient when used with iterators)
+///
+/// This way, when a function in egg-mode has a paremeter of type `T: Into<UserID<'a>>`, you can
+/// call it with any of these types, and it will be converted automatically. egg-mode will then use
+/// the proper parameter when performing the call to Twitter.
+#[derive(Debug, Copy, Clone)]
 pub enum UserID<'a> {
     /// Referring via the account's numeric ID.
     ID(u64),
@@ -109,7 +125,7 @@ impl<'a> From<&'a String> for UserID<'a> {
 
 impl<'a> From<&'a UserID<'a>> for UserID<'a> {
     fn from(id: &'a UserID<'a>) -> UserID<'a> {
-        id.clone()
+        *id
     }
 }
 

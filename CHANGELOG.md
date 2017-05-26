@@ -34,6 +34,8 @@
   - Only a **breaking change** if something that coerces into a slice doesn't also impl
     `IntoIterator<Item=&'a T>`. As Vecs and slices already do this, the common cases are
     source-compatible.
+- `user::UserID` is Copy now. It was originally Clone to support the `From<&UserID> for UserID`
+  impl, but all the elements inside were Copy anyway, so it makes sense to add it there.
 
 ## [0.8.1] - 2017-05-18
 
