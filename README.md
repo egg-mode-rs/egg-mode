@@ -4,8 +4,8 @@ another twitter library for rust [![Build Status](https://travis-ci.org/QuietMis
 
 [v0.8.1 Documentation][documentation] | [(Pending release documentation)][doc-dev]
 
-[Documentation]: https://shiva.icesoldier.me/doc/egg_mode/
-[doc-dev]: https://shiva.icesoldier.me/doc-dev/egg_mode/
+[Documentation]: https://tonberry.quietmisdreavus.net/doc/egg_mode/
+[doc-dev]: https://tonberry.quietmisdreavus.net/doc-dev/egg_mode/
 
 This is a library for interacting with Twitter from Rust. You can see how much of the Public API is
 available in the file [TODO.md]. In addition to eventually implementing the entire Public API, an

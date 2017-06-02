@@ -24,7 +24,7 @@ tried just that, to see what would happen, and I included that note in the docum
 notice such holes in egg-mode documentation, please post an issue or create a pull request!
 
 [`friendships/create`]: https://dev.twitter.com/rest/reference/post/friendships/create
-[`user::follow`]: https://shiva.icesoldier.me/doc/egg_mode/user/fn.follow.html
+[`user::follow`]: https://tonberry.quietmisdreavus.net/doc/egg_mode/user/fn.follow.html
 
 ## Code Contributions
 
@@ -58,7 +58,7 @@ function to load a single Twitter user][user-show] and understand that you need 
 something that can become a `UserID`. Thanks to rustdoc, both those types have hyperlinks to their
 respective documentation where you can figure out how to get the required arguments.
 
-[user-show]: https://shiva.icesoldier.me/doc/egg_mode/user/fn.show.html
+[user-show]: https://tonberry.quietmisdreavus.net/doc/egg_mode/user/fn.show.html
 
 This doesn't mean that absolutely everything needs to be in bare functions. Some actions, like
 loading tweets from a timeline, have some explicit state to them, in the form of their cursoring
@@ -82,7 +82,7 @@ without the user having to juggle these tweet IDs for basic scenarios.
 [retweeters-of]: https://dev.twitter.com/rest/reference/get/statuses/retweeters/ids
 [followers-of]: https://dev.twitter.com/rest/reference/get/followers/list
 [list-ownerships]: https://dev.twitter.com/rest/reference/get/lists/ownerships
-[CursorIter]: https://shiva.icesoldier.me/doc/egg_mode/cursor/struct.CursorIter.html
+[CursorIter]: https://tonberry.quietmisdreavus.net/doc/egg_mode/cursor/struct.CursorIter.html
 
 If you're adding new endpoints, check to make sure whether they follow one of these patterns. That
 way, you can reuse that code and keep the library from having too many copies of the same thing. (On
