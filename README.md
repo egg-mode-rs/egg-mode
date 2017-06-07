@@ -48,6 +48,14 @@ let (token, user_id, screen_name) =
 As the last line shows, this also returns the User ID and username of the user that authenticated
 with your application. With this access token, all of the other Twitter functions become available.
 
+With this token in hand, you can get a user's profile information like this:
+
+```rust
+let rustlang = egg_mode::user::show("rustlang", &token).unwrap();
+
+println!("{} (@{})", rustlang.name, rustlang.screen_name);
+```
+
 If you'd like to see the examples and implementation for the version currently on crates.io, check
 the [`v0.8.1`] tag.
 
