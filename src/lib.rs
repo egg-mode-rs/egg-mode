@@ -1,89 +1,73 @@
 //! A library for interacting with Twitter.
 //!
-//! Please see [the repository][] and its enclosed examples for tips on working with this library.
+//! [Repository](https://github.com/QuietMisdreavus/twitter-rs)
 //!
-//! [the repository]: https://github.com/QuietMisdreavus/twitter-rs
+//! egg-mode is a Twitter library that aims to make as few assumptions about the user's codebase as
+//! possible. Endpoints are exposed as bare functions where authentication details are passed in as
+//! arguments, rather than as builder functions of a root "service" manager. The only exceptions to
+//! this guideline are endpoints with many optional parameters, like posting a status update or
+//! updating the metadata of a list.
 //!
-//! # Quick Start
+//! To use the Twitter API, there are some extra steps you need to do, both inside and outside of
+//! your app code. Find the Authentication Overview and quick start guide in the [Token][]
+//! documentation. The following examples already have a `token` on hand.
 //!
-//! Before you write any code with this library, head over to the [Twitter Application
-//! Manager][twitter-apps] to set up an app, so you can have your consumer key and consumer secret.
-//! The complete authentication process is outlined on the [Token][] page and given in detail on
-//! the individual method pages.
-//!
-//! [twitter-apps]: https://apps.twitter.com/
 //! [Token]: enum.Token.html
 //!
-//! ## PIN-Based Authentication
-//!
-//! To sign in as a specific user:
+//! To load the profile information of a single user:
 //!
 //! ```rust,no_run
-//! let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
-//! // "oob" is needed for PIN-based auth; see docs for `request_token` for more info
-//! let request_token = egg_mode::request_token(&con_token, "oob").unwrap();
-//! let auth_url = egg_mode::authorize_url(&request_token);
+//! # let token = egg_mode::Token::Access {
+//! #     consumer: egg_mode::KeyPair::new("", ""),
+//! #     access: egg_mode::KeyPair::new("", ""),
+//! # };
+//! let rustlang = egg_mode::user::show("rustlang", &token).unwrap();
 //!
-//! // give auth_url to the user, they can sign in to Twitter and accept your app's permissions.
-//! // they'll receive a PIN in return, they need to give this to your application
-//!
-//! let verifier = "123456"; //read the PIN from the user here
-//!
-//! // note this consumes con_token; if you want to sign in multiple accounts, clone it here
-//! let (token, user_id, screen_name) =
-//!     egg_mode::access_token(con_token, &request_token, verifier).unwrap();
-//!
-//! // token can be given to any egg_mode method that asks for a token
-//! // user_id and screen_name refer to the user who signed in
+//! println!("{} (@{})", rustlang.name, rustlang.screen_name);
 //! ```
 //!
-//! See the [request token][] docs page for more information, or for sign-in options that are
-//! easier for websites or apps that can launch a web browser more seamlessly.
-//!
-//! [request token]: fn.request_token.html
-//!
-//! ### Shortcut: Pre-Generated Access Token
-//!
-//! If you only want to sign in as yourself, you can skip the request token authentication flow and
-//! instead use the access token key pair given alongside your app keys:
-//!
-//! ```rust
-//! let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
-//! let access_token = egg_mode::KeyPair::new("access token key", "access token secret");
-//! let token = egg_mode::Token::Access {
-//!     consumer: con_token,
-//!     access: access_token,
-//! };
-//!
-//! // token can be given to any egg_mode method that asks for a token
-//! ```
-//!
-//! ## Bearer Tokens and App-Only Authentication
-//!
-//! If you can get away with performing requests on behalf of your application as a whole, and not
-//! as a specific user, you can use a Bearer token instead. You still need to set up an application
-//! as before, but you can use a simpler process instead:
+//! To post a new tweet:
 //!
 //! ```rust,no_run
-//! let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
-//! let token = egg_mode::bearer_token(&con_token).unwrap();
+//! # let token = egg_mode::Token::Access {
+//! #     consumer: egg_mode::KeyPair::new("", ""),
+//! #     access: egg_mode::KeyPair::new("", ""),
+//! # };
+//! use egg_mode::tweet::DraftTweet;
 //!
-//! // token can be given to *most* egg_mode methods that ask for a token
-//! // for restrictions, see docs for bearer_token
+//! let post = DraftTweet::new("Hey Twitter!").send(&token).unwrap();
 //! ```
 //!
-//! For more information, see the [bearer token][] docs page.
+//! # Types and Functions
 //!
-//! [bearer token]: fn.bearer_token.html
+//! All of the main content of egg-mode is in submodules, but there are a few things here in the
+//! crate root. To wit, it contains items related to authentication and a couple items that all the
+//! submodules use.
 //!
-//! # `Response<T>`
+//! ## `Response<T>`
 //!
 //! Every method that calls Twitter and carries rate-limit information wraps its return value in a
 //! [`Response`][] struct, that transmits this information to your app. From there, you can handle
 //! the rate-limit information to hold off on that kind of request, or simply grab its `response`
-//! field to get the output of whatever method you called.
+//! field to get the output of whatever method you called. `Response` also implements `Deref`, so
+//! for the most part you can access fields of the final result without having to grab the
+//! `response` field directly.
+//!
+//! `Response` also has IntoIterator implementations and iterator creation methods that echo those
+//! on `Vec<T>`, for methods that return Vecs. These methods and iterator types distribute the
+//! rate-limit information across each iteration.
+//!
+//! There's also a type alias, [`WebResponse`], which is an alias to `Result<Response<T>, Error>`,
+//! indicating a shorthand for network calls that return rate-limit metadata.
 //!
 //! [`Response`]: struct.Response.html
+//! [`WebResponse`]: type.WebResponse.html
+//!
+//! ## Authentication Types/Functions
+//!
+//! The remaining types and methods are explained as part of the [authentication overview][Token],
+//! with the exception of `verify_tokens`, which is a simple method to ensure a given token is
+//! still valid.
 //!
 //! # Modules
 //!

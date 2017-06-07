@@ -256,6 +256,51 @@ impl<'a> KeyPair<'a> {
 /// Step 1. With this verifier and the original request token, you can combine them with your app's
 /// consumer token to get the [access token] that opens up the rest of the Twitter API.
 ///
+/// ### Example (Access Token)
+///
+/// For "PIN-Based Authorization":
+///
+/// ```rust,no_run
+/// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
+/// // "oob" is needed for PIN-based auth; see docs for `request_token` for more info
+/// let request_token = egg_mode::request_token(&con_token, "oob").unwrap();
+/// let auth_url = egg_mode::authorize_url(&request_token);
+///
+/// // give auth_url to the user, they can sign in to Twitter and accept your app's permissions.
+/// // they'll receive a PIN in return, they need to give this to your application
+///
+/// let verifier = "123456"; //read the PIN from the user here
+///
+/// // note this consumes con_token; if you want to sign in multiple accounts, clone it here
+/// let (token, user_id, screen_name) =
+///     egg_mode::access_token(con_token, &request_token, verifier).unwrap();
+///
+/// // token can be given to any egg_mode method that asks for a token
+/// // user_id and screen_name refer to the user who signed in
+/// ```
+///
+/// **WARNING**: The consumer token and preset access token mentioned below are as privileged as
+/// passwords! If your consumer key pair leaks or is visible to the public, anyone can impersonate
+/// your app! If you use a fixed token for your app, it's recommended to set them in separate files
+/// and use `include_str!()` (from the standard library) to load them in, so you can safely exclude
+/// them from source control.
+///
+/// ### Shortcut: Pre-Generated Access Token
+///
+/// If you only want to sign in as yourself, you can skip the request token authentication flow
+/// entirely and instead use the access token key pair given alongside your app keys:
+///
+/// ```rust
+/// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
+/// let access_token = egg_mode::KeyPair::new("access token key", "access token secret");
+/// let token = egg_mode::Token::Access {
+///     consumer: con_token,
+///     access: access_token,
+/// };
+///
+/// // token can be given to any egg_mode method that asks for a token
+/// ```
+///
 /// ## Bearer Tokens
 ///
 /// Bearer tokens are for when you want to perform requests on behalf of your app itself, instead
@@ -276,6 +321,16 @@ impl<'a> KeyPair<'a> {
 /// same way as the [access token] from earlier, but with the restrictions mentioned above.
 ///
 /// [invalidate]: fn.invalidate_bearer.html
+///
+/// ### Example (Bearer Token)
+///
+/// ```rust,no_run
+/// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
+/// let token = egg_mode::bearer_token(&con_token).unwrap();
+///
+/// // token can be given to *most* egg_mode methods that ask for a token
+/// // for restrictions, see docs for bearer_token
+/// ```
 #[derive(Debug, Clone)]
 pub enum Token<'a> {
     ///An OAuth Access token indicating the request is coming from a specific user.
