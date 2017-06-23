@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 //! Set of structs and methods that act as a sort of internal prelude.
 //!
 //! The elements available in this module and its children are fairly basic building blocks that

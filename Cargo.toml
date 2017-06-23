@@ -7,7 +7,7 @@ documentation = "https://tonberry.quietmisdreavus.net/doc/egg_mode/"
 repository = "https://github.com/QuietMisdreavus/twitter-rs"
 keywords = ["twitter"]
 categories = ["api-bindings"]
-license = "Apache-2.0"
+license = "MPL-2.0"
 readme = "README.md"
 
 [badges]

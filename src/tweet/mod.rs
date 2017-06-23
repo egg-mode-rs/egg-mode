@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 //! Structs and functions for working with statuses and timelines.
 //!
 //! In this module, you can find various structs and methods to load and interact with tweets and

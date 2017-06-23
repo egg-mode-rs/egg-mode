@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 //! Data structures containing extracted URL, mention, tag, and media information.
 //!
 //! These structures are meant to be received in an API call to describe the data they accompany.

@@ -1,6 +1,17 @@
 # Changelog for egg-mode
 
 ## Pending
+### Changed
+- **The library is now licensed under the Mozilla Public License, 2.0.**
+- `tweet::lookup`, `tweet::lookup_map`, `user::lookup`, and `user::relation_lookup` now all take
+  `IntoIterator`s instead of slices.
+  - Only a **breaking change** if something that coerces into a slice doesn't also impl
+    `IntoIterator<Item=&'a T>`. As Vecs and slices already do this, the common cases are
+    source-compatible.
+- `user::UserID` is Copy now. It was originally Clone to support the `From<&UserID> for UserID`
+  impl, but all the elements inside were Copy anyway, so it makes sense to add it there.
+- A bunch of structs and enums now impl Clone, and a few also now impl Copy, where applicable.
+
 ### Added
 - Added module `list` with `List` and `ListID` structs
   - Thanks to @jkarns275 for the initial implementation!
@@ -27,16 +38,6 @@
   - New function `update` to update the name/visibility/description of an already-existing list
 - New enum `service::ListMethod` and `list` field in `service::RateLimitStatus` to contain the rate
   limit info for these methods
-
-### Changed
-- `tweet::lookup`, `tweet::lookup_map`, `user::lookup`, and `user::relation_lookup` now all take
-  `IntoIterator`s instead of slices.
-  - Only a **breaking change** if something that coerces into a slice doesn't also impl
-    `IntoIterator<Item=&'a T>`. As Vecs and slices already do this, the common cases are
-    source-compatible.
-- `user::UserID` is Copy now. It was originally Clone to support the `From<&UserID> for UserID`
-  impl, but all the elements inside were Copy anyway, so it makes sense to add it there.
-- A bunch of structs and enums now impl Clone, and a few also now impl Copy, where applicable.
 
 ## [0.8.1] - 2017-05-18
 

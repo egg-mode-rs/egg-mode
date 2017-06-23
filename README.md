@@ -78,4 +78,4 @@ If you've found egg-mode useful, or just want to communicate your first impressi
 
 ## License
 
-This library is licensed under the Apache License, version 2.0. See the LICENSE file for details.
+This library is licensed under the Mozilla Public License, version 2.0. See the LICENSE file for details.

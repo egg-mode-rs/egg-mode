@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 //! Regular expressions to help the functions in the text module.
 
 //The regexen included in this module are constructed from smaller composible pieces, partly so
