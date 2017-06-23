@@ -92,6 +92,16 @@ pub use self::fun::*;
 /// `From` implementations that `UserID` has and instead opts for two creation functions. If you
 /// have a user/name combo, use `ListID::from_slug` when looking for the list. If you have the
 /// list's ID instead, then you can use `ListID::from_id`.
+///
+/// # Example
+///
+/// ```rust
+/// use egg_mode::list::ListID;
+///
+/// //The following two ListIDs refer to the same list:
+/// let slug = ListID::from_slug("Twitter", "support");
+/// let id = ListID::from_id(99924643);
+/// ```
 #[derive(Debug, Copy, Clone)]
 pub enum ListID<'a> {
     ///Referring via the list's owner and its "slug" or name.
@@ -189,7 +199,25 @@ impl FromJson for List {
     }
 }
 
-///Represents a pending update to a list's metadata.
+/// Represents a pending update to a list's metadata.
+///
+/// As updating a list could modify each field independently, this operation is exposed as a builder
+/// struct. To update any field, call the method named after that field, then call `send` to send
+/// the update to Twitter.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// # let token = egg_mode::Token::Access {
+/// #     consumer: egg_mode::KeyPair::new("", ""),
+/// #     access: egg_mode::KeyPair::new("", ""),
+/// # };
+/// use egg_mode::list::{self, ListID};
+///
+/// //remember, you can only update a list if you own it!
+/// let update = list::update(ListID::from_slug("Twitter", "support"));
+/// let list = update.name("Official Support").send(&token).unwrap();
+/// ```
 pub struct ListUpdate<'a> {
     list: ListID<'a>,
     name: Option<&'a str>,

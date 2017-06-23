@@ -11,6 +11,9 @@ use user::{UserID, TwitterUser};
 use tweet;
 
 ///Look up the lists the given user has been added to.
+///
+///This function returns an iterator over the lists returned by Twitter. This method defaults to
+///reeturning 20 lists in a single network call; the maximum is 1000.
 pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &user.into());
@@ -20,7 +23,14 @@ pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> 
 ///Return up to 100 lists the given user is subscribed to, including those the user made
 ///themselves.
 ///
-///TODO: this is not strictly `subscriptions` and `ownerships` blended
+///This function can be used to get a snapshot of a user's lists, but if they've created or
+///subscribed to a lot of lists, then the limitations of this function can get in the way.
+///If the `owned_first` parameter is `true`, Twitter will load the lists the given user created,
+///then the ones they've subscribed to, stopping when it reaches 100 lists. If it's `false`, then
+///the lists are loaded in the opposite order.
+///
+///If the user has more than 100 lists total like this, you'll need to call `ownerships` and
+///`subscriptions` separately to be able to properly load everything.
 pub fn list<'a, T: Into<UserID<'a>>>(user: T, owned_first: bool, token: &'a auth::Token)
     -> WebResponse<Vec<List>>
 {
@@ -33,6 +43,9 @@ pub fn list<'a, T: Into<UserID<'a>>>(user: T, owned_first: bool, token: &'a auth
 }
 
 ///Look up the lists the given user is subscribed to, but not ones the user made themselves.
+///
+///This function returns an iterator over the lists returned by Twitter. This method defaults to
+///reeturning 20 lists in a single network call; the maximum is 1000.
 pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &user.into());
@@ -40,6 +53,9 @@ pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -
 }
 
 ///Look up the lists created by the given user.
+///
+///This function returns an iterator over the lists returned by Twitter. This method defaults to
+///reeturning 20 lists in a single network call; the maximum is 1000.
 pub fn ownerships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &user.into());
@@ -58,6 +74,9 @@ pub fn show<'a>(list: ListID<'a>, token: &'a auth::Token) -> WebResponse<List> {
 }
 
 ///Look up the users that have been added to the given list.
+///
+///This function returns an iterator over the users returned by Twitter. This method defaults to
+///reeturning 20 users in a single network call; the maximum is 5000.
 pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
     let mut params = HashMap::new();
 
@@ -67,6 +86,9 @@ pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, U
 }
 
 ///Look up the users that have subscribed to the given list.
+///
+///This function returns an iterator over the users returned by Twitter. This method defaults to
+///reeturning 20 users in a single network call; the maximum is 5000.
 pub fn subscribers<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
     let mut params = HashMap::new();
 
@@ -138,6 +160,11 @@ pub fn is_member<'a, T: Into<UserID<'a>>>(user: T, list: ListID<'a>, token: &aut
 }
 
 ///Begin navigating the collection of tweets made by the users added to the given list.
+///
+///The interface for loading statuses from a list is exactly the same as loading from a personal
+///timeline. see the [`Timeline`] docs for details.
+///
+///[`Timeline`]: ../tweet/struct.Timeline.html
 pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token)
     -> tweet::Timeline<'a>
 {
@@ -149,6 +176,10 @@ pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token)
 }
 
 ///Adds the given user to the given list.
+///
+///Note that lists cannot have more than 5000 members.
+///
+///Upon success, returns the freshly-modified list.
 pub fn add_member<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: &auth::Token)
     -> WebResponse<List>
 {
@@ -167,6 +198,13 @@ pub fn add_member<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: &au
 ///method's documentation for details.
 ///
 ///[`user::lookup`]: ../user/fn.lookup.html
+///
+///Note that you cannot add more than 100 members to a list at a time, and that lists in general
+///cannot have more than 5000 members.
+///
+///When using this method, take care not to add and remove many members in rapid succession; there
+///are no guarantees that the result of a `add_member_list` or `remove_member_list` will be
+///immediately available for a corresponding removal or addition, respectively.
 pub fn add_member_list<'a, T, I>(members: I, list: ListID<'a>, token: &auth::Token)
     -> WebResponse<List>
     where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
@@ -206,6 +244,12 @@ pub fn remove_member<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: 
 ///method's documentation for details.
 ///
 ///[`user::lookup`]: ../user/fn.lookup.html
+///
+///This method is limited to removing 100 members at a time.
+///
+///When using this method, take care not to add and remove many members in rapid succession; there
+///are no guarantees that the result of a `add_member_list` or `remove_member_list` will be
+///immediately available for a corresponding removal or addition, respectively.
 pub fn remove_member_list<'a, T, I>(members: I, list: ListID<'a>, token: &auth::Token)
     -> WebResponse<List>
     where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
@@ -287,6 +331,10 @@ pub fn unsubscribe(list: ListID, token: &auth::Token) -> WebResponse<List> {
 }
 
 ///Begins updating a list's metadata.
+///
+///This method is exposed using a builder struct. See the [`ListUpdate`] docs for details.
+///
+///[`ListUpdate`]: struct.ListUpdate.html
 pub fn update<'a>(list: ListID<'a>) -> ListUpdate<'a> {
     ListUpdate {
         list: list,
