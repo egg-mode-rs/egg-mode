@@ -1,6 +1,6 @@
 # Changelog for egg-mode
 
-## Pending
+## [0.9.0] - 2017-06-23
 ### Changed
 - **The library is now licensed under the Mozilla Public License, 2.0.**
 - `tweet::lookup`, `tweet::lookup_map`, `user::lookup`, and `user::relation_lookup` now all take
