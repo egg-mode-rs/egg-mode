@@ -1,6 +1,8 @@
 environment:
   RUSTUP_INIT_SKIP_MSVC_CHECK: '1'
   matrix:
+  - TARGET: 1.17.0-x86_64-pc-windows-msvc
+  - TARGET: 1.17.0-i686-pc-windows-msvc
   - TARGET: stable-x86_64-pc-windows-msvc
   - TARGET: stable-i686-pc-windows-msvc
   - TARGET: beta-x86_64-pc-windows-msvc
