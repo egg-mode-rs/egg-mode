@@ -1,5 +1,11 @@
 # Changelog for egg-mode
 
+## [0.10.0] = 2017-08-08
+
+0.10.0 is a quick patch to change out my dependencies: `ring` has been removed, in favor of `hmac`
+and `sha1`, which were the only operations i needed from it. This should solve any linker errors
+when multiple versions of `ring` are in the same tree, by removing one instance of `ring` entirely.
+
 ## [0.9.0] - 2017-06-23
 ### Changed
 - **The library is now licensed under the Mozilla Public License, 2.0.**
