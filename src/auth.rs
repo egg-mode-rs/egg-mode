@@ -15,7 +15,8 @@ use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
 use mime::Mime;
 use rand::{self, Rng};
-use ring::{digest, hmac};
+use hmac::{Hmac, Mac};
+use sha_1::Sha1;
 use rustc_serialize::base64::{self, ToBase64};
 use rustc_serialize::json;
 use super::{links, error};
@@ -394,8 +395,8 @@ fn sign(header: TwitterOAuth,
                       percent_encode(&con_token.secret),
                       percent_encode(&access_token.unwrap_or(&KeyPair::new("", "")).secret));
 
-    let signing_key = hmac::SigningKey::new(&digest::SHA1, key.as_bytes());
-    let digest = hmac::sign(&signing_key, base_str.as_bytes());
+    let mut digest = Hmac::<Sha1>::new(key.as_bytes());
+    digest.input(base_str.as_bytes());
 
     let config = base64::Config {
         char_set: base64::CharacterSet::Standard,
@@ -405,7 +406,7 @@ fn sign(header: TwitterOAuth,
     };
 
     TwitterOAuth {
-        signature: Some(digest.as_ref().to_base64(config)),
+        signature: Some(digest.result().code().to_base64(config)),
         ..header
     }
 }
