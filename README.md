@@ -16,6 +16,9 @@ to being able to manually load a page at a time.
 
 [TODO.md]: https://github.com/QuietMisdreavus/twitter-rs/blob/master/TODO.md
 
+Compatibility note: egg-mode is tested to run on Rust 1.17.0 and later. On Windows, both the -msvc
+and -gnu environments are tested.
+
 To start using this library, put the following into your Cargo.toml:
 
 ```TOML
