@@ -13,7 +13,7 @@ use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer};
 use hyper::method::Method;
 use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
-use mime::Mime;
+use hyper::mime::Mime;
 use rand::{self, Rng};
 use hmac::{Hmac, Mac};
 use sha_1::Sha1;

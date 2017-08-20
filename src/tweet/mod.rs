@@ -149,7 +149,7 @@ pub struct Tweet {
     ///If present, the location coordinate attached to the tweet, as a (latitude, longitude) pair.
     pub coordinates: Option<(f64, f64)>,
     ///UTC timestamp from when the tweet was posted.
-    pub created_at: chrono::DateTime<chrono::UTC>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
     ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
     pub current_user_retweet: Option<u64>,
     ///If this tweet is an extended tweet with "hidden" metadata and entities, contains the byte
