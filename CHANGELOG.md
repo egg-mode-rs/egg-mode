@@ -1,5 +1,11 @@
 # Changelog for egg-mode
 
+## Pending
+### Changed
+- Several dependencies have been updated
+  - Notably, the type for all the timestamps was renamed, since chrono changed it from `UTC` to
+    `Utc`
+
 ## [0.10.0] = 2017-08-08
 
 0.10.0 is a quick patch to change out my dependencies: `ring` has been removed, in favor of `hmac`
