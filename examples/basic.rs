@@ -39,12 +39,6 @@ fn main() {
     for resp in egg_mode::user::followers_of(config.user_id, &config.token).with_page_size(5).take(5) {
         print_user(&resp.unwrap().response);
     }
-
-    println!("");
-    println!("Who have you blocked?");
-    for resp in egg_mode::user::blocks(&config.token).take(5) {
-        print_user(&resp.unwrap().response);
-    }
 }
 
 fn print_user(user: &egg_mode::user::TwitterUser) {
