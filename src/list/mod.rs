@@ -167,7 +167,7 @@ pub struct List {
     ///to create a link to the list.
     pub uri: String,
     ///UTC timestamp of when the list was created.
-    pub created_at: chrono::DateTime<chrono::UTC>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl FromJson for List {

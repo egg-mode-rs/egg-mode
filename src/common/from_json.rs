@@ -184,10 +184,10 @@ impl FromJson for mime::Mime {
     }
 }
 
-impl FromJson for chrono::DateTime<chrono::UTC> {
+impl FromJson for chrono::DateTime<chrono::Utc> {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         let str = try!(input.as_string().ok_or_else(|| InvalidResponse("expected string for DateTime", Some(input.to_string()))));
-        let date = try!((chrono::UTC).datetime_from_str(str, "%a %b %d %T %z %Y"));
+        let date = try!((chrono::Utc).datetime_from_str(str, "%a %b %d %T %z %Y"));
 
         Ok(date)
     }

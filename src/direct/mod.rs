@@ -69,7 +69,7 @@ pub struct DirectMessage {
     ///Numeric ID for this DM.
     pub id: u64,
     ///UTC timestamp from when this DM was created.
-    pub created_at: chrono::DateTime<chrono::UTC>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
     ///The text of the DM.
     pub text: String,
     ///Link, hashtag, and user mention information parsed out of the DM.

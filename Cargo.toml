@@ -15,19 +15,19 @@ travis-ci = { repository = "QuietMisdreavus/twitter-rs" }
 appveyor = { repository = "QuietMisdreavus/twitter-rs" }
 
 [dependencies]
-hyper = "0.10.0"
-hyper-native-tls = "0.2.1"
-native-tls = "0.1.1"
-url = "1.1.1"
-rand = "0.3.14"
+hyper = "0.10.9"
+hyper-native-tls = "0.2.4"
+native-tls = "0.1.4"
+url = "1.5.1"
+rand = "0.3.16"
 hmac = "0.4.2"
 sha-1 = "0.4.1"
-rustc-serialize = "0.3.19"
-mime = "0.2.1"
-chrono = "0.2.25"
-regex = "0.1.77"
-lazy_static = "0.2.1"
-unicode-normalization = "0.1.2"
+rustc-serialize = "0.3.24"
+mime = "0.3.0"
+chrono = "0.4.0"
+regex = "0.1.80"
+lazy_static = "0.2.8"
+unicode-normalization = "0.1.5"
 
 [dev-dependencies]
-yaml-rust = "0.3.4"
+yaml-rust = "0.3.5"
