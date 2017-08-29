@@ -7,11 +7,9 @@ use std::error::Error;
 use std::borrow::Cow;
 use std::time::{UNIX_EPOCH, SystemTime};
 use url::percent_encoding::{EncodeSet, utf8_percent_encode};
-use hyper;
 use hyper::client::Response as HyperResponse;
-use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer};
+use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer, Headers};
 use hyper::{Method, Request};
-use hyper_tls::HttpsConnector;
 use hyper::mime::Mime;
 use tokio_core::reactor::Handle;
 use rand::{self, Rng};
@@ -567,7 +565,7 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S)
     let mut request = Request::new(Method::Post, links::auth::REQUEST_TOKEN.parse().unwrap());
     request.headers_mut().set(Authorization(header));
 
-    make_future(request, |full_resp, _| {
+    make_future(request, |full_resp: String, _: &Headers| {
         let mut key: Option<String> = None;
         let mut secret: Option<String> = None;
 
@@ -707,15 +705,14 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
                                          request_token: &KeyPair,
                                          verifier: S)
-    -> TwitterFuture<'static, (Token<'a>, u64, String)>
+    -> TwitterFuture<'a, (Token<'a>, u64, String)>
 {
     let header = get_header(Method::Post, links::auth::ACCESS_TOKEN,
                             &con_token, Some(request_token), None, Some(verifier.into()), None);
     let mut request = Request::new(Method::Post, links::auth::ACCESS_TOKEN.parse().unwrap());
     request.headers_mut().set(Authorization(header));
 
-    //TODO: this closes over con_token!!
-    make_future(request, |full_resp, _| {
+    make_future(request, |full_resp: String, _: &Headers| {
         let mut key: Option<String> = None;
         let mut secret: Option<String> = None;
         let mut id: Option<u64> = None;
@@ -782,7 +779,7 @@ pub fn bearer_token(con_token: &KeyPair) -> TwitterFuture<'static, Token<'static
     request.headers_mut().set(ContentType(content));
     request.set_body("grant_type=client_credentials");
 
-    make_future(request, |full_resp, _| {
+    make_future(request, |full_resp: String, _: &Headers| {
         let decoded = try!(json::Json::from_str(&full_resp));
         let result = try!(decoded.find("access_token")
                                  .and_then(|s| s.as_string())
@@ -816,7 +813,7 @@ pub fn invalidate_bearer(con_token: &KeyPair, token: &Token)
     request.headers_mut().set(ContentType(content));
     request.set_body(format!("access_token={}", token));
 
-    make_future(request, |full_resp, _| {
+    make_future(request, |full_resp: String, _: &Headers| {
         let decoded = try!(json::Json::from_str(&full_resp));
         let result = try!(decoded.find("access_token")
                                  .and_then(|s| s.as_string())
