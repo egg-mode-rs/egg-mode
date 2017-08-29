@@ -71,7 +71,7 @@ pub enum Error {
     RateLimit(i32),
     ///The response from Twitter gave a response code that indicated an error. The enclosed value
     ///was the response code.
-    BadStatus(hyper::status::StatusCode),
+    BadStatus(hyper::StatusCode),
     ///The web request experienced an error. The enclosed value was returned from hyper.
     NetError(hyper::error::Error),
     ///The native TLS implementation returned an error. The enclosed value was returned from

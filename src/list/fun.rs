@@ -122,7 +122,7 @@ pub fn is_subscribed<'a, T: Into<UserID<'a>>>(user: T, list: ListID<'a>, token: 
                 //the rate limit info that would otherwise be part of the response isn't there. the
                 //rate_headers method was factored out specifically for this location, since it's
                 //still there, just accompanying an error response instead of a user.
-                Ok(Response::map(rate_headers(&resp), |_| false))
+                Ok(Response::map(rate_headers(resp.headers()), |_| false))
             }
             else {
                 Err(TwitterError(terrs))
@@ -153,7 +153,7 @@ pub fn is_member<'a, T: Into<UserID<'a>>>(user: T, list: ListID<'a>, token: &aut
                 //the rate limit info that would otherwise be part of the response isn't there. the
                 //rate_headers method was factored out specifically for this location, since it's
                 //still there, just accompanying an error response instead of a user.
-                Ok(Response::map(rate_headers(&resp), |_| false))
+                Ok(Response::map(rate_headers(resp.headers()), |_| false))
             }
             else {
                 Err(TwitterError(terrs))

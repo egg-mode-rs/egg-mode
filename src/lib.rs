@@ -127,7 +127,9 @@
 
 #[macro_use] extern crate hyper;
 #[macro_use] extern crate lazy_static;
-extern crate hyper_native_tls;
+extern crate futures;
+extern crate tokio_core;
+extern crate hyper_tls;
 extern crate native_tls;
 extern crate url;
 extern crate rand;
@@ -156,4 +158,5 @@ mod links;
 
 pub use auth::{KeyPair, Token, request_token, authorize_url, authenticate_url,
                access_token, verify_tokens, bearer_token, invalidate_bearer};
-pub use common::{Response, ResponseIter, ResponseIterRef, ResponseIterMut, WebResponse};
+pub use common::{Response, ResponseIter, ResponseIterRef,
+                 ResponseIterMut, WebResponse, TwitterFuture};

@@ -5,16 +5,25 @@
 //! Infrastructure types related to packaging rate-limit information alongside responses from
 //! Twitter.
 
-use std::{slice, vec};
+use std::{slice, vec, io, mem};
 use std::iter::FromIterator;
 use std::io::Read;
+use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
-use hyper::client::response::Response as HyperResponse;
-use hyper::status::StatusCode;
+use hyper::client::Response as HyperResponse;
+use hyper::client::FutureResponse;
+use hyper::{self, Body, StatusCode, Request};
+use hyper::header::Headers;
+use hyper_tls::HttpsConnector;
+use tokio_core::reactor::Handle;
+use futures::{Async, Future, Poll, Stream};
 use rustc_serialize::json;
 use super::{FromJson, field};
 use error::{self, TwitterErrors};
 use error::Error::*;
+
+#[deprecated(note = "you're not out of the woods yet")]
+fn magic() -> &'static Handle { unimplemented!() }
 
 header! { (XRateLimitLimit, "X-Rate-Limit-Limit") => [i32] }
 header! { (XRateLimitRemaining, "X-Rate-Limit-Remaining") => [i32] }
@@ -352,24 +361,166 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
     }
 }
 
-pub fn rate_headers(resp: &HyperResponse) -> Response<()> {
+pub struct RawFuture<'a> {
+    handle: &'a Handle,
+    request: Option<Request>,
+    response: Option<FutureResponse>,
+    resp_headers: Option<Headers>,
+    resp_status: Option<StatusCode>,
+    body_stream: Option<Body>,
+    body: Vec<u8>,
+}
+
+impl<'a> RawFuture<'a> {
+    fn headers(&self) -> &Headers {
+        self.resp_headers.as_ref().unwrap()
+    }
+}
+
+impl<'a> Future for RawFuture<'a> {
+    type Item = String;
+    type Error = error::Error;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        if let Some(req) = self.request.take() {
+            // TODO: num-cpus?
+            let connector = try!(HttpsConnector::new(1, self.handle));
+            let client = hyper::Client::configure().connector(connector).build(self.handle);
+            self.response = Some(client.request(req));
+        }
+
+        if let Some(mut resp) = self.response.take() {
+            match resp.poll() {
+                Err(e) => return Err(e.into()),
+                Ok(Async::NotReady) => {
+                    self.response = Some(resp);
+                    return Ok(Async::NotReady);
+                }
+                Ok(Async::Ready(resp)) => {
+                    self.resp_headers = Some(resp.headers().clone());
+                    self.resp_status = Some(resp.status());
+                    self.body_stream = Some(resp.body());
+                }
+            }
+        }
+
+        if let Some(mut resp) = self.body_stream.take() {
+            match resp.poll() {
+                Err(e) => return Err(e.into()),
+                Ok(Async::NotReady) => {
+                    self.body_stream = Some(resp);
+                    return Ok(Async::NotReady);
+                }
+                Ok(Async::Ready(Some(chunk))) => {
+                    self.body.extend(&*chunk);
+                    self.body_stream = Some(resp);
+                    return Ok(Async::NotReady);
+                }
+                Ok(Async::Ready(None)) => { }
+            }
+        }
+
+        match String::from_utf8(mem::replace(&mut self.body, Vec::new())) {
+            Err(_) => Err(io::Error::new(io::ErrorKind::InvalidData,
+                                         "stream did not contain valid UTF-8").into()),
+            Ok(resp) => {
+                if let Ok(err) = json::decode::<TwitterErrors>(&resp) {
+                    if err.errors.iter().any(|e| e.code == 88) &&
+                        self.headers().has::<XRateLimitReset>()
+                    {
+                        return Err(
+                            RateLimit(
+                                self.headers().get::<XRateLimitReset>().map(|h| h.0).unwrap()
+                            )
+                        );
+                    }
+                    else {
+                        return Err(TwitterError(err));
+                    }
+                }
+
+                match self.resp_status.unwrap() {
+                    StatusCode::Ok => Ok(Async::Ready(resp)),
+                    st => Err(BadStatus(st)),
+                }
+            }
+        }
+    }
+}
+
+fn make_raw_future<'a>(handle: &'a Handle, request: Request) -> RawFuture<'a> {
+    RawFuture {
+        handle: handle,
+        request: Some(request),
+        response: None,
+        resp_headers: None,
+        resp_status: None,
+        body_stream: None,
+        body: Vec::new(),
+    }
+}
+
+pub struct TwitterFuture<'a, T> {
+    request: RawFuture<'a>,
+    make_resp: fn(String, &Headers) -> Result<T, error::Error>,
+}
+
+impl<'a, T> Future for TwitterFuture<'a, T> {
+    type Item = T;
+    type Error = error::Error;
+
+     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+         let full_resp = match self.request.poll() {
+             Err(e) => return Err(e),
+             Ok(Async::NotReady) => return Ok(Async::NotReady),
+             Ok(Async::Ready(r)) => r,
+         };
+
+         Ok(Async::Ready(try!((self.make_resp)(full_resp, self.request.headers()))))
+     }
+}
+
+pub fn make_parsed_future<T: FromJson>(request: Request)
+    -> TwitterFuture<'static, Response<T>>
+{
+    make_future(request, make_response)
+}
+
+pub fn make_future<T>(request: Request,
+                      make_resp: fn(String, &Headers) -> Result<T, error::Error>)
+    -> TwitterFuture<'static, T>
+{
+    TwitterFuture {
+        request: make_raw_future(magic(), request),
+        make_resp: make_resp,
+    }
+}
+
+fn make_response<T: FromJson>(full_resp: String, headers: &Headers) -> Result<Response<T>, error::Error> {
+    let out = try!(T::from_str(&full_resp));
+
+    Ok(Response::map(rate_headers(headers), |_| out))
+}
+
+pub fn rate_headers(resp: &Headers) -> Response<()> {
     Response {
-        rate_limit: resp.headers.get::<XRateLimitLimit>().map_or(-1, |h| h.0),
-        rate_limit_remaining: resp.headers.get::<XRateLimitRemaining>().map_or(-1, |h| h.0),
-        rate_limit_reset: resp.headers.get::<XRateLimitReset>().map_or(-1, |h| h.0),
+        rate_limit: resp.get::<XRateLimitLimit>().map_or(-1, |h| h.0),
+        rate_limit_remaining: resp.get::<XRateLimitRemaining>().map_or(-1, |h| h.0),
+        rate_limit_reset: resp.get::<XRateLimitReset>().map_or(-1, |h| h.0),
         response: (),
     }
 }
 
 ///With the given response struct, parse it into a String.
+#[deprecated(note = "you're not out of the woods yet")]
 pub fn response_raw(resp: &mut HyperResponse) -> Result<String, error::Error> {
     let mut full_resp = String::new();
-    try!(resp.read_to_string(&mut full_resp));
+    //try!(resp.read_to_string(&mut full_resp));
 
     if let Ok(err) = json::decode::<TwitterErrors>(&full_resp) {
         if err.errors.iter().any(|e| e.code == 88) {
-            if resp.headers.has::<XRateLimitReset>() {
-                return Err(RateLimit(resp.headers.get::<XRateLimitReset>().map(|h| h.0).unwrap()));
+            if resp.headers().has::<XRateLimitReset>() {
+                return Err(RateLimit(resp.headers().get::<XRateLimitReset>().map(|h| h.0).unwrap()));
             }
             else {
                 return Err(TwitterError(err));
@@ -380,9 +531,9 @@ pub fn response_raw(resp: &mut HyperResponse) -> Result<String, error::Error> {
         }
     }
 
-    match resp.status {
+    match resp.status() {
         StatusCode::Ok => (),
-        _ => return Err(BadStatus(resp.status)),
+        st => return Err(BadStatus(st)),
     }
 
     Ok(full_resp)
@@ -394,5 +545,5 @@ pub fn parse_response<T: FromJson>(resp: &mut HyperResponse) -> ::common::WebRes
     let resp_str = try!(response_raw(resp));
     let out = try!(T::from_str(&resp_str));
 
-    Ok(Response::map(rate_headers(resp), |_| out))
+    Ok(Response::map(rate_headers(resp.headers()), |_| out))
 }
