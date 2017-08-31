@@ -14,6 +14,9 @@ use std::iter::Peekable;
 use user;
 use list;
 
+pub use tokio_core::reactor::Handle;
+pub use hyper::Headers;
+
 #[macro_use] mod from_json;
 mod response;
 
@@ -59,6 +62,9 @@ pub fn add_list_param<'a>(params: &mut ParamList<'a>, list: &list::ListID<'a>) {
 
 ///Type alias for responses from Twitter.
 pub type WebResponse<T> = Result<Response<T>, ::error::Error>;
+
+///Type alias for futures that resolve to responses from Twitter.
+pub type FutureResponse<'a, T> = TwitterFuture<'a, Response<T>>;
 
 pub fn codepoints_to_bytes(&mut (ref mut start, ref mut end): &mut (usize, usize), text: &str) {
     for (ch_offset, (by_offset, _)) in text.char_indices().enumerate() {

@@ -20,9 +20,6 @@ use super::{FromJson, field};
 use error::{self, TwitterErrors};
 use error::Error::*;
 
-#[deprecated(note = "you're not out of the woods yet")]
-fn magic<'a>() -> &'a Handle { unimplemented!() }
-
 header! { (XRateLimitLimit, "X-Rate-Limit-Limit") => [i32] }
 header! { (XRateLimitRemaining, "X-Rate-Limit-Remaining") => [i32] }
 header! { (XRateLimitReset, "X-Rate-Limit-Reset") => [i32] }
@@ -516,28 +513,31 @@ impl<'a, T> Future for TwitterFuture<'a, T> {
 
 /// Create a `TwitterFuture` that processes the response through the given function before
 /// returning.
-pub fn make_future<'a, T, F>(request: Request, make_resp: F) -> TwitterFuture<'a, T>
+pub fn make_future<'a, T, F>(handle: &'a Handle, request: Request, make_resp: F)
+    -> TwitterFuture<'a, T>
     where F: MakeResponse<T> + 'a
 {
     TwitterFuture {
-        request: make_raw_future(magic(), request),
+        request: make_raw_future(handle, request),
         make_resp: Some(Box::new(make_resp)),
     }
 }
 
 /// Shortcut `MakeResponse` method that attempts to parse the given type from the response and
 /// loads rate-limit information from the response headers.
-fn make_response<T: FromJson>(full_resp: String, headers: &Headers) -> Result<Response<T>, error::Error> {
+pub fn make_response<T: FromJson>(full_resp: String, headers: &Headers)
+    -> Result<Response<T>, error::Error>
+{
     let out = try!(T::from_str(&full_resp));
 
     Ok(Response::map(rate_headers(headers), |_| out))
 }
 
 /// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
-pub fn make_parsed_future<T: FromJson + 'static>(request: Request)
-    -> TwitterFuture<'static, Response<T>>
+pub fn make_parsed_future<'a, T: FromJson + 'a>(handle: &'a Handle, request: Request)
+    -> TwitterFuture<'a, Response<T>>
 {
-    make_future(request, make_response)
+    make_future(handle, request, make_response)
 }
 
 pub fn rate_headers(resp: &Headers) -> Response<()> {

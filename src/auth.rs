@@ -443,7 +443,7 @@ fn bearer_request(con_token: &KeyPair) -> Basic {
 
 pub fn get(uri: &str,
            token: &Token,
-           params: Option<&ParamList>) -> Result<HyperResponse, error::Error> {
+           params: Option<&ParamList>) -> Request {
     let full_url = if let Some(p) = params {
         let query = p.iter()
                      .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
@@ -469,14 +469,12 @@ pub fn get(uri: &str,
         },
     }
 
-    unimplemented!()
-
-    //make_parsed_future(request)
+    request
 }
 
 pub fn post(uri: &str,
             token: &Token,
-            params: Option<&ParamList>) -> Result<HyperResponse, error::Error> {
+            params: Option<&ParamList>) -> Request {
     let content: Mime = "application/x-www-form-urlencoded".parse().unwrap();
     let body = if let Some(p) = params {
         p.iter()
@@ -505,9 +503,7 @@ pub fn post(uri: &str,
         },
     }
 
-    unimplemented!()
-
-    //make_parsed_future(request)
+    request
 }
 
 /// With the given consumer KeyPair, ask Twitter for a request KeyPair that can be used to request
@@ -556,8 +552,8 @@ pub fn post(uri: &str,
 /// // for Sign In With Twitter/3-Legged Auth
 /// let req_token = egg_mode::request_token(&con_token, "https://myapp.io/auth").unwrap();
 /// ```
-pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S)
-    -> TwitterFuture<'static, KeyPair<'static>>
+pub fn request_token<'a, S: Into<String>>(con_token: &KeyPair, callback: S, handle: &'a Handle)
+    -> TwitterFuture<'a, KeyPair<'static>>
 {
     let header = get_header(Method::Post, links::auth::REQUEST_TOKEN,
                             con_token, None, Some(callback.into()), None, None);
@@ -565,7 +561,7 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S)
     let mut request = Request::new(Method::Post, links::auth::REQUEST_TOKEN.parse().unwrap());
     request.headers_mut().set(Authorization(header));
 
-    make_future(request, |full_resp: String, _: &Headers| {
+    make_future(handle, request, |full_resp: String, _: &Headers| {
         let mut key: Option<String> = None;
         let mut secret: Option<String> = None;
 
@@ -704,7 +700,8 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 /// of the authenticated user.
 pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
                                          request_token: &KeyPair,
-                                         verifier: S)
+                                         verifier: S,
+                                         handle: &'a Handle)
     -> TwitterFuture<'a, (Token<'a>, u64, String)>
 {
     let header = get_header(Method::Post, links::auth::ACCESS_TOKEN,
@@ -712,7 +709,7 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
     let mut request = Request::new(Method::Post, links::auth::ACCESS_TOKEN.parse().unwrap());
     request.headers_mut().set(Authorization(header));
 
-    make_future(request, |full_resp: String, _: &Headers| {
+    make_future(handle, request, |full_resp: String, _: &Headers| {
         let mut key: Option<String> = None;
         let mut secret: Option<String> = None;
         let mut id: Option<u64> = None;
@@ -770,7 +767,9 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
 /// For more information, see the Twitter documentation on [Application-only authentication][auth].
 ///
 /// [auth]: https://dev.twitter.com/oauth/application-only
-pub fn bearer_token(con_token: &KeyPair) -> TwitterFuture<'static, Token<'static>> {
+pub fn bearer_token<'a>(con_token: &KeyPair, handle: &'a Handle)
+    -> TwitterFuture<'a, Token<'static>>
+{
     let content: Mime = "application/x-www-form-urlencoded;charset=UTF-8".parse().unwrap();
 
     let auth_header = bearer_request(con_token);
@@ -779,7 +778,7 @@ pub fn bearer_token(con_token: &KeyPair) -> TwitterFuture<'static, Token<'static
     request.headers_mut().set(ContentType(content));
     request.set_body("grant_type=client_credentials");
 
-    make_future(request, |full_resp: String, _: &Headers| {
+    make_future(handle, request, |full_resp: String, _: &Headers| {
         let decoded = try!(json::Json::from_str(&full_resp));
         let result = try!(decoded.find("access_token")
                                  .and_then(|s| s.as_string())
@@ -795,8 +794,8 @@ pub fn bearer_token(con_token: &KeyPair) -> TwitterFuture<'static, Token<'static
 ///# Panics
 ///
 ///If this function is handed a `Token` that is not a Bearer token, this function will panic.
-pub fn invalidate_bearer(con_token: &KeyPair, token: &Token)
-    -> TwitterFuture<'static, Token<'static>>
+pub fn invalidate_bearer<'a>(handle: &'a Handle, con_token: &KeyPair, token: &Token)
+    -> TwitterFuture<'a, Token<'static>>
 {
     let token = if let Token::Bearer(ref token) = *token {
         token
@@ -813,7 +812,7 @@ pub fn invalidate_bearer(con_token: &KeyPair, token: &Token)
     request.headers_mut().set(ContentType(content));
     request.set_body(format!("access_token={}", token));
 
-    make_future(request, |full_resp: String, _: &Headers| {
+    make_future(handle, request, |full_resp: String, _: &Headers| {
         let decoded = try!(json::Json::from_str(&full_resp));
         let result = try!(decoded.find("access_token")
                                  .and_then(|s| s.as_string())
@@ -828,12 +827,12 @@ pub fn invalidate_bearer(con_token: &KeyPair, token: &Token)
 ///If you have cached access tokens, using this method is a convenient way to make sure they're
 ///still valid. If the user has revoked access from your app, this function will return an error
 ///from Twitter indicating that you don't have access to the user.
-pub fn verify_tokens(token: &Token)
-    -> WebResponse<::user::TwitterUser>
+pub fn verify_tokens<'a>(token: &Token, handle: &'a Handle)
+    -> FutureResponse<'a, ::user::TwitterUser>
 {
-    let mut resp = try!(get(links::auth::VERIFY_CREDENTIALS, token, None));
+    let req = get(links::auth::VERIFY_CREDENTIALS, token, None);
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 #[cfg(test)]
