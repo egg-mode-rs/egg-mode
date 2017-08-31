@@ -11,9 +11,8 @@
     represents the in-progress request
   - In the refactor, `invalidate_bearer` was changed to panic on receiving non-Bearer tokens, rather
     than short-circuiting an error.
-  - In the refactor, the methods on `direct::ConversationTimeline` were changed to stop returning
-    the complete conversation set. The conversation set can still be viewed from the
-    `ConversationTimeline` after it is finished loading.
+  - In the refactor, the methods on `direct::ConversationTimeline` were changed to consume the
+    Timeline and return it at the end of a successful load.
 - Several dependencies have been updated
   - Notably, the type for all the timestamps was renamed, since chrono changed it from `UTC` to
     `Utc`

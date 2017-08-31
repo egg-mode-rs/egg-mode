@@ -549,7 +549,7 @@ impl<'a> ConversationTimeline<'a> {
     ///Load messages newer than the currently-loaded set, or the newset set if no messages have
     ///been loaded yet. The complete conversation set can be viewed from the `ConversationTimeline`
     ///after it is finished loading.
-    pub fn newest(&'a mut self) -> ConversationFuture<'a> {
+    pub fn newest(self) -> ConversationFuture<'a> {
         self.sent.reset();
         self.received.reset();
         let sent = self.sent.older(self.last_sent);
@@ -561,7 +561,7 @@ impl<'a> ConversationTimeline<'a> {
     ///Load messages older than the currently-loaded set, or the newest set if no messages have
     ///been loaded. The complete conversation set can be viewed from the `ConversationTimeline`
     ///after it is finished loading.
-    pub fn next(&'a mut self) -> ConversationFuture<'a> {
+    pub fn next(self) -> ConversationFuture<'a> {
         self.sent.reset();
         self.received.reset();
         let sent = self.sent.newer(self.last_sent);
@@ -570,11 +570,11 @@ impl<'a> ConversationTimeline<'a> {
         self.make_future(sent, received)
     }
 
-    fn make_future(&'a mut self, sent: DMFuture<'a>, received: DMFuture<'a>)
+    fn make_future(self, sent: DMFuture<'a>, received: DMFuture<'a>)
         -> ConversationFuture<'a>
     {
         ConversationFuture {
-            loader: self,
+            loader: Some(self),
             future: sent.join(received),
         }
     }
@@ -586,12 +586,12 @@ impl<'a> ConversationTimeline<'a> {
 ///
 /// [ConversationTimeline]: struct.ConversationTimeline.html
 pub struct ConversationFuture<'a> {
-    loader: &'a mut ConversationTimeline<'a>,
+    loader: Option<ConversationTimeline<'a>>,
     future: Join<DMFuture<'a>, DMFuture<'a>>,
 }
 
 impl<'a> Future for ConversationFuture<'a> {
-    type Item = ();
+    type Item = ConversationTimeline<'a>;
     type Error = error::Error;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
@@ -601,8 +601,13 @@ impl<'a> Future for ConversationFuture<'a> {
             Err(e) => return Err(e),
         };
 
-        self.loader.merge(sent.response, received.response);
+        if let Some(mut tl) = self.loader.take() {
+            tl.merge(sent.response, received.response);
 
-        Ok(Async::Ready(()))
+            Ok(Async::Ready(tl))
+        } else {
+            Err(io::Error::new(io::ErrorKind::Other,
+                               "ConverstaionFuture has already been loaded").into())
+        }
     }
 }
