@@ -45,10 +45,13 @@
 use common::*;
 
 use std::collections::HashMap;
-use std::mem;
+use std::{io, mem};
 
 use rustc_serialize::json;
 use chrono;
+use hyper::client::Request;
+use futures::{Async, Future, Poll};
+use futures::future::Join;
 
 use auth;
 use user;
@@ -59,6 +62,8 @@ use error::Error::InvalidResponse;
 mod fun;
 
 pub use self::fun::*;
+
+type DMFuture<'a> = TwitterFuture<'a, Response<Vec<DirectMessage>>>;
 
 ///Represents a single direct message.
 ///
@@ -270,6 +275,8 @@ pub struct Timeline<'a> {
     link: &'static str,
     ///The token used to authenticate requests with.
     token: &'a auth::Token<'a>,
+    ///A Handle that represents the event loop to run requests on.
+    handle: &'a Handle,
     ///Optional set of params to include prior to adding lifetime navigation parameters.
     params_base: Option<ParamList<'a>>,
     ///The maximum number of messages to return in a single call. Twitter doesn't guarantee
@@ -290,7 +297,7 @@ impl<'a> Timeline<'a> {
     }
 
     ///Clear the saved IDs on this timeline, and return the most recent set of messages.
-    pub fn start(&mut self) -> WebResponse<Vec<DirectMessage>> {
+    pub fn start<'s>(&'s mut self) -> FutureResponse<'s, Vec<DirectMessage>> {
         self.reset();
 
         self.older(None)
@@ -298,22 +305,34 @@ impl<'a> Timeline<'a> {
 
     ///Return the set of DMs older than the last set pulled, optionally placing a minimum DM ID to
     ///bound with.
-    pub fn older(&mut self, since_id: Option<u64>) -> WebResponse<Vec<DirectMessage>> {
-        let resp = try!(self.call(since_id, self.min_id.map(|id| id - 1)));
+    pub fn older<'s>(&'s mut self, since_id: Option<u64>)
+        -> FutureResponse<'s, Vec<DirectMessage>>
+    {
+        let req = self.request(since_id, self.min_id.map(|id| id - 1));
 
-        self.map_ids(&resp.response);
+        make_future(self.handle, req, |full_resp: String, headers: &Headers| {
+            let resp: Response<Vec<DirectMessage>> = try!(make_response(full_resp, headers));
 
-        Ok(resp)
+            self.map_ids(&resp.response);
+
+            Ok(resp)
+        })
     }
 
     ///Return the set of DMs newer than the last set pulled, optionally placing a maximum DM ID to
     ///bound with.
-    pub fn newer(&mut self, max_id: Option<u64>) -> WebResponse<Vec<DirectMessage>> {
-        let resp = try!(self.call(self.max_id, max_id));
+    pub fn newer<'s>(&'s mut self, max_id: Option<u64>)
+        -> FutureResponse<'s, Vec<DirectMessage>>
+    {
+        let req = self.request(self.max_id, max_id);
 
-        self.map_ids(&resp.response);
+        make_future(self.handle, req, |full_resp: String, headers: &Headers| {
+            let resp: Response<Vec<DirectMessage>> = try!(make_response(full_resp, headers));
 
-        Ok(resp)
+            self.map_ids(&resp.response);
+
+            Ok(resp)
+        })
     }
 
     ///Return the set of DMs between the IDs given.
@@ -323,7 +342,22 @@ impl<'a> Timeline<'a> {
     ///
     ///If the range of DMs given by the IDs would return more than `self.count`, the newest set
     ///of messages will be returned.
-    pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>) -> WebResponse<Vec<DirectMessage>> {
+    pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>)
+        -> FutureResponse<'a, Vec<DirectMessage>>
+    {
+        make_parsed_future(self.handle, self.request(since_id, max_id))
+    }
+
+    ///Helper builder function to set the page size.
+    pub fn with_page_size(self, page_size: i32) -> Self {
+        Timeline {
+            count: page_size,
+            ..self
+        }
+    }
+
+    ///Helper function to construct a `Request` from the current state.
+    fn request(&self, since_id: Option<u64>, max_id: Option<u64>) -> Request {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
         add_param(&mut params, "count", self.count.to_string());
 
@@ -335,17 +369,7 @@ impl<'a> Timeline<'a> {
             add_param(&mut params, "max_id", id.to_string());
         }
 
-        let mut resp = try!(auth::get(self.link, self.token, Some(&params)));
-
-        parse_response(&mut resp)
-    }
-
-    ///Helper builder function to set the page size.
-    pub fn with_page_size(self, page_size: i32) -> Self {
-        Timeline {
-            count: page_size,
-            ..self
-        }
+        auth::get(self.link, self.token, Some(&params))
     }
 
     ///With the returned slice of DMs, set the min_id and max_id on self.
@@ -355,10 +379,16 @@ impl<'a> Timeline<'a> {
     }
 
     ///Create an instance of `Timeline` with the given link and tokens.
-    fn new(link: &'static str, params_base: Option<ParamList<'a>>, token: &'a auth::Token) -> Self {
+    fn new(link: &'static str,
+           params_base: Option<ParamList<'a>>,
+           token: &'a auth::Token,
+           handle: &'a Handle)
+        -> Self
+    {
         Timeline {
             link: link,
             token: token,
+            handle: handle,
             params_base: params_base,
             count: 20,
             max_id: None,
@@ -463,10 +493,10 @@ pub struct ConversationTimeline<'a> {
 }
 
 impl<'a> ConversationTimeline<'a> {
-    fn new(token: &'a auth::Token) -> ConversationTimeline<'a> {
+    fn new(token: &'a auth::Token, handle: &'a Handle) -> ConversationTimeline<'a> {
         ConversationTimeline {
-            sent: sent(token),
-            received: received(token),
+            sent: sent(token, handle),
+            received: received(token, handle),
             last_sent: None,
             last_received: None,
             first_sent: None,
@@ -504,6 +534,10 @@ impl<'a> ConversationTimeline<'a> {
         }
     }
 
+    fn conversations(&self) -> &DMConversations {
+        &self.conversations
+    }
+
     ///Builder function to set the number of messages pulled in a single request.
     pub fn with_page_size(self, page_size: u32) -> ConversationTimeline<'a> {
         ConversationTimeline {
@@ -513,28 +547,62 @@ impl<'a> ConversationTimeline<'a> {
     }
 
     ///Load messages newer than the currently-loaded set, or the newset set if no messages have
-    ///been loaded yet. Returns the complete conversation set after loading.
-    pub fn newest(&mut self) -> Result<&DMConversations, error::Error> {
+    ///been loaded yet. The complete conversation set can be viewed from the `ConversationTimeline`
+    ///after it is finished loading.
+    pub fn newest(&'a mut self) -> ConversationFuture<'a> {
         self.sent.reset();
         self.received.reset();
-        let sent = try!(self.sent.older(self.last_sent));
-        let received = try!(self.received.older(self.last_received));
+        let sent = self.sent.older(self.last_sent);
+        let received = self.received.older(self.last_received);
 
-        self.merge(sent.response, received.response);
-
-        Ok(&self.conversations)
+        self.make_future(sent, received)
     }
 
     ///Load messages older than the currently-loaded set, or the newest set if no messages have
-    ///been loaded. Returns the complete conversation set after loading.
-    pub fn next(&mut self) -> Result<&DMConversations, error::Error> {
+    ///been loaded. The complete conversation set can be viewed from the `ConversationTimeline`
+    ///after it is finished loading.
+    pub fn next(&'a mut self) -> ConversationFuture<'a> {
         self.sent.reset();
         self.received.reset();
-        let sent = try!(self.sent.newer(self.last_sent));
-        let received = try!(self.received.newer(self.last_received));
+        let sent = self.sent.newer(self.last_sent);
+        let received = self.received.newer(self.last_received);
 
-        self.merge(sent.response, received.response);
+        self.make_future(sent, received)
+    }
 
-        Ok(&self.conversations)
+    fn make_future(&'a mut self, sent: DMFuture<'a>, received: DMFuture<'a>)
+        -> ConversationFuture<'a>
+    {
+        ConversationFuture {
+            loader: self,
+            future: sent.join(received),
+        }
+    }
+}
+
+/// A `Future` that represents loading a Direct Message conversation.
+///
+/// See [ConversationTimeline] for details.
+///
+/// [ConversationTimeline]: struct.ConversationTimeline.html
+pub struct ConversationFuture<'a> {
+    loader: &'a mut ConversationTimeline<'a>,
+    future: Join<DMFuture<'a>, DMFuture<'a>>,
+}
+
+impl<'a> Future for ConversationFuture<'a> {
+    type Item = ();
+    type Error = error::Error;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        let (sent, received) = match self.future.poll() {
+            Ok(Async::Ready(res)) => res,
+            Ok(Async::NotReady) => return Ok(Async::NotReady),
+            Err(e) => return Err(e),
+        };
+
+        self.loader.merge(sent.response, received.response);
+
+        Ok(Async::Ready(()))
     }
 }

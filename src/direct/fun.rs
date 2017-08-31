@@ -12,25 +12,25 @@ use user::UserID;
 use super::*;
 
 ///Lookup a single DM by its numeric ID.
-pub fn show(id: u64, token: &auth::Token)
-    -> WebResponse<DirectMessage>
+pub fn show<'a>(id: u64, token: &auth::Token, handle: &'a Handle)
+    -> FutureResponse<'a, DirectMessage>
 {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
 
-    let mut resp = try!(auth::get(links::direct::SHOW, token, Some(&params)));
+    let req = auth::get(links::direct::SHOW, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Create a `Timeline` struct to navigate the direct messages received by the authenticated user.
-pub fn received<'a>(token: &'a auth::Token) -> Timeline<'a> {
-    Timeline::new(links::direct::RECEIVED, None, token)
+pub fn received<'a>(token: &'a auth::Token, handle: &'a Handle) -> Timeline<'a> {
+    Timeline::new(links::direct::RECEIVED, None, token, handle)
 }
 
 ///Create a `Timeline` struct to navigate the direct messages sent by the authenticated user.
-pub fn sent<'a>(token: &'a auth::Token) -> Timeline<'a> {
-    Timeline::new(links::direct::SENT, None, token)
+pub fn sent<'a>(token: &'a auth::Token, handle: &'a Handle) -> Timeline<'a> {
+    Timeline::new(links::direct::SENT, None, token, handle)
 }
 
 ///Send a new direct message to the given user.
@@ -42,17 +42,17 @@ pub fn sent<'a>(token: &'a auth::Token) -> Timeline<'a> {
 ///DM beforehand.
 ///
 ///Upon successfully sending the DM, the message will be returned.
-pub fn send<'a, T: Into<UserID<'a>>>(to: T, text: &str, token: &auth::Token)
-    -> WebResponse<DirectMessage>
+pub fn send<'a, 'id, T: Into<UserID<'id>>>(to: T, text: &str, token: &auth::Token, handle: &'a Handle)
+    -> FutureResponse<'a, DirectMessage>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &to.into());
 
     add_param(&mut params, "text", text);
 
-    let mut resp = try!(auth::post(links::direct::SEND, token, Some(&params)));
+    let req = auth::post(links::direct::SEND, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Delete the direct message with the given ID.
@@ -60,15 +60,15 @@ pub fn send<'a, T: Into<UserID<'a>>>(to: T, text: &str, token: &auth::Token)
 ///The authenticated user must be the sender of this DM for this call to be successful.
 ///
 ///On a successful deletion, returns the freshly-deleted message.
-pub fn delete(id: u64, token: &auth::Token)
-    -> WebResponse<DirectMessage>
+pub fn delete<'a>(id: u64, token: &auth::Token, handle: &'a Handle)
+    -> FutureResponse<'a, DirectMessage>
 {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
 
-    let mut resp = try!(auth::post(links::direct::DELETE, token, Some(&params)));
+    let req = auth::post(links::direct::DELETE, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Create a `ConversationTimeline` loader that can load direct messages as a collection of
@@ -78,6 +78,6 @@ pub fn delete(id: u64, token: &auth::Token)
 ///[`ConversationTimeline`] for details.
 ///
 ///[`ConversationTimeline`]: struct.ConversationTimeline.html
-pub fn conversations<'a>(token: &'a auth::Token) -> ConversationTimeline<'a> {
-    ConversationTimeline::new(token)
+pub fn conversations<'a>(token: &'a auth::Token, handle: &'a Handle) -> ConversationTimeline<'a> {
+    ConversationTimeline::new(token, handle)
 }
