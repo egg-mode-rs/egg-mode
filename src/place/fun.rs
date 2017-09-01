@@ -3,6 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::collections::HashMap;
+use std::io;
+
+use futures::{Future, Async, Poll};
 
 use auth;
 use error;
@@ -26,12 +29,12 @@ use super::PlaceQuery;
 ///
 ///assert!(result.full_name == "Dallas, TX");
 ///```
-pub fn show(id: &str, token: &auth::Token) -> WebResponse<Place> {
+pub fn show<'a>(id: &str, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Place> {
     let url = format!("{}/{}.json", links::place::SHOW_STEM, id);
 
-    let mut resp = try!(auth::get(&url, token, None));
+    let req = auth::get(&url, token, None);
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Begins building a reverse-geocode search with the given coordinate.
@@ -93,14 +96,11 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `reverse_geocode` query URL.
-pub fn reverse_geocode_url(url: &str, token: &auth::Token)
-    -> WebResponse<SearchResult>
+pub fn reverse_geocode_url<'a>(url: &'a str, token: &'a auth::Token, handle: &'a Handle)
+    -> CachedSearchFuture<'a>
 {
-    let params = try!(parse_url(links::place::REVERSE_GEOCODE, url));
-
-    let mut resp = try!(auth::get(links::place::REVERSE_GEOCODE, token, Some(&params)));
-
-    parse_response(&mut resp)
+    let params = parse_url(links::place::REVERSE_GEOCODE, url);
+    CachedSearchFuture::new(links::place::REVERSE_GEOCODE, token, handle, params)
 }
 
 ///Begins building a location search via latitude/longitude.
@@ -156,12 +156,76 @@ pub fn search_ip<'a>(query: &'a str) -> SearchBuilder<'a> {
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `search` query URL.
-pub fn search_url(url: &str, token: &auth::Token)
-    -> WebResponse<SearchResult>
+pub fn search_url<'a>(url: &'a str, token: &'a auth::Token, handle: &'a Handle)
+    -> CachedSearchFuture<'a>
 {
-    let params = try!(parse_url(links::place::SEARCH, url));
+    let params = parse_url(links::place::SEARCH, url);
+    CachedSearchFuture::new(links::place::SEARCH, token, handle, params)
+}
 
-    let mut resp = try!(auth::get(links::place::SEARCH, token, Some(&params)));
+/// A `TwitterFuture` that needs to parse a provided URL before making a request.
+///
+/// This is a special case of [`TwitterFuture`] returned by [`reverse_geocode_url`] and
+/// [`search_url`] so it can parse the cached search URL and return an error before making a web
+/// request. See the docs for `TwitterFuture` for details.
+///
+/// [`TwitterFuture`]: ../struct.TwitterFuture.html
+/// [`reverse_geocode_url`]: fn.reverse_geocode_url.html
+/// [`search_url`]: fn search_url.html
+pub struct CachedSearchFuture<'a> {
+    stem: &'static str,
+    params: Option<Result<ParamList<'a>, error::Error>>,
+    token: &'a auth::Token<'a>,
+    handle: &'a Handle,
+    future: Option<FutureResponse<'a, SearchResult>>,
+}
 
-    parse_response(&mut resp)
+impl<'a> CachedSearchFuture<'a> {
+    fn new(stem: &'static str,
+           token: &'a auth::Token,
+           handle: &'a Handle,
+           params: Result<ParamList<'a>, error::Error>)
+        -> CachedSearchFuture<'a>
+    {
+        CachedSearchFuture {
+            stem: stem,
+            params: Some(params),
+            token: token,
+            handle: handle,
+            future: None,
+        }
+    }
+}
+
+impl<'a> Future for CachedSearchFuture<'a> {
+    type Item = Response<SearchResult>;
+    type Error = error::Error;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        match self.params.take() {
+            Some(Ok(params)) => {
+                let req = auth::get(self.stem, self.token, Some(&params));
+
+                self.future = Some(make_parsed_future(self.handle, req));
+            }
+            Some(Err(e)) => {
+                return Err(e);
+            }
+            None => { }
+        }
+
+        if let Some(mut fut) = self.future.take() {
+            match fut.poll() {
+                Ok(Async::NotReady) => {
+                    self.future = Some(fut);
+                    Ok(Async::NotReady)
+                }
+                Ok(Async::Ready(res)) => Ok(Async::Ready(res)),
+                Err(e) => Err(e),
+            }
+        } else {
+            Err(io::Error::new(io::ErrorKind::Other,
+                               "CachedSearchFuture has already been completed").into())
+        }
+    }
 }
