@@ -9,6 +9,7 @@
     represent which event loop to run the requests on
   - All functions that need to contact the network now return a new type `TwitterFuture`, which
     represents the in-progress request
+  - All the iterator wrappers are now Streams
   - In the refactor, `invalidate_bearer` was changed to panic on receiving non-Bearer tokens, rather
     than short-circuiting an error.
   - In the refactor, the methods on `direct::ConversationTimeline` were changed to consume the

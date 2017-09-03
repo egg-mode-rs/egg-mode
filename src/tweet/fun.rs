@@ -57,12 +57,12 @@ pub fn retweets_of<'a>(id: u64, count: u32, token: &auth::Token, handle: &'a Han
 ///set the page size. Calling `with_page_size` on the iterator returned by this function will not
 ///change the page size used by the network call. Setting `page_size` manually may result in an
 ///error from Twitter.
-pub fn retweeters_of<'a>(id: u64, token: &'a auth::Token)
+pub fn retweeters_of<'a>(id: u64, token: &'a auth::Token, handle: &'a Handle)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
-    cursor::CursorIter::new(links::statuses::RETWEETERS_OF, token, Some(params), None)
+    cursor::CursorIter::new(links::statuses::RETWEETERS_OF, token, handle, Some(params), None)
 }
 
 ///Lookup tweet information for the given list of tweet IDs.

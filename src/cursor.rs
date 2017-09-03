@@ -9,8 +9,7 @@
 //! this module. The rest of it is available to make sure consumers of the API can understand
 //! precisely what types come out of functions that return `CursorIter`.
 
-use std::marker::PhantomData;
-
+use futures::{Future, Stream, Poll, Async};
 use rustc_serialize::json;
 use common::*;
 use auth;
@@ -258,10 +257,11 @@ impl Cursor for ListCursor {
 ///```
 #[must_use = "cursor iterators are lazy and do nothing unless consumed"]
 pub struct CursorIter<'a, T>
-    where T: Cursor + FromJson
+    where T: Cursor + FromJson + 'a
 {
     link: &'static str,
     token: &'a auth::Token<'a>,
+    handle: &'a Handle,
     params_base: Option<ParamList<'a>>,
     ///The number of results returned in one network call.
     ///
@@ -282,12 +282,12 @@ pub struct CursorIter<'a, T>
     ///implementation. It is made available for those who wish to manually manage network calls and
     ///pagination.
     pub next_cursor: i64,
+    loader: Option<FutureResponse<'a, T>>,
     iter: Option<ResponseIter<T::Item>>,
-    _marker: PhantomData<T>,
 }
 
 impl<'a, T> CursorIter<'a, T>
-    where T: Cursor + FromJson
+    where T: Cursor + FromJson + 'a
 {
     ///Sets the number of results returned in a single network call.
     ///
@@ -303,6 +303,7 @@ impl<'a, T> CursorIter<'a, T>
                 page_size: Some(page_size),
                 previous_cursor: -1,
                 next_cursor: -1,
+                loader: None,
                 iter: None,
                 ..self
             }
@@ -316,7 +317,7 @@ impl<'a, T> CursorIter<'a, T>
     ///
     ///This is intended to be used as part of this struct's Iterator implementation. It is provided
     ///as a convenience for those who wish to manage network calls and pagination manually.
-    pub fn call(&self) -> WebResponse<T> {
+    pub fn call(&self) -> FutureResponse<'a, T> {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
 
         add_param(&mut params, "cursor", self.next_cursor.to_string());
@@ -324,9 +325,9 @@ impl<'a, T> CursorIter<'a, T>
             add_param(&mut params, "count", count.to_string());
         }
 
-        let mut resp = try!(auth::get(self.link, self.token, Some(&params)));
+        let req = auth::get(self.link, self.token, Some(&params));
 
-        parse_response(&mut resp)
+        make_parsed_future(self.handle, req)
     }
 
     ///Creates a new instance of CursorIter, with the given parameters and empty initial results.
@@ -334,53 +335,64 @@ impl<'a, T> CursorIter<'a, T>
     ///This is essentially an internal infrastructure function, not meant to be used from consumer
     ///code.
     #[doc(hidden)]
-    pub fn new(link: &'static str, token: &'a auth::Token,
+    pub fn new(link: &'static str, token: &'a auth::Token, handle: &'a Handle,
                params_base: Option<ParamList<'a>>, page_size: Option<i32>) -> CursorIter<'a, T> {
         CursorIter {
             link: link,
             token: token,
+            handle: handle,
             params_base: params_base,
             page_size: page_size,
             previous_cursor: -1,
             next_cursor: -1,
+            loader: None,
             iter: None,
-            _marker: PhantomData,
         }
     }
 }
 
-impl<'a, T> Iterator for CursorIter<'a, T>
-    where T: Cursor + FromJson
+impl<'a, T> Stream for CursorIter<'a, T>
+    where T: Cursor + FromJson + 'a
 {
-    type Item = WebResponse<T::Item>;
+    type Item = Response<T::Item>;
+    type Error = error::Error;
 
-    fn next(&mut self) -> Option<Self::Item> {
+    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+        if let Some(mut fut) = self.loader.take() {
+            match fut.poll() {
+                Ok(Async::NotReady) => {
+                    self.loader = Some(fut);
+                    return Ok(Async::NotReady);
+                }
+                Ok(Async::Ready(resp)) => {
+                    self.previous_cursor = resp.previous_cursor_id();
+                    self.next_cursor = resp.next_cursor_id();
+
+                    let resp = Response::map(resp, |r| r.into_inner());
+
+                    let mut iter = resp.into_iter();
+                    let first = iter.next();
+                    self.iter = Some(iter);
+
+                    match first {
+                        Some(item) => return Ok(Async::Ready(Some(item))),
+                        None => return Ok(Async::Ready(None)),
+                    }
+                }
+                Err(e) => return Err(e),
+            }
+        }
+
         if let Some(ref mut results) = self.iter {
             if let Some(item) = results.next() {
-                return Some(Ok(item));
+                return Ok(Async::Ready(Some(item)));
             }
             else if self.next_cursor == 0 {
-                return None;
+                return Ok(Async::Ready(None));
             }
         }
 
-        match self.call() {
-            Ok(resp) => {
-                self.previous_cursor = resp.previous_cursor_id();
-                self.next_cursor = resp.next_cursor_id();
-
-                let resp = Response::map(resp, |r| r.into_inner());
-
-                let mut iter = resp.into_iter();
-                let first = iter.next();
-                self.iter = Some(iter);
-
-                match first {
-                    Some(item) => Some(Ok(item)),
-                    None => None,
-                }
-            },
-            Err(err) => Some(Err(err)),
-        }
+        self.loader = Some(self.call());
+        self.poll()
     }
 }

@@ -18,10 +18,12 @@ use tweet;
 ///
 ///This function returns an iterator over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &'a Handle)
+    -> CursorIter<'a, ListCursor>
+{
     let mut params = HashMap::new();
     add_name_param(&mut params, &user.into());
-    CursorIter::new(links::lists::MEMBERSHIPS, token, Some(params), Some(20))
+    CursorIter::new(links::lists::MEMBERSHIPS, token, handle, Some(params), Some(20))
 }
 
 ///Return up to 100 lists the given user is subscribed to, including those the user made
@@ -54,20 +56,24 @@ pub fn list<'a, 'id, T: Into<UserID<'id>>>(user: T,
 ///
 ///This function returns an iterator over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &'a Handle)
+    -> CursorIter<'a, ListCursor>
+{
     let mut params = HashMap::new();
     add_name_param(&mut params, &user.into());
-    CursorIter::new(links::lists::SUBSCRIPTIONS, token, Some(params), Some(20))
+    CursorIter::new(links::lists::SUBSCRIPTIONS, token, handle, Some(params), Some(20))
 }
 
 ///Look up the lists created by the given user.
 ///
 ///This function returns an iterator over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn ownerships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+pub fn ownerships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &'a Handle)
+    -> CursorIter<'a, ListCursor>
+{
     let mut params = HashMap::new();
     add_name_param(&mut params, &user.into());
-    CursorIter::new(links::lists::OWNERSHIPS, token, Some(params), Some(20))
+    CursorIter::new(links::lists::OWNERSHIPS, token, handle, Some(params), Some(20))
 }
 
 ///Look up information for a single list.
@@ -85,24 +91,28 @@ pub fn show<'a>(list: ListID, token: &auth::Token, handle: &'a Handle) -> Future
 ///
 ///This function returns an iterator over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
-pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
+pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &'a Handle)
+    -> CursorIter<'a, UserCursor>
+{
     let mut params = HashMap::new();
 
     add_list_param(&mut params, &list);
 
-    CursorIter::new(links::lists::MEMBERS, token, Some(params), Some(20))
+    CursorIter::new(links::lists::MEMBERS, token, handle, Some(params), Some(20))
 }
 
 ///Look up the users that have subscribed to the given list.
 ///
 ///This function returns an iterator over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
-pub fn subscribers<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
+pub fn subscribers<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &'a Handle)
+    -> CursorIter<'a, UserCursor>
+{
     let mut params = HashMap::new();
 
     add_list_param(&mut params, &list);
 
-    CursorIter::new(links::lists::SUBSCRIBERS, token, Some(params), Some(20))
+    CursorIter::new(links::lists::SUBSCRIBERS, token, handle, Some(params), Some(20))
 }
 
 ///Check whether the given user is subscribed to the given list.
