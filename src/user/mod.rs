@@ -57,6 +57,7 @@
 
 use std::collections::HashMap;
 
+use futures::{Future, Stream, Poll, Async};
 use rustc_serialize::json;
 use chrono;
 
@@ -548,11 +549,13 @@ impl FromJson for UserEntityDetail {
 #[must_use = "search iterators are lazy and do nothing unless consumed"]
 pub struct UserSearch<'a> {
     token: &'a auth::Token<'a>,
+    handle: &'a Handle,
     query: &'a str,
     /// The current page of results being returned, starting at 1.
     pub page_num: i32,
     /// The number of user records per page of results. Defaults to 10, maximum of 20.
     pub page_size: i32,
+    current_loader: Option<FutureResponse<'a, Vec<TwitterUser>>>,
     current_results: Option<ResponseIter<TwitterUser>>,
 }
 
@@ -564,6 +567,7 @@ impl<'a> UserSearch<'a> {
     pub fn with_page_size(self, page_size: i32) -> Self {
         UserSearch {
             page_size: page_size,
+            current_loader: None,
             current_results: None,
             ..self
         }
@@ -576,6 +580,7 @@ impl<'a> UserSearch<'a> {
     pub fn start_at_page(self, page_num: i32) -> Self {
         UserSearch {
             page_num: page_num,
+            current_loader: None,
             current_results: None,
             ..self
         }
@@ -586,61 +591,65 @@ impl<'a> UserSearch<'a> {
     /// This will automatically be called if you use the `UserSearch` as an iterator. This method is
     /// made public for convenience if you want to manage the pagination yourself. Remember to
     /// change `page_num` between calls.
-    pub fn call(&self) -> WebResponse<Vec<TwitterUser>> {
+    pub fn call(&self) -> FutureResponse<'a, Vec<TwitterUser>> {
         let mut params = HashMap::new();
         add_param(&mut params, "q", self.query);
         add_param(&mut params, "page", self.page_num.to_string());
         add_param(&mut params, "count", self.page_size.to_string());
 
-        let mut resp = try!(auth::get(links::users::SEARCH, self.token, Some(&params)));
+        let req = auth::get(links::users::SEARCH, self.token, Some(&params));
 
-        parse_response(&mut resp)
+        make_parsed_future(self.handle, req)
     }
 
     /// Returns a new UserSearch with the given query and tokens, with the default page size of 10.
-    fn new(query: &'a str, token: &'a auth::Token) -> UserSearch<'a> {
+    fn new(query: &'a str, token: &'a auth::Token, handle: &'a Handle) -> UserSearch<'a> {
         UserSearch {
             token: token,
+            handle: handle,
             query: query,
             page_num: 1,
             page_size: 10,
+            current_loader: None,
             current_results: None,
         }
     }
 }
 
-impl<'a> Iterator for UserSearch<'a> {
-    type Item = WebResponse<TwitterUser>;
+impl<'a> Stream for UserSearch<'a> {
+    type Item = Response<TwitterUser>;
+    type Error = error::Error;
 
-    fn next(&mut self) -> Option<Self::Item> {
+    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+        if let Some(mut fut) = self.current_loader.take() {
+            match fut.poll() {
+                Ok(Async::NotReady) => {
+                    self.current_loader = Some(fut);
+                    return Ok(Async::NotReady);
+                }
+                Ok(Async::Ready(res)) => self.current_results = Some(res.into_iter()),
+                Err(e) => {
+                    //Invalidate current results so we don't increment the page number again
+                    self.current_results = None;
+                    return Err(e);
+                }
+            }
+        }
+
         if let Some(ref mut results) = self.current_results {
             if let Some(user) = results.next() {
-                return Some(Ok(user));
+                return Ok(Async::Ready(Some(user)));
             }
             else if (results.len() as i32) < self.page_size {
-                return None;
+                return Ok(Async::Ready(None));
             }
             else {
                 self.page_num += 1;
             }
         }
 
-        match self.call() {
-            Ok(resp) => {
-                let mut iter = resp.into_iter();
-                let first = iter.next();
-                self.current_results = Some(iter);
-                match first {
-                    Some(user) => Some(Ok(user)),
-                    None => None,
-                }
-            },
-            Err(err) => {
-                //Invalidate current results so we don't increment the page number again
-                self.current_results = None;
-                Some(Err(err))
-            },
-        }
+        self.current_loader = Some(self.call());
+        self.poll()
     }
 }
 

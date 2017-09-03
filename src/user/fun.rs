@@ -71,8 +71,8 @@ use super::*;
 ///
 /// let users = egg_mode::user::lookup(&list, &token).unwrap();
 /// ```
-pub fn lookup<'a, T, I>(accts: I, token: &auth::Token)
-    -> WebResponse<Vec<TwitterUser>>
+pub fn lookup<'a, 'h, T, I>(accts: I, token: &auth::Token, handle: &'h Handle)
+    -> FutureResponse<'h, Vec<TwitterUser>>
     where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
 {
     let mut params = HashMap::new();
@@ -81,37 +81,37 @@ pub fn lookup<'a, T, I>(accts: I, token: &auth::Token)
     add_param(&mut params, "user_id", id_param);
     add_param(&mut params, "screen_name", name_param);
 
-    let mut resp = try!(auth::post(links::users::LOOKUP, token, Some(&params)));
+    let req = auth::post(links::users::LOOKUP, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 /// Lookup user information for a single user.
-pub fn show<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> WebResponse<TwitterUser>
+pub fn show<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &'h Handle)
+    -> FutureResponse<'h, TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 
-    let mut resp = try!(auth::get(links::users::SHOW, token, Some(&params)));
+    let req = auth::get(links::users::SHOW, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 /// Lookup the user IDs that the authenticating user has disabled retweets from.
 ///
 /// Use `update_follow` to enable/disable viewing retweets from a specific user.
-pub fn friends_no_retweets(token: &auth::Token)
-    -> WebResponse<Vec<u64>>
+pub fn friends_no_retweets<'a>(token: &auth::Token, handle: &'a Handle)
+    -> FutureResponse<'a, Vec<u64>>
 {
-    let mut resp = try!(auth::get(links::users::FRIENDS_NO_RETWEETS, token, None));
+    let req = auth::get(links::users::FRIENDS_NO_RETWEETS, token, None);
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 /// Lookup relationship settings between two arbitrary users.
-pub fn relation<'a, F, T>(from: F, to: T, token: &auth::Token)
-    -> WebResponse<Relationship>
+pub fn relation<'a, 'h, F, T>(from: F, to: T, token: &auth::Token, handle: &'h Handle)
+    -> FutureResponse<'h, Relationship>
     where F: Into<UserID<'a>>,
           T: Into<UserID<'a>>
 {
@@ -125,14 +125,14 @@ pub fn relation<'a, F, T>(from: F, to: T, token: &auth::Token)
         UserID::ScreenName(name) => add_param(&mut params, "target_screen_name", name),
     };
 
-    let mut resp = try!(auth::get(links::users::FRIENDSHIP_SHOW, token, Some(&params)));
+    let req = auth::get(links::users::FRIENDSHIP_SHOW, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 /// Lookup the relations between the authenticated user and the given accounts.
-pub fn relation_lookup<'a, T, I>(accts: I, token: &auth::Token)
-    -> WebResponse<Vec<RelationLookup>>
+pub fn relation_lookup<'a, 'h, T, I>(accts: I, token: &auth::Token, handle: &'h Handle)
+    -> FutureResponse<'h, Vec<RelationLookup>>
     where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
 {
     let mut params = HashMap::new();
@@ -141,9 +141,9 @@ pub fn relation_lookup<'a, T, I>(accts: I, token: &auth::Token)
     add_param(&mut params, "user_id", id_param);
     add_param(&mut params, "screen_name", name_param);
 
-    let mut resp = try!(auth::get(links::users::FRIENDSHIP_LOOKUP, token, Some(&params)));
+    let req = auth::get(links::users::FRIENDSHIP_LOOKUP, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 //---Cursored collections---
@@ -156,10 +156,10 @@ pub fn relation_lookup<'a, T, I>(accts: I, token: &auth::Token)
 /// for details.
 ///
 /// [`UserSearch`]: struct.UserSearch.html
-pub fn search<'a>(query: &'a str, token: &'a auth::Token)
+pub fn search<'a>(query: &'a str, token: &'a auth::Token, handle: &'a Handle)
     -> UserSearch<'a>
 {
-    UserSearch::new(query, token)
+    UserSearch::new(query, token, handle)
 }
 
 /// Lookup the users a given account follows, also called their "friends" within the API.
@@ -295,16 +295,17 @@ pub fn outgoing_requests<'a>(token: &'a auth::Token)
 ///
 /// Calling this with an account the user already follows may return an error, or ("for performance
 /// reasons") may return success without changing any account settings.
-pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool, token: &auth::Token)
-    -> WebResponse<TwitterUser>
+pub fn follow<'a, 'h, T: Into<UserID<'a>>>(acct: T, notifications: bool,
+                                           token: &auth::Token, handle: &'h Handle)
+    -> FutureResponse<'h, TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
     add_param(&mut params, "follow", notifications.to_string());
 
-    let mut resp = try!(auth::post(links::users::FOLLOW, token, Some(&params)));
+    let req = auth::post(links::users::FOLLOW, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 /// Unfollow the given account with the authenticated user.
@@ -313,15 +314,15 @@ pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool, token: &aut
 ///
 /// Calling this with an account the user doesn't follow will return success, even though it doesn't
 /// change any settings.
-pub fn unfollow<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> WebResponse<TwitterUser>
+pub fn unfollow<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &'h Handle)
+    -> FutureResponse<'h, TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 
-    let mut resp = try!(auth::post(links::users::UNFOLLOW, token, Some(&params)));
+    let req = auth::post(links::users::UNFOLLOW, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 /// Update notification settings and reweet visibility for the given user.
@@ -330,9 +331,9 @@ pub fn unfollow<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
 /// to follow that user. It will return an error if you pass `Some(true)` for `notifications` or
 /// `Some(false)` for `retweets`. Any other combination of arguments will return a `Relationship` as
 /// if you had called `relation` between the authenticated user and the given user.
-pub fn update_follow<'a, T>(acct: T, notifications: Option<bool>, retweets: Option<bool>,
-                            token: &auth::Token)
-    -> WebResponse<Relationship>
+pub fn update_follow<'a, 'h, T>(acct: T, notifications: Option<bool>, retweets: Option<bool>,
+                                token: &auth::Token, handle: &'h Handle)
+    -> FutureResponse<'h, Relationship>
     where T: Into<UserID<'a>>
 {
     let mut params = HashMap::new();
@@ -344,77 +345,77 @@ pub fn update_follow<'a, T>(acct: T, notifications: Option<bool>, retweets: Opti
         add_param(&mut params, "retweets", retweets.to_string());
     }
 
-    let mut resp = try!(auth::post(links::users::FRIENDSHIP_UPDATE, token, Some(&params)));
+    let req = auth::post(links::users::FRIENDSHIP_UPDATE, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 /// Block the given account with the authenticated user.
 ///
 /// Upon success, this function returns `Ok` with the given user.
-pub fn block<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> WebResponse<TwitterUser>
+pub fn block<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &'h Handle)
+    -> FutureResponse<'h, TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 
-    let mut resp = try!(auth::post(links::users::BLOCK, token, Some(&params)));
+    let req = auth::post(links::users::BLOCK, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 /// Block the given account and report it for spam, with the authenticated user.
 ///
 /// Upon success, this function returns `Ok` with the given user.
-pub fn report_spam<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> WebResponse<TwitterUser>
+pub fn report_spam<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &'h Handle)
+    -> FutureResponse<'h, TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 
-    let mut resp = try!(auth::post(links::users::REPORT_SPAM, token, Some(&params)));
+    let req = auth::post(links::users::REPORT_SPAM, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 /// Unblock the given user with the authenticated user.
 ///
 /// Upon success, this function returns `Ok` with the given user.
-pub fn unblock<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> WebResponse<TwitterUser>
+pub fn unblock<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &'h Handle)
+    -> FutureResponse<'h, TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 
-    let mut resp = try!(auth::post(links::users::UNBLOCK, token, Some(&params)));
+    let req = auth::post(links::users::UNBLOCK, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 /// Mute the given user with the authenticated user.
 ///
 /// Upon success, this function returns `Ok` with the given user.
-pub fn mute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> WebResponse<TwitterUser>
+pub fn mute<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &'h Handle)
+    -> FutureResponse<'h, TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 
-    let mut resp = try!(auth::post(links::users::MUTE, token, Some(&params)));
+    let req = auth::post(links::users::MUTE, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 /// Unmute the given user with the authenticated user.
 ///
 /// Upon success, this function returns `Ok` with the given user.
-pub fn unmute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> WebResponse<TwitterUser>
+pub fn unmute<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &'h Handle)
+    -> FutureResponse<'h, TwitterUser>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 
-    let mut resp = try!(auth::post(links::users::UNMUTE, token, Some(&params)));
+    let req = auth::post(links::users::UNMUTE, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
