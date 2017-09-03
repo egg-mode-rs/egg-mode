@@ -183,14 +183,14 @@ pub fn is_member<'a, 'id, T: Into<UserID<'id>>>(user: T,
 ///timeline. see the [`Timeline`] docs for details.
 ///
 ///[`Timeline`]: ../tweet/struct.Timeline.html
-pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token)
+pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token, handle: &'a Handle)
     -> tweet::Timeline<'a>
 {
     let mut params = HashMap::new();
     add_list_param(&mut params, &list);
     add_param(&mut params, "include_rts", with_rts.to_string());
 
-    tweet::Timeline::new(links::lists::STATUSES, Some(params), token)
+    tweet::Timeline::new(links::lists::STATUSES, Some(params), token, handle)
 }
 
 ///Adds the given user to the given list.

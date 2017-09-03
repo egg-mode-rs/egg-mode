@@ -58,6 +58,7 @@ use std::collections::HashMap;
 use rustc_serialize::json;
 use chrono;
 use regex::Regex;
+use hyper::client::Request;
 
 use auth;
 use links;
@@ -534,6 +535,8 @@ pub struct Timeline<'a> {
     link: &'static str,
     ///The token to authorize requests with.
     token: &'a auth::Token<'a>,
+    ///A handle that represents the event loop to run requests on.
+    handle: &'a Handle,
     ///Optional set of params to include prior to adding lifetime navigation parameters.
     params_base: Option<ParamList<'a>>,
     ///The maximum number of tweets to return in a single call. Twitter doesn't guarantee returning
@@ -554,7 +557,7 @@ impl<'a> Timeline<'a> {
     }
 
     ///Clear the saved IDs on this timeline, and return the most recent set of tweets.
-    pub fn start(&mut self) -> WebResponse<Vec<Tweet>> {
+    pub fn start<'s>(&'s mut self) -> FutureResponse<'s, Vec<Tweet>> {
         self.reset();
 
         self.older(None)
@@ -562,22 +565,30 @@ impl<'a> Timeline<'a> {
 
     ///Return the set of tweets older than the last set pulled, optionally placing a minimum tweet
     ///ID to bound with.
-    pub fn older(&mut self, since_id: Option<u64>) -> WebResponse<Vec<Tweet>> {
-        let resp = try!(self.call(since_id, self.min_id.map(|id| id - 1)));
+    pub fn older<'s>(&'s mut self, since_id: Option<u64>) -> FutureResponse<'s, Vec<Tweet>> {
+        let req = self.request(since_id, self.min_id.map(|id| id - 1));
 
-        self.map_ids(&resp.response);
+        make_future(self.handle, req, |full_resp: String, headers: &Headers| {
+            let resp: Response<Vec<Tweet>> = try!(make_response(full_resp, headers));
 
-        Ok(resp)
+            self.map_ids(&resp.response);
+
+            Ok(resp)
+        })
     }
 
     ///Return the set of tweets newer than the last set pulled, optionall placing a maximum tweet
     ///ID to bound with.
-    pub fn newer(&mut self, max_id: Option<u64>) -> WebResponse<Vec<Tweet>> {
-        let resp = try!(self.call(self.max_id, max_id));
+    pub fn newer<'s>(&'s mut self, max_id: Option<u64>) -> FutureResponse<'s, Vec<Tweet>> {
+        let req = self.request(self.max_id, max_id);
 
-        self.map_ids(&resp.response);
+        make_future(self.handle, req, |full_resp: String, headers: &Headers| {
+            let resp: Response<Vec<Tweet>> = try!(make_response(full_resp, headers));
 
-        Ok(resp)
+            self.map_ids(&resp.response);
+
+            Ok(resp)
+        })
     }
 
     ///Return the set of tweets between the IDs given.
@@ -587,7 +598,12 @@ impl<'a> Timeline<'a> {
     ///
     ///If the range of tweets given by the IDs would return more than `self.count`, the newest set
     ///of tweets will be returned.
-    pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>) -> WebResponse<Vec<Tweet>> {
+    pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>) -> FutureResponse<'a, Vec<Tweet>> {
+        make_parsed_future(self.handle, self.request(since_id, max_id))
+    }
+
+    ///Helper function to construct a `Request` from the current state.
+    fn request(&self, since_id: Option<u64>, max_id: Option<u64>) -> Request {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
         add_param(&mut params, "count", self.count.to_string());
         add_param(&mut params, "tweet_mode", "extended");
@@ -600,9 +616,7 @@ impl<'a> Timeline<'a> {
             add_param(&mut params, "max_id", id.to_string());
         }
 
-        let mut resp = try!(auth::get(self.link, self.token, Some(&params)));
-
-        parse_response(&mut resp)
+        auth::get(self.link, self.token, Some(&params))
     }
 
     ///Helper builder function to set the page size.
@@ -621,10 +635,12 @@ impl<'a> Timeline<'a> {
 
     ///Create an instance of `Timeline` with the given link and tokens.
     #[doc(hidden)]
-    pub fn new(link: &'static str, params_base: Option<ParamList<'a>>, token: &'a auth::Token) -> Self {
+    pub fn new(link: &'static str, params_base: Option<ParamList<'a>>,
+               token: &'a auth::Token, handle: &'a Handle) -> Self {
         Timeline {
             link: link,
             token: token,
+            handle: handle,
             params_base: params_base,
             count: 20,
             max_id: None,
@@ -804,7 +820,7 @@ impl<'a> DraftTweet<'a> {
     }
 
     ///Send the assembled tweet as the authenticated user.
-    pub fn send(&self, token: &auth::Token) -> WebResponse<Tweet> {
+    pub fn send<'s>(&self, token: &auth::Token, handle: &'s Handle) -> FutureResponse<'s, Tweet> {
         let mut params = HashMap::new();
         add_param(&mut params, "status", self.text);
 
@@ -838,8 +854,8 @@ impl<'a> DraftTweet<'a> {
             add_param(&mut params, "place_id", place_id);
         }
 
-        let mut resp = try!(auth::post(links::statuses::UPDATE, token, Some(&params)));
-        parse_response(&mut resp)
+        let req = auth::post(links::statuses::UPDATE, token, Some(&params));
+        make_parsed_future(handle, req)
     }
 }
 
