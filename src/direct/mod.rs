@@ -310,7 +310,7 @@ impl<'a> Timeline<'a> {
     {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
 
-        make_future(self.handle, req, |full_resp: String, headers: &Headers| {
+        make_future(self.handle, req, move |full_resp: String, headers: &Headers| {
             let resp: Response<Vec<DirectMessage>> = try!(make_response(full_resp, headers));
 
             self.map_ids(&resp.response);
@@ -326,7 +326,7 @@ impl<'a> Timeline<'a> {
     {
         let req = self.request(self.max_id, max_id);
 
-        make_future(self.handle, req, |full_resp: String, headers: &Headers| {
+        make_future(self.handle, req, move |full_resp: String, headers: &Headers| {
             let resp: Response<Vec<DirectMessage>> = try!(make_response(full_resp, headers));
 
             self.map_ids(&resp.response);
@@ -549,7 +549,7 @@ impl<'a> ConversationTimeline<'a> {
     ///Load messages newer than the currently-loaded set, or the newset set if no messages have
     ///been loaded yet. The complete conversation set can be viewed from the `ConversationTimeline`
     ///after it is finished loading.
-    pub fn newest(self) -> ConversationFuture<'a> {
+    pub fn newest(mut self) -> ConversationFuture<'a> {
         self.sent.reset();
         self.received.reset();
         let sent = self.sent.older(self.last_sent);
@@ -561,7 +561,7 @@ impl<'a> ConversationTimeline<'a> {
     ///Load messages older than the currently-loaded set, or the newest set if no messages have
     ///been loaded. The complete conversation set can be viewed from the `ConversationTimeline`
     ///after it is finished loading.
-    pub fn next(self) -> ConversationFuture<'a> {
+    pub fn next(mut self) -> ConversationFuture<'a> {
         self.sent.reset();
         self.received.reset();
         let sent = self.sent.newer(self.last_sent);
@@ -607,7 +607,7 @@ impl<'a> Future for ConversationFuture<'a> {
             Ok(Async::Ready(tl))
         } else {
             Err(io::Error::new(io::ErrorKind::Other,
-                               "ConverstaionFuture has already been loaded").into())
+                               "ConversationFuture has already been loaded").into())
         }
     }
 }

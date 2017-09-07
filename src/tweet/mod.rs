@@ -568,7 +568,7 @@ impl<'a> Timeline<'a> {
     pub fn older<'s>(&'s mut self, since_id: Option<u64>) -> FutureResponse<'s, Vec<Tweet>> {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
 
-        make_future(self.handle, req, |full_resp: String, headers: &Headers| {
+        make_future(self.handle, req, move |full_resp: String, headers: &Headers| {
             let resp: Response<Vec<Tweet>> = try!(make_response(full_resp, headers));
 
             self.map_ids(&resp.response);
@@ -582,7 +582,7 @@ impl<'a> Timeline<'a> {
     pub fn newer<'s>(&'s mut self, max_id: Option<u64>) -> FutureResponse<'s, Vec<Tweet>> {
         let req = self.request(self.max_id, max_id);
 
-        make_future(self.handle, req, |full_resp: String, headers: &Headers| {
+        make_future(self.handle, req, move |full_resp: String, headers: &Headers| {
             let resp: Response<Vec<Tweet>> = try!(make_response(full_resp, headers));
 
             self.map_ids(&resp.response);
