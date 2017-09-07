@@ -8,7 +8,6 @@
 use std::{slice, vec, io, mem};
 use std::iter::FromIterator;
 use std::ops::{Deref, DerefMut};
-use hyper::client::Response as HyperResponse;
 use hyper::client::FutureResponse;
 use hyper::{self, Body, StatusCode, Request};
 use hyper::header::Headers;
@@ -547,41 +546,4 @@ pub fn rate_headers(resp: &Headers) -> Response<()> {
         rate_limit_reset: resp.get::<XRateLimitReset>().map_or(-1, |h| h.0),
         response: (),
     }
-}
-
-///With the given response struct, parse it into a String.
-#[deprecated(note = "you're not out of the woods yet")]
-pub fn response_raw(resp: &mut HyperResponse) -> Result<String, error::Error> {
-    let mut full_resp = String::new();
-    //try!(resp.read_to_string(&mut full_resp));
-
-    if let Ok(err) = json::decode::<TwitterErrors>(&full_resp) {
-        if err.errors.iter().any(|e| e.code == 88) {
-            if resp.headers().has::<XRateLimitReset>() {
-                return Err(RateLimit(resp.headers().get::<XRateLimitReset>().map(|h| h.0).unwrap()));
-            }
-            else {
-                return Err(TwitterError(err));
-            }
-        }
-        else {
-            return Err(TwitterError(err));
-        }
-    }
-
-    match resp.status() {
-        StatusCode::Ok => (),
-        st => return Err(BadStatus(st)),
-    }
-
-    Ok(full_resp)
-}
-
-///With the given response struct, parse it into the desired format and
-///return it along with rate limit information.
-pub fn parse_response<T: FromJson>(resp: &mut HyperResponse) -> ::common::WebResponse<T> {
-    let resp_str = try!(response_raw(resp));
-    let out = try!(T::from_str(&resp_str));
-
-    Ok(Response::map(rate_headers(resp.headers()), |_| out))
 }

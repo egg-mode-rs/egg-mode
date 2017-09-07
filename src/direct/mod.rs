@@ -534,10 +534,6 @@ impl<'a> ConversationTimeline<'a> {
         }
     }
 
-    fn conversations(&self) -> &DMConversations {
-        &self.conversations
-    }
-
     ///Builder function to set the number of messages pulled in a single request.
     pub fn with_page_size(self, page_size: u32) -> ConversationTimeline<'a> {
         ConversationTimeline {
@@ -549,11 +545,9 @@ impl<'a> ConversationTimeline<'a> {
     ///Load messages newer than the currently-loaded set, or the newset set if no messages have
     ///been loaded yet. The complete conversation set can be viewed from the `ConversationTimeline`
     ///after it is finished loading.
-    pub fn newest(mut self) -> ConversationFuture<'a> {
-        self.sent.reset();
-        self.received.reset();
-        let sent = self.sent.older(self.last_sent);
-        let received = self.received.older(self.last_received);
+    pub fn newest(self) -> ConversationFuture<'a> {
+        let sent = self.sent.call(self.last_sent, None);
+        let received = self.received.call(self.last_received, None);
 
         self.make_future(sent, received)
     }
@@ -561,11 +555,9 @@ impl<'a> ConversationTimeline<'a> {
     ///Load messages older than the currently-loaded set, or the newest set if no messages have
     ///been loaded. The complete conversation set can be viewed from the `ConversationTimeline`
     ///after it is finished loading.
-    pub fn next(mut self) -> ConversationFuture<'a> {
-        self.sent.reset();
-        self.received.reset();
-        let sent = self.sent.newer(self.last_sent);
-        let received = self.received.newer(self.last_received);
+    pub fn next(self) -> ConversationFuture<'a> {
+        let sent = self.sent.call(None, self.first_sent);
+        let received = self.received.call(None, self.first_received);
 
         self.make_future(sent, received)
     }

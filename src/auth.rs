@@ -7,7 +7,6 @@ use std::error::Error;
 use std::borrow::Cow;
 use std::time::{UNIX_EPOCH, SystemTime};
 use url::percent_encoding::{EncodeSet, utf8_percent_encode};
-use hyper::client::Response as HyperResponse;
 use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer, Headers};
 use hyper::{Method, Request};
 use hyper::mime::Mime;
