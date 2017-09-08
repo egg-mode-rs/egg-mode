@@ -159,4 +159,4 @@ mod links;
 pub use auth::{KeyPair, Token, AuthFuture, request_token, authorize_url, authenticate_url,
                access_token, verify_tokens, bearer_token, invalidate_bearer};
 pub use common::{Response, ResponseIter, ResponseIterRef,
-                 ResponseIterMut, WebResponse, TwitterFuture};
+                 ResponseIterMut, FutureResponse, TwitterFuture};
