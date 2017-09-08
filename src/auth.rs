@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std;
+use std::io;
 use std::error::Error;
 use std::borrow::Cow;
 use std::time::{UNIX_EPOCH, SystemTime};
@@ -11,6 +12,7 @@ use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer, Headers};
 use hyper::{Method, Request};
 use hyper::mime::Mime;
 use tokio_core::reactor::Handle;
+use futures::{Future, Poll, Async};
 use rand::{self, Rng};
 use hmac::{Hmac, Mac};
 use sha_1::Sha1;
@@ -560,7 +562,7 @@ pub fn request_token<'a, S: Into<String>>(con_token: &KeyPair, callback: S, hand
     let mut request = Request::new(Method::Post, links::auth::REQUEST_TOKEN.parse().unwrap());
     request.headers_mut().set(Authorization(header));
 
-    make_future(handle, request, |full_resp: String, _: &Headers| {
+    fn parse_tok(full_resp: String, _: &Headers) -> Result<KeyPair<'static>, error::Error> {
         let mut key: Option<String> = None;
         let mut secret: Option<String> = None;
 
@@ -570,13 +572,20 @@ pub fn request_token<'a, S: Into<String>>(con_token: &KeyPair, callback: S, hand
                 Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
                 Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
                 Some(_) => (),
-                None => return Err(error::Error::InvalidResponse("unexpected end of request_token response", None)),
+                None =>
+                    return Err(
+                        error::Error::InvalidResponse(
+                            "unexpected end of request_token response", None
+                        )
+                    ),
             }
         }
 
         Ok(KeyPair::new(try!(key.ok_or(error::Error::MissingValue("oauth_token"))),
                         try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")))))
-    })
+    }
+
+    make_future(handle, request, parse_tok)
 }
 
 /// With the given request KeyPair, return a URL that a user can access to accept or reject an
@@ -701,41 +710,79 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
                                          request_token: &KeyPair,
                                          verifier: S,
                                          handle: &'a Handle)
-    -> TwitterFuture<'a, (Token<'a>, u64, String)>
+    -> AuthFuture<'a>
 {
     let header = get_header(Method::Post, links::auth::ACCESS_TOKEN,
                             &con_token, Some(request_token), None, Some(verifier.into()), None);
     let mut request = Request::new(Method::Post, links::auth::ACCESS_TOKEN.parse().unwrap());
     request.headers_mut().set(Authorization(header));
 
-    make_future(handle, request, |full_resp: String, _: &Headers| {
-        let mut key: Option<String> = None;
-        let mut secret: Option<String> = None;
-        let mut id: Option<u64> = None;
-        let mut username: Option<String> = None;
+    AuthFuture {
+        con_token: Some(con_token),
+        loader: Some(make_raw_future(handle, request)),
+    }
+}
 
-        for elem in full_resp.split('&') {
-            let mut kv = elem.splitn(2, '=');
-            match kv.next() {
-                Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
-                Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
-                Some("user_id") => id = kv.next().and_then(|s| u64::from_str_radix(s, 10).ok()),
-                Some("screen_name") => username = kv.next().map(|s| s.to_string()),
-                Some(_) => (),
-                None => return Err(error::Error::InvalidResponse("unexpected end of response in access_token", None)),
+/// `Future` which yields an access token when it finishes.
+#[must_use = "futures do nothing unless polled"]
+pub struct AuthFuture<'a> {
+    con_token: Option<KeyPair<'a>>,
+    loader: Option<RawFuture<'a>>,
+}
+
+impl<'a> Future for AuthFuture<'a> {
+    type Item = (Token<'a>, u64, String);
+    type Error = error::Error;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        let resp = if let Some(mut fut) = self.loader.take() {
+            match fut.poll() {
+                Err(e) => return Err(e),
+                Ok(Async::NotReady) => {
+                    self.loader = Some(fut);
+                    return Ok(Async::NotReady);
+                }
+                Ok(Async::Ready(resp)) => Some(resp),
             }
         }
+        else { None };
 
-        let access_key = try!(key.ok_or(error::Error::MissingValue("oauth_token")));
-        let access_secret = try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")));
+        if let (Some(full_resp), Some(con_token)) = (resp, self.con_token.take()) {
+            let mut key: Option<String> = None;
+            let mut secret: Option<String> = None;
+            let mut id: Option<u64> = None;
+            let mut username: Option<String> = None;
 
-        Ok((Token::Access {
-                consumer: con_token,
-                access: KeyPair::new(access_key, access_secret),
-            },
-            try!(id.ok_or(error::Error::MissingValue("user_id"))),
-            try!(username.ok_or(error::Error::MissingValue("screen_name")))))
-    })
+            for elem in full_resp.split('&') {
+                let mut kv = elem.splitn(2, '=');
+                match kv.next() {
+                    Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
+                    Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
+                    Some("user_id") => id = kv.next().and_then(|s| u64::from_str_radix(s, 10).ok()),
+                    Some("screen_name") => username = kv.next().map(|s| s.to_string()),
+                    Some(_) => (),
+                    None => return Err(
+                        error::Error::InvalidResponse(
+                            "unexpected end of response in access_token", None)
+                    ),
+                }
+            }
+
+            let access_key = try!(key.ok_or(error::Error::MissingValue("oauth_token")));
+            let access_secret = try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")));
+
+            Ok(Async::Ready((Token::Access {
+                    consumer: con_token,
+                    access: KeyPair::new(access_key, access_secret),
+                },
+                try!(id.ok_or(error::Error::MissingValue("user_id"))),
+                try!(username.ok_or(error::Error::MissingValue("screen_name"))))))
+        }
+        else {
+            Err(io::Error::new(io::ErrorKind::Other,
+                               "AuthFuture has already completed").into())
+        }
+    }
 }
 
 /// With the given consumer KeyPair, request the current Bearer token to perform Application-only
@@ -777,14 +824,16 @@ pub fn bearer_token<'a>(con_token: &KeyPair, handle: &'a Handle)
     request.headers_mut().set(ContentType(content));
     request.set_body("grant_type=client_credentials");
 
-    make_future(handle, request, |full_resp: String, _: &Headers| {
+    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token<'static>, error::Error> {
         let decoded = try!(json::Json::from_str(&full_resp));
         let result = try!(decoded.find("access_token")
                                  .and_then(|s| s.as_string())
                                  .ok_or(error::Error::MissingValue("access_token")));
 
         Ok(Token::Bearer(result.to_owned()))
-    })
+    }
+
+    make_future(handle, request, parse_tok)
 }
 
 ///Invalidate the given Bearer token using the given consumer KeyPair. Upon success, returns the
@@ -811,14 +860,16 @@ pub fn invalidate_bearer<'a>(handle: &'a Handle, con_token: &KeyPair, token: &To
     request.headers_mut().set(ContentType(content));
     request.set_body(format!("access_token={}", token));
 
-    make_future(handle, request, |full_resp: String, _: &Headers| {
+    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token<'static>, error::Error> {
         let decoded = try!(json::Json::from_str(&full_resp));
         let result = try!(decoded.find("access_token")
                                  .and_then(|s| s.as_string())
                                  .ok_or(error::Error::MissingValue("access_token")));
 
         Ok(Token::Bearer(result.to_owned()))
-    })
+    }
+
+    make_future(handle, request, parse_tok)
 }
 
 ///If the given tokens are valid, return the user information for the authenticated user.

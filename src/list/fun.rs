@@ -129,7 +129,7 @@ pub fn is_subscribed<'a, 'id, T: Into<UserID<'id>>>(user: T,
 
     let req = auth::get(links::lists::IS_SUBSCRIBER, token, Some(&params));
 
-    make_future(handle, req, |full_resp: String, headers: &Headers| {
+    fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<bool>, error::Error> {
         let out: WebResponse<TwitterUser> = make_response(full_resp, headers);
 
         match out {
@@ -148,7 +148,9 @@ pub fn is_subscribed<'a, 'id, T: Into<UserID<'id>>>(user: T,
             },
             Err(err) => Err(err),
         }
-    })
+    }
+
+    make_future(handle, req, parse_resp)
 }
 
 ///Check whether the given user has been added to the given list.
@@ -165,7 +167,7 @@ pub fn is_member<'a, 'id, T: Into<UserID<'id>>>(user: T,
 
     let req = auth::get(links::lists::IS_MEMBER, token, Some(&params));
 
-    make_future(handle, req, |full_resp: String, headers: &Headers| {
+    fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<bool>, error::Error> {
         let out: WebResponse<TwitterUser> = make_response(full_resp, headers);
 
         match out {
@@ -184,7 +186,9 @@ pub fn is_member<'a, 'id, T: Into<UserID<'id>>>(user: T,
             },
             Err(err) => Err(err),
         }
-    })
+    }
+
+    make_future(handle, req, parse_resp)
 }
 
 ///Begin navigating the collection of tweets made by the users added to the given list.

@@ -101,7 +101,9 @@ pub fn lookup_map<'a, I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, ha
 
     let req = auth::post(links::statuses::LOOKUP, token, Some(&params));
 
-    make_future(handle, req, |full_resp: String, headers: &Headers| {
+    fn parse_map(full_resp: String, headers: &Headers)
+        -> Result<Response<HashMap<u64, Option<Tweet>>>, error::Error>
+    {
         let parsed: Response<json::Json> = try!(make_response(full_resp, headers));
         let mut map = HashMap::new();
 
@@ -122,7 +124,9 @@ pub fn lookup_map<'a, I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, ha
         }
 
         Ok(Response::map(parsed, |_| map))
-    })
+    }
+
+    make_future(handle, req, parse_map)
 }
 
 ///Make a `Timeline` struct for navigating the collection of tweets posted by the authenticated

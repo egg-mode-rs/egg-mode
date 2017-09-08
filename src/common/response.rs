@@ -359,6 +359,7 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
 ///
 /// This also does some header inspection, and attempts to parse the response as a `TwitterErrors`
 /// before returning the String.
+#[must_use = "futures do nothing unless polled"]
 pub struct RawFuture<'a> {
     handle: &'a Handle,
     request: Option<Request>,
@@ -449,7 +450,7 @@ impl<'a> Future for RawFuture<'a> {
 
 /// Creates a new `RawFuture` starting with the given `Request`, to be run on the Core represented
 /// by the given `Handle`.
-fn make_raw_future<'a>(handle: &'a Handle, request: Request) -> RawFuture<'a> {
+pub fn make_raw_future<'a>(handle: &'a Handle, request: Request) -> RawFuture<'a> {
     RawFuture {
         handle: handle,
         request: Some(request),
@@ -461,18 +462,6 @@ fn make_raw_future<'a>(handle: &'a Handle, request: Request) -> RawFuture<'a> {
     }
 }
 
-/// Helper trait to get around `Box<FnOnce>` being unusable and `FnBox` being unstable.
-pub trait MakeResponse<T> {
-    fn make_response(self: Box<Self>, raw: String, headers: &Headers) -> Result<T, error::Error>;
-}
-
-impl<T, F> MakeResponse<T> for F
-    where F: FnOnce(String, &Headers) -> Result<T, error::Error>
-{
-    fn make_response(self: Box<Self>, raw: String, headers: &Headers) -> Result<T, error::Error> {
-        (*self)(raw, headers)
-    }
-}
 
 /// A `Future` that will resolve to a complete Twitter response.
 ///
@@ -487,7 +476,7 @@ impl<T, F> MakeResponse<T> for F
 #[must_use = "futures do nothing unless polled"]
 pub struct TwitterFuture<'a, T> {
     request: RawFuture<'a>,
-    make_resp: Option<Box<MakeResponse<T> + 'a>>,
+    make_resp: fn(String, &Headers) -> Result<T, error::Error>,
 }
 
 impl<'a, T> Future for TwitterFuture<'a, T> {
@@ -501,25 +490,8 @@ impl<'a, T> Future for TwitterFuture<'a, T> {
              Ok(Async::Ready(r)) => r,
          };
 
-         if let Some(make_resp) = self.make_resp.take() {
-             Ok(Async::Ready(try!(make_resp.make_response(full_resp, self.request.headers()))))
-         } else {
-             Err(io::Error::new(io::ErrorKind::Other,
-                                "response has already been processed").into())
-         }
+         Ok(Async::Ready(try!((self.make_resp)(full_resp, self.request.headers()))))
      }
-}
-
-/// Create a `TwitterFuture` that processes the response through the given function before
-/// returning.
-pub fn make_future<'a, T, F>(handle: &'a Handle, request: Request, make_resp: F)
-    -> TwitterFuture<'a, T>
-    where F: MakeResponse<T> + 'a
-{
-    TwitterFuture {
-        request: make_raw_future(handle, request),
-        make_resp: Some(Box::new(make_resp)),
-    }
 }
 
 /// Shortcut `MakeResponse` method that attempts to parse the given type from the response and
@@ -530,6 +502,17 @@ pub fn make_response<T: FromJson>(full_resp: String, headers: &Headers)
     let out = try!(T::from_str(&full_resp));
 
     Ok(Response::map(rate_headers(headers), |_| out))
+}
+
+pub fn make_future<'a, T>(handle: &'a Handle,
+                                  request: Request,
+                                  make_resp: fn(String, &Headers) -> Result<T, error::Error>)
+    -> TwitterFuture<'a, T>
+{
+    TwitterFuture {
+        request: make_raw_future(handle, request),
+        make_resp: make_resp,
+    }
 }
 
 /// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.

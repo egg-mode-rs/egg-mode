@@ -54,11 +54,13 @@
 //! - `user_timeline`/`liked_by`
 
 use std::collections::HashMap;
+use std::io;
 
 use rustc_serialize::json;
 use chrono;
 use regex::Regex;
 use hyper::client::Request;
+use futures::{Future, Poll, Async};
 
 use auth;
 use links;
@@ -557,7 +559,7 @@ impl<'a> Timeline<'a> {
     }
 
     ///Clear the saved IDs on this timeline, and return the most recent set of tweets.
-    pub fn start<'s>(&'s mut self) -> FutureResponse<'s, Vec<Tweet>> {
+    pub fn start<'s>(&'s mut self) -> TimelineFuture<'s, 'a> {
         self.reset();
 
         self.older(None)
@@ -565,30 +567,24 @@ impl<'a> Timeline<'a> {
 
     ///Return the set of tweets older than the last set pulled, optionally placing a minimum tweet
     ///ID to bound with.
-    pub fn older<'s>(&'s mut self, since_id: Option<u64>) -> FutureResponse<'s, Vec<Tweet>> {
+    pub fn older<'s>(&'s mut self, since_id: Option<u64>) -> TimelineFuture<'s, 'a> {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
 
-        make_future(self.handle, req, move |full_resp: String, headers: &Headers| {
-            let resp: Response<Vec<Tweet>> = try!(make_response(full_resp, headers));
-
-            self.map_ids(&resp.response);
-
-            Ok(resp)
-        })
+        TimelineFuture {
+            timeline: self,
+            loader: Some(make_parsed_future(self.handle, req)),
+        }
     }
 
     ///Return the set of tweets newer than the last set pulled, optionall placing a maximum tweet
     ///ID to bound with.
-    pub fn newer<'s>(&'s mut self, max_id: Option<u64>) -> FutureResponse<'s, Vec<Tweet>> {
+    pub fn newer<'s>(&'s mut self, max_id: Option<u64>) -> TimelineFuture<'s, 'a> {
         let req = self.request(self.max_id, max_id);
 
-        make_future(self.handle, req, move |full_resp: String, headers: &Headers| {
-            let resp: Response<Vec<Tweet>> = try!(make_response(full_resp, headers));
-
-            self.map_ids(&resp.response);
-
-            Ok(resp)
-        })
+        TimelineFuture {
+            timeline: self,
+            loader: Some(make_parsed_future(self.handle, req)),
+        }
     }
 
     ///Return the set of tweets between the IDs given.
@@ -645,6 +641,46 @@ impl<'a> Timeline<'a> {
             count: 20,
             max_id: None,
             min_id: None,
+        }
+    }
+}
+
+/// `Future` which represents loading from a `Timeline`.
+///
+/// When this future completes, it will either return the tweets given by Twitter (after having
+/// updated the IDs in the parent `Timeline`) or the error encountered when loading or parsing the
+/// response.
+#[must_use = "futures do nothing unless polled"]
+pub struct TimelineFuture<'timeline, 'handle>
+    where 'handle: 'timeline
+{
+    timeline: &'timeline mut Timeline<'handle>,
+    loader: Option<FutureResponse<'handle, Vec<Tweet>>>,
+}
+
+impl<'timeline, 'handle> Future for TimelineFuture<'timeline, 'handle>
+    where 'handle: 'timeline
+{
+    type Item = Response<Vec<Tweet>>;
+    type Error = error::Error;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        if let Some(mut fut) = self.loader.take() {
+            match fut.poll() {
+                Err(e) => Err(e),
+                Ok(Async::NotReady) => {
+                    self.loader = Some(fut);
+                    Ok(Async::NotReady)
+                }
+                Ok(Async::Ready(resp)) => {
+                    self.timeline.map_ids(&resp.response);
+                    Ok(Async::Ready(resp))
+                }
+            }
+        }
+        else {
+            Err(io::Error::new(io::ErrorKind::Other,
+                               "TimelineFuture has already completed").into())
         }
     }
 }

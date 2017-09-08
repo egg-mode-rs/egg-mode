@@ -35,12 +35,14 @@ use common::*;
 pub fn terms<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, String> {
     let req = auth::get(links::service::TERMS, token, None);
 
-    make_future(handle, req, |full_resp: String, headers: &Headers| {
+    fn parse_terms(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
         let ret: Response<json::Json> = try!(make_response(full_resp, headers));
 
         let tos = try!(field(&ret.response, "tos"));
         Ok(Response::map(ret, |_| tos))
-    })
+    }
+
+    make_future(handle, req, parse_terms)
 }
 
 ///Returns the current Twitter Privacy Policy as plain text.
@@ -50,12 +52,14 @@ pub fn terms<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, 
 pub fn privacy<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, String> {
     let req = auth::get(links::service::PRIVACY, token, None);
 
-    make_future(handle, req, |full_resp: String, headers: &Headers| {
+    fn parse_policy(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
         let ret: Response<json::Json> = try!(make_response(full_resp, headers));
 
         let privacy = try!(field(&ret.response, "privacy"));
         Ok(Response::map(ret, |_| privacy))
-    })
+    }
+
+    make_future(handle, req, parse_policy)
 }
 
 ///Return the current configuration from Twitter, including the maximum length of a t.co URL and

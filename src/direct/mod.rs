@@ -297,7 +297,7 @@ impl<'a> Timeline<'a> {
     }
 
     ///Clear the saved IDs on this timeline, and return the most recent set of messages.
-    pub fn start<'s>(&'s mut self) -> FutureResponse<'s, Vec<DirectMessage>> {
+    pub fn start<'s>(&'s mut self) -> TimelineFuture<'s, 'a> {
         self.reset();
 
         self.older(None)
@@ -305,34 +305,24 @@ impl<'a> Timeline<'a> {
 
     ///Return the set of DMs older than the last set pulled, optionally placing a minimum DM ID to
     ///bound with.
-    pub fn older<'s>(&'s mut self, since_id: Option<u64>)
-        -> FutureResponse<'s, Vec<DirectMessage>>
-    {
+    pub fn older<'s>(&'s mut self, since_id: Option<u64>) -> TimelineFuture<'s, 'a> {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
 
-        make_future(self.handle, req, move |full_resp: String, headers: &Headers| {
-            let resp: Response<Vec<DirectMessage>> = try!(make_response(full_resp, headers));
-
-            self.map_ids(&resp.response);
-
-            Ok(resp)
-        })
+        TimelineFuture {
+            timeline: self,
+            loader: Some(make_parsed_future(self.handle, req)),
+        }
     }
 
     ///Return the set of DMs newer than the last set pulled, optionally placing a maximum DM ID to
     ///bound with.
-    pub fn newer<'s>(&'s mut self, max_id: Option<u64>)
-        -> FutureResponse<'s, Vec<DirectMessage>>
-    {
+    pub fn newer<'s>(&'s mut self, max_id: Option<u64>) -> TimelineFuture<'s, 'a> {
         let req = self.request(self.max_id, max_id);
 
-        make_future(self.handle, req, move |full_resp: String, headers: &Headers| {
-            let resp: Response<Vec<DirectMessage>> = try!(make_response(full_resp, headers));
-
-            self.map_ids(&resp.response);
-
-            Ok(resp)
-        })
+        TimelineFuture {
+            timeline: self,
+            loader: Some(make_parsed_future(self.handle, req)),
+        }
     }
 
     ///Return the set of DMs between the IDs given.
@@ -393,6 +383,46 @@ impl<'a> Timeline<'a> {
             count: 20,
             max_id: None,
             min_id: None,
+        }
+    }
+}
+
+/// `Future` which represents loading from a `Timeline`.
+///
+/// When this future completes, it will either return the direct messages given by Twitter (after
+/// having updated the IDs in the parent `Timeline`) or the error encountered when loading or
+/// parsing the response.
+#[must_use = "futures do nothing unless polled"]
+pub struct TimelineFuture<'timeline, 'handle>
+    where 'handle: 'timeline
+{
+    timeline: &'timeline mut Timeline<'handle>,
+    loader: Option<FutureResponse<'handle, Vec<DirectMessage>>>,
+}
+
+impl<'timeline, 'handle> Future for TimelineFuture<'timeline, 'handle>
+    where 'handle: 'timeline
+{
+    type Item = Response<Vec<DirectMessage>>;
+    type Error = error::Error;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        if let Some(mut fut) = self.loader.take() {
+            match fut.poll() {
+                Err(e) => Err(e),
+                Ok(Async::NotReady) => {
+                    self.loader = Some(fut);
+                    Ok(Async::NotReady)
+                }
+                Ok(Async::Ready(resp)) => {
+                    self.timeline.map_ids(&resp.response);
+                    Ok(Async::Ready(resp))
+                }
+            }
+        }
+        else {
+            Err(io::Error::new(io::ErrorKind::Other,
+                               "TimelineFuture has already completed").into())
         }
     }
 }
@@ -577,6 +607,7 @@ impl<'a> ConversationTimeline<'a> {
 /// See [ConversationTimeline] for details.
 ///
 /// [ConversationTimeline]: struct.ConversationTimeline.html
+#[must_use = "futures do nothing unless polled"]
 pub struct ConversationFuture<'a> {
     loader: Option<ConversationTimeline<'a>>,
     future: Join<DMFuture<'a>, DMFuture<'a>>,

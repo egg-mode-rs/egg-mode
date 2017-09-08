@@ -42,10 +42,12 @@
 //! [search-doc]: https://dev.twitter.com/rest/public/search
 //! [search-place]: https://dev.twitter.com/rest/public/search-by-place
 
+use std::io;
 use std::collections::HashMap;
 use std::fmt;
 
 use rustc_serialize::json;
+use futures::{Future, Poll, Async};
 
 use auth;
 use error;
@@ -177,9 +179,7 @@ impl<'a> SearchBuilder<'a> {
     }
 
     ///Finalize the search terms and return the first page of responses.
-    pub fn call(self, token: &auth::Token, handle: &'a Handle)
-        -> FutureResponse<'a, SearchResult<'a>>
-    {
+    pub fn call(self, token: &auth::Token, handle: &'a Handle) -> SearchFuture<'a> {
         let mut params = HashMap::new();
 
         add_param(&mut params, "q", self.query);
@@ -217,11 +217,48 @@ impl<'a> SearchBuilder<'a> {
 
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
-        make_future(handle, req, |full_resp: String, headers: &Headers| {
-            let mut ret: Response<SearchResult> = try!(make_response(full_resp, headers));
-            ret.params = Some(params);
-            Ok(ret)
-        })
+        SearchFuture {
+            loader: Some(make_parsed_future(handle, req)),
+            params: Some(params),
+        }
+    }
+}
+
+/// `Future` that represents a search query in progress.
+///
+/// When this future resolves, it will either contain a `SearchResult` or the error that was
+/// encountered while loading or parsing the response.
+#[must_use = "futures do nothing unless polled"]
+pub struct SearchFuture<'a> {
+    loader: Option<FutureResponse<'a, SearchResult<'a>>>,
+    params: Option<ParamList<'a>>,
+}
+
+impl<'a> Future for SearchFuture<'a> {
+    type Item = Response<SearchResult<'a>>;
+    type Error = error::Error;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        let resp = if let Some(mut fut) = self.loader.take() {
+            match fut.poll() {
+                Ok(Async::Ready(resp)) => Some(resp),
+                Ok(Async::NotReady) => {
+                    self.loader = Some(fut);
+                    return Ok(Async::NotReady);
+                }
+                Err(e) => return Err(e),
+            }
+        }
+        else { None };
+
+        if let (Some(params), Some(mut resp)) = (self.params.take(), resp) {
+            resp.params = Some(params);
+            Ok(Async::Ready(resp))
+        }
+        else {
+            Err(io::Error::new(io::ErrorKind::Other,
+                               "SearchFuture has already completed").into())
+        }
     }
 }
 
@@ -258,9 +295,7 @@ impl<'a> FromJson for SearchResult<'a> {
 
 impl<'a> SearchResult<'a> {
     ///Load the next page of search results for the same query.
-    pub fn older(&self, token: &auth::Token, handle: &'a Handle)
-        -> FutureResponse<'a, SearchResult<'a>>
-    {
+    pub fn older(&self, token: &auth::Token, handle: &'a Handle) -> SearchFuture<'a> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("since_id");
 
@@ -273,17 +308,14 @@ impl<'a> SearchResult<'a> {
 
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
-        make_future(handle, req, |full_resp: String, headers: &Headers| {
-            let mut ret: Response<SearchResult> = try!(make_response(full_resp, headers));
-            ret.params = Some(params);
-            Ok(ret)
-        })
+        SearchFuture {
+            loader: Some(make_parsed_future(handle, req)),
+            params: Some(params),
+        }
     }
 
     ///Load the previous page of search results for the same query.
-    pub fn newer(&self, token: &auth::Token, handle: &'a Handle)
-        -> FutureResponse<'a, SearchResult>
-    {
+    pub fn newer(&self, token: &auth::Token, handle: &'a Handle) -> SearchFuture<'a> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("max_id");
 
@@ -296,10 +328,9 @@ impl<'a> SearchResult<'a> {
 
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
-        make_future(handle, req, |full_resp: String, headers: &Headers| {
-            let mut ret: Response<SearchResult> = try!(make_response(full_resp, headers));
-            ret.params = Some(params);
-            Ok(ret)
-        })
+        SearchFuture {
+            loader: Some(make_parsed_future(handle, req)),
+            params: Some(params),
+        }
     }
 }
