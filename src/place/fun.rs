@@ -175,7 +175,7 @@ pub fn search_url<'a>(url: &'a str, token: &'a auth::Token, handle: &'a Handle)
 pub struct CachedSearchFuture<'a> {
     stem: &'static str,
     params: Option<Result<ParamList<'a>, error::Error>>,
-    token: &'a auth::Token<'a>,
+    token: &'a auth::Token,
     handle: &'a Handle,
     future: Option<FutureResponse<'a, SearchResult>>,
 }

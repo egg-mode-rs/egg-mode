@@ -152,23 +152,21 @@ impl Scheme for TwitterOAuth {
 ///let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
 ///```
 #[derive(Debug, Clone)]
-pub struct KeyPair<'a> {
+pub struct KeyPair {
     ///A key used to identify an application or user.
-    pub key: Cow<'a, str>,
+    pub key: Cow<'static, str>,
     ///A private key used to sign messages from an application or user.
-    pub secret: Cow<'a, str>,
+    pub secret: Cow<'static, str>,
 }
 
-impl<'a> KeyPair<'a> {
+impl KeyPair {
     ///Creates a KeyPair with the given key and secret.
     ///
-    ///This can be called with either `&str` or `String`. In the former
-    ///case the resulting KeyPair will have the same lifetime as the given
-    ///reference. If two Strings are given, the KeyPair effectively has
-    ///lifetime `'static`.
-    pub fn new<K, S>(key: K, secret: S) -> KeyPair<'a>
-        where K: Into<Cow<'a, str>>,
-              S: Into<Cow<'a, str>>
+    ///This can be called with either `&'static str` (a string literal) or `String` for either
+    ///parameter.
+    pub fn new<K, S>(key: K, secret: S) -> KeyPair
+        where K: Into<Cow<'static, str>>,
+              S: Into<Cow<'static, str>>
     {
         KeyPair {
             key: key.into(),
@@ -336,13 +334,13 @@ impl<'a> KeyPair<'a> {
 /// // for restrictions, see docs for bearer_token
 /// ```
 #[derive(Debug, Clone)]
-pub enum Token<'a> {
+pub enum Token {
     ///An OAuth Access token indicating the request is coming from a specific user.
     Access {
         ///A "consumer" key/secret that represents the application sending the request.
-        consumer: KeyPair<'a>,
+        consumer: KeyPair,
         ///An "access" key/secret that represents the user's authorization of the application.
-        access: KeyPair<'a>,
+        access: KeyPair,
     },
     ///An OAuth Bearer token indicating the request is coming from the application itself, not a
     ///particular user.
@@ -554,7 +552,7 @@ pub fn post(uri: &str,
 /// let req_token = egg_mode::request_token(&con_token, "https://myapp.io/auth").unwrap();
 /// ```
 pub fn request_token<'a, S: Into<String>>(con_token: &KeyPair, callback: S, handle: &'a Handle)
-    -> TwitterFuture<'a, KeyPair<'static>>
+    -> TwitterFuture<'a, KeyPair>
 {
     let header = get_header(Method::Post, links::auth::REQUEST_TOKEN,
                             con_token, None, Some(callback.into()), None, None);
@@ -562,7 +560,7 @@ pub fn request_token<'a, S: Into<String>>(con_token: &KeyPair, callback: S, hand
     let mut request = Request::new(Method::Post, links::auth::REQUEST_TOKEN.parse().unwrap());
     request.headers_mut().set(Authorization(header));
 
-    fn parse_tok(full_resp: String, _: &Headers) -> Result<KeyPair<'static>, error::Error> {
+    fn parse_tok(full_resp: String, _: &Headers) -> Result<KeyPair, error::Error> {
         let mut key: Option<String> = None;
         let mut secret: Option<String> = None;
 
@@ -706,7 +704,7 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 ///
 /// In addition to the final Access Token, this function also returns the User ID and screen name
 /// of the authenticated user.
-pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
+pub fn access_token<'a, S: Into<String>>(con_token: KeyPair,
                                          request_token: &KeyPair,
                                          verifier: S,
                                          handle: &'a Handle)
@@ -726,12 +724,12 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
 /// `Future` which yields an access token when it finishes.
 #[must_use = "futures do nothing unless polled"]
 pub struct AuthFuture<'a> {
-    con_token: Option<KeyPair<'a>>,
+    con_token: Option<KeyPair>,
     loader: Option<RawFuture<'a>>,
 }
 
 impl<'a> Future for AuthFuture<'a> {
-    type Item = (Token<'a>, u64, String);
+    type Item = (Token, u64, String);
     type Error = error::Error;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
@@ -814,7 +812,7 @@ impl<'a> Future for AuthFuture<'a> {
 ///
 /// [auth]: https://dev.twitter.com/oauth/application-only
 pub fn bearer_token<'a>(con_token: &KeyPair, handle: &'a Handle)
-    -> TwitterFuture<'a, Token<'static>>
+    -> TwitterFuture<'a, Token>
 {
     let content: Mime = "application/x-www-form-urlencoded;charset=UTF-8".parse().unwrap();
 
@@ -824,7 +822,7 @@ pub fn bearer_token<'a>(con_token: &KeyPair, handle: &'a Handle)
     request.headers_mut().set(ContentType(content));
     request.set_body("grant_type=client_credentials");
 
-    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token<'static>, error::Error> {
+    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
         let decoded = try!(json::Json::from_str(&full_resp));
         let result = try!(decoded.find("access_token")
                                  .and_then(|s| s.as_string())
@@ -843,7 +841,7 @@ pub fn bearer_token<'a>(con_token: &KeyPair, handle: &'a Handle)
 ///
 ///If this function is handed a `Token` that is not a Bearer token, this function will panic.
 pub fn invalidate_bearer<'a>(handle: &'a Handle, con_token: &KeyPair, token: &Token)
-    -> TwitterFuture<'a, Token<'static>>
+    -> TwitterFuture<'a, Token>
 {
     let token = if let Token::Bearer(ref token) = *token {
         token
@@ -860,7 +858,7 @@ pub fn invalidate_bearer<'a>(handle: &'a Handle, con_token: &KeyPair, token: &To
     request.headers_mut().set(ContentType(content));
     request.set_body(format!("access_token={}", token));
 
-    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token<'static>, error::Error> {
+    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
         let decoded = try!(json::Json::from_str(&full_resp));
         let result = try!(decoded.find("access_token")
                                  .and_then(|s| s.as_string())

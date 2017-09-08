@@ -260,7 +260,7 @@ pub struct CursorIter<'a, T>
     where T: Cursor + FromJson + 'a
 {
     link: &'static str,
-    token: &'a auth::Token<'a>,
+    token: &'a auth::Token,
     handle: &'a Handle,
     params_base: Option<ParamList<'a>>,
     ///The number of results returned in one network call.

@@ -548,7 +548,7 @@ impl FromJson for UserEntityDetail {
 /// ```
 #[must_use = "search iterators are lazy and do nothing unless consumed"]
 pub struct UserSearch<'a> {
-    token: &'a auth::Token<'a>,
+    token: &'a auth::Token,
     handle: &'a Handle,
     query: &'a str,
     /// The current page of results being returned, starting at 1.

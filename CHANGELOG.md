@@ -17,6 +17,10 @@
 - Several dependencies have been updated
   - Notably, the type for all the timestamps was renamed, since chrono changed it from `UTC` to
     `Utc`
+- `Token`s and `KeyPair`s are now always `'static`. Only string literals and owned strings from now
+  on.
+  - This is a **breaking change** if you were using short-lived `Token`s with `&str`s in them - clone
+    the Strings when you hand them to the `KeyPair`, please.
 
 ## [0.10.0] = 2017-08-08
 

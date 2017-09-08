@@ -274,7 +274,7 @@ pub struct Timeline<'a> {
     ///The URL to request DMs from.
     link: &'static str,
     ///The token used to authenticate requests with.
-    token: &'a auth::Token<'a>,
+    token: &'a auth::Token,
     ///A Handle that represents the event loop to run requests on.
     handle: &'a Handle,
     ///Optional set of params to include prior to adding lifetime navigation parameters.
