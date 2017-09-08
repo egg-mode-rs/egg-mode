@@ -2,10 +2,12 @@
 
 another twitter library for rust [![Build Status](https://travis-ci.org/QuietMisdreavus/twitter-rs.svg?branch=master)](https://travis-ci.org/QuietMisdreavus/twitter-rs) [![Build status](https://ci.appveyor.com/api/projects/status/3oi86ir82kj1rxu3?svg=true)](https://ci.appveyor.com/project/QuietMisdreavus/twitter-rs)
 
-[v0.10.0 Documentation][documentation] | [(Pending release documentation)][doc-dev]
+[v0.10.0 Documentation][documentation] | [(Pending release documentation)][doc-dev] | [(async branch
+documentation)][doc-async]
 
 [Documentation]: https://tonberry.quietmisdreavus.net/doc/egg_mode/
 [doc-dev]: https://tonberry.quietmisdreavus.net/doc-dev/egg_mode/
+[doc-async]: https://tonberry.quietmisdreavus.net/doc-async/egg_mode/
 
 **NOTE FOR THE ASYNC BRANCH**: This branch is hella broken right now. I'm in the process of
 converting this to hyper 0.11 and futures, which requires an upheaval of the API surface and a
