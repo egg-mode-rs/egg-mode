@@ -7,13 +7,19 @@ extern crate chrono;
 
 mod common;
 
+use common::tokio_core::reactor;
+
 fn main() {
-    let c = common::Config::load();
+    let mut core = reactor::Core::new().unwrap();
 
-    let mut convos = egg_mode::direct::conversations(&c.token);
+    let c = common::Config::load(&mut core);
+    let handle = core.handle();
 
-    for (id, convo) in convos.newest().unwrap() {
-        let user = egg_mode::user::show(id, &c.token).unwrap();
+    let convos = egg_mode::direct::conversations(&c.token, &handle);
+    let convos = core.run(convos.newest()).unwrap();
+
+    for (id, convo) in &convos.conversations {
+        let user = core.run(egg_mode::user::show(id, &c.token, &handle)).unwrap();
         println!("-----");
         println!("Conversation with @{}:", user.screen_name);
         for msg in convo {

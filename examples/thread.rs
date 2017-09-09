@@ -6,11 +6,16 @@ extern crate egg_mode;
 
 mod common;
 
+use common::tokio_core::reactor;
+
 use std::collections::{VecDeque, HashSet};
 use egg_mode::tweet;
 
 fn main() {
-    let c = common::Config::load();
+    let mut core = reactor::Core::new().unwrap();
+
+    let c = common::Config::load(&mut core);
+    let handle = core.handle();
 
     //Thread Reconstruction
     //
@@ -43,14 +48,14 @@ fn main() {
     let mut thread = VecDeque::with_capacity(21);
     let mut thread_ids = HashSet::new();
 
-    let start_tweet = tweet::show(start_id, &c.token).unwrap();
+    let start_tweet = core.run(tweet::show(start_id, &c.token, &handle)).unwrap();
     let thread_user = start_tweet.user.as_ref().unwrap().id;
     thread_ids.insert(start_tweet.id);
     thread.push_front(start_tweet.response);
 
     for _ in 0..10 {
         if let Some(id) = thread.front().and_then(|t| t.in_reply_to_status_id) {
-            let parent = tweet::show(id, &c.token).unwrap();
+            let parent = core.run(tweet::show(id, &c.token, &handle)).unwrap();
             thread_ids.insert(parent.id);
             thread.push_front(parent.response);
         }
@@ -59,9 +64,9 @@ fn main() {
         }
     }
 
-    let replies = tweet::user_timeline(thread_user, true, false, &c.token);
+    let replies = tweet::user_timeline(thread_user, true, false, &c.token, &handle);
 
-    for tweet in replies.call(Some(start_id), None).unwrap().into_iter().rev() {
+    for tweet in core.run(replies.call(Some(start_id), None)).unwrap().into_iter().rev() {
         if let Some(reply_id) = tweet.in_reply_to_status_id {
             if thread_ids.contains(&reply_id) {
                 thread_ids.insert(tweet.id);
