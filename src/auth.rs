@@ -886,7 +886,7 @@ pub fn verify_tokens<'a>(token: &Token, handle: &'a Handle)
 #[cfg(test)]
 mod tests {
     use super::bearer_request;
-    use hyper::header::{Authorization, HeaderFormat};
+    use hyper::header::Authorization;
 
     #[test]
     fn bearer_header() {
@@ -895,9 +895,8 @@ mod tests {
         let con_token = super::KeyPair::new(con_key, con_secret);
 
         let header = Authorization(bearer_request(&con_token));
-        let test = &header as &(HeaderFormat + Send + Sync);
 
-        let output = test.to_string();
+        let output = header.to_string();
 
         assert_eq!(output, "Basic eHZ6MWV2RlM0d0VFUFRHRUZQSEJvZzpMOHFxOVBaeVJnNmllS0dFS2hab2xHQzB2SldMdzhpRUo4OERSZHlPZw==");
     }
