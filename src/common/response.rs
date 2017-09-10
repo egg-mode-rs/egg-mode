@@ -5,16 +5,15 @@
 //! Infrastructure types related to packaging rate-limit information alongside responses from
 //! Twitter.
 
-use std::{slice, vec, io};
+use std::{slice, vec, io, mem};
 use std::iter::FromIterator;
 use std::ops::{Deref, DerefMut};
 use hyper::client::FutureResponse;
 use hyper::{self, Body, StatusCode, Request};
-use hyper::header::Headers;
+use hyper::header::{Headers, ContentLength};
 use hyper_tls::HttpsConnector;
 use tokio_core::reactor::Handle;
 use futures::{Async, Future, Poll, Stream};
-use futures::stream::Concat2;
 use rustc_serialize::json;
 use super::{FromJson, field};
 use error::{self, TwitterErrors};
@@ -367,7 +366,8 @@ pub struct RawFuture<'a> {
     response: Option<FutureResponse>,
     resp_headers: Option<Headers>,
     resp_status: Option<StatusCode>,
-    body_stream: Option<Concat2<Body>>,
+    body_stream: Option<Body>,
+    body: Vec<u8>,
 }
 
 impl<'a> RawFuture<'a> {
@@ -399,20 +399,26 @@ impl<'a> Future for RawFuture<'a> {
                 Ok(Async::Ready(resp)) => {
                     self.resp_headers = Some(resp.headers().clone());
                     self.resp_status = Some(resp.status());
-                    self.body_stream = Some(resp.body().concat2());
+                    if let Some(len) = resp.headers().get::<ContentLength>() {
+                        self.body.reserve(len.0 as usize);
+                    }
+                    self.body_stream = Some(resp.body());
                 }
             }
         }
 
-        let body = if let Some(mut resp) = self.body_stream.take() {
-            match resp.poll() {
-                Err(e) => return Err(e.into()),
-                Ok(Async::NotReady) => {
-                    self.body_stream = Some(resp);
-                    return Ok(Async::NotReady);
-                }
-                Ok(Async::Ready(body)) => {
-                    body
+        if let Some(mut resp) = self.body_stream.take() {
+            loop {
+                match resp.poll() {
+                    Err(e) => return Err(e.into()),
+                    Ok(Async::NotReady) => {
+                        self.body_stream = Some(resp);
+                        return Ok(Async::NotReady);
+                    }
+                    Ok(Async::Ready(None)) => break,
+                    Ok(Async::Ready(Some(chunk))) => {
+                        self.body.extend(&*chunk);
+                    }
                 }
             }
         }
@@ -420,7 +426,7 @@ impl<'a> Future for RawFuture<'a> {
             return Err(FutureAlreadyCompleted);
         };
 
-        match String::from_utf8(body.to_vec()) {
+        match String::from_utf8(mem::replace(&mut self.body, Vec::new())) {
             Err(_) => Err(io::Error::new(io::ErrorKind::InvalidData,
                                          "stream did not contain valid UTF-8").into()),
             Ok(resp) => {
@@ -458,6 +464,7 @@ pub fn make_raw_future<'a>(handle: &'a Handle, request: Request) -> RawFuture<'a
         resp_headers: None,
         resp_status: None,
         body_stream: None,
+        body: Vec::new(),
     }
 }
 
