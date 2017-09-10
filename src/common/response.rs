@@ -417,8 +417,7 @@ impl<'a> Future for RawFuture<'a> {
             }
         }
         else {
-            return Err(io::Error::new(io::ErrorKind::Other,
-                                      "TwitterFuture has already completed").into());
+            return Err(FutureAlreadyCompleted);
         };
 
         match String::from_utf8(body.to_vec()) {

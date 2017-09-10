@@ -62,6 +62,9 @@ pub enum Error {
     ///The response from Twitter was missing an expected value.  The enclosed value was the
     ///expected parameter.
     MissingValue(&'static str),
+    ///The `Future` being polled as already returned a completed value (or another error). In order
+    ///to retry the request, create the `Future` again.
+    FutureAlreadyCompleted,
     ///The response from Twitter returned an error structure instead of the expected response. The
     ///enclosed value was the response from Twitter.
     TwitterError(TwitterErrors),
@@ -97,6 +100,7 @@ impl std::fmt::Display for Error {
             Error::BadUrl => write!(f, "URL given did not match API method"),
             Error::InvalidResponse(err, ref ext) => write!(f, "Invalid response received: {} ({:?})", err, ext),
             Error::MissingValue(val) => write!(f, "Value missing from response: {}", val),
+            Error::FutureAlreadyCompleted => write!(f, "Future has already been completed"),
             Error::TwitterError(ref err) => write!(f, "Error(s) returned from Twitter: {}", err),
             Error::RateLimit(ts) => write!(f, "Rate limit reached, hold until {}", ts),
             Error::BadStatus(ref val) => write!(f, "Error status received: {}", val),
@@ -116,6 +120,7 @@ impl std::error::Error for Error {
             Error::BadUrl => "URL given did not match API method",
             Error::InvalidResponse(_, _) => "Invalid response received",
             Error::MissingValue(_) => "Value missing from response",
+            Error::FutureAlreadyCompleted => "Future has already been completed",
             Error::TwitterError(_) => "Error returned from Twitter",
             Error::RateLimit(_) => "Rate limit for method reached",
             Error::BadStatus(_) => "Response included error code",

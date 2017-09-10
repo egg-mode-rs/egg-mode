@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::collections::HashMap;
-use std::io;
 
 use futures::{Future, Async, Poll};
 
@@ -224,8 +223,7 @@ impl<'a> Future for CachedSearchFuture<'a> {
                 Err(e) => Err(e),
             }
         } else {
-            Err(io::Error::new(io::ErrorKind::Other,
-                               "CachedSearchFuture has already been completed").into())
+            Err(error::Error::FutureAlreadyCompleted)
         }
     }
 }

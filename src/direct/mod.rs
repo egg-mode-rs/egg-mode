@@ -45,7 +45,7 @@
 use common::*;
 
 use std::collections::HashMap;
-use std::{io, mem};
+use std::mem;
 
 use rustc_serialize::json;
 use chrono;
@@ -310,7 +310,7 @@ impl<'a> Timeline<'a> {
 
         TimelineFuture {
             timeline: self,
-            loader: Some(make_parsed_future(self.handle, req)),
+            loader: make_parsed_future(self.handle, req),
         }
     }
 
@@ -321,7 +321,7 @@ impl<'a> Timeline<'a> {
 
         TimelineFuture {
             timeline: self,
-            loader: Some(make_parsed_future(self.handle, req)),
+            loader: make_parsed_future(self.handle, req),
         }
     }
 
@@ -397,7 +397,7 @@ pub struct TimelineFuture<'timeline, 'handle>
     where 'handle: 'timeline
 {
     timeline: &'timeline mut Timeline<'handle>,
-    loader: Option<FutureResponse<'handle, Vec<DirectMessage>>>,
+    loader: FutureResponse<'handle, Vec<DirectMessage>>,
 }
 
 impl<'timeline, 'handle> Future for TimelineFuture<'timeline, 'handle>
@@ -407,22 +407,13 @@ impl<'timeline, 'handle> Future for TimelineFuture<'timeline, 'handle>
     type Error = error::Error;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        if let Some(mut fut) = self.loader.take() {
-            match fut.poll() {
-                Err(e) => Err(e),
-                Ok(Async::NotReady) => {
-                    self.loader = Some(fut);
-                    Ok(Async::NotReady)
-                }
-                Ok(Async::Ready(resp)) => {
-                    self.timeline.map_ids(&resp.response);
-                    Ok(Async::Ready(resp))
-                }
+        match self.loader.poll() {
+            Err(e) => Err(e),
+            Ok(Async::NotReady) => Ok(Async::NotReady),
+            Ok(Async::Ready(resp)) => {
+                self.timeline.map_ids(&resp.response);
+                Ok(Async::Ready(resp))
             }
-        }
-        else {
-            Err(io::Error::new(io::ErrorKind::Other,
-                               "TimelineFuture has already completed").into())
         }
     }
 }
@@ -629,8 +620,7 @@ impl<'a> Future for ConversationFuture<'a> {
 
             Ok(Async::Ready(tl))
         } else {
-            Err(io::Error::new(io::ErrorKind::Other,
-                               "ConversationFuture has already been loaded").into())
+            Err(error::Error::FutureAlreadyCompleted)
         }
     }
 }

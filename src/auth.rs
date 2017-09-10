@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std;
-use std::io;
 use std::error::Error;
 use std::borrow::Cow;
 use std::time::{UNIX_EPOCH, SystemTime};
@@ -717,7 +716,7 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair,
 
     AuthFuture {
         con_token: Some(con_token),
-        loader: Some(make_raw_future(handle, request)),
+        loader: make_raw_future(handle, request),
     }
 }
 
@@ -725,7 +724,7 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair,
 #[must_use = "futures do nothing unless polled"]
 pub struct AuthFuture<'a> {
     con_token: Option<KeyPair>,
-    loader: Option<RawFuture<'a>>,
+    loader: RawFuture<'a>,
 }
 
 impl<'a> Future for AuthFuture<'a> {
@@ -733,19 +732,13 @@ impl<'a> Future for AuthFuture<'a> {
     type Error = error::Error;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        let resp = if let Some(mut fut) = self.loader.take() {
-            match fut.poll() {
-                Err(e) => return Err(e),
-                Ok(Async::NotReady) => {
-                    self.loader = Some(fut);
-                    return Ok(Async::NotReady);
-                }
-                Ok(Async::Ready(resp)) => Some(resp),
-            }
-        }
-        else { None };
+        let full_resp = match self.loader.poll() {
+            Err(e) => return Err(e),
+            Ok(Async::NotReady) => return Ok(Async::NotReady),
+            Ok(Async::Ready(resp)) => resp,
+        };
 
-        if let (Some(full_resp), Some(con_token)) = (resp, self.con_token.take()) {
+        if let Some(con_token) = self.con_token.take() {
             let mut key: Option<String> = None;
             let mut secret: Option<String> = None;
             let mut id: Option<u64> = None;
@@ -777,8 +770,7 @@ impl<'a> Future for AuthFuture<'a> {
                 try!(username.ok_or(error::Error::MissingValue("screen_name"))))))
         }
         else {
-            Err(io::Error::new(io::ErrorKind::Other,
-                               "AuthFuture has already completed").into())
+            Err(error::Error::FutureAlreadyCompleted)
         }
     }
 }

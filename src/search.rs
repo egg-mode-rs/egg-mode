@@ -42,7 +42,6 @@
 //! [search-doc]: https://dev.twitter.com/rest/public/search
 //! [search-place]: https://dev.twitter.com/rest/public/search-by-place
 
-use std::io;
 use std::collections::HashMap;
 use std::fmt;
 
@@ -218,7 +217,7 @@ impl<'a> SearchBuilder<'a> {
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
         SearchFuture {
-            loader: Some(make_parsed_future(handle, req)),
+            loader: make_parsed_future(handle, req),
             params: Some(params),
         }
     }
@@ -230,7 +229,7 @@ impl<'a> SearchBuilder<'a> {
 /// encountered while loading or parsing the response.
 #[must_use = "futures do nothing unless polled"]
 pub struct SearchFuture<'a> {
-    loader: Option<FutureResponse<'a, SearchResult<'a>>>,
+    loader: FutureResponse<'a, SearchResult<'a>>,
     params: Option<ParamList<'a>>,
 }
 
@@ -239,26 +238,14 @@ impl<'a> Future for SearchFuture<'a> {
     type Error = error::Error;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        let resp = if let Some(mut fut) = self.loader.take() {
-            match fut.poll() {
-                Ok(Async::Ready(resp)) => Some(resp),
-                Ok(Async::NotReady) => {
-                    self.loader = Some(fut);
-                    return Ok(Async::NotReady);
-                }
-                Err(e) => return Err(e),
-            }
-        }
-        else { None };
+        let mut resp = match self.loader.poll() {
+            Ok(Async::Ready(resp)) => resp,
+            Ok(Async::NotReady) => return Ok(Async::NotReady),
+            Err(e) => return Err(e),
+        };
 
-        if let (Some(params), Some(mut resp)) = (self.params.take(), resp) {
-            resp.params = Some(params);
-            Ok(Async::Ready(resp))
-        }
-        else {
-            Err(io::Error::new(io::ErrorKind::Other,
-                               "SearchFuture has already completed").into())
-        }
+        resp.params = self.params.take();
+        Ok(Async::Ready(resp))
     }
 }
 
@@ -309,7 +296,7 @@ impl<'a> SearchResult<'a> {
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
         SearchFuture {
-            loader: Some(make_parsed_future(handle, req)),
+            loader: make_parsed_future(handle, req),
             params: Some(params),
         }
     }
@@ -329,7 +316,7 @@ impl<'a> SearchResult<'a> {
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
         SearchFuture {
-            loader: Some(make_parsed_future(handle, req)),
+            loader: make_parsed_future(handle, req),
             params: Some(params),
         }
     }
