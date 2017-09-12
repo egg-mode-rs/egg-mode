@@ -2,26 +2,34 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+//! Types and methods used to authenticate calls to Twitter.
+//!
+//! This module is meant to be internal, since the OAuth mechanisms are fairly specific to Twitter.
+//! Any relevant items for obtaining a Token are re-exported in the crate root. As such, the
+//! authentication overview is written on the Token type, rather than in this module docs.
+
 use std;
 use std::error::Error;
 use std::borrow::Cow;
 use std::time::{UNIX_EPOCH, SystemTime};
-use url::percent_encoding::{EncodeSet, utf8_percent_encode};
+
+use futures::{Future, Poll, Async};
+use hmac::{Hmac, Mac};
 use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer, Headers};
 use hyper::{Method, Request};
 use hyper::mime::Mime;
-use tokio_core::reactor::Handle;
-use futures::{Future, Poll, Async};
 use rand::{self, Rng};
-use hmac::{Hmac, Mac};
-use sha_1::Sha1;
 use rustc_serialize::base64::{self, ToBase64};
 use rustc_serialize::json;
-use super::{links, error};
-use super::common::*;
+use sha_1::Sha1;
+use tokio_core::reactor::Handle;
+use url::percent_encoding::{EncodeSet, utf8_percent_encode};
 
-//the encode sets in the url crate don't quite match what twitter wants,
-//so i'll make up my own
+use links;
+use error;
+use common::*;
+
+//the encode sets in the url crate don't quite match what twitter wants, so i'll make up my own
 #[derive(Copy, Clone)]
 struct TwitterEncodeSet;
 
@@ -42,10 +50,9 @@ fn percent_encode(src: &str) -> String {
 
 ///OAuth header set given to Twitter calls.
 ///
-///Since different authorization/authentication calls have various parameters
-///that go into this header, they're optionally placed at the end of this header.
-///On the other hand, `signature` is optional so a structured header can be
-///passed to `sign()` for signature.
+///Since different authorization/authentication calls have various parameters that go into this
+///header, they're optionally placed at the end of this header.  On the other hand, `signature` is
+///optional so a structured header can be passed to `sign()` for signature.
 #[derive(Clone, Debug)]
 struct TwitterOAuth {
     consumer_key: String,
@@ -136,20 +143,20 @@ impl Scheme for TwitterOAuth {
     }
 }
 
-///A key/secret pair representing an OAuth token.
+/// A key/secret pair representing an OAuth token.
 ///
-///This struct is used as part of the authentication process. You'll need to manually create at
-///least one of these, to hold onto your consumer token.
+/// This struct is used as part of the authentication process. You'll need to manually create at
+/// least one of these, to hold onto your consumer token.
 ///
-///For more information, see the documentation for [Tokens][].
+/// For more information, see the documentation for [Tokens][].
 ///
-///[Tokens]: enum.Token.html
+/// [Tokens]: enum.Token.html
 ///
-///# Example
+/// # Example
 ///
-///```rust
-///let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
-///```
+/// ```rust
+/// let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
+/// ```
 #[derive(Debug, Clone)]
 pub struct KeyPair {
     ///A key used to identify an application or user.
@@ -262,9 +269,13 @@ impl KeyPair {
 /// For "PIN-Based Authorization":
 ///
 /// ```rust,no_run
+/// # extern crate egg_mode; extern crate tokio_core;
+/// # use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (mut core, handle): (Core, Handle) = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
 /// // "oob" is needed for PIN-based auth; see docs for `request_token` for more info
-/// let request_token = egg_mode::request_token(&con_token, "oob").unwrap();
+/// let request_token = core.run(egg_mode::request_token(&con_token, "oob", &handle)).unwrap();
 /// let auth_url = egg_mode::authorize_url(&request_token);
 ///
 /// // give auth_url to the user, they can sign in to Twitter and accept your app's permissions.
@@ -274,10 +285,11 @@ impl KeyPair {
 ///
 /// // note this consumes con_token; if you want to sign in multiple accounts, clone it here
 /// let (token, user_id, screen_name) =
-///     egg_mode::access_token(con_token, &request_token, verifier).unwrap();
+///     core.run(egg_mode::access_token(con_token, &request_token, verifier, &handle)).unwrap();
 ///
 /// // token can be given to any egg_mode method that asks for a token
 /// // user_id and screen_name refer to the user who signed in
+/// # }
 /// ```
 ///
 /// **WARNING**: The consumer token and preset access token mentioned below are as privileged as
@@ -326,11 +338,16 @@ impl KeyPair {
 /// ### Example (Bearer Token)
 ///
 /// ```rust,no_run
+/// # extern crate egg_mode; extern crate tokio_core;
+/// # use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (mut core, handle): (Core, Handle) = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
-/// let token = egg_mode::bearer_token(&con_token).unwrap();
+/// let token = core.run(egg_mode::bearer_token(&con_token, &handle)).unwrap();
 ///
 /// // token can be given to *most* egg_mode methods that ask for a token
 /// // for restrictions, see docs for bearer_token
+/// # }
 /// ```
 #[derive(Debug, Clone)]
 pub enum Token {
@@ -439,6 +456,7 @@ fn bearer_request(con_token: &KeyPair) -> Basic {
     }
 }
 
+/// Assemble a signed GET request to the given URL with the given parameters.
 pub fn get(uri: &str,
            token: &Token,
            params: Option<&ParamList>) -> Request {
@@ -470,6 +488,7 @@ pub fn get(uri: &str,
     request
 }
 
+/// Assemble a signed POST request to the given URL with the given parameters.
 pub fn post(uri: &str,
             token: &Token,
             params: Option<&ParamList>) -> Request {
@@ -544,11 +563,18 @@ pub fn post(uri: &str,
 /// # Examples
 ///
 /// ```rust,no_run
+/// # extern crate egg_mode; extern crate tokio_core;
+/// # use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (mut core, handle): (Core, Handle) = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
 /// // for PIN-Based Auth
-/// let req_token = egg_mode::request_token(&con_token, "oob").unwrap();
+/// let req_token = core.run(egg_mode::request_token(&con_token, "oob", &handle)).unwrap();
 /// // for Sign In With Twitter/3-Legged Auth
-/// let req_token = egg_mode::request_token(&con_token, "https://myapp.io/auth").unwrap();
+/// let req_token = core.run(egg_mode::request_token(&con_token,
+///                                                  "https://myapp.io/auth",
+///                                                  &handle)).unwrap();
+/// # }
 /// ```
 pub fn request_token<'a, S: Into<String>>(con_token: &KeyPair, callback: S, handle: &'a Handle)
     -> TwitterFuture<'a, KeyPair>
@@ -701,8 +727,9 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 /// returned. If you would like to use the consumer token to authenticate multiple accounts in the
 /// same session, clone the `KeyPair` when passing it into this function.
 ///
-/// In addition to the final Access Token, this function also returns the User ID and screen name
-/// of the authenticated user.
+/// The `AuthFuture` returned by this function, when resolved, returns a tuple of three items: The
+/// final access token, the ID of the authenticated user, and the screen name of the authenticated
+/// user.
 pub fn access_token<'a, S: Into<String>>(con_token: KeyPair,
                                          request_token: &KeyPair,
                                          verifier: S,
@@ -721,6 +748,13 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair,
 }
 
 /// `Future` which yields an access token when it finishes.
+///
+/// See the docs for [`access_token`][] for more details.
+///
+/// [`access_token`]: fn.access_token.html
+///
+/// The `Future` implementation yields a tuple of three items upon success: The final access token,
+/// the ID of the authenticated user, and the screen name of the authenticated user.
 #[must_use = "futures do nothing unless polled"]
 pub struct AuthFuture<'a> {
     con_token: Option<KeyPair>,
@@ -826,12 +860,12 @@ pub fn bearer_token<'a>(con_token: &KeyPair, handle: &'a Handle)
     make_future(handle, request, parse_tok)
 }
 
-///Invalidate the given Bearer token using the given consumer KeyPair. Upon success, returns the
-///Token that was just invalidated.
+/// Invalidate the given Bearer token using the given consumer KeyPair. Upon success, returns the
+/// Token that was just invalidated.
 ///
-///# Panics
+/// # Panics
 ///
-///If this function is handed a `Token` that is not a Bearer token, this function will panic.
+/// If this function is handed a `Token` that is not a Bearer token, this function will panic.
 pub fn invalidate_bearer<'a>(handle: &'a Handle, con_token: &KeyPair, token: &Token)
     -> TwitterFuture<'a, Token>
 {
@@ -862,11 +896,11 @@ pub fn invalidate_bearer<'a>(handle: &'a Handle, con_token: &KeyPair, token: &To
     make_future(handle, request, parse_tok)
 }
 
-///If the given tokens are valid, return the user information for the authenticated user.
+/// If the given tokens are valid, return the user information for the authenticated user.
 ///
-///If you have cached access tokens, using this method is a convenient way to make sure they're
-///still valid. If the user has revoked access from your app, this function will return an error
-///from Twitter indicating that you don't have access to the user.
+/// If you have cached access tokens, using this method is a convenient way to make sure they're
+/// still valid. If the user has revoked access from your app, this function will return an error
+/// from Twitter indicating that you don't have access to the user.
 pub fn verify_tokens<'a>(token: &Token, handle: &'a Handle)
     -> FutureResponse<'a, ::user::TwitterUser>
 {
