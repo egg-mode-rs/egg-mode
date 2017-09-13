@@ -27,6 +27,20 @@ macro_rules! field_present {
 }
 
 ///Helper trait to provide a general interface for deserializing Twitter API data structures.
+///
+///Note that this is only here so i can customize the deserialization behavior of things from
+///Twitter. (And that i didn't think to use the actual `From` trait when i was setting this up, and
+///now it's one of the biggest backbone pieces of this library's infrastructure. `>_>`) If/when i
+///replace `rustc-serialize` with `serde`, this entire trait and associated infrastructure may be
+///discarded if i can replace it with attributes on the Deserialize derive.
+///
+///This is the gateway between "receiving a response from Twitter" and "giving a completed
+///structure to the user". For the most part, this is a fairly rote operation: use the provided
+///implementations in this module for standard-library types to assemble your final structure, or
+///defer to an implementation in some contained structure (this is what the `field` function is
+///for). However, if there's some conversion step i want to perform on top of the data - for
+///example, convert from codepoint indices to byte indices on a text range - that will also be
+///performed within the `FromJson` impl.
 pub trait FromJson : Sized {
     ///Parse the given Json object into a data structure.
     fn from_json(&json::Json) -> Result<Self, error::Error>;
@@ -39,6 +53,7 @@ pub trait FromJson : Sized {
     }
 }
 
+///Turn JSON arrays into Vecs.
 impl<T> FromJson for Vec<T> where T: FromJson {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         let arr = try!(input.as_array().ok_or_else(|| InvalidResponse("expected an array", Some(input.to_string()))));
@@ -47,6 +62,7 @@ impl<T> FromJson for Vec<T> where T: FromJson {
     }
 }
 
+///Turn a value that can be null into an optional value. Also turns empty arrays into None.
 impl<T> FromJson for Option<T> where T: FromJson {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if input.is_null() {
@@ -66,6 +82,7 @@ impl<T> FromJson for Option<T> where T: FromJson {
     }
 }
 
+///Box transparently defers to the inner type's impl.
 impl<T> FromJson for Box<T> where T: FromJson {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         Ok(Box::new(try!(T::from_json(input))))
@@ -114,6 +131,7 @@ impl FromJson for bool {
     }
 }
 
+///Turn arrays of exactly two integers into a pair of integers.
 impl FromJson for (usize, usize) {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         //assumptions: input is
@@ -131,6 +149,7 @@ impl FromJson for (usize, usize) {
     }
 }
 
+///Turn arrays of exactly two integers into a pair of integers.
 impl FromJson for (i32, i32) {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         //assumptions: input is
@@ -148,6 +167,7 @@ impl FromJson for (i32, i32) {
     }
 }
 
+///Turn arrays of exactly two floats into a pair of floats.
 impl FromJson for (f64, f64) {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         //assumptions: input is
@@ -165,6 +185,9 @@ impl FromJson for (f64, f64) {
     }
 }
 
+///For instances where i want to load the raw JSON, here's a pass-through impl. Also overrides
+///`from_str` to just parse it directly rather than deferring to the `from_json` function, which
+///would wind up cloning the `Json`.
 impl FromJson for json::Json {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         Ok(input.clone())
@@ -193,6 +216,7 @@ impl FromJson for chrono::DateTime<chrono::Utc> {
     }
 }
 
+///Load the given field from the given JSON structure as the desired type.
 pub fn field<T: FromJson>(input: &json::Json, field: &'static str) -> Result<T, error::Error> {
     T::from_json(input.find(field).unwrap_or(&json::Json::Null))
 }

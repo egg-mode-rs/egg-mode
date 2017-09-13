@@ -479,6 +479,12 @@ pub fn make_raw_future<'a>(handle: &'a Handle, request: Request) -> RawFuture<'a
 ///
 /// [hyper.rs]: https://hyper.rs/guides/
 /// [tokio.rs]: https://tokio.rs/docs/getting-started/tokio/
+///
+/// Most functions in this library use the type alias [`FutureResponse`][], which is a
+/// `TwitterFuture` that has a [`Response`][] around its item.
+///
+/// [`FutureResponse`]: type.FutureResponse.html
+/// [`Response`]: struct.Response.html
 #[must_use = "futures do nothing unless polled"]
 pub struct TwitterFuture<'a, T> {
     request: RawFuture<'a>,
