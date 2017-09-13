@@ -14,6 +14,9 @@
     than short-circuiting an error.
   - In the refactor, the methods on `direct::ConversationTimeline` were changed to consume the
     Timeline and return it at the end of a successful load.
+  - There's a new variant of `Error`, `FutureAlreadyCompleted`, for when a Future was polled after
+    it already returned a value. This is a **breaking change** if you were exhaustively matching on
+    `Error` before.
 - Several dependencies have been updated
   - Notably, the type for all the timestamps was renamed, since chrono changed it from `UTC` to
     `Utc`
