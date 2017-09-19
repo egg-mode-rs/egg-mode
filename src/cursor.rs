@@ -247,9 +247,10 @@ impl Cursor for ListCursor {
 /// method's default or by `with_page_size`/the `page_size` field) when it's polled, and serving
 /// the individual elements from that locally-cached page until it runs out. This can be nice, but
 /// it also means that your only warning that something involves a network call is that the stream
-/// returns `Ok(Async::NotReady)`. If you want to know that ahead of time, that's where the
-/// `call()` method comes in. By using `call()`, you can get the cursor struct directly from
-/// Twitter. With that you can iterate over the results and page forward and backward as needed:
+/// returns `Ok(Async::NotReady)`, by which time the network call has already started. If you want
+/// to know that ahead of time, that's where the `call()` method comes in. By using `call()`, you
+/// can get the cursor struct directly from Twitter. With that you can iterate over the results and
+/// page forward and backward as needed:
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core;
