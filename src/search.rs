@@ -229,8 +229,10 @@ pub struct SearchResult<'a> {
     ///The query used to generate this page of results. Note that changing this will not affect the
     ///`next_page` method.
     pub query: String,
-    max_id: u64,
-    since_id: u64,
+    ///Last tweet id in this page of results. This id can be used in `SearchBuilder::since_tweet`
+    pub max_id: u64,
+    ///First tweet id in this page of results. This id can be used in `SearchBuilder::since_tweet`
+    pub since_id: u64,
     params: Option<ParamList<'a>>,
 }
 
