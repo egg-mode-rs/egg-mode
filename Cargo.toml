@@ -15,7 +15,7 @@ travis-ci = { repository = "QuietMisdreavus/twitter-rs" }
 appveyor = { repository = "QuietMisdreavus/twitter-rs" }
 
 [dependencies]
-hyper = "0.10.9"
+hyper = "0.10.13"
 hyper-native-tls = "0.2.4"
 native-tls = "0.1.4"
 url = "1.5.1"
