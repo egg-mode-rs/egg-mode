@@ -93,9 +93,9 @@ impl fmt::Display for ResultType {
 ///Represents a radius around a given location to return search results for.
 pub enum Distance {
     ///A radius given in miles.
-    Miles(u32),
+    Miles(f32),
     ///A radius given in kilometers.
-    Kilometers(u32),
+    Kilometers(f32),
 }
 
 ///Represents a tweet search query before being sent.
