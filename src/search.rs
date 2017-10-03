@@ -254,7 +254,7 @@ impl<'a> FromJson for SearchResult<'a> {
 
 impl<'a> SearchResult<'a> {
     ///Load the next page of search results for the same query.
-    pub fn older(&self, token: &auth::Token) -> WebResponse<SearchResult> {
+    pub fn older(&self, token: &auth::Token) -> WebResponse<SearchResult<'a>> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("since_id");
 
@@ -273,7 +273,7 @@ impl<'a> SearchResult<'a> {
     }
 
     ///Load the previous page of search results for the same query.
-    pub fn newer(&self, token: &auth::Token) -> WebResponse<SearchResult> {
+    pub fn newer(&self, token: &auth::Token) -> WebResponse<SearchResult<'a>> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("max_id");
 
