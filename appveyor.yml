@@ -9,10 +9,6 @@ environment:
   - TARGET: beta-i686-pc-windows-msvc
   - TARGET: nightly-x86_64-pc-windows-msvc
   - TARGET: nightly-i686-pc-windows-msvc
-  - TARGET: 1.17.0-x86_64-pc-windows-msvc
-    MSYS_BITS: 64
-  - TARGET: 1.17.0-i686-pc-windows-msvc
-    MSYS_BITS: 32
   - TARGET: stable-x86_64-pc-windows-gnu
     MSYS_BITS: 64
   - TARGET: stable-i686-pc-windows-gnu
