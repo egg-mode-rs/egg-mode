@@ -15,19 +15,20 @@ use common::*;
 use super::*;
 use super::PlaceQuery;
 
-///Load the place with the given ID.
+/// Load the place with the given ID.
 ///
-///## Examples
+/// ## Examples
 ///
-///```rust,no_run
-///# let token = egg_mode::Token::Access {
-///#     consumer: egg_mode::KeyPair::new("", ""),
-///#     access: egg_mode::KeyPair::new("", ""),
-///# };
-///let result = egg_mode::place::show("18810aa5b43e76c7", &token).unwrap();
+/// ```rust,no_run
+/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// let result = core.run(egg_mode::place::show("18810aa5b43e76c7", &token, &handle)).unwrap();
 ///
-///assert!(result.full_name == "Dallas, TX");
-///```
+/// assert!(result.full_name == "Dallas, TX");
+/// # }
+/// ```
 pub fn show<'a>(id: &str, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Place> {
     let url = format!("{}/{}.json", links::place::SHOW_STEM, id);
 
@@ -36,23 +37,24 @@ pub fn show<'a>(id: &str, token: &auth::Token, handle: &'a Handle) -> FutureResp
     make_parsed_future(handle, req)
 }
 
-///Begins building a reverse-geocode search with the given coordinate.
+/// Begins building a reverse-geocode search with the given coordinate.
 ///
-///## Examples
+/// ## Examples
 ///
-///```rust,no_run
-///# let token = egg_mode::Token::Access {
-///#     consumer: egg_mode::KeyPair::new("", ""),
-///#     access: egg_mode::KeyPair::new("", ""),
-///# };
-///use egg_mode::place::{self, PlaceType};
-///let result = place::reverse_geocode(51.507222, -0.1275)
-///                   .granularity(PlaceType::City)
-///                   .call(&token)
-///                   .unwrap();
+/// ```rust,no_run
+/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// use egg_mode::place::{self, PlaceType};
+/// let result = core.run(place::reverse_geocode(51.507222, -0.1275)
+///                             .granularity(PlaceType::City)
+///                             .call(&token, &handle))
+///                  .unwrap();
 ///
-///assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
-///```
+/// assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
+/// # }
+/// ```
 pub fn reverse_geocode(latitude: f64, longitude: f64) -> GeocodeBuilder
 {
     GeocodeBuilder::new(latitude, longitude)
@@ -102,44 +104,46 @@ pub fn reverse_geocode_url<'a>(url: &'a str, token: &'a auth::Token, handle: &'a
     CachedSearchFuture::new(links::place::REVERSE_GEOCODE, token, handle, params)
 }
 
-///Begins building a location search via latitude/longitude.
+/// Begins building a location search via latitude/longitude.
 ///
-///## Example
+/// ## Example
 ///
-///```rust,no_run
-///# let token = egg_mode::Token::Access {
-///#     consumer: egg_mode::KeyPair::new("", ""),
-///#     access: egg_mode::KeyPair::new("", ""),
-///# };
-///use egg_mode::place::{self, PlaceType};
-///let result = place::search_point(51.507222, -0.1275)
-///                   .granularity(PlaceType::City)
-///                   .call(&token)
-///                   .unwrap();
+/// ```rust,no_run
+/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// use egg_mode::place::{self, PlaceType};
+/// let result = core.run(place::search_point(51.507222, -0.1275)
+///                             .granularity(PlaceType::City)
+///                             .call(&token, &handle))
+///                  .unwrap();
 ///
-///assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
-///```
+/// assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
+/// # }
+/// ```
 pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder<'static> {
     SearchBuilder::new(PlaceQuery::LatLon(latitude, longitude))
 }
 
-///Begins building a location search via a text query.
+/// Begins building a location search via a text query.
 ///
-///## Example
+/// ## Example
 ///
-///```rust,no_run
-///# let token = egg_mode::Token::Access {
-///#     consumer: egg_mode::KeyPair::new("", ""),
-///#     access: egg_mode::KeyPair::new("", ""),
-///# };
-///use egg_mode::place::{self, PlaceType};
-///let result = place::search_query("columbia")
-///                   .granularity(PlaceType::Admin)
-///                   .call(&token)
-///                   .unwrap();
+/// ```rust,no_run
+/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// use egg_mode::place::{self, PlaceType};
+/// let result = core.run(place::search_query("columbia")
+///                             .granularity(PlaceType::Admin)
+///                             .call(&token, &handle))
+///                  .unwrap();
 ///
-///assert!(result.results.iter().any(|pl| pl.full_name == "British Columbia, Canada"));
-///```
+/// assert!(result.results.iter().any(|pl| pl.full_name == "British Columbia, Canada"));
+/// # }
+/// ```
 pub fn search_query<'a>(query: &'a str) -> SearchBuilder<'a> {
     SearchBuilder::new(PlaceQuery::Query(query))
 }
