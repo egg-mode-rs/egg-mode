@@ -203,31 +203,33 @@ impl FromJson for DMEntities {
 /// `start` to load the first page of results:
 ///
 /// ```rust,no_run
-/// # let token = egg_mode::Token::Access {
-/// #     consumer: egg_mode::KeyPair::new("", ""),
-/// #     access: egg_mode::KeyPair::new("", ""),
-/// # };
-/// let mut timeline = egg_mode::direct::received(&token)
-///                                .with_page_size(10);
+/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// let mut timeline = egg_mode::direct::received(&token, &handle)
+///                                     .with_page_size(10);
 ///
-/// for dm in &timeline.start().unwrap().response {
+/// for dm in &core.run(timeline.start()).unwrap() {
 ///     println!("<@{}> {}", dm.sender_screen_name, dm.text);
 /// }
+/// # }
 /// ```
 ///
 /// If you need to load the next set of messages, call `older`, which will automatically update the
 /// IDs it tracks:
 ///
 /// ```rust,no_run
-/// # let token = egg_mode::Token::Access {
-/// #     consumer: egg_mode::KeyPair::new("", ""),
-/// #     access: egg_mode::KeyPair::new("", ""),
-/// # };
-/// # let mut timeline = egg_mode::direct::received(&token);
-/// # timeline.start().unwrap();
-/// for dm in &timeline.older(None).unwrap().response {
+/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// # let mut timeline = egg_mode::direct::received(&token, &handle);
+/// # core.run(timeline.start()).unwrap();
+/// for dm in &core.run(timeline.older(None)).unwrap() {
 ///     println!("<@{}> {}", dm.sender_screen_name, dm.text);
 /// }
+/// # }
 /// ```
 ///
 /// ...and similarly for `newer`, which operates in a similar fashion.
@@ -238,25 +240,26 @@ impl FromJson for DMEntities {
 /// load only those messages you need like this:
 ///
 /// ```rust,no_run
-/// # let token = egg_mode::Token::Access {
-/// #     consumer: egg_mode::KeyPair::new("", ""),
-/// #     access: egg_mode::KeyPair::new("", ""),
-/// # };
-/// let mut timeline = egg_mode::direct::received(&token)
-///                                .with_page_size(10);
+/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// let mut timeline = egg_mode::direct::received(&token, &handle)
+///                                     .with_page_size(10);
 ///
-/// timeline.start().unwrap();
+/// core.run(timeline.start()).unwrap();
 ///
 /// //keep the max_id for later
 /// let reload_id = timeline.max_id.unwrap();
 ///
 /// //simulate scrolling down a little bit
-/// timeline.older(None).unwrap();
-/// timeline.older(None).unwrap();
+/// core.run(timeline.older(None)).unwrap();
+/// core.run(timeline.older(None)).unwrap();
 ///
 /// //reload the timeline with only what's new
 /// timeline.reset();
-/// timeline.older(Some(reload_id)).unwrap();
+/// core.run(timeline.older(Some(reload_id))).unwrap();
+/// # }
 /// ```
 ///
 /// Here, the argument to `older` means "older than what I just returned, but newer than the given
@@ -451,9 +454,9 @@ fn merge(this: &mut DMConversations, conversations: DMConversations) {
 /// conversations by their recipient.
 ///
 /// This timeline loader is meant to get around a limitation of the direct message API endpoints:
-/// Twitter only gives endpoints to load all the messages sent my the authenticated user, or all
-/// the messages received by the authenticated user. However, the common user interface for DMs is
-/// to separate them by the other account in the conversation. This loader is a higher-level
+/// Twitter only gives endpoints to load all the messages *sent* by the authenticated user, or all
+/// the messages *received* by the authenticated user. However, the common user interface for DMs
+/// is to separate them by the other account in the conversation. This loader is a higher-level
 /// wrapper over the direct `sent` and `received` calls to achieve this interface without library
 /// users having to implement it themselves.
 ///
@@ -463,9 +466,11 @@ fn merge(this: &mut DMConversations, conversations: DMConversations) {
 ///
 /// [`Timeline`]: struct.Timeline.html
 ///
-/// `ConversationTimeline` keeps a cache of all the messages its loaded, and returns a reference to
-/// that cache when it loads more messages. This means that every time you load more messages, you
-/// get the *complete* conversations view, not just the new messages.
+/// `ConversationTimeline` keeps a cache of all the messages its loaded, and updates this during
+/// calls to Twitter. Any calls on this timeline that generate a `ConversationFuture` will take
+/// ownership of the `ConversationTimeline` so that it can update this cache. The Future will
+/// return the `ConversationTimeline` on success. To view the current cache, use the
+/// `conversations` field.
 ///
 /// There are two methods to load messages, and they operate by extending the cache by loading
 /// messages either older or newer than the extent of the cache.
@@ -481,20 +486,24 @@ fn merge(this: &mut DMConversations, conversations: DMConversations) {
 /// # Example
 ///
 /// ```rust,no_run
-/// # let token = egg_mode::Token::Access {
-/// #     consumer: egg_mode::KeyPair::new("", ""),
-/// #     access: egg_mode::KeyPair::new("", ""),
-/// # };
-/// let mut conversations = egg_mode::direct::conversations(&token);
+/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// let mut conversations = egg_mode::direct::conversations(&token, &handle);
 ///
-/// // newest() returns a &HashMap, which can be iterated directly as a by-ref iterator
-/// for (id, convo) in conversations.newest().unwrap() {
-///     let user = egg_mode::user::show(id, &token).unwrap();
+/// // newest() and oldest() consume the Timeline and give it back on success, so assign it back
+/// // when it's done
+/// conversations = core.run(conversations.newest()).unwrap();
+///
+/// for (id, convo) in &conversations.conversations {
+///     let user = core.run(egg_mode::user::show(id, &token, &handle)).unwrap();
 ///     println!("Conversation with @{}", user.screen_name);
 ///     for msg in convo {
 ///         println!("<@{}> {}", msg.sender_screen_name, msg.text);
 ///     }
 /// }
+/// # }
 /// ```
 pub struct ConversationTimeline<'a> {
     sent: Timeline<'a>,
