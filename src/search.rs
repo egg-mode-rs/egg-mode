@@ -10,20 +10,21 @@
 //! page of results, hand your tokens to `call`.
 //!
 //! ```rust,no_run
-//! # let token = egg_mode::Token::Access {
-//! #     consumer: egg_mode::KeyPair::new("", ""),
-//! #     access: egg_mode::KeyPair::new("", ""),
-//! # };
+//! # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+//! # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+//! # fn main() {
+//! # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
 //! use egg_mode::search::{self, ResultType};
 //!
-//! let search = search::search("rustlang")
-//!                     .result_type(ResultType::Recent)
-//!                     .call(&token)
-//!                     .unwrap();
+//! let search = core.run(search::search("rustlang")
+//!                              .result_type(ResultType::Recent)
+//!                              .call(&token, &handle))
+//!                  .unwrap();
 //!
 //! for tweet in &search.statuses {
 //!     println!("(@{}) {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
 //! }
+//! # }
 //! ```
 //!
 //! Once you have your `SearchResult`, you can navigate the search results by calling `older` and
