@@ -169,28 +169,29 @@ impl FromJson for Configuration {
     }
 }
 
-///Represents the current rate-limit status of many Twitter API calls.
+/// Represents the current rate-limit status of many Twitter API calls.
 ///
-///This is organized by module, so for example, if you wanted to see your rate-limit status for
-///`tweet::home_timeline`, you could access it like this:
+/// This is organized by module, so for example, if you wanted to see your rate-limit status for
+/// `tweet::home_timeline`, you could access it like this:
 ///
-///```rust,no_run
-///# let token = egg_mode::Token::Access {
-///#     consumer: egg_mode::KeyPair::new("", ""),
-///#     access: egg_mode::KeyPair::new("", ""),
-///# };
-///# let status = egg_mode::service::rate_limit_status(&token).unwrap();
-///use egg_mode::service::TweetMethod;
-///println!("home_timeline calls remaining: {}",
-///         status.tweet[&TweetMethod::HomeTimeline].rate_limit_remaining);
-///```
+/// ```rust,no_run
+/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// # let status = core.run(egg_mode::service::rate_limit_status(&token, &handle)).unwrap();
+/// use egg_mode::service::TweetMethod;
+/// println!("home_timeline calls remaining: {}",
+///          status.tweet[&TweetMethod::HomeTimeline].rate_limit_remaining);
+/// # }
+/// ```
 ///
-///It's important to note that not every API method is available through this call. Namely, most
-///calls that require a POST under-the-hood (those that add or modify data with the Twitter
-///service) are not shown through this method. For a listing of methods available for rate-limit
-///querying, see the `*Method` enums available in [`egg_mode::service`][].
+/// It's important to note that not every API method is available through this call. Namely, most
+/// calls that require a POST under-the-hood (those that add or modify data with the Twitter
+/// service) are not shown through this method. For a listing of methods available for rate-limit
+/// querying, see the `*Method` enums available in [`egg_mode::service`][].
 ///
-///[`egg_mode::service`]: index.html
+/// [`egg_mode::service`]: index.html
 #[derive(Debug)]
 pub struct RateLimitStatus {
     ///The rate-limit status for methods in the `direct` module.
