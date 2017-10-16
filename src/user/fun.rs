@@ -301,9 +301,9 @@ pub fn outgoing_requests<'a>(token: &'a auth::Token, handle: &'a Handle)
 /// Follow the given account with the authenticated user, and set whether device notifications
 /// should be enabled.
 ///
-/// Upon success, the future returned by this function returns `Ok` with the user that was just
-/// followed, even when following a protected account. In the latter case, this indicates that the
-/// follow request was successfully sent.
+/// Upon success, the future returned by this function yields the user that was just followed, even
+/// when following a protected account. In the latter case, this indicates that the follow request
+/// was successfully sent.
 ///
 /// Calling this with an account the user already follows may return an error, or ("for performance
 /// reasons") may return success without changing any account settings.
@@ -322,8 +322,7 @@ pub fn follow<'a, 'h, T: Into<UserID<'a>>>(acct: T, notifications: bool,
 
 /// Unfollow the given account with the authenticated user.
 ///
-/// Upon success, the future returned by this function returns `Ok` with the user that was just
-/// unfollowed.
+/// Upon success, the future returned by this function yields the user that was just unfollowed.
 ///
 /// Calling this with an account the user doesn't follow will return success, even though it doesn't
 /// change any settings.
@@ -365,7 +364,7 @@ pub fn update_follow<'a, 'h, T>(acct: T, notifications: Option<bool>, retweets: 
 
 /// Block the given account with the authenticated user.
 ///
-/// Upon success, the future returned by this function returns `Ok` with the given user.
+/// Upon success, the future returned by this function yields the given user.
 pub fn block<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &'h Handle)
     -> FutureResponse<'h, TwitterUser>
 {
@@ -379,7 +378,7 @@ pub fn block<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: 
 
 /// Block the given account and report it for spam, with the authenticated user.
 ///
-/// Upon success, the future returned by this function returns `Ok` with the given user.
+/// Upon success, the future returned by this function yields the given user.
 pub fn report_spam<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &'h Handle)
     -> FutureResponse<'h, TwitterUser>
 {
@@ -393,7 +392,7 @@ pub fn report_spam<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, ha
 
 /// Unblock the given user with the authenticated user.
 ///
-/// Upon success, the future returned by this function returns `Ok` with the given user.
+/// Upon success, the future returned by this function yields the given user.
 pub fn unblock<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &'h Handle)
     -> FutureResponse<'h, TwitterUser>
 {
@@ -407,7 +406,7 @@ pub fn unblock<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle
 
 /// Mute the given user with the authenticated user.
 ///
-/// Upon success, the future returned by this function returns `Ok` with the given user.
+/// Upon success, the future returned by this function yields the given user.
 pub fn mute<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &'h Handle)
     -> FutureResponse<'h, TwitterUser>
 {
@@ -421,7 +420,7 @@ pub fn mute<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &
 
 /// Unmute the given user with the authenticated user.
 ///
-/// Upon success, the future returned by this function returns `Ok` with the given user.
+/// Upon success, the future returned by this function yields the given user.
 pub fn unmute<'a, 'h, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &'h Handle)
     -> FutureResponse<'h, TwitterUser>
 {

@@ -17,8 +17,8 @@
 //!
 //! * `DirectMessage`/`DMEntities`: A single DM and its associated entities. The `DMEntities`
 //!   struct contains information about URLs, user mentions, and hashtags in the DM.
-//! * `Timeline`: Effectively the same as `tweet::Timeline`, but returns `DirectMessage`s instead.
-//!   Returned by functions that traverse collections of DMs.
+//! * `Timeline`: Effectively the same as `tweet::Timeline`, but gives out `DirectMessage`s
+//!   instead.  Returned by functions that traverse collections of DMs.
 //! * `ConversationTimeline`/`DMConversations`: This struct and alias are part of the
 //!   "conversations" wrapper for loading direct messages into per-recipient threads.
 //!

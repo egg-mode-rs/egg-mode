@@ -28,7 +28,7 @@ use error::Error::{InvalidResponse, MissingValue};
 use links;
 use common::*;
 
-///Returns the current Twitter Terms of Service as plain text.
+///Returns a future that resolves to the current Twitter Terms of Service as plain text.
 ///
 ///While the official home of Twitter's TOS is https://twitter.com/tos, this allows you to obtain a
 ///plain-text copy of it to display in your application.
@@ -45,7 +45,7 @@ pub fn terms<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, 
     make_future(handle, req, parse_terms)
 }
 
-///Returns the current Twitter Privacy Policy as plain text.
+///Returns a future that resolves to the current Twitter Privacy Policy as plain text.
 ///
 ///While the official home of Twitter's Privacy Policy is https://twitter.com/privacy, this allows
 ///you to obtain a plain-text copy of it to display in your application.
@@ -62,8 +62,8 @@ pub fn privacy<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a
     make_future(handle, req, parse_policy)
 }
 
-///Return the current configuration from Twitter, including the maximum length of a t.co URL and
-///maximum photo resolutions per size, among others.
+///Returns a future that resolves to the current configuration from Twitter, including the maximum
+///length of a t.co URL and maximum photo resolutions per size, among others.
 ///
 ///From Twitter: "It is recommended applications request this endpoint when they are loaded, but no
 ///more than once a day."

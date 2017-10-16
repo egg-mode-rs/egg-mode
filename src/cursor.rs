@@ -34,7 +34,7 @@ pub trait Cursor {
     fn previous_cursor_id(&self) -> i64;
     ///Returns a numeric reference to the next page of results.
     fn next_cursor_id(&self) -> i64;
-    ///Consumes the cursor and returns the collection of results from inside.
+    ///Unwraps the cursor, returning the collection of results from inside.
     fn into_inner(self) -> Vec<Self::Item>;
 }
 

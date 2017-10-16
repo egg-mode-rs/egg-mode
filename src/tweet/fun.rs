@@ -68,13 +68,16 @@ pub fn retweeters_of<'a>(id: u64, token: &'a auth::Token, handle: &'a Handle)
 ///Lookup tweet information for the given list of tweet IDs.
 ///
 ///This function differs from `lookup_map` in how it handles protected or nonexistent tweets.
-///`lookup` simply returns a Vec of all the tweets it could find, leaving out any that it couldn't
-///find.
+///`lookup` gives a Vec of just the tweets it could load, leaving out any that it couldn't find.
 pub fn lookup<'a, I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle: &'a Handle)
     -> FutureResponse<'a, Vec<Tweet>>
 {
     let mut params = HashMap::new();
-    let id_param = ids.into_iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
+    let id_param = ids.into_iter().fold(String::new(), |mut acc, x| {
+        if !acc.is_empty() { acc.push(','); }
+        acc.push_str(&x.to_string());
+        acc
+    });
     add_param(&mut params, "id", id_param);
     add_param(&mut params, "tweet_mode", "extended");
 
@@ -87,14 +90,18 @@ pub fn lookup<'a, I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle
 ///couldn't be found.
 ///
 ///This function differs from `lookup` in how it handles protected or nonexistent tweets.
-///`lookup_map` returns a map containing every ID in the input slice; tweets that don't exist or
+///`lookup_map` gives a map containing every ID in the input slice; tweets that don't exist or
 ///can't be read by the authenticated user store `None` in the map, whereas tweets that could be
 ///loaded store `Some` and the requested status.
 pub fn lookup_map<'a, I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle: &'a Handle)
     -> FutureResponse<'a, HashMap<u64, Option<Tweet>>>
 {
     let mut params = HashMap::new();
-    let id_param = ids.into_iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",");
+    let id_param = ids.into_iter().fold(String::new(), |mut acc, x| {
+        if !acc.is_empty() { acc.push(','); }
+        acc.push_str(&x.to_string());
+        acc
+    });
     add_param(&mut params, "id", id_param);
     add_param(&mut params, "map", "true");
     add_param(&mut params, "tweet_mode", "extended");
@@ -194,7 +201,8 @@ pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, handle
 
 ///Retweet the given status as the authenticated user.
 ///
-///On success, returns the retweet, with the original status contained in `retweeted_status`.
+///On success, the future returned by this function yields the retweet, with the original status
+///contained in `retweeted_status`.
 pub fn retweet<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "tweet_mode", "extended");
@@ -211,7 +219,7 @@ pub fn retweet<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureRe
 ///The given ID may either be the original status, or the ID of the authenticated user's retweet of
 ///it.
 ///
-///On success, returns the original tweet.
+///On success, the future returned by this function yields the original tweet.
 pub fn unretweet<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "tweet_mode", "extended");
@@ -225,7 +233,7 @@ pub fn unretweet<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> Future
 
 ///Like the given status as the authenticated user.
 ///
-///On success, returns the liked tweet.
+///On success, the future returned by this function yields the liked tweet.
 pub fn like<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
@@ -238,7 +246,7 @@ pub fn like<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureRespo
 
 ///Clears a like of the given status as the authenticated user.
 ///
-///On success, returns the given tweet.
+///On success, the future returned by this function yields the given tweet.
 pub fn unlike<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
@@ -251,7 +259,7 @@ pub fn unlike<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureRes
 
 ///Delete the given tweet. The authenticated user must be the user who posted the given tweet.
 ///
-///On success, returns the given tweet.
+///On success, the future returned by this function yields the given tweet.
 pub fn delete<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "tweet_mode", "extended");

@@ -727,7 +727,7 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 /// returned. If you would like to use the consumer token to authenticate multiple accounts in the
 /// same session, clone the `KeyPair` when passing it into this function.
 ///
-/// The `AuthFuture` returned by this function, when resolved, returns a tuple of three items: The
+/// The `AuthFuture` returned by this function, on success, yields a tuple of three items: The
 /// final access token, the ID of the authenticated user, and the screen name of the authenticated
 /// user.
 pub fn access_token<'a, S: Into<String>>(con_token: KeyPair,
@@ -860,8 +860,8 @@ pub fn bearer_token<'a>(con_token: &KeyPair, handle: &'a Handle)
     make_future(handle, request, parse_tok)
 }
 
-/// Invalidate the given Bearer token using the given consumer KeyPair. Upon success, returns the
-/// Token that was just invalidated.
+/// Invalidate the given Bearer token using the given consumer KeyPair. Upon success, the future
+/// returned by this function yields the Token that was just invalidated.
 ///
 /// # Panics
 ///

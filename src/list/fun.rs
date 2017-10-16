@@ -16,7 +16,7 @@ use tweet;
 
 ///Look up the lists the given user has been added to.
 ///
-///This function returns an iterator over the lists returned by Twitter. This method defaults to
+///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
 pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &'a Handle)
     -> CursorIter<'a, ListCursor>
@@ -54,7 +54,7 @@ pub fn list<'a, 'id, T: Into<UserID<'id>>>(user: T,
 
 ///Look up the lists the given user is subscribed to, but not ones the user made themselves.
 ///
-///This function returns an iterator over the lists returned by Twitter. This method defaults to
+///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
 pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &'a Handle)
     -> CursorIter<'a, ListCursor>
@@ -66,7 +66,7 @@ pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, h
 
 ///Look up the lists created by the given user.
 ///
-///This function returns an iterator over the lists returned by Twitter. This method defaults to
+///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
 pub fn ownerships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &'a Handle)
     -> CursorIter<'a, ListCursor>
@@ -89,7 +89,7 @@ pub fn show<'a>(list: ListID, token: &auth::Token, handle: &'a Handle) -> Future
 
 ///Look up the users that have been added to the given list.
 ///
-///This function returns an iterator over the users returned by Twitter. This method defaults to
+///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
 pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &'a Handle)
     -> CursorIter<'a, UserCursor>
@@ -103,7 +103,7 @@ pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &'a Handle)
 
 ///Look up the users that have subscribed to the given list.
 ///
-///This function returns an iterator over the users returned by Twitter. This method defaults to
+///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
 pub fn subscribers<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &'a Handle)
     -> CursorIter<'a, UserCursor>
@@ -211,7 +211,7 @@ pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token, ha
 ///
 ///Note that lists cannot have more than 5000 members.
 ///
-///Upon success, returns the freshly-modified list.
+///Upon success, the future returned by this function yields the freshly-modified list.
 pub fn add_member<'a, 'id, T: Into<UserID<'id>>>(list: ListID,
                                                  user: T,
                                                  token: &auth::Token,

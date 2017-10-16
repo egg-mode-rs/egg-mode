@@ -59,7 +59,8 @@ pub fn send<'a, 'id, T: Into<UserID<'id>>>(to: T, text: &str, token: &auth::Toke
 ///
 ///The authenticated user must be the sender of this DM for this call to be successful.
 ///
-///On a successful deletion, returns the freshly-deleted message.
+///On a successful deletion, the future returned by this function yields the freshly-deleted
+///message.
 pub fn delete<'a>(id: u64, token: &auth::Token, handle: &'a Handle)
     -> FutureResponse<'a, DirectMessage>
 {
