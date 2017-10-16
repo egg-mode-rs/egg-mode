@@ -6,20 +6,23 @@ extern crate egg_mode;
 
 mod common;
 
+use common::tokio_core::reactor;
+
 fn main() {
-    let config = common::Config::load();
+    let mut core = reactor::Core::new().unwrap();
+
+    let config = common::Config::load(&mut core);
+    let handle = core.handle();
     let tweet_id = 766678057788829697;
 
     println!("");
     println!("Load up an individual tweet:");
-    let status = egg_mode::tweet::show(tweet_id, &config.token).unwrap().response;
+    let status = core.run(egg_mode::tweet::show(tweet_id, &config.token, &handle)).unwrap();
     common::print_tweet(&status);
-
-    //TODO: Starting in 0.7.0 these loops will be able to drop the `.response` at the end
 
     println!("");
     println!("Loading retweets of an individual tweet:");
-    for rt in &egg_mode::tweet::retweets_of(tweet_id, 5, &config.token).unwrap().response {
+    for rt in &core.run(egg_mode::tweet::retweets_of(tweet_id, 5, &config.token, &handle)).unwrap() {
         if let Some(ref user) = rt.user {
             println!("{} (@{})", user.name, user.screen_name);
         }
@@ -27,16 +30,16 @@ fn main() {
 
     println!("");
     println!("Loading the user's home timeline:");
-    let mut home = egg_mode::tweet::home_timeline(&config.token).with_page_size(5);
-    for status in &home.start().unwrap().response {
+    let mut home = egg_mode::tweet::home_timeline(&config.token, &handle).with_page_size(5);
+    for status in &core.run(home.start()).unwrap() {
         common::print_tweet(&status);
         println!("");
     }
 
     println!("");
     println!("Loading the user's mentions timeline:");
-    let mut home = egg_mode::tweet::mentions_timeline(&config.token).with_page_size(5);
-    for status in &home.start().unwrap().response {
+    let mut home = egg_mode::tweet::mentions_timeline(&config.token, &handle).with_page_size(5);
+    for status in &core.run(home.start()).unwrap() {
         common::print_tweet(&status);
         println!("");
     }
@@ -44,8 +47,8 @@ fn main() {
     println!("");
     println!("Loading the user's timeline:");
     let mut home = egg_mode::tweet::user_timeline(config.user_id, true, true,
-                                                  &config.token).with_page_size(5);
-    for status in &home.start().unwrap().response {
+                                                  &config.token, &handle).with_page_size(5);
+    for status in &core.run(home.start()).unwrap() {
         common::print_tweet(&status);
         println!("");
     }

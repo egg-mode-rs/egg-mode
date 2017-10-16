@@ -2,9 +2,28 @@
 
 ## Pending
 ### Changed
+- The Great Async Refactor of 0.11.0
+  - egg-mode now uses async i/o!!!
+  - This is **a massively breaking change**!!!
+  - All functions that need to contact the network now take a `tokio_core::reactor::Handle` now, to
+    represent which event loop to run the requests on
+  - All functions that need to contact the network now return a new type `TwitterFuture`, which
+    represents the in-progress request
+  - All the iterator wrappers are now Streams
+  - In the refactor, `invalidate_bearer` was changed to panic on receiving non-Bearer tokens, rather
+    than short-circuiting an error.
+  - In the refactor, the methods on `direct::ConversationTimeline` were changed to consume the
+    Timeline and return it at the end of a successful load.
+  - There's a new variant of `Error`, `FutureAlreadyCompleted`, for when a Future was polled after
+    it already returned a value. This is a **breaking change** if you were exhaustively matching on
+    `Error` before.
 - Several dependencies have been updated
   - Notably, the type for all the timestamps was renamed, since chrono changed it from `UTC` to
     `Utc`
+- `Token`s and `KeyPair`s are now always `'static`. Only string literals and owned strings from now
+  on.
+  - This is a **breaking change** if you were using short-lived `Token`s with `&str`s in them - clone
+    the Strings when you hand them to the `KeyPair`, please.
 
 ## [0.10.0] = 2017-08-08
 

@@ -6,29 +6,34 @@
 //that are unnecessary
 #![allow(dead_code)]
 
-//to prevent conflicts with examples, i'll import chrono here and let examples use it from here if
+//to prevent conflicts with examples, i'll import things here and let examples use it from here if
 //they need it
 pub extern crate chrono;
+pub extern crate tokio_core;
+pub extern crate futures;
 
 use std;
 use std::io::{Write, Read};
 use egg_mode;
 
+use self::tokio_core::reactor::Core;
+
 //This is not an example that can be built with cargo! This is some helper code for the other
 //examples so they can load access keys from the same place.
 
 pub struct Config {
-    pub token: egg_mode::Token<'static>,
+    pub token: egg_mode::Token,
     pub user_id: u64,
     pub screen_name: String,
 }
 
 impl Config {
-    pub fn load() -> Self {
+    pub fn load(core: &mut Core) -> Self {
         //IMPORTANT: make an app for yourself at apps.twitter.com and get your
         //key/secret into these files; these examples won't work without them
         let consumer_key = include_str!("consumer_key").trim();
         let consumer_secret = include_str!("consumer_secret").trim();
+        let handle = core.handle();
 
         let con_token = egg_mode::KeyPair::new(consumer_key, consumer_secret);
 
@@ -52,7 +57,7 @@ impl Config {
                 access: access_token,
             };
 
-            if let Err(err) = egg_mode::verify_tokens(&token) {
+            if let Err(err) = core.run(egg_mode::verify_tokens(&token, &handle)) {
                 println!("We've hit an error using your old tokens: {:?}", err);
                 println!("We'll have to reauthenticate before continuing.");
                 std::fs::remove_file("twitter_settings").unwrap();
@@ -62,7 +67,7 @@ impl Config {
             }
         }
         else {
-            let request_token = egg_mode::request_token(&con_token, "oob").unwrap();
+            let request_token = core.run(egg_mode::request_token(&con_token, "oob", &handle)).unwrap();
 
             println!("Go to the following URL, sign in, and give me the PIN that comes back:");
             println!("{}", egg_mode::authorize_url(&request_token));
@@ -71,7 +76,7 @@ impl Config {
             std::io::stdin().read_line(&mut pin).unwrap();
             println!("");
 
-            let tok_result = egg_mode::access_token(con_token, &request_token, pin).unwrap();
+            let tok_result = core.run(egg_mode::access_token(con_token, &request_token, pin, &handle)).unwrap();
 
             token = tok_result.0;
             user_id = tok_result.1;
@@ -105,7 +110,7 @@ impl Config {
             }
         }
         else {
-            Self::load()
+            Self::load(core)
         }
     }
 }

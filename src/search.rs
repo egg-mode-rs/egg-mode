@@ -10,20 +10,21 @@
 //! page of results, hand your tokens to `call`.
 //!
 //! ```rust,no_run
-//! # let token = egg_mode::Token::Access {
-//! #     consumer: egg_mode::KeyPair::new("", ""),
-//! #     access: egg_mode::KeyPair::new("", ""),
-//! # };
+//! # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+//! # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+//! # fn main() {
+//! # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
 //! use egg_mode::search::{self, ResultType};
 //!
-//! let search = search::search("rustlang")
-//!                     .result_type(ResultType::Recent)
-//!                     .call(&token)
-//!                     .unwrap();
+//! let search = core.run(search::search("rustlang")
+//!                              .result_type(ResultType::Recent)
+//!                              .call(&token, &handle))
+//!                  .unwrap();
 //!
 //! for tweet in &search.statuses {
 //!     println!("(@{}) {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
 //! }
+//! # }
 //! ```
 //!
 //! Once you have your `SearchResult`, you can navigate the search results by calling `older` and
@@ -46,6 +47,7 @@ use std::collections::HashMap;
 use std::fmt;
 
 use rustc_serialize::json;
+use futures::{Future, Poll, Async};
 
 use auth;
 use error;
@@ -177,7 +179,7 @@ impl<'a> SearchBuilder<'a> {
     }
 
     ///Finalize the search terms and return the first page of responses.
-    pub fn call(self, token: &auth::Token) -> WebResponse<SearchResult<'a>> {
+    pub fn call(self, token: &auth::Token, handle: &'a Handle) -> SearchFuture<'a> {
         let mut params = HashMap::new();
 
         add_param(&mut params, "q", self.query);
@@ -213,11 +215,38 @@ impl<'a> SearchBuilder<'a> {
             add_param(&mut params, "max_id", max_id.to_string());
         }
 
-        let mut resp = try!(auth::get(links::statuses::SEARCH, token, Some(&params)));
+        let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
-        let mut ret: Response<SearchResult> = try!(parse_response(&mut resp));
-        ret.params = Some(params);
-        Ok(ret)
+        SearchFuture {
+            loader: make_parsed_future(handle, req),
+            params: Some(params),
+        }
+    }
+}
+
+/// `Future` that represents a search query in progress.
+///
+/// When this future resolves, it will either contain a `SearchResult` or the error that was
+/// encountered while loading or parsing the response.
+#[must_use = "futures do nothing unless polled"]
+pub struct SearchFuture<'a> {
+    loader: FutureResponse<'a, SearchResult<'a>>,
+    params: Option<ParamList<'a>>,
+}
+
+impl<'a> Future for SearchFuture<'a> {
+    type Item = Response<SearchResult<'a>>;
+    type Error = error::Error;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        let mut resp = match self.loader.poll() {
+            Ok(Async::Ready(resp)) => resp,
+            Ok(Async::NotReady) => return Ok(Async::NotReady),
+            Err(e) => return Err(e),
+        };
+
+        resp.params = self.params.take();
+        Ok(Async::Ready(resp))
     }
 }
 
@@ -256,7 +285,7 @@ impl<'a> FromJson for SearchResult<'a> {
 
 impl<'a> SearchResult<'a> {
     ///Load the next page of search results for the same query.
-    pub fn older(&self, token: &auth::Token) -> WebResponse<SearchResult<'a>> {
+    pub fn older(&self, token: &auth::Token, handle: &'a Handle) -> SearchFuture<'a> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("since_id");
 
@@ -267,15 +296,16 @@ impl<'a> SearchResult<'a> {
             params.remove("max_id");
         }
 
-        let mut resp = try!(auth::get(links::statuses::SEARCH, token, Some(&params)));
+        let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
-        let mut ret: Response<SearchResult> = try!(parse_response(&mut resp));
-        ret.params = Some(params);
-        Ok(ret)
+        SearchFuture {
+            loader: make_parsed_future(handle, req),
+            params: Some(params),
+        }
     }
 
     ///Load the previous page of search results for the same query.
-    pub fn newer(&self, token: &auth::Token) -> WebResponse<SearchResult<'a>> {
+    pub fn newer(&self, token: &auth::Token, handle: &'a Handle) -> SearchFuture<'a> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("max_id");
 
@@ -286,10 +316,11 @@ impl<'a> SearchResult<'a> {
             params.remove("since_id");
         }
 
-        let mut resp = try!(auth::get(links::statuses::SEARCH, token, Some(&params)));
+        let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
-        let mut ret: Response<SearchResult> = try!(parse_response(&mut resp));
-        ret.params = Some(params);
-        Ok(ret)
+        SearchFuture {
+            loader: make_parsed_future(handle, req),
+            params: Some(params),
+        }
     }
 }

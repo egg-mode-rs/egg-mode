@@ -19,7 +19,7 @@
 //! - `TwitterUser`/`UserEntities`/`UserEntityDetail`: returned by many functions in this module,
 //!   these types (`TwitterUser` contains the other two) describe the content of a user's profile,
 //!   and a handful of settings relating to how their profile is displayed.
-//! - `UserSearch`: returned by `search`, this is an iterator over search results.
+//! - `UserSearch`: returned by `search`, this is a stream of search results.
 //!
 //! ## Functions
 //!
@@ -45,8 +45,8 @@
 //! ### Cursored lookup
 //!
 //! These functions imply that they can return more entries than Twitter is willing to return at
-//! once, so they're delivered in pages. This library takes those paginated results and wraps an
-//! iterator around them that loads the pages as-needed.
+//! once, so they're delivered in pages. This library takes those paginated results and wraps a
+//! stream around them that loads the pages as-needed.
 //!
 //! - `search`
 //! - `friends_of`/`friends_ids`
@@ -57,6 +57,7 @@
 
 use std::collections::HashMap;
 
+use futures::{Future, Stream, Poll, Async};
 use rustc_serialize::json;
 use chrono;
 
@@ -475,36 +476,44 @@ impl FromJson for UserEntityDetail {
 
 /// Represents an active user search.
 ///
-/// This struct is returned by [`search`][] and is meant to be used as an iterator. This means that
-/// all the standard iterator adaptors can be used to work with the results:
+/// This struct is returned by [`search`][] and is meant to be used as a `Stream`. That means all
+/// the Stream adaptors are available:
 ///
 /// [`search`]: fn.search.html
 ///
 /// ```rust,no_run
-/// # let token = egg_mode::Token::Access {
-/// #     consumer: egg_mode::KeyPair::new("", ""),
-/// #     access: egg_mode::KeyPair::new("", ""),
-/// # };
-/// for name in egg_mode::user::search("rustlang", &token)
-///                                  .map(|u| u.unwrap().response.screen_name).take(10) {
-///    println!("{}", name);
-/// }
+/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// use futures::Stream;
+///
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// core.run(egg_mode::user::search("rustlang", &token, &handle).take(10).for_each(|resp| {
+///     println!("{}", resp.screen_name);
+///     Ok(())
+/// })).unwrap();
+/// # }
 /// ```
 ///
 /// You can even collect the results, letting you get one set of rate-limit information for the
 /// entire search setup:
 ///
 /// ```rust,no_run
-/// # let token = egg_mode::Token::Access {
-/// #     consumer: egg_mode::KeyPair::new("", ""),
-/// #     access: egg_mode::KeyPair::new("", ""),
-/// # };
+/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// use futures::Stream;
 /// use egg_mode::Response;
 /// use egg_mode::user::TwitterUser;
 /// use egg_mode::error::Error;
 ///
+/// // Because Streams don't have a FromIterator adaptor, we load all the responses first, then
+/// // collect them into the final Vec
 /// let names: Result<Response<Vec<TwitterUser>>, Error> =
-///    egg_mode::user::search("rustlang", &token).take(10).collect();
+///     core.run(egg_mode::user::search("rustlang", &token, &handle).take(10).collect())
+///         .map(|resp| resp.into_iter().collect());
+/// # }
 /// ```
 ///
 /// `UserSearch` has a couple adaptors of its own that you can use before consuming it.
@@ -512,47 +521,53 @@ impl FromJson for UserEntityDetail {
 /// `start_at_page` lets you start your search at a specific page. Calling either of these after
 /// starting iteration will clear any current results.
 ///
-/// The type returned by the iterator is `Result<Response<TwitterUser>, Error>`, so network errors,
-/// rate-limit errors and other issues are passed directly through to `next()`. This also means that
-/// getting an error while iterating doesn't mean you're at the end of the list; you can wait for
-/// the network connection to return or for the rate limit to refresh before trying again.
+/// The `Stream` implementation yields `Response<TwitterUser>` on a successful iteration, and
+/// `Error` for errors, so network errors, rate-limit errors and other issues are passed directly
+/// through in `poll()`. The `Stream` implementation will allow you to poll again after an error to
+/// re-initiate the late network call; this way, you can wait for your network connection to return
+/// or for your rate limit to refresh and try again from the same position.
 ///
 /// ## Manual paging
 ///
-/// The iterator works by lazily loading a page of results at a time (with size set by
-/// `with_page_size` or by directly assigning `page_size`) in the background whenever you ask for
-/// the next result. This can be nice, but it also means that you can lose track of when your loop
-/// will block for the next page of results. This is where the extra fields and methods on
-/// `UserSearch` come in. By using the raw `call()` function and changing `page_num` as necessary,
-/// you can have full control over when the network calls happen:
+/// The `Stream` implementation works by loading in a page of results (with size set by default or
+/// by `with_page_size`/the `page_size` field) when it's polled, and serving the individual
+/// elements from that locally-cached page until it runs out. This can be nice, but it also means
+/// that your only warning that something involves a network call is that the stream returns
+/// `Ok(Async::NotReady)`, by which time the network call has already started. If you want to know
+/// that ahead of time, that's where the `call()` method comes in. By using `call()`, you can get
+/// a page of results directly from Twitter. With that you can iterate over the results and page
+/// forward and backward as needed:
 ///
 /// ```rust,no_run
-/// # let token = egg_mode::Token::Access {
-/// #     consumer: egg_mode::KeyPair::new("", ""),
-/// #     access: egg_mode::KeyPair::new("", ""),
-/// # };
-/// let mut search = egg_mode::user::search("rustlang", &token).with_page_size(20);
-/// let resp = search.call().unwrap();
+/// # extern crate egg_mode; extern crate tokio_core;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// let mut search = egg_mode::user::search("rustlang", &token, &handle).with_page_size(20);
+/// let resp = core.run(search.call()).unwrap();
 ///
 /// for user in resp.response {
 ///    println!("{} (@{})", user.name, user.screen_name);
 /// }
 ///
 /// search.page_num += 1;
-/// let resp = search.call().unwrap();
+/// let resp = core.run(search.call()).unwrap();
 ///
 /// for user in resp.response {
 ///    println!("{} (@{})", user.name, user.screen_name);
 /// }
+/// # }
 /// ```
 #[must_use = "search iterators are lazy and do nothing unless consumed"]
 pub struct UserSearch<'a> {
-    token: &'a auth::Token<'a>,
+    token: &'a auth::Token,
+    handle: &'a Handle,
     query: &'a str,
     /// The current page of results being returned, starting at 1.
     pub page_num: i32,
     /// The number of user records per page of results. Defaults to 10, maximum of 20.
     pub page_size: i32,
+    current_loader: Option<FutureResponse<'a, Vec<TwitterUser>>>,
     current_results: Option<ResponseIter<TwitterUser>>,
 }
 
@@ -564,6 +579,7 @@ impl<'a> UserSearch<'a> {
     pub fn with_page_size(self, page_size: i32) -> Self {
         UserSearch {
             page_size: page_size,
+            current_loader: None,
             current_results: None,
             ..self
         }
@@ -571,11 +587,12 @@ impl<'a> UserSearch<'a> {
 
     /// Sets the starting page number for the search query.
     ///
-    /// Calling this will invalidate any current search results, making the next call to `next()`
-    /// perform a network call.
+    /// The search method begins numbering pages at 1. Calling this will invalidate any current
+    /// search results, making the next call to `next()` perform a network call.
     pub fn start_at_page(self, page_num: i32) -> Self {
         UserSearch {
             page_num: page_num,
+            current_loader: None,
             current_results: None,
             ..self
         }
@@ -586,61 +603,65 @@ impl<'a> UserSearch<'a> {
     /// This will automatically be called if you use the `UserSearch` as an iterator. This method is
     /// made public for convenience if you want to manage the pagination yourself. Remember to
     /// change `page_num` between calls.
-    pub fn call(&self) -> WebResponse<Vec<TwitterUser>> {
+    pub fn call(&self) -> FutureResponse<'a, Vec<TwitterUser>> {
         let mut params = HashMap::new();
         add_param(&mut params, "q", self.query);
         add_param(&mut params, "page", self.page_num.to_string());
         add_param(&mut params, "count", self.page_size.to_string());
 
-        let mut resp = try!(auth::get(links::users::SEARCH, self.token, Some(&params)));
+        let req = auth::get(links::users::SEARCH, self.token, Some(&params));
 
-        parse_response(&mut resp)
+        make_parsed_future(self.handle, req)
     }
 
     /// Returns a new UserSearch with the given query and tokens, with the default page size of 10.
-    fn new(query: &'a str, token: &'a auth::Token) -> UserSearch<'a> {
+    fn new(query: &'a str, token: &'a auth::Token, handle: &'a Handle) -> UserSearch<'a> {
         UserSearch {
             token: token,
+            handle: handle,
             query: query,
             page_num: 1,
             page_size: 10,
+            current_loader: None,
             current_results: None,
         }
     }
 }
 
-impl<'a> Iterator for UserSearch<'a> {
-    type Item = WebResponse<TwitterUser>;
+impl<'a> Stream for UserSearch<'a> {
+    type Item = Response<TwitterUser>;
+    type Error = error::Error;
 
-    fn next(&mut self) -> Option<Self::Item> {
+    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+        if let Some(mut fut) = self.current_loader.take() {
+            match fut.poll() {
+                Ok(Async::NotReady) => {
+                    self.current_loader = Some(fut);
+                    return Ok(Async::NotReady);
+                }
+                Ok(Async::Ready(res)) => self.current_results = Some(res.into_iter()),
+                Err(e) => {
+                    //Invalidate current results so we don't increment the page number again
+                    self.current_results = None;
+                    return Err(e);
+                }
+            }
+        }
+
         if let Some(ref mut results) = self.current_results {
             if let Some(user) = results.next() {
-                return Some(Ok(user));
+                return Ok(Async::Ready(Some(user)));
             }
             else if (results.len() as i32) < self.page_size {
-                return None;
+                return Ok(Async::Ready(None));
             }
             else {
                 self.page_num += 1;
             }
         }
 
-        match self.call() {
-            Ok(resp) => {
-                let mut iter = resp.into_iter();
-                let first = iter.next();
-                self.current_results = Some(iter);
-                match first {
-                    Some(user) => Some(Ok(user)),
-                    None => None,
-                }
-            },
-            Err(err) => {
-                //Invalidate current results so we don't increment the page number again
-                self.current_results = None;
-                Some(Err(err))
-            },
-        }
+        self.current_loader = Some(self.call());
+        self.poll()
     }
 }
 

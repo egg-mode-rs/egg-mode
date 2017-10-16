@@ -28,34 +28,42 @@ use error::Error::{InvalidResponse, MissingValue};
 use links;
 use common::*;
 
-///Returns the current Twitter Terms of Service as plain text.
+///Returns a future that resolves to the current Twitter Terms of Service as plain text.
 ///
 ///While the official home of Twitter's TOS is https://twitter.com/tos, this allows you to obtain a
 ///plain-text copy of it to display in your application.
-pub fn terms(token: &auth::Token) -> WebResponse<String> {
-    let mut resp = try!(auth::get(links::service::TERMS, token, None));
+pub fn terms<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, String> {
+    let req = auth::get(links::service::TERMS, token, None);
 
-    let ret = try!(parse_response::<json::Json>(&mut resp));
+    fn parse_terms(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
+        let ret: Response<json::Json> = try!(make_response(full_resp, headers));
 
-    let tos = try!(field(&ret.response, "tos"));
-    Ok(Response::map(ret, |_| tos))
+        let tos = try!(field(&ret.response, "tos"));
+        Ok(Response::map(ret, |_| tos))
+    }
+
+    make_future(handle, req, parse_terms)
 }
 
-///Returns the current Twitter Privacy Policy as plain text.
+///Returns a future that resolves to the current Twitter Privacy Policy as plain text.
 ///
 ///While the official home of Twitter's Privacy Policy is https://twitter.com/privacy, this allows
 ///you to obtain a plain-text copy of it to display in your application.
-pub fn privacy(token: &auth::Token) -> WebResponse<String> {
-    let mut resp = try!(auth::get(links::service::PRIVACY, token, None));
+pub fn privacy<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, String> {
+    let req = auth::get(links::service::PRIVACY, token, None);
 
-    let ret = try!(parse_response::<json::Json>(&mut resp));
+    fn parse_policy(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
+        let ret: Response<json::Json> = try!(make_response(full_resp, headers));
 
-    let privacy = try!(field(&ret.response, "privacy"));
-    Ok(Response::map(ret, |_| privacy))
+        let privacy = try!(field(&ret.response, "privacy"));
+        Ok(Response::map(ret, |_| privacy))
+    }
+
+    make_future(handle, req, parse_policy)
 }
 
-///Return the current configuration from Twitter, including the maximum length of a t.co URL and
-///maximum photo resolutions per size, among others.
+///Returns a future that resolves to the current configuration from Twitter, including the maximum
+///length of a t.co URL and maximum photo resolutions per size, among others.
 ///
 ///From Twitter: "It is recommended applications request this endpoint when they are loaded, but no
 ///more than once a day."
@@ -64,10 +72,10 @@ pub fn privacy(token: &auth::Token) -> WebResponse<String> {
 ///fields returned by this function mean.
 ///
 ///[`Configuration`]: struct.Configuration.html
-pub fn config(token: &auth::Token) -> WebResponse<Configuration> {
-    let mut resp = try!(auth::get(links::service::CONFIG, token, None));
+pub fn config<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Configuration> {
+    let req = auth::get(links::service::CONFIG, token, None);
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Return the current rate-limit status for all available methods from the authenticated user.
@@ -77,20 +85,24 @@ pub fn config(token: &auth::Token) -> WebResponse<Configuration> {
 ///documentation for [`RateLimitStatus`][] and its associated enums for more information.
 ///
 ///[`RateLimitStatus`]: struct.RateLimitStatus.html
-pub fn rate_limit_status(token: &auth::Token) -> WebResponse<RateLimitStatus> {
-    let mut resp = try!(auth::get(links::service::RATE_LIMIT_STATUS, token, None));
+pub fn rate_limit_status<'a>(token: &auth::Token, handle: &'a Handle)
+    -> FutureResponse<'a, RateLimitStatus>
+{
+    let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Like `rate_limit_status`, but returns the raw JSON without processing it. Only intended to
 ///return the full structure so that new methods can be added to `RateLimitStatus` and its
 ///associated enums.
 #[doc(hidden)]
-pub fn rate_limit_status_raw(token: &auth::Token) -> WebResponse<json::Json> {
-    let mut resp = try!(auth::get(links::service::RATE_LIMIT_STATUS, token, None));
+pub fn rate_limit_status_raw<'a>(token: &auth::Token, handle: &'a Handle)
+    -> FutureResponse<'a, json::Json>
+{
+    let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Represents a service configuration from Twitter.
@@ -157,28 +169,29 @@ impl FromJson for Configuration {
     }
 }
 
-///Represents the current rate-limit status of many Twitter API calls.
+/// Represents the current rate-limit status of many Twitter API calls.
 ///
-///This is organized by module, so for example, if you wanted to see your rate-limit status for
-///`tweet::home_timeline`, you could access it like this:
+/// This is organized by module, so for example, if you wanted to see your rate-limit status for
+/// `tweet::home_timeline`, you could access it like this:
 ///
-///```rust,no_run
-///# let token = egg_mode::Token::Access {
-///#     consumer: egg_mode::KeyPair::new("", ""),
-///#     access: egg_mode::KeyPair::new("", ""),
-///# };
-///# let status = egg_mode::service::rate_limit_status(&token).unwrap();
-///use egg_mode::service::TweetMethod;
-///println!("home_timeline calls remaining: {}",
-///         status.tweet[&TweetMethod::HomeTimeline].rate_limit_remaining);
-///```
+/// ```rust,no_run
+/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// # let status = core.run(egg_mode::service::rate_limit_status(&token, &handle)).unwrap();
+/// use egg_mode::service::TweetMethod;
+/// println!("home_timeline calls remaining: {}",
+///          status.tweet[&TweetMethod::HomeTimeline].rate_limit_remaining);
+/// # }
+/// ```
 ///
-///It's important to note that not every API method is available through this call. Namely, most
-///calls that require a POST under-the-hood (those that add or modify data with the Twitter
-///service) are not shown through this method. For a listing of methods available for rate-limit
-///querying, see the `*Method` enums available in [`egg_mode::service`][].
+/// It's important to note that not every API method is available through this call. Namely, most
+/// calls that require a POST under-the-hood (those that add or modify data with the Twitter
+/// service) are not shown through this method. For a listing of methods available for rate-limit
+/// querying, see the `*Method` enums available in [`egg_mode::service`][].
 ///
-///[`egg_mode::service`]: index.html
+/// [`egg_mode::service`]: index.html
 #[derive(Debug)]
 pub struct RateLimitStatus {
     ///The rate-limit status for methods in the `direct` module.

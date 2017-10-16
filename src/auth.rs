@@ -2,28 +2,34 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+//! Types and methods used to authenticate calls to Twitter.
+//!
+//! This module is meant to be internal, since the OAuth mechanisms are fairly specific to Twitter.
+//! Any relevant items for obtaining a Token are re-exported in the crate root. As such, the
+//! authentication overview is written on the Token type, rather than in this module docs.
+
 use std;
 use std::error::Error;
 use std::borrow::Cow;
 use std::time::{UNIX_EPOCH, SystemTime};
-use url::percent_encoding::{EncodeSet, utf8_percent_encode};
-use hyper;
-use hyper::client::response::Response as HyperResponse;
-use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer};
-use hyper::method::Method;
-use hyper::net::HttpsConnector;
-use hyper_native_tls::NativeTlsClient;
+
+use futures::{Future, Poll, Async};
+use hmac::{Hmac, Mac};
+use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer, Headers};
+use hyper::{Method, Request};
 use hyper::mime::Mime;
 use rand::{self, Rng};
-use hmac::{Hmac, Mac};
-use sha_1::Sha1;
 use rustc_serialize::base64::{self, ToBase64};
 use rustc_serialize::json;
-use super::{links, error};
-use super::common::*;
+use sha_1::Sha1;
+use tokio_core::reactor::Handle;
+use url::percent_encoding::{EncodeSet, utf8_percent_encode};
 
-//the encode sets in the url crate don't quite match what twitter wants,
-//so i'll make up my own
+use links;
+use error;
+use common::*;
+
+//the encode sets in the url crate don't quite match what twitter wants, so i'll make up my own
 #[derive(Copy, Clone)]
 struct TwitterEncodeSet;
 
@@ -44,10 +50,9 @@ fn percent_encode(src: &str) -> String {
 
 ///OAuth header set given to Twitter calls.
 ///
-///Since different authorization/authentication calls have various parameters
-///that go into this header, they're optionally placed at the end of this header.
-///On the other hand, `signature` is optional so a structured header can be
-///passed to `sign()` for signature.
+///Since different authorization/authentication calls have various parameters that go into this
+///header, they're optionally placed at the end of this header.  On the other hand, `signature` is
+///optional so a structured header can be passed to `sign()` for signature.
 #[derive(Clone, Debug)]
 struct TwitterOAuth {
     consumer_key: String,
@@ -138,38 +143,36 @@ impl Scheme for TwitterOAuth {
     }
 }
 
-///A key/secret pair representing an OAuth token.
+/// A key/secret pair representing an OAuth token.
 ///
-///This struct is used as part of the authentication process. You'll need to manually create at
-///least one of these, to hold onto your consumer token.
+/// This struct is used as part of the authentication process. You'll need to manually create at
+/// least one of these, to hold onto your consumer token.
 ///
-///For more information, see the documentation for [Tokens][].
+/// For more information, see the documentation for [Tokens][].
 ///
-///[Tokens]: enum.Token.html
+/// [Tokens]: enum.Token.html
 ///
-///# Example
+/// # Example
 ///
-///```rust
-///let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
-///```
+/// ```rust
+/// let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
+/// ```
 #[derive(Debug, Clone)]
-pub struct KeyPair<'a> {
+pub struct KeyPair {
     ///A key used to identify an application or user.
-    pub key: Cow<'a, str>,
+    pub key: Cow<'static, str>,
     ///A private key used to sign messages from an application or user.
-    pub secret: Cow<'a, str>,
+    pub secret: Cow<'static, str>,
 }
 
-impl<'a> KeyPair<'a> {
+impl KeyPair {
     ///Creates a KeyPair with the given key and secret.
     ///
-    ///This can be called with either `&str` or `String`. In the former
-    ///case the resulting KeyPair will have the same lifetime as the given
-    ///reference. If two Strings are given, the KeyPair effectively has
-    ///lifetime `'static`.
-    pub fn new<K, S>(key: K, secret: S) -> KeyPair<'a>
-        where K: Into<Cow<'a, str>>,
-              S: Into<Cow<'a, str>>
+    ///This can be called with either `&'static str` (a string literal) or `String` for either
+    ///parameter.
+    pub fn new<K, S>(key: K, secret: S) -> KeyPair
+        where K: Into<Cow<'static, str>>,
+              S: Into<Cow<'static, str>>
     {
         KeyPair {
             key: key.into(),
@@ -266,9 +269,13 @@ impl<'a> KeyPair<'a> {
 /// For "PIN-Based Authorization":
 ///
 /// ```rust,no_run
+/// # extern crate egg_mode; extern crate tokio_core;
+/// # use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (mut core, handle): (Core, Handle) = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
 /// // "oob" is needed for PIN-based auth; see docs for `request_token` for more info
-/// let request_token = egg_mode::request_token(&con_token, "oob").unwrap();
+/// let request_token = core.run(egg_mode::request_token(&con_token, "oob", &handle)).unwrap();
 /// let auth_url = egg_mode::authorize_url(&request_token);
 ///
 /// // give auth_url to the user, they can sign in to Twitter and accept your app's permissions.
@@ -278,10 +285,11 @@ impl<'a> KeyPair<'a> {
 ///
 /// // note this consumes con_token; if you want to sign in multiple accounts, clone it here
 /// let (token, user_id, screen_name) =
-///     egg_mode::access_token(con_token, &request_token, verifier).unwrap();
+///     core.run(egg_mode::access_token(con_token, &request_token, verifier, &handle)).unwrap();
 ///
 /// // token can be given to any egg_mode method that asks for a token
 /// // user_id and screen_name refer to the user who signed in
+/// # }
 /// ```
 ///
 /// **WARNING**: The consumer token and preset access token mentioned below are as privileged as
@@ -330,20 +338,25 @@ impl<'a> KeyPair<'a> {
 /// ### Example (Bearer Token)
 ///
 /// ```rust,no_run
+/// # extern crate egg_mode; extern crate tokio_core;
+/// # use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (mut core, handle): (Core, Handle) = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
-/// let token = egg_mode::bearer_token(&con_token).unwrap();
+/// let token = core.run(egg_mode::bearer_token(&con_token, &handle)).unwrap();
 ///
 /// // token can be given to *most* egg_mode methods that ask for a token
 /// // for restrictions, see docs for bearer_token
+/// # }
 /// ```
 #[derive(Debug, Clone)]
-pub enum Token<'a> {
+pub enum Token {
     ///An OAuth Access token indicating the request is coming from a specific user.
     Access {
         ///A "consumer" key/secret that represents the application sending the request.
-        consumer: KeyPair<'a>,
+        consumer: KeyPair,
         ///An "access" key/secret that represents the user's authorization of the application.
-        access: KeyPair<'a>,
+        access: KeyPair,
     },
     ///An OAuth Bearer token indicating the request is coming from the application itself, not a
     ///particular user.
@@ -443,9 +456,10 @@ fn bearer_request(con_token: &KeyPair) -> Basic {
     }
 }
 
+/// Assemble a signed GET request to the given URL with the given parameters.
 pub fn get(uri: &str,
            token: &Token,
-           params: Option<&ParamList>) -> Result<HyperResponse, error::Error> {
+           params: Option<&ParamList>) -> Request {
     let full_url = if let Some(p) = params {
         let query = p.iter()
                      .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
@@ -456,30 +470,28 @@ pub fn get(uri: &str,
     }
     else { uri.to_string() };
 
-    let ssl = try!(NativeTlsClient::new());
-    let connector = HttpsConnector::new(ssl);
-    let client = hyper::Client::with_connector(connector);
-
-    let request = match *token {
+    let mut request: Request = Request::new(Method::Get, full_url.parse().unwrap());
+    match *token {
         Token::Access {
             consumer: ref con_token,
             access: ref access_token,
         } => {
             let header = get_header(Method::Get, uri, con_token, Some(access_token),
                                     None, None, params);
-            client.get(&full_url).header(Authorization(header))
+            request.headers_mut().set(Authorization(header));
         },
         Token::Bearer(ref token) => {
-            client.get(&full_url).header(Authorization(Bearer { token: token.clone() }))
+            request.headers_mut().set(Authorization(Bearer { token: token.clone() }));
         },
-    };
+    }
 
-    Ok(try!(request.send()))
+    request
 }
 
+/// Assemble a signed POST request to the given URL with the given parameters.
 pub fn post(uri: &str,
             token: &Token,
-            params: Option<&ParamList>) -> Result<HyperResponse, error::Error> {
+            params: Option<&ParamList>) -> Request {
     let content: Mime = "application/x-www-form-urlencoded".parse().unwrap();
     let body = if let Some(p) = params {
         p.iter()
@@ -489,13 +501,11 @@ pub fn post(uri: &str,
     }
     else { "".to_string() };
 
-    let ssl = try!(NativeTlsClient::new());
-    let connector = HttpsConnector::new(ssl);
-    let client = hyper::Client::with_connector(connector);
-    let request = client.post(uri).body(body.as_bytes())
-                                  .header(ContentType(content));
+    let mut request: Request = Request::new(Method::Post, uri.parse().unwrap());
+    request.set_body(body);
+    request.headers_mut().set(ContentType(content));
 
-    let request = match *token {
+    match *token {
         Token::Access {
             consumer: ref con_token,
             access: ref access_token,
@@ -503,14 +513,14 @@ pub fn post(uri: &str,
             let header = get_header(Method::Post, uri, con_token, Some(access_token),
                                     None, None, params);
 
-            request.header(Authorization(header))
+            request.headers_mut().set(Authorization(header));
         },
         Token::Bearer(ref token) => {
-            request.header(Authorization(Bearer { token: token.clone() }))
+            request.headers_mut().set(Authorization(Bearer { token: token.clone() }));
         },
-    };
+    }
 
-    Ok(try!(request.send()))
+    request
 }
 
 /// With the given consumer KeyPair, ask Twitter for a request KeyPair that can be used to request
@@ -553,40 +563,52 @@ pub fn post(uri: &str,
 /// # Examples
 ///
 /// ```rust,no_run
+/// # extern crate egg_mode; extern crate tokio_core;
+/// # use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (mut core, handle): (Core, Handle) = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
 /// // for PIN-Based Auth
-/// let req_token = egg_mode::request_token(&con_token, "oob").unwrap();
+/// let req_token = core.run(egg_mode::request_token(&con_token, "oob", &handle)).unwrap();
 /// // for Sign In With Twitter/3-Legged Auth
-/// let req_token = egg_mode::request_token(&con_token, "https://myapp.io/auth").unwrap();
+/// let req_token = core.run(egg_mode::request_token(&con_token,
+///                                                  "https://myapp.io/auth",
+///                                                  &handle)).unwrap();
+/// # }
 /// ```
-pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Result<KeyPair<'static>, error::Error> {
+pub fn request_token<'a, S: Into<String>>(con_token: &KeyPair, callback: S, handle: &'a Handle)
+    -> TwitterFuture<'a, KeyPair>
+{
     let header = get_header(Method::Post, links::auth::REQUEST_TOKEN,
                             con_token, None, Some(callback.into()), None, None);
 
-    let ssl = try!(NativeTlsClient::new());
-    let connector = HttpsConnector::new(ssl);
-    let client = hyper::Client::with_connector(connector);
-    let mut resp = try!(client.post(links::auth::REQUEST_TOKEN)
-                              .header(Authorization(header))
-                              .send());
+    let mut request = Request::new(Method::Post, links::auth::REQUEST_TOKEN.parse().unwrap());
+    request.headers_mut().set(Authorization(header));
 
-    let full_resp = try!(response_raw(&mut resp));
+    fn parse_tok(full_resp: String, _: &Headers) -> Result<KeyPair, error::Error> {
+        let mut key: Option<String> = None;
+        let mut secret: Option<String> = None;
 
-    let mut key: Option<String> = None;
-    let mut secret: Option<String> = None;
-
-    for elem in full_resp.split('&') {
-        let mut kv = elem.splitn(2, '=');
-        match kv.next() {
-            Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
-            Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
-            Some(_) => (),
-            None => return Err(error::Error::InvalidResponse("unexpected end of request_token response", None)),
+        for elem in full_resp.split('&') {
+            let mut kv = elem.splitn(2, '=');
+            match kv.next() {
+                Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
+                Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
+                Some(_) => (),
+                None =>
+                    return Err(
+                        error::Error::InvalidResponse(
+                            "unexpected end of request_token response", None
+                        )
+                    ),
+            }
         }
+
+        Ok(KeyPair::new(try!(key.ok_or(error::Error::MissingValue("oauth_token"))),
+                        try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")))))
     }
 
-    Ok(KeyPair::new(try!(key.ok_or(error::Error::MissingValue("oauth_token"))),
-                    try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")))))
+    make_future(handle, request, parse_tok)
 }
 
 /// With the given request KeyPair, return a URL that a user can access to accept or reject an
@@ -705,51 +727,86 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 /// returned. If you would like to use the consumer token to authenticate multiple accounts in the
 /// same session, clone the `KeyPair` when passing it into this function.
 ///
-/// In addition to the final Access Token, this function also returns the User ID and screen name
-/// of the authenticated user.
-pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
+/// The `AuthFuture` returned by this function, on success, yields a tuple of three items: The
+/// final access token, the ID of the authenticated user, and the screen name of the authenticated
+/// user.
+pub fn access_token<'a, S: Into<String>>(con_token: KeyPair,
                                          request_token: &KeyPair,
-                                         verifier: S)
-    -> Result<(Token<'a>, u64, String), error::Error>
+                                         verifier: S,
+                                         handle: &'a Handle)
+    -> AuthFuture<'a>
 {
     let header = get_header(Method::Post, links::auth::ACCESS_TOKEN,
                             &con_token, Some(request_token), None, Some(verifier.into()), None);
+    let mut request = Request::new(Method::Post, links::auth::ACCESS_TOKEN.parse().unwrap());
+    request.headers_mut().set(Authorization(header));
 
-    let ssl = try!(NativeTlsClient::new());
-    let connector = HttpsConnector::new(ssl);
-    let client = hyper::Client::with_connector(connector);
-    let mut resp = try!(client.post(links::auth::ACCESS_TOKEN)
-                          .header(Authorization(header))
-                          .send());
+    AuthFuture {
+        con_token: Some(con_token),
+        loader: make_raw_future(handle, request),
+    }
+}
 
-    let full_resp = try!(response_raw(&mut resp));
+/// `Future` which yields an access token when it finishes.
+///
+/// See the docs for [`access_token`][] for more details.
+///
+/// [`access_token`]: fn.access_token.html
+///
+/// The `Future` implementation yields a tuple of three items upon success: The final access token,
+/// the ID of the authenticated user, and the screen name of the authenticated user.
+#[must_use = "futures do nothing unless polled"]
+pub struct AuthFuture<'a> {
+    con_token: Option<KeyPair>,
+    loader: RawFuture<'a>,
+}
 
-    let mut key: Option<String> = None;
-    let mut secret: Option<String> = None;
-    let mut id: Option<u64> = None;
-    let mut username: Option<String> = None;
+impl<'a> Future for AuthFuture<'a> {
+    type Item = (Token, u64, String);
+    type Error = error::Error;
 
-    for elem in full_resp.split('&') {
-        let mut kv = elem.splitn(2, '=');
-        match kv.next() {
-            Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
-            Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
-            Some("user_id") => id = kv.next().and_then(|s| u64::from_str_radix(s, 10).ok()),
-            Some("screen_name") => username = kv.next().map(|s| s.to_string()),
-            Some(_) => (),
-            None => return Err(error::Error::InvalidResponse("unexpected end of response in access_token", None)),
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        let full_resp = match self.loader.poll() {
+            Err(e) => return Err(e),
+            Ok(Async::NotReady) => return Ok(Async::NotReady),
+            Ok(Async::Ready(resp)) => resp,
+        };
+
+        if let Some(con_token) = self.con_token.take() {
+            let mut key: Option<String> = None;
+            let mut secret: Option<String> = None;
+            let mut id: Option<u64> = None;
+            let mut username: Option<String> = None;
+
+            for elem in full_resp.split('&') {
+                let mut kv = elem.splitn(2, '=');
+                match kv.next() {
+                    Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
+                    Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
+                    Some("user_id") => id = kv.next().and_then(|s| u64::from_str_radix(s, 10).ok()),
+                    Some("screen_name") => username = kv.next().map(|s| s.to_string()),
+                    Some(_) => (),
+                    None => return Err(
+                        error::Error::InvalidResponse(
+                            "unexpected end of response in access_token", None)
+                    ),
+                }
+            }
+
+            let access_key = try!(key.ok_or(error::Error::MissingValue("oauth_token")));
+            let access_secret = try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")));
+
+            Ok(Async::Ready((Token::Access {
+                    consumer: con_token,
+                    access: KeyPair::new(access_key, access_secret),
+                },
+                try!(id.ok_or(error::Error::MissingValue("user_id"))),
+                try!(username.ok_or(error::Error::MissingValue("screen_name"))))))
+        }
+        else {
+            Err(error::Error::FutureAlreadyCompleted)
         }
     }
-
-    let access_key = try!(key.ok_or(error::Error::MissingValue("oauth_token")));
-    let access_secret = try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")));
-
-    Ok((Token::Access {
-            consumer: con_token,
-            access: KeyPair::new(access_key, access_secret),
-        },
-        try!(id.ok_or(error::Error::MissingValue("user_id"))),
-        try!(username.ok_or(error::Error::MissingValue("screen_name")))))
 }
 
 /// With the given consumer KeyPair, request the current Bearer token to perform Application-only
@@ -780,81 +837,82 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair<'a>,
 /// For more information, see the Twitter documentation on [Application-only authentication][auth].
 ///
 /// [auth]: https://dev.twitter.com/oauth/application-only
-pub fn bearer_token(con_token: &KeyPair) -> Result<Token<'static>, error::Error> {
-    let auth_header = bearer_request(con_token);
-
+pub fn bearer_token<'a>(con_token: &KeyPair, handle: &'a Handle)
+    -> TwitterFuture<'a, Token>
+{
     let content: Mime = "application/x-www-form-urlencoded;charset=UTF-8".parse().unwrap();
-    let ssl = try!(NativeTlsClient::new());
-    let connector = HttpsConnector::new(ssl);
-    let client = hyper::Client::with_connector(connector);
-    let mut resp = try!(client.post(links::auth::BEARER_TOKEN)
-                              .header(Authorization(auth_header))
-                              .header(ContentType(content))
-                              .body("grant_type=client_credentials".as_bytes())
-                              .send());
-    let full_resp = try!(response_raw(&mut resp));
 
-    let decoded = try!(json::Json::from_str(&full_resp));
-    let result = try!(decoded.find("access_token")
-                             .and_then(|s| s.as_string())
-                             .ok_or(error::Error::MissingValue("access_token")));
+    let auth_header = bearer_request(con_token);
+    let mut request = Request::new(Method::Post, links::auth::BEARER_TOKEN.parse().unwrap());
+    request.headers_mut().set(Authorization(auth_header));
+    request.headers_mut().set(ContentType(content));
+    request.set_body("grant_type=client_credentials");
 
-    Ok(Token::Bearer(result.to_owned()))
+    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
+        let decoded = try!(json::Json::from_str(&full_resp));
+        let result = try!(decoded.find("access_token")
+                                 .and_then(|s| s.as_string())
+                                 .ok_or(error::Error::MissingValue("access_token")));
+
+        Ok(Token::Bearer(result.to_owned()))
+    }
+
+    make_future(handle, request, parse_tok)
 }
 
-///Invalidate the given Bearer token using the given consumer KeyPair. Upon success, returns the
-///Token that was just invalidated.
+/// Invalidate the given Bearer token using the given consumer KeyPair. Upon success, the future
+/// returned by this function yields the Token that was just invalidated.
 ///
-///# Errors
+/// # Panics
 ///
-///If the Token passed in is not a Bearer token, this function will return a `MissingValue` error
-///referencing the "token", without calling Twitter.
-pub fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> Result<Token<'static>, error::Error> {
+/// If this function is handed a `Token` that is not a Bearer token, this function will panic.
+pub fn invalidate_bearer<'a>(handle: &'a Handle, con_token: &KeyPair, token: &Token)
+    -> TwitterFuture<'a, Token>
+{
     let token = if let Token::Bearer(ref token) = *token {
         token
     }
     else {
-        return Err(error::Error::MissingValue("token"));
+        panic!("non-bearer token passed to invalidate_bearer");
     };
 
-    let auth_header = bearer_request(con_token);
-
     let content: Mime = "application/x-www-form-urlencoded;charset=UTF-8".parse().unwrap();
-    let ssl = try!(NativeTlsClient::new());
-    let connector = HttpsConnector::new(ssl);
-    let client = hyper::Client::with_connector(connector);
-    let mut resp = try!(client.post(links::auth::INVALIDATE_BEARER)
-                              .header(Authorization(auth_header))
-                              .header(ContentType(content))
-                              .body(format!("access_token={}", token).as_bytes())
-                              .send());
-    let full_resp = try!(response_raw(&mut resp));
 
-    let decoded = try!(json::Json::from_str(&full_resp));
-    let result = try!(decoded.find("access_token")
-                             .and_then(|s| s.as_string())
-                             .ok_or(error::Error::MissingValue("access_token")));
+    let auth_header = bearer_request(con_token);
+    let mut request = Request::new(Method::Post, links::auth::INVALIDATE_BEARER.parse().unwrap());
+    request.headers_mut().set(Authorization(auth_header));
+    request.headers_mut().set(ContentType(content));
+    request.set_body(format!("access_token={}", token));
 
-    Ok(Token::Bearer(result.to_owned()))
+    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
+        let decoded = try!(json::Json::from_str(&full_resp));
+        let result = try!(decoded.find("access_token")
+                                 .and_then(|s| s.as_string())
+                                 .ok_or(error::Error::MissingValue("access_token")));
+
+        Ok(Token::Bearer(result.to_owned()))
+    }
+
+    make_future(handle, request, parse_tok)
 }
 
-///If the given tokens are valid, return the user information for the authenticated user.
+/// If the given tokens are valid, return the user information for the authenticated user.
 ///
-///If you have cached access tokens, using this method is a convenient way to make sure they're
-///still valid. If the user has revoked access from your app, this function will return an error
-///from Twitter indicating that you don't have access to the user.
-pub fn verify_tokens(token: &Token)
-    -> WebResponse<::user::TwitterUser>
+/// If you have cached access tokens, using this method is a convenient way to make sure they're
+/// still valid. If the user has revoked access from your app, this function will return an error
+/// from Twitter indicating that you don't have access to the user.
+pub fn verify_tokens<'a>(token: &Token, handle: &'a Handle)
+    -> FutureResponse<'a, ::user::TwitterUser>
 {
-    let mut resp = try!(get(links::auth::VERIFY_CREDENTIALS, token, None));
+    let req = get(links::auth::VERIFY_CREDENTIALS, token, None);
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 #[cfg(test)]
 mod tests {
     use super::bearer_request;
-    use hyper::header::{Authorization, HeaderFormat};
+    use hyper::header::Authorization;
 
     #[test]
     fn bearer_header() {
@@ -863,9 +921,8 @@ mod tests {
         let con_token = super::KeyPair::new(con_key, con_secret);
 
         let header = Authorization(bearer_request(&con_token));
-        let test = &header as &(HeaderFormat + Send + Sync);
 
-        let output = test.to_string();
+        let output = header.to_string();
 
         assert_eq!(output, "Basic eHZ6MWV2RlM0d0VFUFRHRUZQSEJvZzpMOHFxOVBaeVJnNmllS0dFS2hab2xHQzB2SldMdzhpRUo4OERSZHlPZw==");
     }

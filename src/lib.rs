@@ -14,32 +14,38 @@
 //!
 //! To use the Twitter API, there are some extra steps you need to do, both inside and outside of
 //! your app code. Find the Authentication Overview and quick start guide in the [Token][]
-//! documentation. The following examples already have a `token` on hand.
+//! documentation. The following examples already have a `token` on hand. In addition, using
+//! asynchronous network calls, the various methods of this library assume the presence of a
+//! [tokio][] `Core` whose `Handle` you pass to any given call. These are also assumed to be
+//! present in each example.
 //!
 //! [Token]: enum.Token.html
+//! [tokio]: https://tokio.rs
 //!
 //! To load the profile information of a single user:
 //!
 //! ```rust,no_run
-//! # let token = egg_mode::Token::Access {
-//! #     consumer: egg_mode::KeyPair::new("", ""),
-//! #     access: egg_mode::KeyPair::new("", ""),
-//! # };
-//! let rustlang = egg_mode::user::show("rustlang", &token).unwrap();
+//! # extern crate egg_mode; extern crate tokio_core;
+//! # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+//! # fn main() {
+//! # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+//! let rustlang = core.run(egg_mode::user::show("rustlang", &token, &handle)).unwrap();
 //!
 //! println!("{} (@{})", rustlang.name, rustlang.screen_name);
+//! # }
 //! ```
 //!
 //! To post a new tweet:
 //!
 //! ```rust,no_run
-//! # let token = egg_mode::Token::Access {
-//! #     consumer: egg_mode::KeyPair::new("", ""),
-//! #     access: egg_mode::KeyPair::new("", ""),
-//! # };
+//! # extern crate egg_mode; extern crate tokio_core;
+//! # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
 //! use egg_mode::tweet::DraftTweet;
+//! # fn main() {
+//! # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
 //!
-//! let post = DraftTweet::new("Hey Twitter!").send(&token).unwrap();
+//! let post = core.run(DraftTweet::new("Hey Twitter!").send(&token, &handle)).unwrap();
+//! # }
 //! ```
 //!
 //! # Types and Functions
@@ -61,11 +67,21 @@
 //! on `Vec<T>`, for methods that return Vecs. These methods and iterator types distribute the
 //! rate-limit information across each iteration.
 //!
-//! There's also a type alias, [`WebResponse`], which is an alias to `Result<Response<T>, Error>`,
-//! indicating a shorthand for network calls that return rate-limit metadata.
-//!
 //! [`Response`]: struct.Response.html
-//! [`WebResponse`]: type.WebResponse.html
+//!
+//! ## `TwitterFuture<'a, T>`
+//!
+//! Any method that requires a network call will return a handle to the pending network call, in
+//! most cases the type [`TwitterFuture`][]. This type (and any other `*Future` in this library)
+//! implements the `Future` trait, for use as an asynchronous network call. All `Future`
+//! implementations in this library use the `Error` enum as their Error value. For more information
+//! on how to use the `Future` trait, check out the [Tokio documentation guides][].
+//!
+//! In addition, there is also a `FutureResponse` type alias, that corresponds to
+//! `TwitterFuture<'a, Response<T>>`, for methods that return rate-limit information.
+//!
+//! [`TwitterFuture`]: struct.TwitterFuture.html
+//! [Tokio documentation guides]: https://tokio.rs/docs/getting-started/tokio/
 //!
 //! ## Authentication Types/Functions
 //!
@@ -127,7 +143,9 @@
 
 #[macro_use] extern crate hyper;
 #[macro_use] extern crate lazy_static;
-extern crate hyper_native_tls;
+extern crate futures;
+extern crate tokio_core;
+extern crate hyper_tls;
 extern crate native_tls;
 extern crate url;
 extern crate rand;
@@ -154,6 +172,7 @@ pub mod text;
 pub mod list;
 mod links;
 
-pub use auth::{KeyPair, Token, request_token, authorize_url, authenticate_url,
+pub use auth::{KeyPair, Token, AuthFuture, request_token, authorize_url, authenticate_url,
                access_token, verify_tokens, bearer_token, invalidate_bearer};
-pub use common::{Response, ResponseIter, ResponseIterRef, ResponseIterMut, WebResponse};
+pub use common::{Response, ResponseIter, ResponseIterRef,
+                 ResponseIterMut, FutureResponse, TwitterFuture};

@@ -2,10 +2,18 @@
 
 another twitter library for rust [![Build Status](https://travis-ci.org/QuietMisdreavus/twitter-rs.svg?branch=master)](https://travis-ci.org/QuietMisdreavus/twitter-rs) [![Build status](https://ci.appveyor.com/api/projects/status/3oi86ir82kj1rxu3?svg=true)](https://ci.appveyor.com/project/QuietMisdreavus/twitter-rs)
 
-[v0.10.0 Documentation][documentation] | [(Pending release documentation)][doc-dev]
+[v0.10.0 Documentation][documentation] | [(Pending release documentation)][doc-dev] | [(async branch
+documentation)][doc-async]
 
 [Documentation]: https://tonberry.quietmisdreavus.net/doc/egg_mode/
 [doc-dev]: https://tonberry.quietmisdreavus.net/doc-dev/egg_mode/
+[doc-async]: https://tonberry.quietmisdreavus.net/doc-async/egg_mode/
+
+**NOTE FOR THE ASYNC BRANCH**: This branch is hella broken right now. I'm in the process of
+converting this to hyper 0.11 and futures, which requires an upheaval of the API surface and a
+re-imagining of some of the convenience wrappers. Don't expect this to compile, and especially don't
+expect this to pass tests. Consider it a preview of how i want to change the API for async i/o, and
+perhaps an example of code that uses futures without consuming them.
 
 This is a library for interacting with Twitter from Rust. You can see how much of the Public API is
 available in the file [TODO.md]. In addition to eventually implementing the entire Public API, an

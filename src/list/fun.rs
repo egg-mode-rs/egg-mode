@@ -16,12 +16,14 @@ use tweet;
 
 ///Look up the lists the given user has been added to.
 ///
-///This function returns an iterator over the lists returned by Twitter. This method defaults to
+///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &'a Handle)
+    -> CursorIter<'a, ListCursor>
+{
     let mut params = HashMap::new();
     add_name_param(&mut params, &user.into());
-    CursorIter::new(links::lists::MEMBERSHIPS, token, Some(params), Some(20))
+    CursorIter::new(links::lists::MEMBERSHIPS, token, handle, Some(params), Some(20))
 }
 
 ///Return up to 100 lists the given user is subscribed to, including those the user made
@@ -35,132 +37,158 @@ pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> 
 ///
 ///If the user has more than 100 lists total like this, you'll need to call `ownerships` and
 ///`subscriptions` separately to be able to properly load everything.
-pub fn list<'a, T: Into<UserID<'a>>>(user: T, owned_first: bool, token: &'a auth::Token)
-    -> WebResponse<Vec<List>>
+pub fn list<'a, 'id, T: Into<UserID<'id>>>(user: T,
+                                           owned_first: bool,
+                                           token: &auth::Token,
+                                           handle: &'a Handle)
+    -> FutureResponse<'a, Vec<List>>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &user.into());
     add_param(&mut params, "reverse", owned_first.to_string());
 
-    let mut resp = try!(auth::get(links::lists::LIST, token, Some(&params)));
-    parse_response(&mut resp)
+    let req = auth::get(links::lists::LIST, token, Some(&params));
+
+    make_parsed_future(handle, req)
 }
 
 ///Look up the lists the given user is subscribed to, but not ones the user made themselves.
 ///
-///This function returns an iterator over the lists returned by Twitter. This method defaults to
+///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &'a Handle)
+    -> CursorIter<'a, ListCursor>
+{
     let mut params = HashMap::new();
     add_name_param(&mut params, &user.into());
-    CursorIter::new(links::lists::SUBSCRIPTIONS, token, Some(params), Some(20))
+    CursorIter::new(links::lists::SUBSCRIPTIONS, token, handle, Some(params), Some(20))
 }
 
 ///Look up the lists created by the given user.
 ///
-///This function returns an iterator over the lists returned by Twitter. This method defaults to
+///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn ownerships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token) -> CursorIter<'a, ListCursor> {
+pub fn ownerships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &'a Handle)
+    -> CursorIter<'a, ListCursor>
+{
     let mut params = HashMap::new();
     add_name_param(&mut params, &user.into());
-    CursorIter::new(links::lists::OWNERSHIPS, token, Some(params), Some(20))
+    CursorIter::new(links::lists::OWNERSHIPS, token, handle, Some(params), Some(20))
 }
 
 ///Look up information for a single list.
-pub fn show<'a>(list: ListID<'a>, token: &'a auth::Token) -> WebResponse<List> {
+pub fn show<'a>(list: ListID, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, List> {
     let mut params = HashMap::new();
 
     add_list_param(&mut params, &list);
 
-    let mut resp = try!(auth::get(links::lists::SHOW, token, Some(&params)));
+    let req = auth::get(links::lists::SHOW, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Look up the users that have been added to the given list.
 ///
-///This function returns an iterator over the users returned by Twitter. This method defaults to
+///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
-pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
+pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &'a Handle)
+    -> CursorIter<'a, UserCursor>
+{
     let mut params = HashMap::new();
 
     add_list_param(&mut params, &list);
 
-    CursorIter::new(links::lists::MEMBERS, token, Some(params), Some(20))
+    CursorIter::new(links::lists::MEMBERS, token, handle, Some(params), Some(20))
 }
 
 ///Look up the users that have subscribed to the given list.
 ///
-///This function returns an iterator over the users returned by Twitter. This method defaults to
+///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
-pub fn subscribers<'a>(list: ListID<'a>, token: &'a auth::Token) -> CursorIter<'a, UserCursor> {
+pub fn subscribers<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &'a Handle)
+    -> CursorIter<'a, UserCursor>
+{
     let mut params = HashMap::new();
 
     add_list_param(&mut params, &list);
 
-    CursorIter::new(links::lists::SUBSCRIBERS, token, Some(params), Some(20))
+    CursorIter::new(links::lists::SUBSCRIBERS, token, handle, Some(params), Some(20))
 }
 
 ///Check whether the given user is subscribed to the given list.
-pub fn is_subscribed<'a, T: Into<UserID<'a>>>(user: T, list: ListID<'a>, token: &auth::Token) ->
-    WebResponse<bool>
+pub fn is_subscribed<'a, 'id, T: Into<UserID<'id>>>(user: T,
+                                                    list: ListID,
+                                                    token: &auth::Token,
+                                                    handle: &'a Handle) ->
+    FutureResponse<'a, bool>
 {
     let mut params = HashMap::new();
 
     add_list_param(&mut params, &list);
     add_name_param(&mut params, &user.into());
 
-    let mut resp = try!(auth::get(links::lists::IS_SUBSCRIBER, token, Some(&params)));
+    let req = auth::get(links::lists::IS_SUBSCRIBER, token, Some(&params));
 
-    let out: WebResponse<TwitterUser> = parse_response(&mut resp);
+    fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<bool>, error::Error> {
+        let out: WebResponse<TwitterUser> = make_response(full_resp, headers);
 
-    match out {
-        Ok(user) => Ok(Response::map(user, |_| true)),
-        Err(TwitterError(terrs)) => {
-            if terrs.errors.iter().any(|e| e.code == 109) {
-                //here's a fun conundrum: since "is not in this list" is returned as an error code,
-                //the rate limit info that would otherwise be part of the response isn't there. the
-                //rate_headers method was factored out specifically for this location, since it's
-                //still there, just accompanying an error response instead of a user.
-                Ok(Response::map(rate_headers(&resp), |_| false))
-            }
-            else {
-                Err(TwitterError(terrs))
-            }
-        },
-        Err(err) => Err(err),
+        match out {
+            Ok(user) => Ok(Response::map(user, |_| true)),
+            Err(TwitterError(terrs)) => {
+                if terrs.errors.iter().any(|e| e.code == 109) {
+                    //here's a fun conundrum: since "is not in this list" is returned as an error code,
+                    //the rate limit info that would otherwise be part of the response isn't there. the
+                    //rate_headers method was factored out specifically for this location, since it's
+                    //still there, just accompanying an error response instead of a user.
+                    Ok(Response::map(rate_headers(headers), |_| false))
+                }
+                else {
+                    Err(TwitterError(terrs))
+                }
+            },
+            Err(err) => Err(err),
+        }
     }
+
+    make_future(handle, req, parse_resp)
 }
 
 ///Check whether the given user has been added to the given list.
-pub fn is_member<'a, T: Into<UserID<'a>>>(user: T, list: ListID<'a>, token: &auth::Token) ->
-    WebResponse<bool>
+pub fn is_member<'a, 'id, T: Into<UserID<'id>>>(user: T,
+                                                list: ListID,
+                                                token: &auth::Token,
+                                                handle: &'a Handle) ->
+    FutureResponse<'a, bool>
 {
     let mut params = HashMap::new();
 
     add_list_param(&mut params, &list);
     add_name_param(&mut params, &user.into());
 
-    let mut resp = try!(auth::get(links::lists::IS_MEMBER, token, Some(&params)));
+    let req = auth::get(links::lists::IS_MEMBER, token, Some(&params));
 
-    let out: WebResponse<TwitterUser> = parse_response(&mut resp);
+    fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<bool>, error::Error> {
+        let out: WebResponse<TwitterUser> = make_response(full_resp, headers);
 
-    match out {
-        Ok(user) => Ok(Response::map(user, |_| true)),
-        Err(TwitterError(terrs)) => {
-            if terrs.errors.iter().any(|e| e.code == 109) {
-                //here's a fun conundrum: since "is not in this list" is returned as an error code,
-                //the rate limit info that would otherwise be part of the response isn't there. the
-                //rate_headers method was factored out specifically for this location, since it's
-                //still there, just accompanying an error response instead of a user.
-                Ok(Response::map(rate_headers(&resp), |_| false))
-            }
-            else {
-                Err(TwitterError(terrs))
-            }
-        },
-        Err(err) => Err(err),
+        match out {
+            Ok(user) => Ok(Response::map(user, |_| true)),
+            Err(TwitterError(terrs)) => {
+                if terrs.errors.iter().any(|e| e.code == 109) {
+                    //here's a fun conundrum: since "is not in this list" is returned as an error code,
+                    //the rate limit info that would otherwise be part of the response isn't there. the
+                    //rate_headers method was factored out specifically for this location, since it's
+                    //still there, just accompanying an error response instead of a user.
+                    Ok(Response::map(rate_headers(headers), |_| false))
+                }
+                else {
+                    Err(TwitterError(terrs))
+                }
+            },
+            Err(err) => Err(err),
+        }
     }
+
+    make_future(handle, req, parse_resp)
 }
 
 ///Begin navigating the collection of tweets made by the users added to the given list.
@@ -169,31 +197,34 @@ pub fn is_member<'a, T: Into<UserID<'a>>>(user: T, list: ListID<'a>, token: &aut
 ///timeline. see the [`Timeline`] docs for details.
 ///
 ///[`Timeline`]: ../tweet/struct.Timeline.html
-pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token)
+pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token, handle: &'a Handle)
     -> tweet::Timeline<'a>
 {
     let mut params = HashMap::new();
     add_list_param(&mut params, &list);
     add_param(&mut params, "include_rts", with_rts.to_string());
 
-    tweet::Timeline::new(links::lists::STATUSES, Some(params), token)
+    tweet::Timeline::new(links::lists::STATUSES, Some(params), token, handle)
 }
 
 ///Adds the given user to the given list.
 ///
 ///Note that lists cannot have more than 5000 members.
 ///
-///Upon success, returns the freshly-modified list.
-pub fn add_member<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: &auth::Token)
-    -> WebResponse<List>
+///Upon success, the future returned by this function yields the freshly-modified list.
+pub fn add_member<'a, 'id, T: Into<UserID<'id>>>(list: ListID,
+                                                 user: T,
+                                                 token: &auth::Token,
+                                                 handle: &'a Handle)
+    -> FutureResponse<'a, List>
 {
     let mut params = HashMap::new();
     add_list_param(&mut params, &list);
     add_name_param(&mut params, &user.into());
 
-    let mut resp = try!(auth::post(links::lists::ADD, token, Some(&params)));
+    let req = auth::post(links::lists::ADD, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Adds a set of users to the given list.
@@ -209,9 +240,12 @@ pub fn add_member<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: &au
 ///When using this method, take care not to add and remove many members in rapid succession; there
 ///are no guarantees that the result of a `add_member_list` or `remove_member_list` will be
 ///immediately available for a corresponding removal or addition, respectively.
-pub fn add_member_list<'a, T, I>(members: I, list: ListID<'a>, token: &auth::Token)
-    -> WebResponse<List>
-    where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
+pub fn add_member_list<'a, 'id, T, I>(members: I,
+                                      list: ListID,
+                                      token: &auth::Token,
+                                      handle: &'a Handle)
+    -> FutureResponse<'a, List>
+    where T: Into<UserID<'id>>, I: IntoIterator<Item=T>
 {
     let mut params = HashMap::new();
     add_list_param(&mut params, &list);
@@ -224,22 +258,25 @@ pub fn add_member_list<'a, T, I>(members: I, list: ListID<'a>, token: &auth::Tok
         add_param(&mut params, "screen_name", name_param);
     }
 
-    let mut resp = try!(auth::post(links::lists::ADD_LIST, token, Some(&params)));
+    let req = auth::post(links::lists::ADD_LIST, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Removes the given user from the given list.
-pub fn remove_member<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: &auth::Token)
-    -> WebResponse<List>
+pub fn remove_member<'a, 'id, T: Into<UserID<'id>>>(list: ListID,
+                                                    user: T,
+                                                    token: &auth::Token,
+                                                    handle: &'a Handle)
+    -> FutureResponse<'a, List>
 {
     let mut params = HashMap::new();
     add_list_param(&mut params, &list);
     add_name_param(&mut params, &user.into());
 
-    let mut resp = try!(auth::post(links::lists::REMOVE_MEMBER, token, Some(&params)));
+    let req = auth::post(links::lists::REMOVE_MEMBER, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Removes a set of users from the given list.
@@ -254,8 +291,8 @@ pub fn remove_member<'a, T: Into<UserID<'a>>>(list: ListID<'a>, user: T, token: 
 ///When using this method, take care not to add and remove many members in rapid succession; there
 ///are no guarantees that the result of a `add_member_list` or `remove_member_list` will be
 ///immediately available for a corresponding removal or addition, respectively.
-pub fn remove_member_list<'a, T, I>(members: I, list: ListID<'a>, token: &auth::Token)
-    -> WebResponse<List>
+pub fn remove_member_list<'a, T, I>(members: I, list: ListID, token: &auth::Token, handle: &'a Handle)
+    -> FutureResponse<'a, List>
     where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
 {
     let mut params = HashMap::new();
@@ -269,9 +306,9 @@ pub fn remove_member_list<'a, T, I>(members: I, list: ListID<'a>, token: &auth::
         add_param(&mut params, "screen_name", name_param);
     }
 
-    let mut resp = try!(auth::post(links::lists::REMOVE_LIST, token, Some(&params)));
+    let req = auth::post(links::lists::REMOVE_LIST, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Creates a list, with the given name, visibility, and description.
@@ -279,8 +316,8 @@ pub fn remove_member_list<'a, T, I>(members: I, list: ListID<'a>, token: &auth::
 ///The new list is owned by the authenticated user, and its slug can be created with their handle
 ///and the name given to `name`. Twitter places an upper limit on 1000 lists owned by a single
 ///account.
-pub fn create(name: &str, public: bool, desc: Option<&str>, token: &auth::Token)
-    -> WebResponse<List>
+pub fn create<'a>(name: &str, public: bool, desc: Option<&str>, token: &auth::Token, handle: &'a Handle)
+    -> FutureResponse<'a, List>
 {
     let mut params = HashMap::new();
     add_param(&mut params, "name", name);
@@ -294,44 +331,44 @@ pub fn create(name: &str, public: bool, desc: Option<&str>, token: &auth::Token)
         add_param(&mut params, "description", desc);
     }
 
-    let mut resp = try!(auth::post(links::lists::CREATE, token, Some(&params)));
+    let req = auth::post(links::lists::CREATE, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Deletes the given list.
 ///
 ///The authenticated user must have created the list.
-pub fn delete(list: ListID, token: &auth::Token) -> WebResponse<List> {
+pub fn delete<'a>(list: ListID, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, List> {
     let mut params = HashMap::new();
     add_list_param(&mut params, &list);
 
-    let mut resp = try!(auth::post(links::lists::DELETE, token, Some(&params)));
+    let req = auth::post(links::lists::DELETE, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Subscribes the authenticated user to the given list.
 ///
 ///Subscribing to a list is a way to make it available in the "Lists" section of a user's profile
 ///without having to create it themselves.
-pub fn subscribe(list: ListID, token: &auth::Token) -> WebResponse<List> {
+pub fn subscribe<'a>(list: ListID, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, List> {
     let mut params = HashMap::new();
     add_list_param(&mut params, &list);
 
-    let mut resp = try!(auth::post(links::lists::SUBSCRIBE, token, Some(&params)));
+    let req = auth::post(links::lists::SUBSCRIBE, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Unsubscribes the authenticated user from the given list.
-pub fn unsubscribe(list: ListID, token: &auth::Token) -> WebResponse<List> {
+pub fn unsubscribe<'a>(list: ListID, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, List> {
     let mut params = HashMap::new();
     add_list_param(&mut params, &list);
 
-    let mut resp = try!(auth::post(links::lists::UNSUBSCRIBE, token, Some(&params)));
+    let req = auth::post(links::lists::UNSUBSCRIBE, token, Some(&params));
 
-    parse_response(&mut resp)
+    make_parsed_future(handle, req)
 }
 
 ///Begins updating a list's metadata.

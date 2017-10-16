@@ -212,15 +212,16 @@ impl FromJson for List {
 /// # Example
 ///
 /// ```rust,no_run
-/// # let token = egg_mode::Token::Access {
-/// #     consumer: egg_mode::KeyPair::new("", ""),
-/// #     access: egg_mode::KeyPair::new("", ""),
-/// # };
+/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # fn main() {
+/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
 /// use egg_mode::list::{self, ListID};
 ///
 /// //remember, you can only update a list if you own it!
 /// let update = list::update(ListID::from_slug("Twitter", "support"));
-/// let list = update.name("Official Support").send(&token).unwrap();
+/// let list = core.run(update.name("Official Support").send(&token, &handle)).unwrap();
+/// # }
 /// ```
 pub struct ListUpdate<'a> {
     list: ListID<'a>,
@@ -255,7 +256,7 @@ impl<'a> ListUpdate<'a> {
     }
 
     ///Sends the update request to Twitter.
-    pub fn send(self, token: &auth::Token) -> WebResponse<List> {
+    pub fn send<'h>(self, token: &auth::Token, handle: &'h Handle) -> FutureResponse<'h, List> {
         let mut params = HashMap::new();
         add_list_param(&mut params, &self.list);
 
@@ -276,8 +277,8 @@ impl<'a> ListUpdate<'a> {
             add_param(&mut params, "description", desc);
         }
 
-        let mut resp = try!(auth::post(links::lists::UPDATE, token, Some(&params)));
+        let req = auth::post(links::lists::UPDATE, token, Some(&params));
 
-        parse_response(&mut resp)
+        make_parsed_future(handle, req)
     }
 }
