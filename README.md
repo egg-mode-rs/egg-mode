@@ -1,19 +1,11 @@
 # egg-mode
 
-another twitter library for rust [![Build Status](https://travis-ci.org/QuietMisdreavus/twitter-rs.svg?branch=master)](https://travis-ci.org/QuietMisdreavus/twitter-rs) [![Build status](https://ci.appveyor.com/api/projects/status/3oi86ir82kj1rxu3?svg=true)](https://ci.appveyor.com/project/QuietMisdreavus/twitter-rs)
+another twitter library for rust [![Build Status](https://travis-ci.org/QuietMisdreavus/twitter-rs.svg?branch=master)](https://travis-ci.org/QuietMisdreavus/twitter-rs) [![Build status](https://ci.appveyor.com/api/projects/status/3oi86ir82kj1rxu3/branch/master?svg=true)](https://ci.appveyor.com/project/QuietMisdreavus/twitter-rs/branch/master)
 
-[v0.10.0 Documentation][documentation] | [(Pending release documentation)][doc-dev] | [(async branch
-documentation)][doc-async]
+[v0.10.0 Documentation][documentation] | [(Pending release documentation)][doc-dev]
 
 [Documentation]: https://tonberry.quietmisdreavus.net/doc/egg_mode/
 [doc-dev]: https://tonberry.quietmisdreavus.net/doc-dev/egg_mode/
-[doc-async]: https://tonberry.quietmisdreavus.net/doc-async/egg_mode/
-
-**NOTE FOR THE ASYNC BRANCH**: This branch is hella broken right now. I'm in the process of
-converting this to hyper 0.11 and futures, which requires an upheaval of the API surface and a
-re-imagining of some of the convenience wrappers. Don't expect this to compile, and especially don't
-expect this to pass tests. Consider it a preview of how i want to change the API for async i/o, and
-perhaps an example of code that uses futures without consuming them.
 
 This is a library for interacting with Twitter from Rust. You can see how much of the Public API is
 available in the file [TODO.md]. In addition to eventually implementing the entire Public API, an
@@ -42,18 +34,34 @@ extern crate egg_mode;
 
 See available methods and tips to get started in the [Documentation][].
 
+**Note about these code samples:** This README reflects the pending release, which uses Hyper v0.11
+to provide asynchronous network calls for the interface. The last synchronous release was
+[`v0.10.0`], and documentation and code samples for that version can be found on that tag on this
+repo.
+
+[`v0.10.0`]: https://github.com/QuietMisdreavus/twitter-rs/tree/v0.10.0
+
 To authenticate a user and request an access token:
 
 ```rust
+// NOTE: this assumes you have a Tokio `core` and its `handle` sitting around already
+
 let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
-let request_token = egg_mode::request_token(&con_token, "oob").unwrap();
+// "oob" is needed for PIN-based auth; see docs for `request_token` for more info
+let request_token = core.run(egg_mode::request_token(&con_token, "oob", &handle)).unwrap();
 let auth_url = egg_mode::authorize_url(&request_token);
 
 // give auth_url to the user, they can sign in to Twitter and accept your app's permissions.
 // they'll receive a PIN in return, they need to give this to your application
 
+let verifier = "123456"; //read the PIN from the user here
+
+// note this consumes con_token; if you want to sign in multiple accounts, clone it here
 let (token, user_id, screen_name) =
-    egg_mode::access_token(con_token, &request_token, pin).unwrap();
+    core.run(egg_mode::access_token(con_token, &request_token, verifier, &handle)).unwrap();
+
+// token can be given to any egg_mode method that asks for a token
+// user_id and screen_name refer to the user who signed in
 ```
 
 As the last line shows, this also returns the User ID and username of the user that authenticated
@@ -62,15 +70,15 @@ with your application. With this access token, all of the other Twitter function
 With this token in hand, you can get a user's profile information like this:
 
 ```rust
-let rustlang = egg_mode::user::show("rustlang", &token).unwrap();
+// NOTE: as above, this assumes you have the Tokio `core` and `handle` available
+
+let rustlang = core.run(egg_mode::user::show("rustlang", &token, &handle)).unwrap();
 
 println!("{} (@{})", rustlang.name, rustlang.screen_name);
 ```
 
 If you'd like to see the examples and implementation for the version currently on crates.io, check
 the [`v0.10.0`] tag.
-
-[`v0.10.0`]: https://github.com/QuietMisdreavus/twitter-rs/tree/v0.10.0
 
 For more examples of how to use this library, check the files in the examples folder. The
 authentication code for most of them is in `examples/common/mod.rs`, though that's also mostly
