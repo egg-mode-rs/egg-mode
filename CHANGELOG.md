@@ -1,6 +1,6 @@
 # Changelog for egg-mode
 
-## Pending
+## [0.11.0] - 2017-10-16
 ### Changed
 - The Great Async Refactor of 0.11.0
   - egg-mode now uses async i/o!!!
@@ -22,8 +22,8 @@
     `Utc`
 - `Token`s and `KeyPair`s are now always `'static`. Only string literals and owned strings from now
   on.
-  - This is a **breaking change** if you were using short-lived `Token`s with `&str`s in them - clone
-    the Strings when you hand them to the `KeyPair`, please.
+  - This is a **breaking change** if you were using short-lived `Token`s with `&str`s in them -
+    clone or `.to_owned()` the Strings when you hand them to the `KeyPair`, please.
 
 ## [0.10.0] = 2017-08-08
 
