@@ -752,6 +752,10 @@ pub struct DraftTweet<'a> {
     pub display_coordinates: Option<bool>,
     ///If present the Place to attach to this draft.
     pub place_id: Option<&'a str>,
+    ///List of media entities associated with tweet.
+    ///
+    ///It can be up to 4 images or 1 GIF/video.
+    pub media_ids: Option<&'a [u64]>
 }
 
 impl<'a> DraftTweet<'a> {
@@ -766,6 +770,7 @@ impl<'a> DraftTweet<'a> {
             coordinates: None,
             display_coordinates: None,
             place_id: None,
+            media_ids: None
         }
     }
 
@@ -850,6 +855,14 @@ impl<'a> DraftTweet<'a> {
         }
     }
 
+    ///Attaches media to tweet.
+    pub fn media_ids(self, media_ids: &'a [u64]) -> Self {
+        DraftTweet {
+            media_ids: Some(media_ids),
+            ..self
+        }
+    }
+
     ///Send the assembled tweet as the authenticated user.
     pub fn send<'s>(&self, token: &auth::Token, handle: &'s Handle) -> FutureResponse<'s, Tweet> {
         let mut params = HashMap::new();
@@ -883,6 +896,11 @@ impl<'a> DraftTweet<'a> {
 
         if let Some(place_id) = self.place_id {
             add_param(&mut params, "place_id", place_id);
+        }
+
+        if let Some(media_ids) = self.media_ids {
+            let list = media_ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
+            add_param(&mut params, "media_ids", list);
         }
 
         let req = auth::post(links::statuses::UPDATE, token, Some(&params));
