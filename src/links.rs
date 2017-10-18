@@ -58,6 +58,10 @@ pub mod statuses {
     pub const DELETE_STEM: &'static str = "https://api.twitter.com/1.1/statuses/destroy";
 }
 
+pub mod medias {
+    pub const UPLOAD: &'static str = "https://upload.twitter.com/1.1/media/upload.json";
+}
+
 pub mod lists {
     pub const STATUSES: &'static str = "https://api.twitter.com/1.1/lists/statuses.json";
     pub const MEMBERS: &'static str = "https://api.twitter.com/1.1/lists/members.json";
