@@ -160,7 +160,7 @@ return a list of IDs of something are grouped in with the rest of the main struc
 
 ## [Media API](https://dev.twitter.com/rest/media)
 
-- [ ] media/upload (Simple)
+- [x] media/upload (Simple)
 - [ ] media/upload (INIT)
 - [ ] media/upload (APPEND)
 - [ ] media/upload (FINALIZE)

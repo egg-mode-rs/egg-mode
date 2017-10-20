@@ -164,6 +164,7 @@ pub mod user;
 pub mod entities;
 pub mod cursor;
 pub mod tweet;
+pub mod media;
 pub mod search;
 pub mod place;
 pub mod direct;
