@@ -89,6 +89,20 @@ impl<T> FromJson for Box<T> where T: FromJson {
     }
 }
 
+impl FromJson for () {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        Err(InvalidResponse("Expected empty response", Some(input.to_string())))
+    }
+
+    fn from_str(input: &str) -> Result<Self, error::Error> {
+        if input.is_empty() {
+            Ok(())
+        } else {
+            Err(InvalidResponse("Expected empty response", Some(input.to_string())))
+        }
+    }
+}
+
 impl FromJson for usize {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         input.as_u64().map(|x| x as usize).ok_or_else(|| InvalidResponse("expected an usize", Some(input.to_string())))
