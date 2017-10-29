@@ -34,7 +34,8 @@ matrix:
   - TARGET: nightly-i686-pc-windows-gnu
 
 cache:
-    #  - 'C:\Users\appveyor\.cargo'
+  - 'C:\Users\appveyor\.cargo'
+  - 'C:\Users\appveyor\.rustup'
 
 install:
   - curl -sSf -o rustup-init.exe https://win.rustup.rs/
