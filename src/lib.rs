@@ -69,7 +69,7 @@
 //!
 //! [`Response`]: struct.Response.html
 //!
-//! ## `TwitterFuture<'a, T>`
+//! ## `TwitterFuture<T>`
 //!
 //! Any method that requires a network call will return a handle to the pending network call, in
 //! most cases the type [`TwitterFuture`][]. This type (and any other `*Future` in this library)
@@ -78,7 +78,7 @@
 //! on how to use the `Future` trait, check out the [Tokio documentation guides][].
 //!
 //! In addition, there is also a `FutureResponse` type alias, that corresponds to
-//! `TwitterFuture<'a, Response<T>>`, for methods that return rate-limit information.
+//! `TwitterFuture<Response<T>>`, for methods that return rate-limit information.
 //!
 //! [`TwitterFuture`]: struct.TwitterFuture.html
 //! [Tokio documentation guides]: https://tokio.rs/docs/getting-started/tokio/

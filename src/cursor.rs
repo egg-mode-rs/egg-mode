@@ -278,7 +278,7 @@ pub struct CursorIter<'a, T>
 {
     link: &'static str,
     token: &'a auth::Token,
-    handle: &'a Handle,
+    handle: Handle,
     params_base: Option<ParamList<'a>>,
     ///The number of results returned in one network call.
     ///
@@ -300,7 +300,7 @@ pub struct CursorIter<'a, T>
     ///implementation. It is made available for those who wish to manually manage network calls and
     ///pagination.
     pub next_cursor: i64,
-    loader: Option<FutureResponse<'a, T>>,
+    loader: Option<FutureResponse<T>>,
     iter: Option<ResponseIter<T::Item>>,
 }
 
@@ -335,7 +335,7 @@ impl<'a, T> CursorIter<'a, T>
     ///
     ///This is intended to be used as part of this struct's Iterator implementation. It is provided
     ///as a convenience for those who wish to manage network calls and pagination manually.
-    pub fn call(&self) -> FutureResponse<'a, T> {
+    pub fn call(&self) -> FutureResponse<T> {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
 
         add_param(&mut params, "cursor", self.next_cursor.to_string());
@@ -345,7 +345,7 @@ impl<'a, T> CursorIter<'a, T>
 
         let req = auth::get(self.link, self.token, Some(&params));
 
-        make_parsed_future(self.handle, req)
+        make_parsed_future(&self.handle, req)
     }
 
     ///Creates a new instance of CursorIter, with the given parameters and empty initial results.
@@ -353,12 +353,12 @@ impl<'a, T> CursorIter<'a, T>
     ///This is essentially an internal infrastructure function, not meant to be used from consumer
     ///code.
     #[doc(hidden)]
-    pub fn new(link: &'static str, token: &'a auth::Token, handle: &'a Handle,
+    pub fn new(link: &'static str, token: &'a auth::Token, handle: &Handle,
                params_base: Option<ParamList<'a>>, page_size: Option<i32>) -> CursorIter<'a, T> {
         CursorIter {
             link: link,
             token: token,
-            handle: handle,
+            handle: handle.clone(),
             params_base: params_base,
             page_size: page_size,
             previous_cursor: -1,
