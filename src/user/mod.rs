@@ -561,13 +561,13 @@ impl FromJson for UserEntityDetail {
 #[must_use = "search iterators are lazy and do nothing unless consumed"]
 pub struct UserSearch<'a> {
     token: &'a auth::Token,
-    handle: &'a Handle,
+    handle: Handle,
     query: &'a str,
     /// The current page of results being returned, starting at 1.
     pub page_num: i32,
     /// The number of user records per page of results. Defaults to 10, maximum of 20.
     pub page_size: i32,
-    current_loader: Option<FutureResponse<'a, Vec<TwitterUser>>>,
+    current_loader: Option<FutureResponse<Vec<TwitterUser>>>,
     current_results: Option<ResponseIter<TwitterUser>>,
 }
 
@@ -603,7 +603,7 @@ impl<'a> UserSearch<'a> {
     /// This will automatically be called if you use the `UserSearch` as an iterator. This method is
     /// made public for convenience if you want to manage the pagination yourself. Remember to
     /// change `page_num` between calls.
-    pub fn call(&self) -> FutureResponse<'a, Vec<TwitterUser>> {
+    pub fn call(&self) -> FutureResponse<Vec<TwitterUser>> {
         let mut params = HashMap::new();
         add_param(&mut params, "q", self.query);
         add_param(&mut params, "page", self.page_num.to_string());
@@ -611,14 +611,14 @@ impl<'a> UserSearch<'a> {
 
         let req = auth::get(links::users::SEARCH, self.token, Some(&params));
 
-        make_parsed_future(self.handle, req)
+        make_parsed_future(&self.handle, req)
     }
 
     /// Returns a new UserSearch with the given query and tokens, with the default page size of 10.
-    fn new(query: &'a str, token: &'a auth::Token, handle: &'a Handle) -> UserSearch<'a> {
+    fn new(query: &'a str, token: &'a auth::Token, handle: &Handle) -> UserSearch<'a> {
         UserSearch {
             token: token,
-            handle: handle,
+            handle: handle.clone(),
             query: query,
             page_num: 1,
             page_size: 10,

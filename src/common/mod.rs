@@ -203,7 +203,7 @@ pub type WebResponse<T> = Result<Response<T>, ::error::Error>;
 ///convenience alias that is only there so i don't have to write `Response<T>` all the time.
 ///
 ///[`TwitterFuture`]: struct.TwitterFuture.html
-pub type FutureResponse<'a, T> = TwitterFuture<'a, Response<T>>;
+pub type FutureResponse<T> = TwitterFuture<Response<T>>;
 
 pub fn codepoints_to_bytes(&mut (ref mut start, ref mut end): &mut (usize, usize), text: &str) {
     for (ch_offset, (by_offset, _)) in text.char_indices().enumerate() {
