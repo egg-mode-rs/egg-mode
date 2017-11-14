@@ -158,7 +158,7 @@ extern crate regex;
 extern crate unicode_normalization;
 
 #[macro_use] mod common;
-mod auth;
+pub mod auth;
 pub mod error;
 pub mod user;
 pub mod entities;
