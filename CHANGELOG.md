@@ -1,5 +1,9 @@
 # Changelog for egg-mode
 
+## Pending
+### Changed
+- `TwitterFuture` clones the `Handle` internally, removing its lifetime parameter
+
 ## [0.11.0] - 2017-10-16
 ### Changed
 - The Great Async Refactor of 0.11.0
