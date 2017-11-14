@@ -14,8 +14,8 @@ use common::*;
 use super::*;
 
 ///Lookup a single tweet by numeric ID.
-pub fn show<'a>(id: u64, token: &auth::Token, handle: &'a Handle)
-    -> FutureResponse<'a, Tweet>
+pub fn show(id: u64, token: &auth::Token, handle: &Handle)
+    -> FutureResponse<Tweet>
 {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
@@ -31,8 +31,8 @@ pub fn show<'a>(id: u64, token: &auth::Token, handle: &'a Handle)
 ///
 ///Use the `count` parameter to indicate how many retweets you would like to retrieve. If `count`
 ///is 0 or greater than 100, it will be defaulted to 100 before making the call.
-pub fn retweets_of<'a>(id: u64, count: u32, token: &auth::Token, handle: &'a Handle)
-    -> FutureResponse<'a, Vec<Tweet>>
+pub fn retweets_of(id: u64, count: u32, token: &auth::Token, handle: &Handle)
+    -> FutureResponse<Vec<Tweet>>
 {
     let mut params = HashMap::new();
     add_param(&mut params, "tweet_mode", "extended");
@@ -57,7 +57,7 @@ pub fn retweets_of<'a>(id: u64, count: u32, token: &auth::Token, handle: &'a Han
 ///set the page size. Calling `with_page_size` on the iterator returned by this function will not
 ///change the page size used by the network call. Setting `page_size` manually may result in an
 ///error from Twitter.
-pub fn retweeters_of<'a>(id: u64, token: &'a auth::Token, handle: &'a Handle)
+pub fn retweeters_of<'a>(id: u64, token: &'a auth::Token, handle: &Handle)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
     let mut params = HashMap::new();
@@ -69,8 +69,8 @@ pub fn retweeters_of<'a>(id: u64, token: &'a auth::Token, handle: &'a Handle)
 ///
 ///This function differs from `lookup_map` in how it handles protected or nonexistent tweets.
 ///`lookup` gives a Vec of just the tweets it could load, leaving out any that it couldn't find.
-pub fn lookup<'a, I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle: &'a Handle)
-    -> FutureResponse<'a, Vec<Tweet>>
+pub fn lookup<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle: &Handle)
+    -> FutureResponse<Vec<Tweet>>
 {
     let mut params = HashMap::new();
     let id_param = ids.into_iter().fold(String::new(), |mut acc, x| {
@@ -93,8 +93,8 @@ pub fn lookup<'a, I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle
 ///`lookup_map` gives a map containing every ID in the input slice; tweets that don't exist or
 ///can't be read by the authenticated user store `None` in the map, whereas tweets that could be
 ///loaded store `Some` and the requested status.
-pub fn lookup_map<'a, I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle: &'a Handle)
-    -> FutureResponse<'a, HashMap<u64, Option<Tweet>>>
+pub fn lookup_map<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle: &Handle)
+    -> FutureResponse<HashMap<u64, Option<Tweet>>>
 {
     let mut params = HashMap::new();
     let id_param = ids.into_iter().fold(String::new(), |mut acc, x| {
@@ -142,7 +142,7 @@ pub fn lookup_map<'a, I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, ha
 ///This method has a default page size of 20 tweets, with a maximum of 200.
 ///
 ///Twitter will only return the most recent 800 tweets by navigating this method.
-pub fn home_timeline<'a>(token: &'a auth::Token, handle: &'a Handle) -> Timeline<'a> {
+pub fn home_timeline<'a>(token: &'a auth::Token, handle: &Handle) -> Timeline<'a> {
     Timeline::new(links::statuses::HOME_TIMELINE, None, token, handle)
 }
 
@@ -152,7 +152,7 @@ pub fn home_timeline<'a>(token: &'a auth::Token, handle: &'a Handle) -> Timeline
 ///This method has a default page size of 20 tweets, with a maximum of 200.
 ///
 ///Twitter will only return the most recent 800 tweets by navigating this method.
-pub fn mentions_timeline<'a>(token: &'a auth::Token, handle: &'a Handle) -> Timeline<'a> {
+pub fn mentions_timeline<'a>(token: &'a auth::Token, handle: &Handle) -> Timeline<'a> {
     Timeline::new(links::statuses::MENTIONS_TIMELINE, None, token, handle)
 }
 
@@ -169,7 +169,7 @@ pub fn mentions_timeline<'a>(token: &'a auth::Token, handle: &'a Handle) -> Time
 ///
 ///Twitter will only load the most recent 3,200 tweets with this method.
 pub fn user_timeline<'a, T: Into<UserID<'a>>>(acct: T, with_replies: bool, with_rts: bool,
-                                              token: &'a auth::Token, handle: &'a Handle)
+                                              token: &'a auth::Token, handle: &Handle)
     -> Timeline<'a>
 {
     let mut params = HashMap::new();
@@ -184,14 +184,14 @@ pub fn user_timeline<'a, T: Into<UserID<'a>>>(acct: T, with_replies: bool, with_
 ///user that have been retweeted by others.
 ///
 ///This method has a default page size of 20 tweets, with a maximum of 100.
-pub fn retweets_of_me<'a>(token: &'a auth::Token, handle: &'a Handle) -> Timeline<'a> {
+pub fn retweets_of_me<'a>(token: &'a auth::Token, handle: &Handle) -> Timeline<'a> {
     Timeline::new(links::statuses::RETWEETS_OF_ME, None, token, handle)
 }
 
 ///Make a `Timeline` struct for navigating the collection of tweets liked by the given user.
 ///
 ///This method has a default page size of 20 tweets, with a maximum of 200.
-pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, handle: &'a Handle)
+pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, handle: &Handle)
     -> Timeline<'a>
 {
     let mut params = HashMap::new();
@@ -203,7 +203,7 @@ pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, handle
 ///
 ///On success, the future returned by this function yields the retweet, with the original status
 ///contained in `retweeted_status`.
-pub fn retweet<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Tweet> {
+pub fn retweet(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "tweet_mode", "extended");
 
@@ -220,7 +220,7 @@ pub fn retweet<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureRe
 ///it.
 ///
 ///On success, the future returned by this function yields the original tweet.
-pub fn unretweet<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Tweet> {
+pub fn unretweet(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "tweet_mode", "extended");
 
@@ -234,7 +234,7 @@ pub fn unretweet<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> Future
 ///Like the given status as the authenticated user.
 ///
 ///On success, the future returned by this function yields the liked tweet.
-pub fn like<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Tweet> {
+pub fn like(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
     add_param(&mut params, "tweet_mode", "extended");
@@ -247,7 +247,7 @@ pub fn like<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureRespo
 ///Clears a like of the given status as the authenticated user.
 ///
 ///On success, the future returned by this function yields the given tweet.
-pub fn unlike<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Tweet> {
+pub fn unlike(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
     add_param(&mut params, "tweet_mode", "extended");
@@ -260,7 +260,7 @@ pub fn unlike<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureRes
 ///Delete the given tweet. The authenticated user must be the user who posted the given tweet.
 ///
 ///On success, the future returned by this function yields the given tweet.
-pub fn delete<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Tweet> {
+pub fn delete(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "tweet_mode", "extended");
 

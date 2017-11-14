@@ -63,7 +63,7 @@ mod fun;
 
 pub use self::fun::*;
 
-type DMFuture<'a> = TwitterFuture<'a, Response<Vec<DirectMessage>>>;
+type DMFuture = TwitterFuture<Response<Vec<DirectMessage>>>;
 
 ///Represents a single direct message.
 ///
@@ -279,7 +279,7 @@ pub struct Timeline<'a> {
     ///The token used to authenticate requests with.
     token: &'a auth::Token,
     ///A Handle that represents the event loop to run requests on.
-    handle: &'a Handle,
+    handle: Handle,
     ///Optional set of params to include prior to adding lifetime navigation parameters.
     params_base: Option<ParamList<'a>>,
     ///The maximum number of messages to return in a single call. Twitter doesn't guarantee
@@ -310,10 +310,11 @@ impl<'a> Timeline<'a> {
     ///bound with.
     pub fn older<'s>(&'s mut self, since_id: Option<u64>) -> TimelineFuture<'s, 'a> {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
+        let loader = make_parsed_future(&self.handle, req);
 
         TimelineFuture {
             timeline: self,
-            loader: make_parsed_future(self.handle, req),
+            loader: loader,
         }
     }
 
@@ -321,10 +322,11 @@ impl<'a> Timeline<'a> {
     ///bound with.
     pub fn newer<'s>(&'s mut self, max_id: Option<u64>) -> TimelineFuture<'s, 'a> {
         let req = self.request(self.max_id, max_id);
+        let loader = make_parsed_future(&self.handle, req);
 
         TimelineFuture {
             timeline: self,
-            loader: make_parsed_future(self.handle, req),
+            loader: loader,
         }
     }
 
@@ -336,9 +338,9 @@ impl<'a> Timeline<'a> {
     ///If the range of DMs given by the IDs would return more than `self.count`, the newest set
     ///of messages will be returned.
     pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>)
-        -> FutureResponse<'a, Vec<DirectMessage>>
+        -> FutureResponse<Vec<DirectMessage>>
     {
-        make_parsed_future(self.handle, self.request(since_id, max_id))
+        make_parsed_future(&self.handle, self.request(since_id, max_id))
     }
 
     ///Helper builder function to set the page size.
@@ -375,13 +377,13 @@ impl<'a> Timeline<'a> {
     fn new(link: &'static str,
            params_base: Option<ParamList<'a>>,
            token: &'a auth::Token,
-           handle: &'a Handle)
+           handle: &Handle)
         -> Self
     {
         Timeline {
             link: link,
             token: token,
-            handle: handle,
+            handle: handle.clone(),
             params_base: params_base,
             count: 20,
             max_id: None,
@@ -400,7 +402,7 @@ pub struct TimelineFuture<'timeline, 'handle>
     where 'handle: 'timeline
 {
     timeline: &'timeline mut Timeline<'handle>,
-    loader: FutureResponse<'handle, Vec<DirectMessage>>,
+    loader: FutureResponse<Vec<DirectMessage>>,
 }
 
 impl<'timeline, 'handle> Future for TimelineFuture<'timeline, 'handle>
@@ -523,7 +525,7 @@ pub struct ConversationTimeline<'a> {
 }
 
 impl<'a> ConversationTimeline<'a> {
-    fn new(token: &'a auth::Token, handle: &'a Handle) -> ConversationTimeline<'a> {
+    fn new(token: &'a auth::Token, handle: &Handle) -> ConversationTimeline<'a> {
         ConversationTimeline {
             sent: sent(token, handle),
             received: received(token, handle),
@@ -592,7 +594,7 @@ impl<'a> ConversationTimeline<'a> {
         self.make_future(sent, received)
     }
 
-    fn make_future(self, sent: DMFuture<'a>, received: DMFuture<'a>)
+    fn make_future(self, sent: DMFuture, received: DMFuture)
         -> ConversationFuture<'a>
     {
         ConversationFuture {
@@ -610,7 +612,7 @@ impl<'a> ConversationTimeline<'a> {
 #[must_use = "futures do nothing unless polled"]
 pub struct ConversationFuture<'a> {
     loader: Option<ConversationTimeline<'a>>,
-    future: Join<DMFuture<'a>, DMFuture<'a>>,
+    future: Join<DMFuture, DMFuture>,
 }
 
 impl<'a> Future for ConversationFuture<'a> {

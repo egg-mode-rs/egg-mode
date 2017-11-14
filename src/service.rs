@@ -32,7 +32,7 @@ use common::*;
 ///
 ///While the official home of Twitter's TOS is https://twitter.com/tos, this allows you to obtain a
 ///plain-text copy of it to display in your application.
-pub fn terms<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, String> {
+pub fn terms(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
     let req = auth::get(links::service::TERMS, token, None);
 
     fn parse_terms(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
@@ -49,7 +49,7 @@ pub fn terms<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, 
 ///
 ///While the official home of Twitter's Privacy Policy is https://twitter.com/privacy, this allows
 ///you to obtain a plain-text copy of it to display in your application.
-pub fn privacy<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, String> {
+pub fn privacy(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
     let req = auth::get(links::service::PRIVACY, token, None);
 
     fn parse_policy(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
@@ -72,7 +72,7 @@ pub fn privacy<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a
 ///fields returned by this function mean.
 ///
 ///[`Configuration`]: struct.Configuration.html
-pub fn config<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Configuration> {
+pub fn config(token: &auth::Token, handle: &Handle) -> FutureResponse<Configuration> {
     let req = auth::get(links::service::CONFIG, token, None);
 
     make_parsed_future(handle, req)
@@ -85,8 +85,8 @@ pub fn config<'a>(token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a,
 ///documentation for [`RateLimitStatus`][] and its associated enums for more information.
 ///
 ///[`RateLimitStatus`]: struct.RateLimitStatus.html
-pub fn rate_limit_status<'a>(token: &auth::Token, handle: &'a Handle)
-    -> FutureResponse<'a, RateLimitStatus>
+pub fn rate_limit_status(token: &auth::Token, handle: &Handle)
+    -> FutureResponse<RateLimitStatus>
 {
     let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
 
@@ -97,8 +97,8 @@ pub fn rate_limit_status<'a>(token: &auth::Token, handle: &'a Handle)
 ///return the full structure so that new methods can be added to `RateLimitStatus` and its
 ///associated enums.
 #[doc(hidden)]
-pub fn rate_limit_status_raw<'a>(token: &auth::Token, handle: &'a Handle)
-    -> FutureResponse<'a, json::Json>
+pub fn rate_limit_status_raw(token: &auth::Token, handle: &Handle)
+    -> FutureResponse<json::Json>
 {
     let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
 

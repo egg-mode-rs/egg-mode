@@ -99,7 +99,7 @@ impl FromJson for Media {
 ///Uploads image using old twitter API.
 ///
 ///The image should be raw binary with content of file.
-pub fn upload_image<'a>(image: &[u8], token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Media> {
+pub fn upload_image(image: &[u8], token: &auth::Token, handle: &Handle) -> FutureResponse<Media> {
     let mut params = HashMap::new();
 
     let config = base64::Config {
@@ -127,7 +127,7 @@ pub mod upload {
     ///
     ///* total - The size of media file being uploaded(in bytes).
     ///* mime - File's mime type.
-    pub fn init<'a>(total: usize, mime: mime::Mime, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Media> {
+    pub fn init(total: usize, mime: mime::Mime, token: &auth::Token, handle: &Handle) -> FutureResponse<Media> {
         let mut params = HashMap::new();
 
         add_param(&mut params, "command", "INIT");
@@ -145,7 +145,7 @@ pub mod upload {
     ///* id - Media's id returned in response to `INIT` message.
     ///* chunk - Bytes to send.
     ///* index - Ordered index of file chunk.
-    pub fn append<'a>(id: u64, chunk: &[u8], index: usize, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, ()> {
+    pub fn append(id: u64, chunk: &[u8], index: usize, token: &auth::Token, handle: &Handle) -> FutureResponse<()> {
         let mut params = HashMap::new();
 
         let config = base64::Config {
@@ -169,7 +169,7 @@ pub mod upload {
     ///## Parameters:
     ///
     ///* id - Media's id returned in response to `INIT` message.
-    pub fn finalize<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Media> {
+    pub fn finalize(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<Media> {
         let mut params = HashMap::new();
 
         add_param(&mut params, "command", "FINALIZE");
@@ -180,7 +180,7 @@ pub mod upload {
     }
 
     ///Sends STATUS message to twitter API in order to retrieve media info.
-    pub fn status<'a>(id: u64, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Media> {
+    pub fn status(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<Media> {
         let mut params = HashMap::new();
 
         add_param(&mut params, "command", "STATUS");

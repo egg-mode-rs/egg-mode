@@ -18,7 +18,7 @@ use tweet;
 ///
 ///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &'a Handle)
+pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &Handle)
     -> CursorIter<'a, ListCursor>
 {
     let mut params = HashMap::new();
@@ -37,11 +37,11 @@ pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, han
 ///
 ///If the user has more than 100 lists total like this, you'll need to call `ownerships` and
 ///`subscriptions` separately to be able to properly load everything.
-pub fn list<'a, 'id, T: Into<UserID<'id>>>(user: T,
-                                           owned_first: bool,
-                                           token: &auth::Token,
-                                           handle: &'a Handle)
-    -> FutureResponse<'a, Vec<List>>
+pub fn list<'id, T: Into<UserID<'id>>>(user: T,
+                                       owned_first: bool,
+                                       token: &auth::Token,
+                                       handle: &Handle)
+    -> FutureResponse<Vec<List>>
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &user.into());
@@ -56,7 +56,7 @@ pub fn list<'a, 'id, T: Into<UserID<'id>>>(user: T,
 ///
 ///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &'a Handle)
+pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &Handle)
     -> CursorIter<'a, ListCursor>
 {
     let mut params = HashMap::new();
@@ -68,7 +68,7 @@ pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, h
 ///
 ///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn ownerships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &'a Handle)
+pub fn ownerships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &Handle)
     -> CursorIter<'a, ListCursor>
 {
     let mut params = HashMap::new();
@@ -77,7 +77,7 @@ pub fn ownerships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, hand
 }
 
 ///Look up information for a single list.
-pub fn show<'a>(list: ListID, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, List> {
+pub fn show(list: ListID, token: &auth::Token, handle: &Handle) -> FutureResponse<List> {
     let mut params = HashMap::new();
 
     add_list_param(&mut params, &list);
@@ -91,7 +91,7 @@ pub fn show<'a>(list: ListID, token: &auth::Token, handle: &'a Handle) -> Future
 ///
 ///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
-pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &'a Handle)
+pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &Handle)
     -> CursorIter<'a, UserCursor>
 {
     let mut params = HashMap::new();
@@ -105,7 +105,7 @@ pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &'a Handle)
 ///
 ///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
-pub fn subscribers<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &'a Handle)
+pub fn subscribers<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &Handle)
     -> CursorIter<'a, UserCursor>
 {
     let mut params = HashMap::new();
@@ -116,11 +116,11 @@ pub fn subscribers<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &'a Han
 }
 
 ///Check whether the given user is subscribed to the given list.
-pub fn is_subscribed<'a, 'id, T: Into<UserID<'id>>>(user: T,
-                                                    list: ListID,
-                                                    token: &auth::Token,
-                                                    handle: &'a Handle) ->
-    FutureResponse<'a, bool>
+pub fn is_subscribed<'id, T: Into<UserID<'id>>>(user: T,
+                                                list: ListID,
+                                                token: &auth::Token,
+                                                handle: &Handle) ->
+    FutureResponse<bool>
 {
     let mut params = HashMap::new();
 
@@ -154,11 +154,11 @@ pub fn is_subscribed<'a, 'id, T: Into<UserID<'id>>>(user: T,
 }
 
 ///Check whether the given user has been added to the given list.
-pub fn is_member<'a, 'id, T: Into<UserID<'id>>>(user: T,
-                                                list: ListID,
-                                                token: &auth::Token,
-                                                handle: &'a Handle) ->
-    FutureResponse<'a, bool>
+pub fn is_member<'id, T: Into<UserID<'id>>>(user: T,
+                                            list: ListID,
+                                            token: &auth::Token,
+                                            handle: &Handle) ->
+    FutureResponse<bool>
 {
     let mut params = HashMap::new();
 
@@ -212,11 +212,11 @@ pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token, ha
 ///Note that lists cannot have more than 5000 members.
 ///
 ///Upon success, the future returned by this function yields the freshly-modified list.
-pub fn add_member<'a, 'id, T: Into<UserID<'id>>>(list: ListID,
-                                                 user: T,
-                                                 token: &auth::Token,
-                                                 handle: &'a Handle)
-    -> FutureResponse<'a, List>
+pub fn add_member<'id, T: Into<UserID<'id>>>(list: ListID,
+                                             user: T,
+                                             token: &auth::Token,
+                                             handle: &Handle)
+    -> FutureResponse<List>
 {
     let mut params = HashMap::new();
     add_list_param(&mut params, &list);
@@ -240,11 +240,11 @@ pub fn add_member<'a, 'id, T: Into<UserID<'id>>>(list: ListID,
 ///When using this method, take care not to add and remove many members in rapid succession; there
 ///are no guarantees that the result of a `add_member_list` or `remove_member_list` will be
 ///immediately available for a corresponding removal or addition, respectively.
-pub fn add_member_list<'a, 'id, T, I>(members: I,
-                                      list: ListID,
-                                      token: &auth::Token,
-                                      handle: &'a Handle)
-    -> FutureResponse<'a, List>
+pub fn add_member_list<'id, T, I>(members: I,
+                                  list: ListID,
+                                  token: &auth::Token,
+                                  handle: &Handle)
+    -> FutureResponse<List>
     where T: Into<UserID<'id>>, I: IntoIterator<Item=T>
 {
     let mut params = HashMap::new();
@@ -264,11 +264,11 @@ pub fn add_member_list<'a, 'id, T, I>(members: I,
 }
 
 ///Removes the given user from the given list.
-pub fn remove_member<'a, 'id, T: Into<UserID<'id>>>(list: ListID,
-                                                    user: T,
-                                                    token: &auth::Token,
-                                                    handle: &'a Handle)
-    -> FutureResponse<'a, List>
+pub fn remove_member<'id, T: Into<UserID<'id>>>(list: ListID,
+                                                user: T,
+                                                token: &auth::Token,
+                                                handle: &Handle)
+    -> FutureResponse<List>
 {
     let mut params = HashMap::new();
     add_list_param(&mut params, &list);
@@ -291,8 +291,8 @@ pub fn remove_member<'a, 'id, T: Into<UserID<'id>>>(list: ListID,
 ///When using this method, take care not to add and remove many members in rapid succession; there
 ///are no guarantees that the result of a `add_member_list` or `remove_member_list` will be
 ///immediately available for a corresponding removal or addition, respectively.
-pub fn remove_member_list<'a, T, I>(members: I, list: ListID, token: &auth::Token, handle: &'a Handle)
-    -> FutureResponse<'a, List>
+pub fn remove_member_list<'a, T, I>(members: I, list: ListID, token: &auth::Token, handle: &Handle)
+    -> FutureResponse<List>
     where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
 {
     let mut params = HashMap::new();
@@ -316,8 +316,8 @@ pub fn remove_member_list<'a, T, I>(members: I, list: ListID, token: &auth::Toke
 ///The new list is owned by the authenticated user, and its slug can be created with their handle
 ///and the name given to `name`. Twitter places an upper limit on 1000 lists owned by a single
 ///account.
-pub fn create<'a>(name: &str, public: bool, desc: Option<&str>, token: &auth::Token, handle: &'a Handle)
-    -> FutureResponse<'a, List>
+pub fn create(name: &str, public: bool, desc: Option<&str>, token: &auth::Token, handle: &Handle)
+    -> FutureResponse<List>
 {
     let mut params = HashMap::new();
     add_param(&mut params, "name", name);
@@ -339,7 +339,7 @@ pub fn create<'a>(name: &str, public: bool, desc: Option<&str>, token: &auth::To
 ///Deletes the given list.
 ///
 ///The authenticated user must have created the list.
-pub fn delete<'a>(list: ListID, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, List> {
+pub fn delete(list: ListID, token: &auth::Token, handle: &Handle) -> FutureResponse<List> {
     let mut params = HashMap::new();
     add_list_param(&mut params, &list);
 
@@ -352,7 +352,7 @@ pub fn delete<'a>(list: ListID, token: &auth::Token, handle: &'a Handle) -> Futu
 ///
 ///Subscribing to a list is a way to make it available in the "Lists" section of a user's profile
 ///without having to create it themselves.
-pub fn subscribe<'a>(list: ListID, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, List> {
+pub fn subscribe(list: ListID, token: &auth::Token, handle: &Handle) -> FutureResponse<List> {
     let mut params = HashMap::new();
     add_list_param(&mut params, &list);
 
@@ -362,7 +362,7 @@ pub fn subscribe<'a>(list: ListID, token: &auth::Token, handle: &'a Handle) -> F
 }
 
 ///Unsubscribes the authenticated user from the given list.
-pub fn unsubscribe<'a>(list: ListID, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, List> {
+pub fn unsubscribe(list: ListID, token: &auth::Token, handle: &Handle) -> FutureResponse<List> {
     let mut params = HashMap::new();
     add_list_param(&mut params, &list);
 

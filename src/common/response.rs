@@ -360,8 +360,8 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
 /// This also does some header inspection, and attempts to parse the response as a `TwitterErrors`
 /// before returning the String.
 #[must_use = "futures do nothing unless polled"]
-pub struct RawFuture<'a> {
-    handle: &'a Handle,
+pub struct RawFuture {
+    handle: Handle,
     request: Option<Request>,
     response: Option<FutureResponse>,
     resp_headers: Option<Headers>,
@@ -370,13 +370,13 @@ pub struct RawFuture<'a> {
     body: Vec<u8>,
 }
 
-impl<'a> RawFuture<'a> {
+impl RawFuture {
     fn headers(&self) -> &Headers {
         self.resp_headers.as_ref().unwrap()
     }
 }
 
-impl<'a> Future for RawFuture<'a> {
+impl Future for RawFuture {
     type Item = String;
     type Error = error::Error;
 
@@ -384,8 +384,8 @@ impl<'a> Future for RawFuture<'a> {
         if let Some(req) = self.request.take() {
             // needed to pull this section into the future so i could try!() on the connector
             // TODO: num-cpus?
-            let connector = try!(HttpsConnector::new(1, self.handle));
-            let client = hyper::Client::configure().connector(connector).build(self.handle);
+            let connector = try!(HttpsConnector::new(1, &self.handle));
+            let client = hyper::Client::configure().connector(connector).build(&self.handle);
             self.response = Some(client.request(req));
         }
 
@@ -456,9 +456,9 @@ impl<'a> Future for RawFuture<'a> {
 
 /// Creates a new `RawFuture` starting with the given `Request`, to be run on the Core represented
 /// by the given `Handle`.
-pub fn make_raw_future<'a>(handle: &'a Handle, request: Request) -> RawFuture<'a> {
+pub fn make_raw_future(handle: &Handle, request: Request) -> RawFuture {
     RawFuture {
-        handle: handle,
+        handle: handle.clone(),
         request: Some(request),
         response: None,
         resp_headers: None,
@@ -486,12 +486,12 @@ pub fn make_raw_future<'a>(handle: &'a Handle, request: Request) -> RawFuture<'a
 /// [`FutureResponse`]: type.FutureResponse.html
 /// [`Response`]: struct.Response.html
 #[must_use = "futures do nothing unless polled"]
-pub struct TwitterFuture<'a, T> {
-    request: RawFuture<'a>,
+pub struct TwitterFuture<T> {
+    request: RawFuture,
     make_resp: fn(String, &Headers) -> Result<T, error::Error>,
 }
 
-impl<'a, T> Future for TwitterFuture<'a, T> {
+impl<T> Future for TwitterFuture<T> {
     type Item = T;
     type Error = error::Error;
 
@@ -516,10 +516,10 @@ pub fn make_response<T: FromJson>(full_resp: String, headers: &Headers)
     Ok(Response::map(rate_headers(headers), |_| out))
 }
 
-pub fn make_future<'a, T>(handle: &'a Handle,
-                                  request: Request,
-                                  make_resp: fn(String, &Headers) -> Result<T, error::Error>)
-    -> TwitterFuture<'a, T>
+pub fn make_future<T>(handle: &Handle,
+                      request: Request,
+                      make_resp: fn(String, &Headers) -> Result<T, error::Error>)
+    -> TwitterFuture<T>
 {
     TwitterFuture {
         request: make_raw_future(handle, request),
@@ -528,8 +528,8 @@ pub fn make_future<'a, T>(handle: &'a Handle,
 }
 
 /// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
-pub fn make_parsed_future<'a, T: FromJson + 'a>(handle: &'a Handle, request: Request)
-    -> TwitterFuture<'a, Response<T>>
+pub fn make_parsed_future<T: FromJson>(handle: &Handle, request: Request)
+    -> TwitterFuture<Response<T>>
 {
     make_future(handle, request, make_response)
 }

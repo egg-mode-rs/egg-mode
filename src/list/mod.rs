@@ -256,7 +256,7 @@ impl<'a> ListUpdate<'a> {
     }
 
     ///Sends the update request to Twitter.
-    pub fn send<'h>(self, token: &auth::Token, handle: &'h Handle) -> FutureResponse<'h, List> {
+    pub fn send(self, token: &auth::Token, handle: &Handle) -> FutureResponse<List> {
         let mut params = HashMap::new();
         add_list_param(&mut params, &self.list);
 

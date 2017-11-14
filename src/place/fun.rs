@@ -29,7 +29,7 @@ use super::PlaceQuery;
 /// assert!(result.full_name == "Dallas, TX");
 /// # }
 /// ```
-pub fn show<'a>(id: &str, token: &auth::Token, handle: &'a Handle) -> FutureResponse<'a, Place> {
+pub fn show(id: &str, token: &auth::Token, handle: &Handle) -> FutureResponse<Place> {
     let url = format!("{}/{}.json", links::place::SHOW_STEM, id);
 
     let req = auth::get(&url, token, None);
@@ -97,7 +97,7 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `reverse_geocode` query URL.
-pub fn reverse_geocode_url<'a>(url: &'a str, token: &'a auth::Token, handle: &'a Handle)
+pub fn reverse_geocode_url<'a>(url: &'a str, token: &'a auth::Token, handle: &Handle)
     -> CachedSearchFuture<'a>
 {
     let params = parse_url(links::place::REVERSE_GEOCODE, url);
@@ -159,7 +159,7 @@ pub fn search_ip<'a>(query: &'a str) -> SearchBuilder<'a> {
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `search` query URL.
-pub fn search_url<'a>(url: &'a str, token: &'a auth::Token, handle: &'a Handle)
+pub fn search_url<'a>(url: &'a str, token: &'a auth::Token, handle: &Handle)
     -> CachedSearchFuture<'a>
 {
     let params = parse_url(links::place::SEARCH, url);
@@ -179,14 +179,14 @@ pub struct CachedSearchFuture<'a> {
     stem: &'static str,
     params: Option<Result<ParamList<'a>, error::Error>>,
     token: &'a auth::Token,
-    handle: &'a Handle,
-    future: Option<FutureResponse<'a, SearchResult>>,
+    handle: Handle,
+    future: Option<FutureResponse<SearchResult>>,
 }
 
 impl<'a> CachedSearchFuture<'a> {
     fn new(stem: &'static str,
            token: &'a auth::Token,
-           handle: &'a Handle,
+           handle: &Handle,
            params: Result<ParamList<'a>, error::Error>)
         -> CachedSearchFuture<'a>
     {
@@ -194,7 +194,7 @@ impl<'a> CachedSearchFuture<'a> {
             stem: stem,
             params: Some(params),
             token: token,
-            handle: handle,
+            handle: handle.clone(),
             future: None,
         }
     }
@@ -209,7 +209,7 @@ impl<'a> Future for CachedSearchFuture<'a> {
             Some(Ok(params)) => {
                 let req = auth::get(self.stem, self.token, Some(&params));
 
-                self.future = Some(make_parsed_future(self.handle, req));
+                self.future = Some(make_parsed_future(&self.handle, req));
             }
             Some(Err(e)) => {
                 return Err(e);

@@ -164,8 +164,8 @@ impl GeocodeBuilder {
     }
 
     ///Finalize the search parameters and return the results collection.
-    pub fn call<'a>(&self, token: &auth::Token, handle: &'a Handle)
-        -> FutureResponse<'a, SearchResult>
+    pub fn call(&self, token: &auth::Token, handle: &Handle)
+        -> FutureResponse<SearchResult>
     {
         let mut params = HashMap::new();
 
@@ -292,8 +292,8 @@ impl<'a> SearchBuilder<'a> {
     }
 
     ///Finalize the search parameters and return the results collection.
-    pub fn call<'h>(&self, token: &auth::Token, handle: &'h Handle)
-        -> FutureResponse<'h, SearchResult>
+    pub fn call(&self, token: &auth::Token, handle: &Handle)
+        -> FutureResponse<SearchResult>
     {
         let mut params = HashMap::new();
 

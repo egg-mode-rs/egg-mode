@@ -576,8 +576,8 @@ pub fn post(uri: &str,
 ///                                                  &handle)).unwrap();
 /// # }
 /// ```
-pub fn request_token<'a, S: Into<String>>(con_token: &KeyPair, callback: S, handle: &'a Handle)
-    -> TwitterFuture<'a, KeyPair>
+pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S, handle: &Handle)
+    -> TwitterFuture<KeyPair>
 {
     let header = get_header(Method::Post, links::auth::REQUEST_TOKEN,
                             con_token, None, Some(callback.into()), None, None);
@@ -730,11 +730,11 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 /// The `AuthFuture` returned by this function, on success, yields a tuple of three items: The
 /// final access token, the ID of the authenticated user, and the screen name of the authenticated
 /// user.
-pub fn access_token<'a, S: Into<String>>(con_token: KeyPair,
-                                         request_token: &KeyPair,
-                                         verifier: S,
-                                         handle: &'a Handle)
-    -> AuthFuture<'a>
+pub fn access_token<S: Into<String>>(con_token: KeyPair,
+                                     request_token: &KeyPair,
+                                     verifier: S,
+                                     handle: &Handle)
+    -> AuthFuture
 {
     let header = get_header(Method::Post, links::auth::ACCESS_TOKEN,
                             &con_token, Some(request_token), None, Some(verifier.into()), None);
@@ -756,12 +756,12 @@ pub fn access_token<'a, S: Into<String>>(con_token: KeyPair,
 /// The `Future` implementation yields a tuple of three items upon success: The final access token,
 /// the ID of the authenticated user, and the screen name of the authenticated user.
 #[must_use = "futures do nothing unless polled"]
-pub struct AuthFuture<'a> {
+pub struct AuthFuture {
     con_token: Option<KeyPair>,
-    loader: RawFuture<'a>,
+    loader: RawFuture,
 }
 
-impl<'a> Future for AuthFuture<'a> {
+impl Future for AuthFuture {
     type Item = (Token, u64, String);
     type Error = error::Error;
 
@@ -837,8 +837,8 @@ impl<'a> Future for AuthFuture<'a> {
 /// For more information, see the Twitter documentation on [Application-only authentication][auth].
 ///
 /// [auth]: https://dev.twitter.com/oauth/application-only
-pub fn bearer_token<'a>(con_token: &KeyPair, handle: &'a Handle)
-    -> TwitterFuture<'a, Token>
+pub fn bearer_token(con_token: &KeyPair, handle: &Handle)
+    -> TwitterFuture<Token>
 {
     let content: Mime = "application/x-www-form-urlencoded;charset=UTF-8".parse().unwrap();
 
@@ -866,8 +866,8 @@ pub fn bearer_token<'a>(con_token: &KeyPair, handle: &'a Handle)
 /// # Panics
 ///
 /// If this function is handed a `Token` that is not a Bearer token, this function will panic.
-pub fn invalidate_bearer<'a>(handle: &'a Handle, con_token: &KeyPair, token: &Token)
-    -> TwitterFuture<'a, Token>
+pub fn invalidate_bearer(handle: &Handle, con_token: &KeyPair, token: &Token)
+    -> TwitterFuture<Token>
 {
     let token = if let Token::Bearer(ref token) = *token {
         token
@@ -901,8 +901,8 @@ pub fn invalidate_bearer<'a>(handle: &'a Handle, con_token: &KeyPair, token: &To
 /// If you have cached access tokens, using this method is a convenient way to make sure they're
 /// still valid. If the user has revoked access from your app, this function will return an error
 /// from Twitter indicating that you don't have access to the user.
-pub fn verify_tokens<'a>(token: &Token, handle: &'a Handle)
-    -> FutureResponse<'a, ::user::TwitterUser>
+pub fn verify_tokens(token: &Token, handle: &Handle)
+    -> FutureResponse<::user::TwitterUser>
 {
     let req = get(links::auth::VERIFY_CREDENTIALS, token, None);
 
