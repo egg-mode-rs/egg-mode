@@ -53,6 +53,7 @@
 //! - `home_timeline`/`mentions_timeline`/`retweets_of_me`
 //! - `user_timeline`/`liked_by`
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use rustc_serialize::json;
@@ -730,7 +731,7 @@ impl<'timeline, 'handle> Future for TimelineFuture<'timeline, 'handle>
 #[derive(Debug, Clone)]
 pub struct DraftTweet<'a> {
     ///The text of the draft tweet.
-    pub text: &'a str,
+    pub text: Cow<'a, str>,
     ///If present, the ID of the tweet this draft is replying to.
     pub in_reply_to: Option<u64>,
     ///If present, whether to automatically fill reply mentions from the metadata of the
@@ -738,7 +739,7 @@ pub struct DraftTweet<'a> {
     pub auto_populate_reply_metadata: Option<bool>,
     ///If present, the list of user IDs to exclude from the automatically-populated metadata pulled
     ///when `auto_populate_reply_metadata` is true.
-    pub exclude_reply_user_ids: Option<&'a [u64]>,
+    pub exclude_reply_user_ids: Option<Cow<'a, [u64]>>,
     ///If present, the tweet link to quote or a [DM deep link][] to include in the tweet's
     ///attachment metadata.
     ///
@@ -746,25 +747,25 @@ pub struct DraftTweet<'a> {
     ///error when the draft is sent.
     ///
     ///[DM deep link]: https://business.twitter.com/en/help/campaign-editing-and-optimization/public-to-private-conversation.html
-    pub attachment_url: Option<&'a str>,
+    pub attachment_url: Option<Cow<'a, str>>,
     ///If present, the latitude/longitude coordinates to attach to the draft.
     pub coordinates: Option<(f64, f64)>,
     ///If present (and if `coordinates` is present), indicates whether to display a pin on the
     ///exact coordinate when the eventual tweet is displayed.
     pub display_coordinates: Option<bool>,
     ///If present the Place to attach to this draft.
-    pub place_id: Option<&'a str>,
+    pub place_id: Option<Cow<'a, str>>,
     ///List of media entities associated with tweet.
     ///
     ///It can be up to 4 images or 1 GIF/video.
-    pub media_ids: Option<&'a [u64]>
+    pub media_ids: Option<Cow<'a, [u64]>>
 }
 
 impl<'a> DraftTweet<'a> {
     ///Creates a new `DraftTweet` with the given status text.
-    pub fn new(text: &'a str) -> Self {
+    pub fn new<S: Into<Cow<'a, str>>>(text: S) -> Self {
         DraftTweet {
-            text: text,
+            text: text.into(),
             in_reply_to: None,
             auto_populate_reply_metadata: None,
             exclude_reply_user_ids: None,
@@ -809,9 +810,9 @@ impl<'a> DraftTweet<'a> {
     ///
     ///Note that you cannot use this parameter to remove the author of the parent tweet from the
     ///reply list. Twitter will silently ignore the author's ID in that scenario.
-    pub fn exclude_reply_user_ids(self, user_ids: &'a [u64]) -> Self {
+    pub fn exclude_reply_user_ids<V: Into<Cow<'a, [u64]>>>(self, user_ids: V) -> Self {
         DraftTweet {
-            exclude_reply_user_ids: Some(user_ids),
+            exclude_reply_user_ids: Some(user_ids.into()),
             ..self
         }
     }
@@ -823,9 +824,9 @@ impl<'a> DraftTweet<'a> {
     ///error when this draft is sent.
     ///
     ///[DM deep link]: https://business.twitter.com/en/help/campaign-editing-and-optimization/public-to-private-conversation.html
-    pub fn attachment_url(self, url: &'a str) -> Self {
+    pub fn attachment_url<S: Into<Cow<'a, str>>>(self, url: S) -> Self {
         DraftTweet {
-            attachment_url: Some(url),
+            attachment_url: Some(url.into()),
             ..self
         }
     }
@@ -850,17 +851,17 @@ impl<'a> DraftTweet<'a> {
     ///what location is displayed with the tweet.
     ///
     ///Location fields will be ignored unless the user has enabled geolocation from their profile.
-    pub fn place_id(self, place_id: &'a str) -> Self {
+    pub fn place_id<S: Into<Cow<'a, str>>>(self, place_id: S) -> Self {
         DraftTweet {
-            place_id: Some(place_id),
+            place_id: Some(place_id.into()),
             ..self
         }
     }
 
     ///Attaches media to tweet.
-    pub fn media_ids(self, media_ids: &'a [u64]) -> Self {
+    pub fn media_ids<V: Into<Cow<'a, [u64]>>>(self, media_ids: V) -> Self {
         DraftTweet {
-            media_ids: Some(media_ids),
+            media_ids: Some(media_ids.into()),
             ..self
         }
     }
@@ -868,7 +869,7 @@ impl<'a> DraftTweet<'a> {
     ///Send the assembled tweet as the authenticated user.
     pub fn send(&self, token: &auth::Token, handle: &Handle) -> FutureResponse<Tweet> {
         let mut params = HashMap::new();
-        add_param(&mut params, "status", self.text);
+        add_param(&mut params, "status", self.text.clone());
 
         if let Some(reply) = self.in_reply_to {
             add_param(&mut params, "in_reply_to_status_id", reply.to_string());
@@ -878,13 +879,13 @@ impl<'a> DraftTweet<'a> {
             add_param(&mut params, "auto_populate_reply_metadata", auto_populate.to_string());
         }
 
-        if let Some(exclude) = self.exclude_reply_user_ids {
+        if let Some(ref exclude) = self.exclude_reply_user_ids {
             let list = exclude.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
             add_param(&mut params, "exclude_reply_user_ids", list);
         }
 
-        if let Some(url) = self.attachment_url {
-            add_param(&mut params, "attachment_url", url);
+        if let Some(ref url) = self.attachment_url {
+            add_param(&mut params, "attachment_url", url.clone());
         }
 
         if let Some((lat, long)) = self.coordinates {
@@ -896,11 +897,11 @@ impl<'a> DraftTweet<'a> {
             add_param(&mut params, "display_coordinates", display.to_string());
         }
 
-        if let Some(place_id) = self.place_id {
-            add_param(&mut params, "place_id", place_id);
+        if let Some(ref place_id) = self.place_id {
+            add_param(&mut params, "place_id", place_id.clone());
         }
 
-        if let Some(media_ids) = self.media_ids {
+        if let Some(ref media_ids) = self.media_ids {
             let list = media_ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
             add_param(&mut params, "media_ids", list);
         }
