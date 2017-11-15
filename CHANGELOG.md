@@ -3,6 +3,10 @@
 ## Pending
 ### Changed
 - `TwitterFuture` clones the `Handle` internally, removing its lifetime parameter
+- `SearchBuilder`, `UserSearch`, and `DraftTweet` now use Cows instead of plain references
+  internally, allowing for owned data to be passed in to make them `'static`
+  - As `SearchFuture` and `SearchResult` also use the same components as their base `SearchBuilder`,
+    a `'static` `SearchBuilder` will also create '`static` versions of those structs
 
 ## [0.11.0] - 2017-10-16
 ### Changed
