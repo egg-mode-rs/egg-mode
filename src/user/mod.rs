@@ -55,6 +55,7 @@
 //! - `mutes`/`mutes_ids`
 //! - `incoming_requests`/`outgoing_requests`
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use futures::{Future, Stream, Poll, Async};
@@ -562,7 +563,7 @@ impl FromJson for UserEntityDetail {
 pub struct UserSearch<'a> {
     token: &'a auth::Token,
     handle: Handle,
-    query: &'a str,
+    query: Cow<'a, str>,
     /// The current page of results being returned, starting at 1.
     pub page_num: i32,
     /// The number of user records per page of results. Defaults to 10, maximum of 20.
@@ -605,7 +606,7 @@ impl<'a> UserSearch<'a> {
     /// change `page_num` between calls.
     pub fn call(&self) -> FutureResponse<Vec<TwitterUser>> {
         let mut params = HashMap::new();
-        add_param(&mut params, "q", self.query);
+        add_param(&mut params, "q", self.query.clone());
         add_param(&mut params, "page", self.page_num.to_string());
         add_param(&mut params, "count", self.page_size.to_string());
 
@@ -615,11 +616,13 @@ impl<'a> UserSearch<'a> {
     }
 
     /// Returns a new UserSearch with the given query and tokens, with the default page size of 10.
-    fn new(query: &'a str, token: &'a auth::Token, handle: &Handle) -> UserSearch<'a> {
+    fn new<S: Into<Cow<'a, str>>>(query: S, token: &'a auth::Token, handle: &Handle)
+        -> UserSearch<'a>
+    {
         UserSearch {
             token: token,
             handle: handle.clone(),
-            query: query,
+            query: query.into(),
             page_num: 1,
             page_size: 10,
             current_loader: None,

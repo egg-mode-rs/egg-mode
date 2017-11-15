@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use common::*;
 use auth;
@@ -160,7 +161,7 @@ pub fn relation_lookup<'a, T, I>(accts: I, token: &auth::Token, handle: &Handle)
 /// page for details.
 ///
 /// [`UserSearch`]: struct.UserSearch.html
-pub fn search<'a>(query: &'a str, token: &'a auth::Token, handle: &'a Handle)
+pub fn search<'a, S: Into<Cow<'a, str>>>(query: S, token: &'a auth::Token, handle: &Handle)
     -> UserSearch<'a>
 {
     UserSearch::new(query, token, handle)
