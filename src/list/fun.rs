@@ -197,7 +197,7 @@ pub fn is_member<'id, T: Into<UserID<'id>>>(user: T,
 ///timeline. see the [`Timeline`] docs for details.
 ///
 ///[`Timeline`]: ../tweet/struct.Timeline.html
-pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token, handle: &'a Handle)
+pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token, handle: &Handle)
     -> tweet::Timeline<'a>
 {
     let mut params = HashMap::new();

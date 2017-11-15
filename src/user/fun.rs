@@ -171,7 +171,7 @@ pub fn search<'a, S: Into<Cow<'a, str>>>(query: S, token: &'a auth::Token, handl
 ///
 /// This function returns a stream over the `TwitterUser` objects returned by Twitter. This
 /// method defaults to returning 20 users in a single network call; the maximum is 200.
-pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, handle: &'a Handle)
+pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, handle: &Handle)
     -> cursor::CursorIter<'a, cursor::UserCursor>
 {
     let mut params = HashMap::new();
@@ -188,7 +188,7 @@ pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, hand
 /// Choosing only to load the user IDs instead of the full user information results in a call that
 /// can return more accounts per-page, which can be useful if you anticipate having to page through
 /// several results and don't need all the user information.
-pub fn friends_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, handle: &'a Handle)
+pub fn friends_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, handle: &Handle)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
     let mut params = HashMap::new();
@@ -200,7 +200,7 @@ pub fn friends_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, han
 ///
 /// This function returns a stream over the `TwitterUser` objects returned by Twitter. This
 /// method defaults to returning 20 users in a single network call; the maximum is 200.
-pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, handle: &'a Handle)
+pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, handle: &Handle)
     -> cursor::CursorIter<'a, cursor::UserCursor>
 {
     let mut params = HashMap::new();
@@ -216,7 +216,7 @@ pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, ha
 /// Choosing only to load the user IDs instead of the full user information results in a call that
 /// can return more accounts per-page, which can be useful if you anticipate having to page through
 /// several results and don't need all the user information.
-pub fn followers_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, handle: &'a Handle)
+pub fn followers_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, handle: &Handle)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
     let mut params = HashMap::new();
@@ -230,7 +230,7 @@ pub fn followers_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, h
 /// the page size. Calling `with_page_size` on a stream returned by this function will not
 /// change the page size used by the network call. Setting `page_size` manually may result in an
 /// error from Twitter.
-pub fn blocks<'a>(token: &'a auth::Token, handle: &'a Handle)
+pub fn blocks<'a>(token: &'a auth::Token, handle: &Handle)
     -> cursor::CursorIter<'a, cursor::UserCursor>
 {
     cursor::CursorIter::new(links::users::BLOCKS_LIST, token, handle, None, None)
@@ -247,7 +247,7 @@ pub fn blocks<'a>(token: &'a auth::Token, handle: &'a Handle)
 /// the page size. Calling `with_page_size` on a stream returned by this function will not
 /// change the page size used by the network call. Setting `page_size` manually may result in an
 /// error from Twitter.
-pub fn blocks_ids<'a>(token: &'a auth::Token, handle: &'a Handle)
+pub fn blocks_ids<'a>(token: &'a auth::Token, handle: &Handle)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
     cursor::CursorIter::new(links::users::BLOCKS_IDS, token, handle, None, None)
@@ -259,7 +259,7 @@ pub fn blocks_ids<'a>(token: &'a auth::Token, handle: &'a Handle)
 /// the page size. Calling `with_page_size` on a stream returned by this function will not
 /// change the page size used by the network call. Setting `page_size` manually may result in an
 /// error from Twitter.
-pub fn mutes<'a>(token: &'a auth::Token, handle: &'a Handle)
+pub fn mutes<'a>(token: &'a auth::Token, handle: &Handle)
     -> cursor::CursorIter<'a, cursor::UserCursor>
 {
     cursor::CursorIter::new(links::users::MUTES_LIST, token, handle, None, None)
@@ -275,7 +275,7 @@ pub fn mutes<'a>(token: &'a auth::Token, handle: &'a Handle)
 /// the page size. Calling `with_page_size` on a stream returned by this function will not
 /// change the page size used by the network call. Setting `page_size` manually may result in an
 /// error from Twitter.
-pub fn mutes_ids<'a>(token: &'a auth::Token, handle: &'a Handle)
+pub fn mutes_ids<'a>(token: &'a auth::Token, handle: &Handle)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
     cursor::CursorIter::new(links::users::MUTES_IDS, token, handle, None, None)
@@ -284,14 +284,14 @@ pub fn mutes_ids<'a>(token: &'a auth::Token, handle: &'a Handle)
 /// Lookup the user IDs who have pending requests to follow the authenticated protected user.
 ///
 /// If the authenticated user is not a protected account, this will return an empty collection.
-pub fn incoming_requests<'a>(token: &'a auth::Token, handle: &'a Handle)
+pub fn incoming_requests<'a>(token: &'a auth::Token, handle: &Handle)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
     cursor::CursorIter::new(links::users::FRIENDSHIPS_INCOMING, token, handle, None, None)
 }
 
 /// Lookup the user IDs with which the authenticating user has a pending follow request.
-pub fn outgoing_requests<'a>(token: &'a auth::Token, handle: &'a Handle)
+pub fn outgoing_requests<'a>(token: &'a auth::Token, handle: &Handle)
     -> cursor::CursorIter<'a, cursor::IDCursor>
 {
     cursor::CursorIter::new(links::users::FRIENDSHIPS_OUTGOING, token, handle, None, None)
