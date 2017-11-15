@@ -280,8 +280,8 @@ pub struct Timeline<'a> {
     token: &'a auth::Token,
     ///A Handle that represents the event loop to run requests on.
     handle: Handle,
-    ///Optional set of params to include prior to adding lifetime navigation parameters.
-    params_base: Option<ParamList<'a>>,
+    ///Optional set of params to include prior to adding timeline navigation parameters.
+    params_base: Option<ParamList<'static>>,
     ///The maximum number of messages to return in a single call. Twitter doesn't guarantee
     ///returning exactly this number, as suspended or deleted content is removed after retrieving
     ///the initial collection of messages.
@@ -375,7 +375,7 @@ impl<'a> Timeline<'a> {
 
     ///Create an instance of `Timeline` with the given link and tokens.
     fn new(link: &'static str,
-           params_base: Option<ParamList<'a>>,
+           params_base: Option<ParamList<'static>>,
            token: &'a auth::Token,
            handle: &Handle)
         -> Self
