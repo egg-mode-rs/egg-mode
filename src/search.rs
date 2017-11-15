@@ -40,9 +40,15 @@
 //! page][search-place]. A future version of egg-mode might break these options into further
 //! methods on `SearchBuilder`.
 //!
+//! The lifetime parameter on `SearchBuilder`, `SearchFuture`, and `SearchResult` correspond to the
+//! text given as the search query and (if applicable) to the `lang` method of `SearchBuilder`. As
+//! these types use `Cow<'a, str>` internally, you can hand these types owned Strings to give them
+//! a `'static` lifetime, if necessary.
+//!
 //! [search-doc]: https://dev.twitter.com/rest/public/search
 //! [search-place]: https://dev.twitter.com/rest/public/search-by-place
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 
@@ -57,9 +63,9 @@ use tweet::Tweet;
 use common::*;
 
 ///Begin setting up a tweet search with the given query.
-pub fn search<'a>(query: &'a str) -> SearchBuilder<'a> {
+pub fn search<'a, S: Into<Cow<'a, str>>>(query: S) -> SearchBuilder<'a> {
     SearchBuilder {
-        query: query,
+        query: query.into(),
         lang: None,
         result_type: None,
         count: None,
@@ -104,8 +110,8 @@ pub enum Distance {
 #[must_use = "SearchBuilder is lazy and won't do anything unless `call`ed"]
 pub struct SearchBuilder<'a> {
     ///The text to search for.
-    query: &'a str,
-    lang: Option<&'a str>,
+    query: Cow<'a, str>,
+    lang: Option<Cow<'a, str>>,
     result_type: Option<ResultType>,
     count: Option<u32>,
     until: Option<(u32, u32, u32)>,
@@ -117,9 +123,9 @@ pub struct SearchBuilder<'a> {
 impl<'a> SearchBuilder<'a> {
     ///Restrict search results to those that have been machine-parsed as the given two-letter
     ///language code.
-    pub fn lang(self, lang: &'a str) -> Self {
+    pub fn lang<S: Into<Cow<'a, str>>>(self, lang: S) -> Self {
         SearchBuilder {
-            lang: Some(lang),
+            lang: Some(lang.into()),
             ..self
         }
     }
