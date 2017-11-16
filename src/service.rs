@@ -30,7 +30,7 @@ use common::*;
 
 ///Returns a future that resolves to the current Twitter Terms of Service as plain text.
 ///
-///While the official home of Twitter's TOS is https://twitter.com/tos, this allows you to obtain a
+///While the official home of Twitter's TOS is <https://twitter.com/tos>, this allows you to obtain a
 ///plain-text copy of it to display in your application.
 pub fn terms(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
     let req = auth::get(links::service::TERMS, token, None);
@@ -47,7 +47,7 @@ pub fn terms(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
 
 ///Returns a future that resolves to the current Twitter Privacy Policy as plain text.
 ///
-///While the official home of Twitter's Privacy Policy is https://twitter.com/privacy, this allows
+///While the official home of Twitter's Privacy Policy is <https://twitter.com/privacy>, this allows
 ///you to obtain a plain-text copy of it to display in your application.
 pub fn privacy(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
     let req = auth::get(links::service::PRIVACY, token, None);
