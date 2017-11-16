@@ -30,25 +30,28 @@ fn main() {
 
     println!("");
     println!("Loading the user's home timeline:");
-    let mut home = egg_mode::tweet::home_timeline(&config.token, &handle).with_page_size(5);
-    for status in &core.run(home.start()).unwrap() {
+    let home = egg_mode::tweet::home_timeline(&config.token, &handle).with_page_size(5);
+    let (_home, feed) = core.run(home.start()).unwrap();
+    for status in feed {
         common::print_tweet(&status);
         println!("");
     }
 
     println!("");
     println!("Loading the user's mentions timeline:");
-    let mut home = egg_mode::tweet::mentions_timeline(&config.token, &handle).with_page_size(5);
-    for status in &core.run(home.start()).unwrap() {
+    let mentions = egg_mode::tweet::mentions_timeline(&config.token, &handle).with_page_size(5);
+    let (_mentions, feed) = core.run(mentions.start()).unwrap();
+    for status in feed {
         common::print_tweet(&status);
         println!("");
     }
 
     println!("");
     println!("Loading the user's timeline:");
-    let mut home = egg_mode::tweet::user_timeline(config.user_id, true, true,
-                                                  &config.token, &handle).with_page_size(5);
-    for status in &core.run(home.start()).unwrap() {
+    let user = egg_mode::tweet::user_timeline(config.user_id, true, true,
+                                              &config.token, &handle).with_page_size(5);
+    let (_user, feed) = core.run(user.start()).unwrap();
+    for status in feed {
         common::print_tweet(&status);
         println!("");
     }
