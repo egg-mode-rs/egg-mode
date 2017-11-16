@@ -469,10 +469,11 @@ impl FromJson for ExtendedTweetEntities {
 /// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
 /// # fn main() {
 /// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// let mut timeline = egg_mode::tweet::home_timeline(&token, &handle)
-///                                    .with_page_size(10);
+/// let timeline = egg_mode::tweet::home_timeline(&token, &handle)
+///                                .with_page_size(10);
 ///
-/// for tweet in &core.run(timeline.start()).unwrap() {
+/// let (timeline, feed) = core.run(timeline.start()).unwrap();
+/// for tweet in &feed {
 ///     println!("<@{}> {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
 /// }
 /// # }
@@ -486,9 +487,10 @@ impl FromJson for ExtendedTweetEntities {
 /// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
 /// # fn main() {
 /// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// # let mut timeline = egg_mode::tweet::home_timeline(&token, &handle);
-/// # core.run(timeline.start()).unwrap();
-/// for tweet in &core.run(timeline.older(None)).unwrap() {
+/// # let timeline = egg_mode::tweet::home_timeline(&token, &handle);
+/// # let (timeline, _) = core.run(timeline.start()).unwrap();
+/// let (timeline, feed) = core.run(timeline.older(None)).unwrap();
+/// for tweet in &feed {
 ///     println!("<@{}> {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
 /// }
 /// # }
@@ -506,21 +508,21 @@ impl FromJson for ExtendedTweetEntities {
 /// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
 /// # fn main() {
 /// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// let mut timeline = egg_mode::tweet::home_timeline(&token, &handle)
-///                                    .with_page_size(10);
+/// let timeline = egg_mode::tweet::home_timeline(&token, &handle)
+///                                .with_page_size(10);
 ///
-/// core.run(timeline.start()).unwrap();
+/// let (timeline, _feed) = core.run(timeline.start()).unwrap();
 ///
 /// //keep the max_id for later
 /// let reload_id = timeline.max_id.unwrap();
 ///
 /// //simulate scrolling down a little bit
-/// core.run(timeline.older(None)).unwrap();
-/// core.run(timeline.older(None)).unwrap();
+/// let (timeline, _feed) = core.run(timeline.older(None)).unwrap();
+/// let (mut timeline, _feed) = core.run(timeline.older(None)).unwrap();
 ///
 /// //reload the timeline with only what's new
 /// timeline.reset();
-/// core.run(timeline.older(Some(reload_id))).unwrap();
+/// let (timeline, _new_posts) = core.run(timeline.older(Some(reload_id))).unwrap();
 /// # }
 /// ```
 ///
@@ -562,7 +564,7 @@ impl<'a> Timeline<'a> {
     }
 
     ///Clear the saved IDs on this timeline, and return the most recent set of tweets.
-    pub fn start<'s>(&'s mut self) -> TimelineFuture<'s, 'a> {
+    pub fn start(mut self) -> TimelineFuture<'a> {
         self.reset();
 
         self.older(None)
@@ -570,24 +572,24 @@ impl<'a> Timeline<'a> {
 
     ///Return the set of tweets older than the last set pulled, optionally placing a minimum tweet
     ///ID to bound with.
-    pub fn older<'s>(&'s mut self, since_id: Option<u64>) -> TimelineFuture<'s, 'a> {
+    pub fn older(self, since_id: Option<u64>) -> TimelineFuture<'a> {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
         let loader = make_parsed_future(&self.handle, req);
 
         TimelineFuture {
-            timeline: self,
+            timeline: Some(self),
             loader: loader,
         }
     }
 
     ///Return the set of tweets newer than the last set pulled, optionall placing a maximum tweet
     ///ID to bound with.
-    pub fn newer<'s>(&'s mut self, max_id: Option<u64>) -> TimelineFuture<'s, 'a> {
+    pub fn newer(self, max_id: Option<u64>) -> TimelineFuture<'a> {
         let req = self.request(self.max_id, max_id);
         let loader = make_parsed_future(&self.handle, req);
 
         TimelineFuture {
-            timeline: self,
+            timeline: Some(self),
             loader: loader,
         }
     }
@@ -656,26 +658,26 @@ impl<'a> Timeline<'a> {
 /// updated the IDs in the parent `Timeline`) or the error encountered when loading or parsing the
 /// response.
 #[must_use = "futures do nothing unless polled"]
-pub struct TimelineFuture<'timeline, 'handle>
-    where 'handle: 'timeline
+pub struct TimelineFuture<'timeline>
 {
-    timeline: &'timeline mut Timeline<'handle>,
+    timeline: Option<Timeline<'timeline>>,
     loader: FutureResponse<Vec<Tweet>>,
 }
 
-impl<'timeline, 'handle> Future for TimelineFuture<'timeline, 'handle>
-    where 'handle: 'timeline
+impl<'timeline> Future for TimelineFuture<'timeline>
 {
-    type Item = Response<Vec<Tweet>>;
+    type Item = (Timeline<'timeline>, Response<Vec<Tweet>>);
     type Error = error::Error;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         match self.loader.poll() {
             Err(e) => Err(e),
             Ok(Async::NotReady) => Ok(Async::NotReady),
-            Ok(Async::Ready(resp)) => {
-                self.timeline.map_ids(&resp.response);
-                Ok(Async::Ready(resp))
+            Ok(Async::Ready(resp)) => if let Some(mut timeline) = self.timeline.take() {
+                timeline.map_ids(&resp.response);
+                Ok(Async::Ready((timeline, resp)))
+            } else {
+                Err(error::Error::FutureAlreadyCompleted)
             }
         }
     }
