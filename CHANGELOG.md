@@ -1,6 +1,10 @@
 # Changelog for egg-mode
 
 ## Pending
+### Added
+- `media` module and all its contents, for uploading pictures/video/gifs to Twitter
+  - Thanks to @DoumanAsh for the initial implementation!
+
 ### Changed
 - `TwitterFuture` clones the `Handle` internally, removing its lifetime parameter
 - `SearchBuilder`, `UserSearch`, and `DraftTweet` now use Cows instead of plain references
