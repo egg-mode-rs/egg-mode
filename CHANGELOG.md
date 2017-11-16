@@ -7,6 +7,8 @@
   internally, allowing for owned data to be passed in to make them `'static`
   - As `SearchFuture` and `SearchResult` also use the same components as their base `SearchBuilder`,
     a `'static` `SearchBuilder` will also create '`static` versions of those structs
+- `tweet::Timeline`'s futures now consume the parent `Timeline` and return it (alongside the chunk
+  of posts) upon success. This is a **breaking change**
 
 ## [0.11.0] - 2017-10-16
 ### Changed
