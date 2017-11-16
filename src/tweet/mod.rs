@@ -542,7 +542,7 @@ pub struct Timeline<'a> {
     token: auth::Token,
     ///A handle that represents the event loop to run requests on.
     handle: Handle,
-    ///Optional set of params to include prior to adding lifetime navigation parameters.
+    ///Optional set of params to include prior to adding timeline navigation parameters.
     params_base: Option<ParamList<'a>>,
     ///The maximum number of tweets to return in a single call. Twitter doesn't guarantee returning
     ///exactly this number, as suspended or deleted content is removed after retrieving the initial
