@@ -561,7 +561,7 @@ impl FromJson for UserEntityDetail {
 /// ```
 #[must_use = "search iterators are lazy and do nothing unless consumed"]
 pub struct UserSearch<'a> {
-    token: &'a auth::Token,
+    token: auth::Token,
     handle: Handle,
     query: Cow<'a, str>,
     /// The current page of results being returned, starting at 1.
@@ -610,17 +610,17 @@ impl<'a> UserSearch<'a> {
         add_param(&mut params, "page", self.page_num.to_string());
         add_param(&mut params, "count", self.page_size.to_string());
 
-        let req = auth::get(links::users::SEARCH, self.token, Some(&params));
+        let req = auth::get(links::users::SEARCH, &self.token, Some(&params));
 
         make_parsed_future(&self.handle, req)
     }
 
     /// Returns a new UserSearch with the given query and tokens, with the default page size of 10.
-    fn new<S: Into<Cow<'a, str>>>(query: S, token: &'a auth::Token, handle: &Handle)
+    fn new<S: Into<Cow<'a, str>>>(query: S, token: &auth::Token, handle: &Handle)
         -> UserSearch<'a>
     {
         UserSearch {
-            token: token,
+            token: token.clone(),
             handle: handle.clone(),
             query: query.into(),
             page_num: 1,

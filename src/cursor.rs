@@ -277,7 +277,7 @@ pub struct CursorIter<'a, T>
     where T: Cursor + FromJson + 'a
 {
     link: &'static str,
-    token: &'a auth::Token,
+    token: auth::Token,
     handle: Handle,
     params_base: Option<ParamList<'a>>,
     ///The number of results returned in one network call.
@@ -343,7 +343,7 @@ impl<'a, T> CursorIter<'a, T>
             add_param(&mut params, "count", count.to_string());
         }
 
-        let req = auth::get(self.link, self.token, Some(&params));
+        let req = auth::get(self.link, &self.token, Some(&params));
 
         make_parsed_future(&self.handle, req)
     }
@@ -353,11 +353,11 @@ impl<'a, T> CursorIter<'a, T>
     ///This is essentially an internal infrastructure function, not meant to be used from consumer
     ///code.
     #[doc(hidden)]
-    pub fn new(link: &'static str, token: &'a auth::Token, handle: &Handle,
+    pub fn new(link: &'static str, token: &auth::Token, handle: &Handle,
                params_base: Option<ParamList<'a>>, page_size: Option<i32>) -> CursorIter<'a, T> {
         CursorIter {
             link: link,
-            token: token,
+            token: token.clone(),
             handle: handle.clone(),
             params_base: params_base,
             page_size: page_size,

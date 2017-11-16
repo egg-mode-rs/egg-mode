@@ -18,7 +18,7 @@ use tweet;
 ///
 ///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &Handle)
+pub fn memberships<'a, T: Into<UserID<'a>>>(user: T, token: &auth::Token, handle: &Handle)
     -> CursorIter<'a, ListCursor>
 {
     let mut params = HashMap::new();
@@ -56,7 +56,7 @@ pub fn list<'id, T: Into<UserID<'id>>>(user: T,
 ///
 ///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &Handle)
+pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &auth::Token, handle: &Handle)
     -> CursorIter<'a, ListCursor>
 {
     let mut params = HashMap::new();
@@ -68,7 +68,7 @@ pub fn subscriptions<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, h
 ///
 ///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn ownerships<'a, T: Into<UserID<'a>>>(user: T, token: &'a auth::Token, handle: &Handle)
+pub fn ownerships<'a, T: Into<UserID<'a>>>(user: T, token: &auth::Token, handle: &Handle)
     -> CursorIter<'a, ListCursor>
 {
     let mut params = HashMap::new();
@@ -91,7 +91,7 @@ pub fn show(list: ListID, token: &auth::Token, handle: &Handle) -> FutureRespons
 ///
 ///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
-pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &Handle)
+pub fn members<'a>(list: ListID<'a>, token: &auth::Token, handle: &Handle)
     -> CursorIter<'a, UserCursor>
 {
     let mut params = HashMap::new();
@@ -105,7 +105,7 @@ pub fn members<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &Handle)
 ///
 ///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
-pub fn subscribers<'a>(list: ListID<'a>, token: &'a auth::Token, handle: &Handle)
+pub fn subscribers<'a>(list: ListID<'a>, token: &auth::Token, handle: &Handle)
     -> CursorIter<'a, UserCursor>
 {
     let mut params = HashMap::new();
@@ -197,7 +197,7 @@ pub fn is_member<'id, T: Into<UserID<'id>>>(user: T,
 ///timeline. see the [`Timeline`] docs for details.
 ///
 ///[`Timeline`]: ../tweet/struct.Timeline.html
-pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &'a auth::Token, handle: &Handle)
+pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &auth::Token, handle: &Handle)
     -> tweet::Timeline<'a>
 {
     let mut params = HashMap::new();

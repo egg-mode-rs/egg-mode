@@ -97,7 +97,7 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `reverse_geocode` query URL.
-pub fn reverse_geocode_url<'a>(url: &'a str, token: &'a auth::Token, handle: &Handle)
+pub fn reverse_geocode_url<'a>(url: &'a str, token: &auth::Token, handle: &Handle)
     -> CachedSearchFuture<'a>
 {
     let params = parse_url(links::place::REVERSE_GEOCODE, url);
@@ -159,7 +159,7 @@ pub fn search_ip<'a>(query: &'a str) -> SearchBuilder<'a> {
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `search` query URL.
-pub fn search_url<'a>(url: &'a str, token: &'a auth::Token, handle: &Handle)
+pub fn search_url<'a>(url: &'a str, token: &auth::Token, handle: &Handle)
     -> CachedSearchFuture<'a>
 {
     let params = parse_url(links::place::SEARCH, url);
@@ -178,14 +178,14 @@ pub fn search_url<'a>(url: &'a str, token: &'a auth::Token, handle: &Handle)
 pub struct CachedSearchFuture<'a> {
     stem: &'static str,
     params: Option<Result<ParamList<'a>, error::Error>>,
-    token: &'a auth::Token,
+    token: auth::Token,
     handle: Handle,
     future: Option<FutureResponse<SearchResult>>,
 }
 
 impl<'a> CachedSearchFuture<'a> {
     fn new(stem: &'static str,
-           token: &'a auth::Token,
+           token: &auth::Token,
            handle: &Handle,
            params: Result<ParamList<'a>, error::Error>)
         -> CachedSearchFuture<'a>
@@ -193,7 +193,7 @@ impl<'a> CachedSearchFuture<'a> {
         CachedSearchFuture {
             stem: stem,
             params: Some(params),
-            token: token,
+            token: token.clone(),
             handle: handle.clone(),
             future: None,
         }
@@ -207,7 +207,7 @@ impl<'a> Future for CachedSearchFuture<'a> {
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         match self.params.take() {
             Some(Ok(params)) => {
-                let req = auth::get(self.stem, self.token, Some(&params));
+                let req = auth::get(self.stem, &self.token, Some(&params));
 
                 self.future = Some(make_parsed_future(&self.handle, req));
             }

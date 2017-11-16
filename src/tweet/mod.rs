@@ -539,7 +539,7 @@ pub struct Timeline<'a> {
     ///The URL to request tweets from.
     link: &'static str,
     ///The token to authorize requests with.
-    token: &'a auth::Token,
+    token: auth::Token,
     ///A handle that represents the event loop to run requests on.
     handle: Handle,
     ///Optional set of params to include prior to adding lifetime navigation parameters.
@@ -617,7 +617,7 @@ impl<'a> Timeline<'a> {
             add_param(&mut params, "max_id", id.to_string());
         }
 
-        auth::get(self.link, self.token, Some(&params))
+        auth::get(self.link, &self.token, Some(&params))
     }
 
     ///Helper builder function to set the page size.
@@ -637,10 +637,10 @@ impl<'a> Timeline<'a> {
     ///Create an instance of `Timeline` with the given link and tokens.
     #[doc(hidden)]
     pub fn new(link: &'static str, params_base: Option<ParamList<'a>>,
-               token: &'a auth::Token, handle: &Handle) -> Self {
+               token: &auth::Token, handle: &Handle) -> Self {
         Timeline {
             link: link,
-            token: token,
+            token: token.clone(),
             handle: handle.clone(),
             params_base: params_base,
             count: 20,

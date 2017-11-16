@@ -24,12 +24,12 @@ pub fn show(id: u64, token: &auth::Token, handle: &Handle)
 }
 
 ///Create a `Timeline` struct to navigate the direct messages received by the authenticated user.
-pub fn received<'a>(token: &'a auth::Token, handle: &Handle) -> Timeline<'a> {
+pub fn received(token: &auth::Token, handle: &Handle) -> Timeline {
     Timeline::new(links::direct::RECEIVED, None, token, handle)
 }
 
 ///Create a `Timeline` struct to navigate the direct messages sent by the authenticated user.
-pub fn sent<'a>(token: &'a auth::Token, handle: &Handle) -> Timeline<'a> {
+pub fn sent(token: &auth::Token, handle: &Handle) -> Timeline {
     Timeline::new(links::direct::SENT, None, token, handle)
 }
 
@@ -79,6 +79,6 @@ pub fn delete(id: u64, token: &auth::Token, handle: &Handle)
 ///[`ConversationTimeline`] for details.
 ///
 ///[`ConversationTimeline`]: struct.ConversationTimeline.html
-pub fn conversations<'a>(token: &'a auth::Token, handle: &Handle) -> ConversationTimeline<'a> {
+pub fn conversations(token: &auth::Token, handle: &Handle) -> ConversationTimeline {
     ConversationTimeline::new(token, handle)
 }

@@ -57,8 +57,8 @@ pub fn retweets_of(id: u64, count: u32, token: &auth::Token, handle: &Handle)
 ///set the page size. Calling `with_page_size` on the iterator returned by this function will not
 ///change the page size used by the network call. Setting `page_size` manually may result in an
 ///error from Twitter.
-pub fn retweeters_of<'a>(id: u64, token: &'a auth::Token, handle: &Handle)
-    -> cursor::CursorIter<'a, cursor::IDCursor>
+pub fn retweeters_of(id: u64, token: &auth::Token, handle: &Handle)
+    -> cursor::CursorIter<'static, cursor::IDCursor>
 {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
@@ -142,7 +142,7 @@ pub fn lookup_map<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle
 ///This method has a default page size of 20 tweets, with a maximum of 200.
 ///
 ///Twitter will only return the most recent 800 tweets by navigating this method.
-pub fn home_timeline<'a>(token: &'a auth::Token, handle: &Handle) -> Timeline<'a> {
+pub fn home_timeline(token: &auth::Token, handle: &Handle) -> Timeline<'static> {
     Timeline::new(links::statuses::HOME_TIMELINE, None, token, handle)
 }
 
@@ -152,7 +152,7 @@ pub fn home_timeline<'a>(token: &'a auth::Token, handle: &Handle) -> Timeline<'a
 ///This method has a default page size of 20 tweets, with a maximum of 200.
 ///
 ///Twitter will only return the most recent 800 tweets by navigating this method.
-pub fn mentions_timeline<'a>(token: &'a auth::Token, handle: &Handle) -> Timeline<'a> {
+pub fn mentions_timeline(token: &auth::Token, handle: &Handle) -> Timeline<'static> {
     Timeline::new(links::statuses::MENTIONS_TIMELINE, None, token, handle)
 }
 
@@ -169,7 +169,7 @@ pub fn mentions_timeline<'a>(token: &'a auth::Token, handle: &Handle) -> Timelin
 ///
 ///Twitter will only load the most recent 3,200 tweets with this method.
 pub fn user_timeline<'a, T: Into<UserID<'a>>>(acct: T, with_replies: bool, with_rts: bool,
-                                              token: &'a auth::Token, handle: &Handle)
+                                              token: &auth::Token, handle: &Handle)
     -> Timeline<'a>
 {
     let mut params = HashMap::new();
@@ -184,14 +184,14 @@ pub fn user_timeline<'a, T: Into<UserID<'a>>>(acct: T, with_replies: bool, with_
 ///user that have been retweeted by others.
 ///
 ///This method has a default page size of 20 tweets, with a maximum of 100.
-pub fn retweets_of_me<'a>(token: &'a auth::Token, handle: &Handle) -> Timeline<'a> {
+pub fn retweets_of_me(token: &auth::Token, handle: &Handle) -> Timeline<'static> {
     Timeline::new(links::statuses::RETWEETS_OF_ME, None, token, handle)
 }
 
 ///Make a `Timeline` struct for navigating the collection of tweets liked by the given user.
 ///
 ///This method has a default page size of 20 tweets, with a maximum of 200.
-pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, token: &'a auth::Token, handle: &Handle)
+pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &Handle)
     -> Timeline<'a>
 {
     let mut params = HashMap::new();
