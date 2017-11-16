@@ -21,9 +21,10 @@ fn main() {
     let token = core.run(egg_mode::bearer_token(&con_token, &handle)).unwrap();
 
     println!("Pulling up a user timeline...");
-    let mut timeline = egg_mode::tweet::user_timeline("rustlang", false, true, &token, &handle).with_page_size(5);
+    let timeline = egg_mode::tweet::user_timeline("rustlang", false, true, &token, &handle).with_page_size(5);
 
-    for tweet in core.run(timeline.start()).unwrap() {
+    let (_timeline, feed) = core.run(timeline.start()).unwrap();
+    for tweet in feed {
         println!("");
         common::print_tweet(&tweet);
     }
