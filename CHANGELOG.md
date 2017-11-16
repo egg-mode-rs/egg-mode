@@ -11,6 +11,10 @@
   internally, allowing for owned data to be passed in to make them `'static`
   - As `SearchFuture` and `SearchResult` also use the same components as their base `SearchBuilder`,
     a `'static` `SearchBuilder` will also create '`static` versions of those structs
+- `CursorIter`, `direct::Timeline`, `tweet::Timeline`, `CachedSearchFuture`, and `UserSearch` now
+  clone the `Token` that they're handed, instead of keeping a reference, allowing them to be
+  `'static`
+  - As `ConversationFuture` holds instances of `direct::Timeline`, it has also become `'static`
 - `tweet::Timeline`'s futures now consume the parent `Timeline` and return it (alongside the chunk
   of posts) upon success. This is a **breaking change**
 
