@@ -59,20 +59,9 @@ pub enum ProgressInfo {
     ///Video is beeing processed. Contains number of seconds after which to check.
     InProgress(u64),
     ///Video's processing failed. Contains reason.
-    Failed(MediaError),
+    Failed(error::MediaError),
     ///Video's processing is finished. Media can be used in other API calls.
     Success
-}
-
-/// Represents an error that can occur during media processing.
-#[derive(Debug)]
-pub struct MediaError {
-    /// A numeric error code assigned to the error.
-    pub code: i32,
-    /// A short name given to the error.
-    pub name: String,
-    /// The full text of the error message.
-    pub message: String,
 }
 
 impl FromJson for ProgressInfo {
@@ -95,22 +84,7 @@ impl FromJson for ProgressInfo {
             },
             "succeeded" => Ok(ProgressInfo::Success),
             state => Err(InvalidResponse("Unexpected progress info state", Some(state.to_string())))
-
         }
-    }
-}
-
-impl FromJson for MediaError {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        field_present!(input, code);
-        field_present!(input, name);
-        field_present!(input, message);
-
-        Ok(MediaError {
-            code: try!(field(input, "code")),
-            name: try!(field(input, "name")),
-            message: try!(field(input, "message")),
-        })
     }
 }
 

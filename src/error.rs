@@ -19,7 +19,10 @@ use std::{self, fmt};
 use hyper;
 use native_tls;
 use rustc_serialize;
+use rustc_serialize::json;
 use chrono;
+
+use common::*;
 
 ///Represents a collection of errors returned from a Twitter API call.
 ///
@@ -64,6 +67,31 @@ impl fmt::Display for TwitterErrorCode {
     }
 }
 
+/// Represents an error that can occur during media processing.
+#[derive(Debug)]
+pub struct MediaError {
+    /// A numeric error code assigned to the error.
+    pub code: i32,
+    /// A short name given to the error.
+    pub name: String,
+    /// The full text of the error message.
+    pub message: String,
+}
+
+impl FromJson for MediaError {
+    fn from_json(input: &json::Json) -> Result<Self, Error> {
+        field_present!(input, code);
+        field_present!(input, name);
+        field_present!(input, message);
+
+        Ok(MediaError {
+            code: try!(field(input, "code")),
+            name: try!(field(input, "name")),
+            message: try!(field(input, "message")),
+        })
+    }
+}
+
 /// A set of errors that can occur when interacting with Twitter.
 #[derive(Debug)]
 pub enum Error {
@@ -90,6 +118,9 @@ pub enum Error {
     ///that method has been reached. The enclosed value is the Unix timestamp in UTC when the next
     ///rate-limit window will open.
     RateLimit(i32),
+    ///An attempt to upload a video or gif successfully uploaded the file, but failed in
+    ///post-processing. The enclosed value contains the error message from Twitter.
+    MediaError(MediaError),
     ///The response from Twitter gave a response code that indicated an error. The enclosed value
     ///was the response code.
     ///
@@ -126,6 +157,7 @@ impl std::fmt::Display for Error {
             Error::FutureAlreadyCompleted => write!(f, "Future has already been completed"),
             Error::TwitterError(ref err) => write!(f, "Error(s) returned from Twitter: {}", err),
             Error::RateLimit(ts) => write!(f, "Rate limit reached, hold until {}", ts),
+            Error::MediaError(ref err) => write!(f, "Error processing media: {}", err.message),
             Error::BadStatus(ref val) => write!(f, "Error status received: {}", val),
             Error::NetError(ref err) => write!(f, "Network error: {}", err),
             Error::TlsError(ref err) => write!(f, "TLS error: {}", err),
@@ -146,6 +178,7 @@ impl std::error::Error for Error {
             Error::FutureAlreadyCompleted => "Future has already been completed",
             Error::TwitterError(_) => "Error returned from Twitter",
             Error::RateLimit(_) => "Rate limit for method reached",
+            Error::MediaError(_) => "Error processing media",
             Error::BadStatus(_) => "Response included error code",
             Error::NetError(ref err) => err.description(),
             Error::TlsError(ref err) => err.description(),
