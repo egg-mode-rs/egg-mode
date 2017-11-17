@@ -141,6 +141,84 @@ pub fn upload_image(image: &[u8], token: &auth::Token, handle: &Handle) -> Futur
     make_parsed_future(handle, req)
 }
 
+/// Represents the kinda of media that Twitter will accept.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum MediaCategory {
+    /// Static image. Four can be attached to a single tweet.
+    Image,
+    /// Animated GIF.
+    Gif,
+    /// Video.
+    Video,
+}
+
+/// `Display` impl for `MediaCategory` so that `.to_string()` will return a string suitable for use
+/// in an API call. This will turn the enum into `"tweet_image"`, `"tweet_gif"`, and
+/// `"tweet_video"`.
+impl ::std::fmt::Display for MediaCategory {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match *self {
+            MediaCategory::Image => write!(fmt, "tweet_image"),
+            MediaCategory::Gif => write!(fmt, "tweet_gif"),
+            MediaCategory::Video => write!(fmt, "tweet_video"),
+        }
+    }
+}
+
+/// A builder struct that allows you to build up parameters to a media upload before initiating it.
+pub struct UploadBuilder<'a> {
+    data: Cow<'a, [u8]>,
+    media_type: mime::Mime,
+    chunk_size: Option<usize>,
+    category: Option<MediaCategory>,
+}
+
+impl<'a> UploadBuilder<'a> {
+    /// Begins setting up a media upload call, with the given data and media type.
+    ///
+    /// For convenience functions to get known `media_type`s that Twitter will accept, see the
+    /// [`media_types`] module.
+    ///
+    /// [`media_types`]: media_types/index.html
+    pub fn new<V: Into<Cow<'a, [u8]>>>(data: V, media_type: mime::Mime) -> UploadBuilder<'a> {
+        UploadBuilder {
+            data: data.into(),
+            media_type,
+            chunk_size: None,
+            category: None,
+        }
+    }
+
+    /// Sets how many bytes to upload in one network call. By default this is set to 512 KiB.
+    pub fn chunk_size(self, chunk_size: usize) -> Self {
+        UploadBuilder {
+            chunk_size: Some(chunk_size),
+            ..self
+        }
+    }
+
+    /// Sets the `media_category` sent to Twitter. When unset, it behaves as if you sent
+    /// `MediaCategory::Image`.
+    pub fn category(self, category: MediaCategory) -> Self {
+        UploadBuilder {
+            category: Some(category),
+            ..self
+        }
+    }
+
+    /// Collects the built-up parameters and begins the chunked upload.
+    pub fn call(self, token: &auth::Token, handle: &Handle) -> UploadFuture<'a> {
+        let loader = upload::init(self.data.len(), self.media_type, self.category, token, handle);
+        UploadFuture {
+            data: self.data,
+            token: token.clone(),
+            handle: handle.clone(),
+            chunk_size: self.chunk_size.unwrap_or(1024 * 512), // 512 KiB default
+            status: UploadInner::WaitingForInit(loader),
+        }
+    }
+}
+
 /// A `Future` that represents an in-progress media upload.
 pub struct UploadFuture<'a> {
     data: Cow<'a, [u8]>,
@@ -163,54 +241,6 @@ enum UploadInner {
 }
 
 impl<'a> UploadFuture<'a> {
-    /// Creates a new `UploadFuture` with the given data and media type, and with the default chunk
-    /// size of 512 KiB.
-    ///
-    /// For convenience functions to get known `media_type`s that Twitter will accept, see the
-    /// [`media_types`] module.
-    ///
-    /// [`media_types`]: media_types/index.html
-    pub fn new<V: Into<Cow<'a, [u8]>>>(data: V,
-                                       media_type: mime::Mime,
-                                       token: &auth::Token,
-                                       handle: &Handle)
-        -> UploadFuture<'a>
-    {
-        let data = data.into();
-        let loader = upload::init(data.len(), media_type, token, handle);
-        UploadFuture {
-            data,
-            token: token.clone(),
-            handle: handle.clone(),
-            chunk_size: 1024 * 512, // 512 KiB
-            status: UploadInner::WaitingForInit(loader),
-        }
-    }
-
-    /// Creates a new `UploadFuture` with the given data, media type, and chunk size.
-    ///
-    /// For convenience functions to get known `media_type`s that Twitter will accept, see the
-    /// [`media_types`] module.
-    ///
-    /// [`media_types`]: media_types/index.html
-    pub fn with_chunk_size<V: Into<Cow<'a, [u8]>>>(data: V,
-                                                   chunk_size: usize,
-                                                   media_type: mime::Mime,
-                                                   token: &auth::Token,
-                                                   handle: &Handle)
-        -> UploadFuture<'a>
-    {
-        let data = data.into();
-        let loader = upload::init(data.len(), media_type, token, handle);
-        UploadFuture {
-            data,
-            token: token.clone(),
-            handle: handle.clone(),
-            chunk_size,
-            status: UploadInner::WaitingForInit(loader),
-        }
-    }
-
     fn get_chunk(&self, chunk_num: usize) -> Option<&[u8]> {
         let start = chunk_num * self.chunk_size;
         let end = (chunk_num + 1) * self.chunk_size;
@@ -307,12 +337,22 @@ pub mod upload {
     ///
     ///* total - The size of media file being uploaded(in bytes).
     ///* mime - File's mime type.
-    pub fn init(total: usize, mime: mime::Mime, token: &auth::Token, handle: &Handle) -> FutureResponse<Media> {
+    pub fn init(total: usize,
+                mime: mime::Mime,
+                category: Option<MediaCategory>,
+                token: &auth::Token,
+                handle: &Handle)
+        -> FutureResponse<Media>
+    {
         let mut params = HashMap::new();
 
         add_param(&mut params, "command", "INIT");
         add_param(&mut params, "total_bytes", total.to_string());
         add_param(&mut params, "media_type", mime.to_string());
+
+        if let Some(category) = category {
+            add_param(&mut params, "media_category", category.to_string());
+        }
 
         let req = auth::post(links::medias::UPLOAD, token, Some(&params));
         make_parsed_future(handle, req)
