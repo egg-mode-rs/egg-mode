@@ -15,7 +15,7 @@ use rustc_serialize::base64::{ToBase64};
 
 use common::*;
 use error;
-use error::Error::{InvalidResponse, MissingValue};
+use error::Error::InvalidResponse;
 use links;
 use auth;
 
@@ -51,17 +51,28 @@ pub mod media_types {
     }
 }
 
-#[derive(Debug)]
 ///Media's upload progressing info.
+#[derive(Debug)]
 pub enum ProgressInfo {
     ///Video is pending for processing. Contains number of seconds after which to check.
     Pending(u64),
     ///Video is beeing processed. Contains number of seconds after which to check.
     InProgress(u64),
     ///Video's processing failed. Contains reason.
-    Failed(String),
+    Failed(MediaError),
     ///Video's processing is finished. Media can be used in other API calls.
     Success
+}
+
+/// Represents an error that can occur during media processing.
+#[derive(Debug)]
+pub struct MediaError {
+    /// A numeric error code assigned to the error.
+    pub code: i32,
+    /// A short name given to the error.
+    pub name: String,
+    /// The full text of the error message.
+    pub message: String,
 }
 
 impl FromJson for ProgressInfo {
@@ -79,19 +90,27 @@ impl FromJson for ProgressInfo {
                 Ok(ProgressInfo::InProgress(try!(field(input, "check_after_secs"))))
             },
             "failed" => {
-                let error = try!(input.find("error").ok_or(MissingValue("error")));
-
-                let name = try!(error.find("name").ok_or(MissingValue("name")));
-                let message = try!(error.find("message").ok_or(MissingValue("message")));
-
-                let name = try!(name.as_string().ok_or(InvalidResponse("Expected string in error's name", None)));
-                let message = try!(message.as_string().ok_or(InvalidResponse("Expected string in error's message", None)));
-                Ok(ProgressInfo::Failed(format!("{}: {}", name, message)))
+                field_present!(input, error);
+                Ok(ProgressInfo::Failed(try!(field(input, "error"))))
             },
             "succeeded" => Ok(ProgressInfo::Success),
             state => Err(InvalidResponse("Unexpected progress info state", Some(state.to_string())))
 
         }
+    }
+}
+
+impl FromJson for MediaError {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        field_present!(input, code);
+        field_present!(input, name);
+        field_present!(input, message);
+
+        Ok(MediaError {
+            code: try!(field(input, "code")),
+            name: try!(field(input, "name")),
+            message: try!(field(input, "message")),
+        })
     }
 }
 
@@ -356,6 +375,8 @@ impl<'a> Future for UploadFuture<'a> {
                     status => status,
                 }
             },
+            //TODO: you know what, weave status in here too, call in tokio-timer or something to
+            //sleep and make a new error variant to include media processing errors
             UploadInner::Invalid => Err(error::Error::FutureAlreadyCompleted),
         }
     }
