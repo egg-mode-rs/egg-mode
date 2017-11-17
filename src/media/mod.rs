@@ -6,24 +6,20 @@
 //!
 //!Provides functionality to upload images, GIFs and videos using Twitter Media API
 
+use std::borrow::Cow;
 use std::collections::HashMap;
-use error;
-use error::Error::{
-    InvalidResponse,
-    MissingValue
-};
 
-use rustc_serialize::{
-    json,
-    base64
-};
-use self::base64::{ToBase64};
+use futures::{Future, Async, Poll};
+use rustc_serialize::{json, base64};
+use rustc_serialize::base64::{ToBase64};
 
 use common::*;
+use error;
+use error::Error::{InvalidResponse, MissingValue};
 use links;
 use auth;
 
-pub use hyper::mime;
+use hyper::mime;
 
 #[derive(Debug)]
 ///Media's upload progressing info.
@@ -113,6 +109,150 @@ pub fn upload_image(image: &[u8], token: &auth::Token, handle: &Handle) -> Futur
 
     let req = auth::post(links::medias::UPLOAD, token, Some(&params));
     make_parsed_future(handle, req)
+}
+
+/// A `Future` that represents an in-progress media upload.
+pub struct UploadFuture<'a> {
+    data: Cow<'a, [u8]>,
+    token: auth::Token,
+    handle: Handle,
+    chunk_size: usize,
+    status: UploadInner,
+}
+
+/// The current status of an `UploadFuture`.
+enum UploadInner {
+    /// The `UploadFuture` is waiting to initialize the media upload session.
+    WaitingForInit(FutureResponse<Media>),
+    /// The `UploadFuture` is in the progress of uploading data.
+    UploadingChunk(u64, usize, FutureResponse<()>),
+    /// The `UploadFuture` is currently finalizing the media with Twitter.
+    Finalizing(FutureResponse<Media>),
+    /// The `UploadFuture` has completed, or has encountered an error.
+    Invalid,
+}
+
+impl<'a> UploadFuture<'a> {
+    /// Creates a new `UploadFuture` with the given data and media type, and with the default chunk
+    /// size of 512 KiB.
+    pub fn new<V: Into<Cow<'a, [u8]>>>(data: V,
+                                       media_type: mime::Mime,
+                                       token: &auth::Token,
+                                       handle: &Handle)
+        -> UploadFuture<'a>
+    {
+        let data = data.into();
+        let loader = upload::init(data.len(), media_type, token, handle);
+        UploadFuture {
+            data,
+            token: token.clone(),
+            handle: handle.clone(),
+            chunk_size: 1024 * 512, // 512 KiB
+            status: UploadInner::WaitingForInit(loader),
+        }
+    }
+
+    /// Creates a new `UploadFuture` with the given data, media type, and chunk size.
+    pub fn with_chunk_size<V: Into<Cow<'a, [u8]>>>(data: V,
+                                                   chunk_size: usize,
+                                                   media_type: mime::Mime,
+                                                   token: &auth::Token,
+                                                   handle: &Handle)
+        -> UploadFuture<'a>
+    {
+        let data = data.into();
+        let loader = upload::init(data.len(), media_type, token, handle);
+        UploadFuture {
+            data,
+            token: token.clone(),
+            handle: handle.clone(),
+            chunk_size,
+            status: UploadInner::WaitingForInit(loader),
+        }
+    }
+
+    fn get_chunk(&self, chunk_num: usize) -> Option<&[u8]> {
+        let start = chunk_num * self.chunk_size;
+        let end = (chunk_num + 1) * self.chunk_size;
+
+        if start >= self.data.len() {
+            None
+        } else if end >= self.data.len() {
+            Some(&self.data[start..])
+        } else {
+            Some(&self.data[start..end])
+        }
+    }
+
+    fn append(&self, chunk_num: usize, media_id: u64) -> Option<FutureResponse<()>> {
+        let mut chunk = self.get_chunk(chunk_num);
+        if chunk.is_none() && chunk_num == 0 {
+            chunk = Some(&[][..]);
+        }
+
+        if let Some(chunk) = chunk {
+            Some(upload::append(media_id, chunk, chunk_num, &self.token, &self.handle))
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a> Future for UploadFuture<'a> {
+    type Item = Response<Media>;
+    type Error = error::Error;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        use std::mem::replace;
+
+        match replace(&mut self.status, UploadInner::Invalid) {
+            UploadInner::WaitingForInit(mut init) => {
+                match init.poll() {
+                    Ok(Async::NotReady) => {
+                        self.status = UploadInner::WaitingForInit(init);
+                        Ok(Async::NotReady)
+                    },
+                    Ok(Async::Ready(media)) => {
+                        let id = media.id;
+                        let loader = self.append(0, id).unwrap();
+                        self.status = UploadInner::UploadingChunk(id, 0, loader);
+                        self.poll()
+                    },
+                    Err(e) => Err(e),
+                }
+            },
+            UploadInner::UploadingChunk(id, chunk_idx, mut upload) => {
+                match upload.poll() {
+                    Ok(Async::NotReady) => {
+                        self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
+                        Ok(Async::NotReady)
+                    },
+                    Ok(Async::Ready(_)) => {
+                        let chunk_idx = chunk_idx + 1;
+                        if let Some(upload) = self.append(chunk_idx, id) {
+                            self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
+                        } else {
+                            let loader = upload::finalize(id, &self.token, &self.handle);
+                            self.status = UploadInner::Finalizing(loader);
+                        }
+
+                        self.poll()
+                    },
+                    Err(e) => Err(e),
+                }
+            },
+            UploadInner::Finalizing(mut finalize) => {
+                match finalize.poll() {
+                    Ok(Async::NotReady) => {
+                        self.status = UploadInner::Finalizing(finalize);
+                        Ok(Async::NotReady)
+                    },
+                    status => status,
+                }
+            },
+            UploadInner::Invalid => Err(error::Error::FutureAlreadyCompleted),
+        }
+    }
 }
 
 ///Content upload module using new chunked API.
