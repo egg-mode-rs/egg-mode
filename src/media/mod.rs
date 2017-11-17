@@ -361,22 +361,20 @@ impl<'a> Future for UploadFuture<'a> {
     }
 }
 
-///Content upload module using new chunked API.
+/// Requests the current status of the given media upload.
 ///
-///See [example](https://developer.twitter.com/en/docs/media/upload-media/uploading-media/chunked-media-upload)
-pub mod upload {
-    use super::*;
+/// Since videos and gifs are asynchronously processed, the media may not be ready even though the
+/// `UploadFuture` has successfully resolved. To check in on the status of an upload, use this call
+/// and inspect the `progress` of the returned `Media`. If it states `Some(Success)`, then the
+/// media is ready to be attached to a new tweet.
+pub fn status(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<Media> {
+    let mut params = HashMap::new();
 
-    ///Sends STATUS message to twitter API in order to retrieve media info.
-    pub fn status(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<Media> {
-        let mut params = HashMap::new();
+    add_param(&mut params, "command", "STATUS");
+    add_param(&mut params, "media_id", id.to_string());
 
-        add_param(&mut params, "command", "STATUS");
-        add_param(&mut params, "media_id", id.to_string());
-
-        let req = auth::get(links::medias::UPLOAD, token, Some(&params));
-        make_parsed_future(handle, req)
-    }
+    let req = auth::get(links::medias::UPLOAD, token, Some(&params));
+    make_parsed_future(handle, req)
 }
 
 #[cfg(test)]
