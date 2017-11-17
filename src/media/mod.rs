@@ -208,7 +208,18 @@ impl<'a> UploadBuilder<'a> {
 
     /// Collects the built-up parameters and begins the chunked upload.
     pub fn call(self, token: &auth::Token, handle: &Handle) -> UploadFuture<'a> {
-        let loader = upload::init(self.data.len(), self.media_type, self.category, token, handle);
+        let mut params = HashMap::new();
+
+        add_param(&mut params, "command", "INIT");
+        add_param(&mut params, "total_bytes", self.data.len().to_string());
+        add_param(&mut params, "media_type", self.media_type.to_string());
+
+        if let Some(category) = self.category {
+            add_param(&mut params, "media_category", category.to_string());
+        }
+
+        let req = auth::post(links::medias::UPLOAD, token, Some(&params));
+        let loader = make_parsed_future(handle, req);
         UploadFuture {
             data: self.data,
             token: token.clone(),
@@ -261,10 +272,35 @@ impl<'a> UploadFuture<'a> {
         }
 
         if let Some(chunk) = chunk {
-            Some(upload::append(media_id, chunk, chunk_num, &self.token, &self.handle))
+            let mut params = HashMap::new();
+
+            let config = base64::Config {
+                char_set: base64::CharacterSet::Standard,
+                newline: base64::Newline::LF,
+                pad: true,
+                line_length: None,
+            };
+
+            add_param(&mut params, "command", "APPEND");
+            add_param(&mut params, "media_id", media_id.to_string());
+            add_param(&mut params, "media_data", chunk.to_base64(config));
+            add_param(&mut params, "segment_index", chunk_num.to_string());
+
+            let req = auth::post(links::medias::UPLOAD, &self.token, Some(&params));
+            Some(make_parsed_future(&self.handle, req))
         } else {
             None
         }
+    }
+
+    fn finalize(&self, media_id: u64) -> FutureResponse<Media> {
+        let mut params = HashMap::new();
+
+        add_param(&mut params, "command", "FINALIZE");
+        add_param(&mut params, "media_id", media_id.to_string());
+
+        let req = auth::post(links::medias::UPLOAD, &self.token, Some(&params));
+        make_parsed_future(&self.handle, req)
     }
 }
 
@@ -302,7 +338,7 @@ impl<'a> Future for UploadFuture<'a> {
                         if let Some(upload) = self.append(chunk_idx, id) {
                             self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
                         } else {
-                            let loader = upload::finalize(id, &self.token, &self.handle);
+                            let loader = self.finalize(id);
                             self.status = UploadInner::Finalizing(loader);
                         }
 
@@ -330,74 +366,6 @@ impl<'a> Future for UploadFuture<'a> {
 ///See [example](https://developer.twitter.com/en/docs/media/upload-media/uploading-media/chunked-media-upload)
 pub mod upload {
     use super::*;
-
-    ///Sends INIT message to twitter API in order to initiate upload.
-    ///
-    ///## Parameters:
-    ///
-    ///* total - The size of media file being uploaded(in bytes).
-    ///* mime - File's mime type.
-    pub fn init(total: usize,
-                mime: mime::Mime,
-                category: Option<MediaCategory>,
-                token: &auth::Token,
-                handle: &Handle)
-        -> FutureResponse<Media>
-    {
-        let mut params = HashMap::new();
-
-        add_param(&mut params, "command", "INIT");
-        add_param(&mut params, "total_bytes", total.to_string());
-        add_param(&mut params, "media_type", mime.to_string());
-
-        if let Some(category) = category {
-            add_param(&mut params, "media_category", category.to_string());
-        }
-
-        let req = auth::post(links::medias::UPLOAD, token, Some(&params));
-        make_parsed_future(handle, req)
-    }
-
-    ///Sends APPEND message to twitter API in order to send chunk of media.
-    ///
-    ///## Parameters:
-    ///
-    ///* id - Media's id returned in response to `INIT` message.
-    ///* chunk - Bytes to send.
-    ///* index - Ordered index of file chunk.
-    pub fn append(id: u64, chunk: &[u8], index: usize, token: &auth::Token, handle: &Handle) -> FutureResponse<()> {
-        let mut params = HashMap::new();
-
-        let config = base64::Config {
-            char_set: base64::CharacterSet::Standard,
-            newline: base64::Newline::LF,
-            pad: true,
-            line_length: None,
-        };
-
-        add_param(&mut params, "command", "APPEND");
-        add_param(&mut params, "media_id", id.to_string());
-        add_param(&mut params, "media_data", chunk.to_base64(config));
-        add_param(&mut params, "segment_index", index.to_string());
-
-        let req = auth::post(links::medias::UPLOAD, token, Some(&params));
-        make_parsed_future(handle, req)
-    }
-
-    ///Sends FINALIE message to twitter API in order to finish sending of media.
-    ///
-    ///## Parameters:
-    ///
-    ///* id - Media's id returned in response to `INIT` message.
-    pub fn finalize(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<Media> {
-        let mut params = HashMap::new();
-
-        add_param(&mut params, "command", "FINALIZE");
-        add_param(&mut params, "media_id", id.to_string());
-
-        let req = auth::post(links::medias::UPLOAD, token, Some(&params));
-        make_parsed_future(handle, req)
-    }
 
     ///Sends STATUS message to twitter API in order to retrieve media info.
     pub fn status(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<Media> {
