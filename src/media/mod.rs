@@ -19,7 +19,37 @@ use error::Error::{InvalidResponse, MissingValue};
 use links;
 use auth;
 
-use hyper::mime;
+use mime;
+
+/// A collection of convenience functions that return media types accepted by Twitter.
+pub mod media_types {
+    use mime::{self, Mime};
+
+    /// PNG images.
+    pub fn image_png() -> Mime {
+        mime::IMAGE_PNG
+    }
+
+    /// JPG images.
+    pub fn image_jpg() -> Mime {
+        mime::IMAGE_JPEG
+    }
+
+    /// WEBP images.
+    pub fn image_webp() -> Mime {
+        "image/webp".parse().unwrap()
+    }
+
+    /// GIF images, both animated and static.
+    pub fn image_gif() -> Mime {
+        mime::IMAGE_GIF
+    }
+
+    /// MP4 videos.
+    pub fn video_mp4() -> Mime {
+        "video/mp4".parse().unwrap()
+    }
+}
 
 #[derive(Debug)]
 ///Media's upload progressing info.
@@ -135,6 +165,11 @@ enum UploadInner {
 impl<'a> UploadFuture<'a> {
     /// Creates a new `UploadFuture` with the given data and media type, and with the default chunk
     /// size of 512 KiB.
+    ///
+    /// For convenience functions to get known `media_type`s that Twitter will accept, see the
+    /// [`media_types`] module.
+    ///
+    /// [`media_types`]: media_types/index.html
     pub fn new<V: Into<Cow<'a, [u8]>>>(data: V,
                                        media_type: mime::Mime,
                                        token: &auth::Token,
@@ -153,6 +188,11 @@ impl<'a> UploadFuture<'a> {
     }
 
     /// Creates a new `UploadFuture` with the given data, media type, and chunk size.
+    ///
+    /// For convenience functions to get known `media_type`s that Twitter will accept, see the
+    /// [`media_types`] module.
+    ///
+    /// [`media_types`]: media_types/index.html
     pub fn with_chunk_size<V: Into<Cow<'a, [u8]>>>(data: V,
                                                    chunk_size: usize,
                                                    media_type: mime::Mime,
