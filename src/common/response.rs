@@ -446,7 +446,7 @@ impl Future for RawFuture {
                 }
 
                 match self.resp_status.unwrap() {
-                    StatusCode::Ok => Ok(Async::Ready(resp)),
+                    st if st.is_success() => Ok(Async::Ready(resp)),
                     st => Err(BadStatus(st)),
                 }
             }
