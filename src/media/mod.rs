@@ -117,25 +117,6 @@ impl FromJson for Media {
     }
 }
 
-///Uploads image using old twitter API.
-///
-///The image should be raw binary with content of file.
-pub fn upload_image(image: &[u8], token: &auth::Token, handle: &Handle) -> FutureResponse<Media> {
-    let mut params = HashMap::new();
-
-    let config = base64::Config {
-        char_set: base64::CharacterSet::Standard,
-        newline: base64::Newline::LF,
-        pad: true,
-        line_length: None,
-    };
-
-    add_param(&mut params, "media_data", image.to_base64(config));
-
-    let req = auth::post(links::medias::UPLOAD, token, Some(&params));
-    make_parsed_future(handle, req)
-}
-
 /// Represents the kinda of media that Twitter will accept.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MediaCategory {
