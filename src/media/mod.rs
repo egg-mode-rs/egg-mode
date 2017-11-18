@@ -442,7 +442,12 @@ mod tests {
         assert!(media.progress.is_some());
 
         match media.progress {
-            Some(super::ProgressInfo::Failed(error)) => assert_eq!(error, "InvalidMedia: Unsupported video format"),
+            Some(super::ProgressInfo::Failed(error)) =>
+                assert_eq!(error, ::error::MediaError {
+                    code: 1,
+                    name: "InvalidMedia".to_string(),
+                    message: "Unsupported video format".to_string(),
+                }),
             other => assert!(false, format!("Unexpected value of progress={:?}", other))
         }
     }
