@@ -160,11 +160,10 @@ return a list of IDs of something are grouped in with the rest of the main struc
 
 ## [Media API](https://dev.twitter.com/rest/media)
 
-- [x] media/upload (Simple)
-- [ ] media/upload (INIT)
-- [ ] media/upload (APPEND)
-- [ ] media/upload (FINALIZE)
-- [ ] media/upload (STATUS)
+- [x] media/upload (INIT) (`media::UploadFuture`)
+- [x] media/upload (APPEND) (`media::UploadFuture`)
+- [x] media/upload (FINALIZE) (`media::UploadFuture`)
+- [x] media/upload (STATUS) (`media::UploadFuture`)
 - [ ] media/metadata/create
 
 ## [Collections API](https://dev.twitter.com/rest/collections)
