@@ -8,10 +8,12 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::time::Duration;
 
 use futures::{Future, Async, Poll};
 use rustc_serialize::{json, base64};
 use rustc_serialize::base64::{ToBase64};
+use tokio_core::reactor::Timeout;
 
 use common::*;
 use error;
@@ -52,7 +54,7 @@ pub mod media_types {
 }
 
 ///Media's upload progressing info.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ProgressInfo {
     ///Video is pending for processing. Contains number of seconds after which to check.
     Pending(u64),
@@ -240,6 +242,8 @@ enum UploadInner {
     UploadingChunk(u64, usize, FutureResponse<()>),
     /// The `UploadFuture` is currently finalizing the media with Twitter.
     Finalizing(FutureResponse<Media>),
+    /// The `UploadFuture` is waiting on Twitter to finish processing a video or gif.
+    PostProcessing(u64, Timeout),
     /// The `UploadFuture` has completed, or has encountered an error.
     Invalid,
 }
@@ -295,6 +299,16 @@ impl<'a> UploadFuture<'a> {
         let req = auth::post(links::medias::UPLOAD, &self.token, Some(&params));
         make_parsed_future(&self.handle, req)
     }
+
+    fn status(&self, media_id: u64) -> FutureResponse<Media> {
+        let mut params = HashMap::new();
+
+        add_param(&mut params, "command", "STATUS");
+        add_param(&mut params, "media_id", media_id.to_string());
+
+        let req = auth::get(links::medias::UPLOAD, &self.token, Some(&params));
+        make_parsed_future(&self.handle, req)
+    }
 }
 
 impl<'a> Future for UploadFuture<'a> {
@@ -346,30 +360,44 @@ impl<'a> Future for UploadFuture<'a> {
                         self.status = UploadInner::Finalizing(finalize);
                         Ok(Async::NotReady)
                     },
-                    status => status,
+                    Ok(Async::Ready(media)) => {
+                        if media.progress.is_none() || media.progress == Some(ProgressInfo::Success) {
+                            return Ok(Async::Ready(media));
+                        }
+
+                        match media.progress {
+                            Some(ProgressInfo::Pending(time)) |
+                                Some(ProgressInfo::InProgress(time)) =>
+                            {
+                                let timer = try!(Timeout::new(Duration::from_secs(time), &self.handle));
+                                self.status = UploadInner::PostProcessing(media.id, timer);
+                                self.poll()
+                            },
+                            Some(ProgressInfo::Failed(ref err)) =>
+                                Err(error::Error::MediaError(err.clone())),
+                            None | Some(ProgressInfo::Success) => unreachable!(),
+                        }
+                    },
+                    Err(e) => Err(e),
                 }
             },
-            //TODO: you know what, weave status in here too, call in tokio-timer or something to
-            //sleep and make a new error variant to include media processing errors
+            UploadInner::PostProcessing(id, mut timer) => {
+                match timer.poll() {
+                    Ok(Async::NotReady) => {
+                        self.status = UploadInner::PostProcessing(id, timer);
+                        Ok(Async::NotReady)
+                    },
+                    Ok(Async::Ready(())) => {
+                        let loader = self.status(id);
+                        self.status = UploadInner::Finalizing(loader);
+                        self.poll()
+                    },
+                    Err(e) => Err(e.into()),
+                }
+            },
             UploadInner::Invalid => Err(error::Error::FutureAlreadyCompleted),
         }
     }
-}
-
-/// Requests the current status of the given media upload.
-///
-/// Since videos and gifs are asynchronously processed, the media may not be ready even though the
-/// `UploadFuture` has successfully resolved. To check in on the status of an upload, use this call
-/// and inspect the `progress` of the returned `Media`. If it states `Some(Success)`, then the
-/// media is ready to be attached to a new tweet.
-pub fn status(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<Media> {
-    let mut params = HashMap::new();
-
-    add_param(&mut params, "command", "STATUS");
-    add_param(&mut params, "media_id", id.to_string());
-
-    let req = auth::get(links::medias::UPLOAD, token, Some(&params));
-    make_parsed_future(handle, req)
 }
 
 #[cfg(test)]
