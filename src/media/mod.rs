@@ -207,6 +207,7 @@ impl<'a> UploadBuilder<'a> {
 }
 
 /// A `Future` that represents an in-progress media upload.
+#[must_use = "futures do nothing unless polled"]
 pub struct UploadFuture<'a> {
     data: Cow<'a, [u8]>,
     token: auth::Token,
