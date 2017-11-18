@@ -265,7 +265,16 @@ impl<'a> UploadFuture<'a> {
             add_param(&mut params, "segment_index", chunk_num.to_string());
 
             let req = auth::post(links::medias::UPLOAD, &self.token, Some(&params));
-            Some(make_parsed_future(&self.handle, req))
+
+            fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<()>, error::Error> {
+                if full_resp.is_empty() {
+                    Ok(rate_headers(headers))
+                } else {
+                    Err(InvalidResponse("Expected empty response", Some(full_resp)))
+                }
+            }
+
+            Some(make_future(&self.handle, req, parse_resp))
         } else {
             None
         }
