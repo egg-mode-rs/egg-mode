@@ -61,6 +61,9 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [x] direct\_messages/show (`direct::show`)
 - [x] direct\_messages/new (`direct::send`)
 - [x] direct\_messages/destroy (`direct::delete`)
+- [ ] direct\_messages/events/list
+- [ ] direct\_messages/events/show
+- [ ] direct\_messages/events/new
 
 ### Users
 
