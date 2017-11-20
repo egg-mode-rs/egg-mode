@@ -760,7 +760,10 @@ pub struct DraftTweet<'a> {
     ///List of media entities associated with tweet.
     ///
     ///It can be up to 4 images or 1 GIF/video.
-    pub media_ids: Option<Cow<'a, [u64]>>
+    pub media_ids: Option<Cow<'a, [u64]>>,
+    ///States whether the media attached with `media_ids` should be labeled as "possibly
+    ///sensitive", to mask the image by default.
+    pub possibly_sensitive: Option<bool>,
 }
 
 impl<'a> DraftTweet<'a> {
@@ -775,7 +778,8 @@ impl<'a> DraftTweet<'a> {
             coordinates: None,
             display_coordinates: None,
             place_id: None,
-            media_ids: None
+            media_ids: None,
+            possibly_sensitive: None,
         }
     }
 
@@ -868,6 +872,15 @@ impl<'a> DraftTweet<'a> {
         }
     }
 
+    ///Marks the media attached with `media_ids` as being sensitive, so it can be hidden by
+    ///default.
+    pub fn possibly_sensitive(self, sensitive: bool) -> Self {
+        DraftTweet {
+            possibly_sensitive: Some(sensitive),
+            ..self
+        }
+    }
+
     ///Send the assembled tweet as the authenticated user.
     pub fn send(&self, token: &auth::Token, handle: &Handle) -> FutureResponse<Tweet> {
         let mut params = HashMap::new();
@@ -906,6 +919,10 @@ impl<'a> DraftTweet<'a> {
         if let Some(ref media_ids) = self.media_ids {
             let list = media_ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
             add_param(&mut params, "media_ids", list);
+        }
+
+        if let Some(sensitive) = self.possibly_sensitive {
+            add_param(&mut params, "possibly_sensitive", sensitive.to_string());
         }
 
         let req = auth::post(links::statuses::UPDATE, token, Some(&params));
