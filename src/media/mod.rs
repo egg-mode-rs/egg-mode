@@ -90,6 +90,11 @@ impl FromJson for ProgressInfo {
     }
 }
 
+//TODO: this doesn't need to be exposed to the user.
+//the `progress` field is totally worthless once `UploadFuture` returns, and `expires_after` may be
+//misleading if we applied alt text. that can be replaced with an `Instant` that's calculated
+//before we return.
+
 ///Represents media file that is uploaded on twitter.
 pub struct Media {
     ///ID that can be used in API calls (e.g. attach to tweet).
@@ -240,6 +245,7 @@ enum UploadInner {
     PostProcessing(u64, Timeout),
     /// The `UploadFuture` is waiting on Twitter to apply metadata to the uploaded image.
     Metadata(Response<Media>, FutureResponse<()>),
+    //TODO: error recovery state, with media id and chunk number, so we can restart after an error
     /// The `UploadFuture` has completed, or has encountered an error.
     Invalid,
 }
