@@ -90,11 +90,6 @@ impl FromJson for ProgressInfo {
     }
 }
 
-//TODO: this doesn't need to be exposed to the user.
-//the `progress` field is totally worthless once `UploadFuture` returns, and `expires_after` may be
-//misleading if we applied alt text. that can be replaced with an `Instant` that's calculated
-//before we return.
-
 /// A media ID returned by twitter upon successful media upload.
 pub struct MediaHandle {
     /// The numeric ID that can be used to reference the media.
