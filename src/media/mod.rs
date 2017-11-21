@@ -8,7 +8,7 @@
 
 use std::borrow::Cow;
 use std::collections::{HashMap, BTreeMap};
-use std::time::Duration;
+use std::time::{Instant, Duration};
 
 use futures::{Future, Async, Poll};
 use rustc_serialize::{json, base64};
@@ -53,16 +53,16 @@ pub mod media_types {
     }
 }
 
-///Media's upload progressing info.
+///RawMedia's upload progressing info.
 #[derive(Debug, PartialEq)]
-pub enum ProgressInfo {
+enum ProgressInfo {
     ///Video is pending for processing. Contains number of seconds after which to check.
     Pending(u64),
     ///Video is beeing processed. Contains number of seconds after which to check.
     InProgress(u64),
     ///Video's processing failed. Contains reason.
     Failed(error::MediaError),
-    ///Video's processing is finished. Media can be used in other API calls.
+    ///Video's processing is finished. RawMedia can be used in other API calls.
     Success
 }
 
@@ -95,17 +95,35 @@ impl FromJson for ProgressInfo {
 //misleading if we applied alt text. that can be replaced with an `Instant` that's calculated
 //before we return.
 
+/// A media ID returned by twitter upon successful media upload.
+pub struct MediaHandle {
+    /// The numeric ID that can be used to reference the media.
+    pub media_id: u64,
+    /// The time after which the media ID will be rendered unusable from the API. You can use
+    /// `media_id` to attach the media to a tweet while `Instant::now() < handle.valid_until`.
+    pub valid_until: Instant,
+}
+
 ///Represents media file that is uploaded on twitter.
-pub struct Media {
+struct RawMedia {
     ///ID that can be used in API calls (e.g. attach to tweet).
     pub id: u64,
     ///Number of second the media can be used in other API calls.
     pub expires_after: u64,
-    ///Progress information. If present determines whether Media can be used.
+    ///Progress information. If present determines whether RawMedia can be used.
     pub progress: Option<ProgressInfo>
 }
 
-impl FromJson for Media {
+impl RawMedia {
+    fn into_handle(self) -> MediaHandle {
+        MediaHandle {
+            media_id: self.id,
+            valid_until: Instant::now() + Duration::from_secs(self.expires_after),
+        }
+    }
+}
+
+impl FromJson for RawMedia {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if !input.is_object() {
             return Err(InvalidResponse("Tweet received json that wasn't an object", Some(input.to_string())));
@@ -113,7 +131,7 @@ impl FromJson for Media {
 
         field_present!(input, media_id);
 
-        Ok(Media {
+        Ok(RawMedia {
             id: try!(field(input, "media_id")),
             //We can miss this field on failed upload in which case 0 is pretty reasonable value.
             expires_after: field(input, "expires_after_secs").unwrap_or(0),
@@ -236,15 +254,15 @@ pub struct UploadFuture<'a> {
 /// The current status of an `UploadFuture`.
 enum UploadInner {
     /// The `UploadFuture` is waiting to initialize the media upload session.
-    WaitingForInit(FutureResponse<Media>),
+    WaitingForInit(FutureResponse<RawMedia>),
     /// The `UploadFuture` is in the progress of uploading data.
     UploadingChunk(u64, usize, FutureResponse<()>),
     /// The `UploadFuture` is currently finalizing the media with Twitter.
-    Finalizing(FutureResponse<Media>),
+    Finalizing(FutureResponse<RawMedia>),
     /// The `UploadFuture` is waiting on Twitter to finish processing a video or gif.
     PostProcessing(u64, Timeout),
     /// The `UploadFuture` is waiting on Twitter to apply metadata to the uploaded image.
-    Metadata(Response<Media>, FutureResponse<()>),
+    Metadata(MediaHandle, FutureResponse<()>),
     //TODO: error recovery state, with media id and chunk number, so we can restart after an error
     /// The `UploadFuture` has completed, or has encountered an error.
     Invalid,
@@ -301,7 +319,7 @@ impl<'a> UploadFuture<'a> {
         }
     }
 
-    fn finalize(&self, media_id: u64) -> FutureResponse<Media> {
+    fn finalize(&self, media_id: u64) -> FutureResponse<RawMedia> {
         let mut params = HashMap::new();
 
         add_param(&mut params, "command", "FINALIZE");
@@ -311,7 +329,7 @@ impl<'a> UploadFuture<'a> {
         make_parsed_future(&self.handle, req)
     }
 
-    fn status(&self, media_id: u64) -> FutureResponse<Media> {
+    fn status(&self, media_id: u64) -> FutureResponse<RawMedia> {
         let mut params = HashMap::new();
 
         add_param(&mut params, "command", "STATUS");
@@ -348,7 +366,7 @@ impl<'a> UploadFuture<'a> {
 }
 
 impl<'a> Future for UploadFuture<'a> {
-    type Item = Response<Media>;
+    type Item = MediaHandle;
     type Error = error::Error;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
@@ -398,8 +416,9 @@ impl<'a> Future for UploadFuture<'a> {
                     },
                     Ok(Async::Ready(media)) => {
                         if media.progress.is_none() || media.progress == Some(ProgressInfo::Success) {
+                            let media = media.response.into_handle();
                             if let Some(alt_text) = self.alt_text.take() {
-                                let id = media.id;
+                                let id = media.media_id;
                                 self.status = UploadInner::Metadata(media,
                                                                     self.metadata(id,
                                                                                   alt_text));
@@ -460,16 +479,16 @@ impl<'a> Future for UploadFuture<'a> {
 mod tests {
     use common::FromJson;
 
-    use super::Media;
+    use super::RawMedia;
 
     use std::fs::File;
     use std::io::Read;
 
-    fn load_media(path: &str) -> Media {
+    fn load_media(path: &str) -> RawMedia {
         let mut file = File::open(path).unwrap();
         let mut content = String::new();
         file.read_to_string(&mut content).unwrap();
-        Media::from_str(&content).unwrap()
+        RawMedia::from_str(&content).unwrap()
     }
 
     #[test]
