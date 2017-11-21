@@ -17,7 +17,7 @@ use futures::{Future, Poll, Async};
 use hmac::{Hmac, Mac};
 use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer, Headers};
 use hyper::{Method, Request};
-use hyper::mime::Mime;
+use mime::Mime;
 use rand::{self, Rng};
 use rustc_serialize::base64::{self, ToBase64};
 use rustc_serialize::json;
@@ -512,6 +512,33 @@ pub fn post(uri: &str,
         } => {
             let header = get_header(Method::Post, uri, con_token, Some(access_token),
                                     None, None, params);
+
+            request.headers_mut().set(Authorization(header));
+        },
+        Token::Bearer(ref token) => {
+            request.headers_mut().set(Authorization(Bearer { token: token.clone() }));
+        },
+    }
+
+    request
+}
+
+/// Assemble a signed POST request to the given URL with the given JSON body.
+pub fn post_json(uri: &str, token: &Token, body: &json::Json) -> Request {
+    let content: Mime = "application/json; charset=UTF-8".parse().unwrap();
+    let body = body.to_string();
+
+    let mut request: Request = Request::new(Method::Post, uri.parse().unwrap());
+    request.set_body(body);
+    request.headers_mut().set(ContentType(content));
+
+    match *token {
+        Token::Access {
+            consumer: ref con_token,
+            access: ref access_token,
+        } => {
+            let header = get_header(Method::Post, uri, con_token, Some(access_token),
+                                    None, None, None);
 
             request.headers_mut().set(Authorization(header));
         },

@@ -7,7 +7,7 @@
 //!Provides functionality to upload images, GIFs and videos using Twitter Media API
 
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use std::time::Duration;
 
 use futures::{Future, Async, Poll};
@@ -147,6 +147,7 @@ pub struct UploadBuilder<'a> {
     media_type: mime::Mime,
     chunk_size: Option<usize>,
     category: Option<MediaCategory>,
+    alt_text: Option<Cow<'a, str>>,
 }
 
 impl<'a> UploadBuilder<'a> {
@@ -162,6 +163,7 @@ impl<'a> UploadBuilder<'a> {
             media_type,
             chunk_size: None,
             category: None,
+            alt_text: None,
         }
     }
 
@@ -182,6 +184,14 @@ impl<'a> UploadBuilder<'a> {
         }
     }
 
+    /// Applies the given alt text to an image or GIF when the image finishes uploading.
+    pub fn alt_text<S: Into<Cow<'a, str>>>(self, alt_text: S) -> Self {
+        UploadBuilder {
+            alt_text: Some(alt_text.into()),
+            ..self
+        }
+    }
+
     /// Collects the built-up parameters and begins the chunked upload.
     pub fn call(self, token: &auth::Token, handle: &Handle) -> UploadFuture<'a> {
         let mut params = HashMap::new();
@@ -194,13 +204,14 @@ impl<'a> UploadBuilder<'a> {
             add_param(&mut params, "media_category", category.to_string());
         }
 
-        let req = auth::post(links::medias::UPLOAD, token, Some(&params));
+        let req = auth::post(links::media::UPLOAD, token, Some(&params));
         let loader = make_parsed_future(handle, req);
         UploadFuture {
             data: self.data,
             token: token.clone(),
             handle: handle.clone(),
             chunk_size: self.chunk_size.unwrap_or(1024 * 512), // 512 KiB default
+            alt_text: self.alt_text,
             status: UploadInner::WaitingForInit(loader),
         }
     }
@@ -213,6 +224,7 @@ pub struct UploadFuture<'a> {
     token: auth::Token,
     handle: Handle,
     chunk_size: usize,
+    alt_text: Option<Cow<'a, str>>,
     status: UploadInner,
 }
 
@@ -226,6 +238,8 @@ enum UploadInner {
     Finalizing(FutureResponse<Media>),
     /// The `UploadFuture` is waiting on Twitter to finish processing a video or gif.
     PostProcessing(u64, Timeout),
+    /// The `UploadFuture` is waiting on Twitter to apply metadata to the uploaded image.
+    Metadata(Response<Media>, FutureResponse<()>),
     /// The `UploadFuture` has completed, or has encountered an error.
     Invalid,
 }
@@ -265,7 +279,7 @@ impl<'a> UploadFuture<'a> {
             add_param(&mut params, "media_data", chunk.to_base64(config));
             add_param(&mut params, "segment_index", chunk_num.to_string());
 
-            let req = auth::post(links::medias::UPLOAD, &self.token, Some(&params));
+            let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
 
             fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<()>, error::Error> {
                 if full_resp.is_empty() {
@@ -287,7 +301,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "command", "FINALIZE");
         add_param(&mut params, "media_id", media_id.to_string());
 
-        let req = auth::post(links::medias::UPLOAD, &self.token, Some(&params));
+        let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
         make_parsed_future(&self.handle, req)
     }
 
@@ -297,8 +311,33 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "command", "STATUS");
         add_param(&mut params, "media_id", media_id.to_string());
 
-        let req = auth::get(links::medias::UPLOAD, &self.token, Some(&params));
+        let req = auth::get(links::media::UPLOAD, &self.token, Some(&params));
         make_parsed_future(&self.handle, req)
+    }
+
+    fn metadata(&self, media_id: u64, alt_text: Cow<'a, str>) -> FutureResponse<()> {
+        use rustc_serialize::json::Json;
+
+        let mut inner = BTreeMap::new();
+        inner.insert("text".to_string(), Json::String(alt_text.into_owned()));
+
+        let mut outer = BTreeMap::new();
+        outer.insert("media_id".to_string(), Json::String(media_id.to_string()));
+        outer.insert("alt_text".to_string(), Json::Object(inner));
+
+        let body = Json::Object(outer);
+
+        let req = auth::post_json(links::media::METADATA, &self.token, &body);
+
+        fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<()>, error::Error> {
+            if full_resp.is_empty() {
+                Ok(rate_headers(headers))
+            } else {
+                Err(InvalidResponse("Expected empty response", Some(full_resp)))
+            }
+        }
+
+        make_future(&self.handle, req, parse_resp)
     }
 }
 
@@ -353,7 +392,15 @@ impl<'a> Future for UploadFuture<'a> {
                     },
                     Ok(Async::Ready(media)) => {
                         if media.progress.is_none() || media.progress == Some(ProgressInfo::Success) {
-                            return Ok(Async::Ready(media));
+                            if let Some(alt_text) = self.alt_text.take() {
+                                let id = media.id;
+                                self.status = UploadInner::Metadata(media,
+                                                                    self.metadata(id,
+                                                                                  alt_text));
+                                return self.poll();
+                            } else {
+                                return Ok(Async::Ready(media));
+                            }
                         }
 
                         match media.progress {
@@ -384,6 +431,18 @@ impl<'a> Future for UploadFuture<'a> {
                         self.poll()
                     },
                     Err(e) => Err(e.into()),
+                }
+            },
+            UploadInner::Metadata(media, mut loader) => {
+                match loader.poll() {
+                    Ok(Async::NotReady) => {
+                        self.status = UploadInner::Metadata(media, loader);
+                        Ok(Async::NotReady)
+                    },
+                    Ok(Async::Ready(_)) => {
+                        Ok(Async::Ready(media))
+                    },
+                    Err(e) => Err(e),
                 }
             },
             UploadInner::Invalid => Err(error::Error::FutureAlreadyCompleted),
