@@ -110,8 +110,6 @@
 //!   or received, or by sending new ones.
 //! * `list`: This module lets you act on lists, from creating and deleting them, adding and
 //!   removing users, or loading the posts made by their members.
-//! * `text`: Text processing functions to count characters in new tweets and extract links and
-//!   hashtags for highlighting and linking.
 //!
 //! ## Secondary actions
 //!
@@ -155,7 +153,6 @@ extern crate rustc_serialize;
 extern crate mime;
 extern crate chrono;
 extern crate regex;
-extern crate unicode_normalization;
 
 #[macro_use] mod common;
 mod auth;
@@ -169,7 +166,6 @@ pub mod search;
 pub mod place;
 pub mod direct;
 pub mod service;
-pub mod text;
 pub mod list;
 mod links;
 

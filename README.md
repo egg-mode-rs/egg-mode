@@ -16,6 +16,12 @@ to being able to manually load a page at a time.
 
 [TODO.md]: https://github.com/QuietMisdreavus/twitter-rs/blob/master/TODO.md
 
+**NOTE**: Previous versions of egg-mode contained a port of twitter-text to use for character
+counting and mention/hashtag/url extraction. That has since been extracted into its own crate,
+[egg-mode-text].
+
+[egg-mode-text]: https://github.com/QuietMisdreavus/twitter-text-rs
+
 Compatibility note: egg-mode is tested to run on Rust 1.17.0 and later. On Windows, both the -msvc
 and -gnu environments are tested.
 
