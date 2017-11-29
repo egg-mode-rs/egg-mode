@@ -91,6 +91,7 @@ impl FromJson for ProgressInfo {
 }
 
 /// A media ID returned by twitter upon successful media upload.
+#[derive(Copy, Clone, Debug)]
 pub struct MediaHandle {
     /// The numeric ID that can be used to reference the media.
     pub media_id: u64,
@@ -212,25 +213,16 @@ impl<'a> UploadBuilder<'a> {
 
     /// Collects the built-up parameters and begins the chunked upload.
     pub fn call(self, token: &auth::Token, handle: &Handle) -> UploadFuture<'a> {
-        let mut params = HashMap::new();
-
-        add_param(&mut params, "command", "INIT");
-        add_param(&mut params, "total_bytes", self.data.len().to_string());
-        add_param(&mut params, "media_type", self.media_type.to_string());
-
-        if let Some(category) = self.category {
-            add_param(&mut params, "media_category", category.to_string());
-        }
-
-        let req = auth::post(links::media::UPLOAD, token, Some(&params));
-        let loader = make_parsed_future(handle, req);
         UploadFuture {
             data: self.data,
+            media_type: self.media_type,
+            media_category: self.category,
+            timeout: Instant::now(),
             token: token.clone(),
             handle: handle.clone(),
             chunk_size: self.chunk_size.unwrap_or(1024 * 512), // 512 KiB default
             alt_text: self.alt_text,
-            status: UploadInner::WaitingForInit(loader),
+            status: UploadInner::PreInit,
         }
     }
 }
@@ -239,6 +231,9 @@ impl<'a> UploadBuilder<'a> {
 #[must_use = "futures do nothing unless polled"]
 pub struct UploadFuture<'a> {
     data: Cow<'a, [u8]>,
+    media_type: mime::Mime,
+    media_category: Option<MediaCategory>,
+    timeout: Instant,
     token: auth::Token,
     handle: Handle,
     chunk_size: usize,
@@ -248,17 +243,24 @@ pub struct UploadFuture<'a> {
 
 /// The current status of an `UploadFuture`.
 enum UploadInner {
+    /// The `UploadFuture` has yet to initialize the upload session.
+    PreInit,
     /// The `UploadFuture` is waiting to initialize the media upload session.
     WaitingForInit(FutureResponse<RawMedia>),
     /// The `UploadFuture` is in the progress of uploading data.
     UploadingChunk(u64, usize, FutureResponse<()>),
+    /// The `UploadFuture` failed to upload a chunk of data and is waiting to re-send it.
+    FailedChunk(u64, usize),
     /// The `UploadFuture` is currently finalizing the media with Twitter.
-    Finalizing(FutureResponse<RawMedia>),
+    Finalizing(u64, FutureResponse<RawMedia>),
+    /// The `UploadFuture` failed to finalize the upload session, and is waiting to retry.
+    FailedFinalize(u64),
     /// The `UploadFuture` is waiting on Twitter to finish processing a video or gif.
     PostProcessing(u64, Timeout),
     /// The `UploadFuture` is waiting on Twitter to apply metadata to the uploaded image.
     Metadata(MediaHandle, FutureResponse<()>),
-    //TODO: error recovery state, with media id and chunk number, so we can restart after an error
+    /// The `UploadFuture` failed to update metadata on the media.
+    FailedMetadata(MediaHandle),
     /// The `UploadFuture` has completed, or has encountered an error.
     Invalid,
 }
@@ -275,6 +277,21 @@ impl<'a> UploadFuture<'a> {
         } else {
             Some(&self.data[start..end])
         }
+    }
+
+    fn init(&self) -> FutureResponse<RawMedia> {
+        let mut params = HashMap::new();
+
+        add_param(&mut params, "command", "INIT");
+        add_param(&mut params, "total_bytes", self.data.len().to_string());
+        add_param(&mut params, "media_type", self.media_type.to_string());
+
+        if let Some(category) = self.media_category {
+            add_param(&mut params, "media_category", category.to_string());
+        }
+
+        let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
+        make_parsed_future(&self.handle, req)
     }
 
     fn append(&self, chunk_num: usize, media_id: u64) -> Option<FutureResponse<()>> {
@@ -334,11 +351,11 @@ impl<'a> UploadFuture<'a> {
         make_parsed_future(&self.handle, req)
     }
 
-    fn metadata(&self, media_id: u64, alt_text: Cow<'a, str>) -> FutureResponse<()> {
+    fn metadata(&self, media_id: u64, alt_text: &str) -> FutureResponse<()> {
         use rustc_serialize::json::Json;
 
         let mut inner = BTreeMap::new();
-        inner.insert("text".to_string(), Json::String(alt_text.into_owned()));
+        inner.insert("text".to_string(), Json::String(alt_text.to_string()));
 
         let mut outer = BTreeMap::new();
         outer.insert("media_id".to_string(), Json::String(media_id.to_string()));
@@ -362,12 +379,17 @@ impl<'a> UploadFuture<'a> {
 
 impl<'a> Future for UploadFuture<'a> {
     type Item = MediaHandle;
+    //TODO: give UploadFuture its own error type, that states which portion of upload it failed in
     type Error = error::Error;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         use std::mem::replace;
 
         match replace(&mut self.status, UploadInner::Invalid) {
+            UploadInner::PreInit => {
+                self.status = UploadInner::WaitingForInit(self.init());
+                self.poll()
+            },
             UploadInner::WaitingForInit(mut init) => {
                 match init.poll() {
                     Ok(Async::NotReady) => {
@@ -375,12 +397,17 @@ impl<'a> Future for UploadFuture<'a> {
                         Ok(Async::NotReady)
                     },
                     Ok(Async::Ready(media)) => {
+                        self.timeout = Instant::now() + Duration::from_secs(media.expires_after);
                         let id = media.id;
+                        //chunk zero is guaranteed to return *something*, even an empty slice
                         let loader = self.append(0, id).unwrap();
                         self.status = UploadInner::UploadingChunk(id, 0, loader);
                         self.poll()
                     },
-                    Err(e) => Err(e),
+                    Err(e) => {
+                        self.status = UploadInner::PreInit;
+                        Err(e)
+                    },
                 }
             },
             UploadInner::UploadingChunk(id, chunk_idx, mut upload) => {
@@ -395,35 +422,51 @@ impl<'a> Future for UploadFuture<'a> {
                             self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
                         } else {
                             let loader = self.finalize(id);
-                            self.status = UploadInner::Finalizing(loader);
+                            self.status = UploadInner::Finalizing(id, loader);
                         }
 
                         self.poll()
                     },
-                    Err(e) => Err(e),
+                    Err(e) => {
+                        self.status = UploadInner::FailedChunk(id, chunk_idx);
+                        Err(e)
+                    },
                 }
             },
-            UploadInner::Finalizing(mut finalize) => {
+            UploadInner::FailedChunk(id, chunk_idx) => {
+                if Instant::now() >= self.timeout {
+                    //we've timed out, restart the upload
+                    self.status = UploadInner::PreInit;
+                    self.poll()
+                } else if let Some(upload) = self.append(chunk_idx, id) {
+                    self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
+                    self.poll()
+                } else {
+                    //this... should never happen? the FailedChunk status means that this specific
+                    //id/index should have yielded a chunk before. However, instead of panicking,
+                    //i'll just invalidate the future
+                    Err(error::Error::FutureAlreadyCompleted)
+                }
+            },
+            UploadInner::Finalizing(id, mut finalize) => {
                 match finalize.poll() {
                     Ok(Async::NotReady) => {
-                        self.status = UploadInner::Finalizing(finalize);
+                        self.status = UploadInner::Finalizing(id, finalize);
                         Ok(Async::NotReady)
                     },
                     Ok(Async::Ready(media)) => {
                         if media.progress.is_none() || media.progress == Some(ProgressInfo::Success) {
                             let media = media.response.into_handle();
-                            if let Some(alt_text) = self.alt_text.take() {
-                                let id = media.media_id;
-                                self.status = UploadInner::Metadata(media,
-                                                                    self.metadata(id,
-                                                                                  alt_text));
+                            let loader = self.alt_text.as_ref().map(|txt| self.metadata(id, txt));
+                            if let Some(loader) = loader {
+                                self.status = UploadInner::Metadata(media, loader);
                                 return self.poll();
                             } else {
                                 return Ok(Async::Ready(media));
                             }
                         }
 
-                        match media.progress {
+                        match media.response.progress {
                             Some(ProgressInfo::Pending(time)) |
                                 Some(ProgressInfo::InProgress(time)) =>
                             {
@@ -431,13 +474,26 @@ impl<'a> Future for UploadFuture<'a> {
                                 self.status = UploadInner::PostProcessing(media.id, timer);
                                 self.poll()
                             },
-                            Some(ProgressInfo::Failed(ref err)) =>
-                                Err(error::Error::MediaError(err.clone())),
+                            Some(ProgressInfo::Failed(err)) =>
+                                Err(error::Error::MediaError(err)),
                             None | Some(ProgressInfo::Success) => unreachable!(),
                         }
                     },
-                    Err(e) => Err(e),
+                    Err(e) => {
+                        self.status = UploadInner::FailedFinalize(id);
+                        Err(e)
+                    },
                 }
+            },
+            UploadInner::FailedFinalize(id) => {
+                if Instant::now() >= self.timeout {
+                    //we've timed out, restart the upload
+                    self.status = UploadInner::PreInit;
+                } else {
+                    let finalize = self.finalize(id);
+                    self.status = UploadInner::Finalizing(id, finalize);
+                }
+                self.poll()
             },
             UploadInner::PostProcessing(id, mut timer) => {
                 match timer.poll() {
@@ -447,9 +503,11 @@ impl<'a> Future for UploadFuture<'a> {
                     },
                     Ok(Async::Ready(())) => {
                         let loader = self.status(id);
-                        self.status = UploadInner::Finalizing(loader);
+                        self.status = UploadInner::Finalizing(id, loader);
                         self.poll()
                     },
+                    //tokio's Timeout will literally never return an error, so don't bother
+                    //rerouting the state here
                     Err(e) => Err(e.into()),
                 }
             },
@@ -462,8 +520,26 @@ impl<'a> Future for UploadFuture<'a> {
                     Ok(Async::Ready(_)) => {
                         Ok(Async::Ready(media))
                     },
-                    Err(e) => Err(e),
+                    Err(e) => {
+                        self.status = UploadInner::FailedMetadata(media);
+                        Err(e)
+                    },
                 }
+            },
+            UploadInner::FailedMetadata(media) => {
+                if Instant::now() >= self.timeout {
+                    //we've timed out, restart the upload
+                    self.status = UploadInner::PreInit;
+                } else if let Some(ref alt_text) = self.alt_text {
+                    let loader = self.metadata(media.media_id, alt_text);
+                    self.status = UploadInner::Metadata(media, loader);
+                } else {
+                    //what... are we even doing here??? if we uploaded metadata then we should
+                    //have had alt text to begin with
+                    return Ok(Async::Ready(media));
+                }
+
+                self.poll()
             },
             UploadInner::Invalid => Err(error::Error::FutureAlreadyCompleted),
         }
