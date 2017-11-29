@@ -17,6 +17,9 @@
   - As `ConversationFuture` holds instances of `direct::Timeline`, it has also become `'static`
 - `tweet::Timeline`'s futures now consume the parent `Timeline` and return it (alongside the chunk
   of posts) upon success. This is a **breaking change**
+- The `text` module has been removed, in favor of a separate `egg-mode-text` crate
+  - This is a **breaking change**, and the updated egg-mode-text has a different signature for
+    `character_count` and `characters_remaining` due to the 280-character update
 
 ## [0.11.0] - 2017-10-16
 ### Changed
