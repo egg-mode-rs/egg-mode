@@ -140,7 +140,7 @@ impl FromJson for RawMedia {
 
 /// Represents the kinda of media that Twitter will accept.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum MediaCategory {
+enum MediaCategory {
     /// Static image. Four can be attached to a single tweet.
     Image,
     /// Animated GIF.
@@ -167,7 +167,7 @@ pub struct UploadBuilder<'a> {
     data: Cow<'a, [u8]>,
     media_type: mime::Mime,
     chunk_size: Option<usize>,
-    category: Option<MediaCategory>,
+    category: MediaCategory,
     alt_text: Option<Cow<'a, str>>,
 }
 
@@ -179,11 +179,18 @@ impl<'a> UploadBuilder<'a> {
     ///
     /// [`media_types`]: media_types/index.html
     pub fn new<V: Into<Cow<'a, [u8]>>>(data: V, media_type: mime::Mime) -> UploadBuilder<'a> {
+        let category = if media_type == media_types::image_gif() {
+            MediaCategory::Gif
+        } else if media_type == media_types::video_mp4() {
+            MediaCategory::Video
+        } else {
+            MediaCategory::Image
+        };
         UploadBuilder {
             data: data.into(),
             media_type,
             chunk_size: None,
-            category: None,
+            category,
             alt_text: None,
         }
     }
@@ -192,15 +199,6 @@ impl<'a> UploadBuilder<'a> {
     pub fn chunk_size(self, chunk_size: usize) -> Self {
         UploadBuilder {
             chunk_size: Some(chunk_size),
-            ..self
-        }
-    }
-
-    /// Sets the `media_category` sent to Twitter. When unset, it behaves as if you sent
-    /// `MediaCategory::Image`.
-    pub fn category(self, category: MediaCategory) -> Self {
-        UploadBuilder {
-            category: Some(category),
             ..self
         }
     }
@@ -234,7 +232,7 @@ impl<'a> UploadBuilder<'a> {
 pub struct UploadFuture<'a> {
     data: Cow<'a, [u8]>,
     media_type: mime::Mime,
-    media_category: Option<MediaCategory>,
+    media_category: MediaCategory,
     timeout: Instant,
     token: auth::Token,
     handle: Handle,
@@ -287,10 +285,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "command", "INIT");
         add_param(&mut params, "total_bytes", self.data.len().to_string());
         add_param(&mut params, "media_type", self.media_type.to_string());
-
-        if let Some(category) = self.media_category {
-            add_param(&mut params, "media_category", category.to_string());
-        }
+        add_param(&mut params, "media_category", self.media_category.to_string());
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
         make_parsed_future(&self.handle, req)
