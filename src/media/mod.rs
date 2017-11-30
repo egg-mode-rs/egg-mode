@@ -8,6 +8,8 @@
 
 use std::borrow::Cow;
 use std::collections::{HashMap, BTreeMap};
+use std::error::Error as StdError;
+use std::fmt;
 use std::time::{Instant, Duration};
 
 use futures::{Future, Async, Poll};
@@ -379,8 +381,7 @@ impl<'a> UploadFuture<'a> {
 
 impl<'a> Future for UploadFuture<'a> {
     type Item = MediaHandle;
-    //TODO: give UploadFuture its own error type, that states which portion of upload it failed in
-    type Error = error::Error;
+    type Error = UploadError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         use std::mem::replace;
@@ -406,7 +407,7 @@ impl<'a> Future for UploadFuture<'a> {
                     },
                     Err(e) => {
                         self.status = UploadInner::PreInit;
-                        Err(e)
+                        Err(UploadError::initialize(e))
                     },
                 }
             },
@@ -429,7 +430,7 @@ impl<'a> Future for UploadFuture<'a> {
                     },
                     Err(e) => {
                         self.status = UploadInner::FailedChunk(id, chunk_idx);
-                        Err(e)
+                        Err(UploadError::chunk(self.timeout, e))
                     },
                 }
             },
@@ -445,7 +446,7 @@ impl<'a> Future for UploadFuture<'a> {
                     //this... should never happen? the FailedChunk status means that this specific
                     //id/index should have yielded a chunk before. However, instead of panicking,
                     //i'll just invalidate the future
-                    Err(error::Error::FutureAlreadyCompleted)
+                    Err(UploadError::complete())
                 }
             },
             UploadInner::Finalizing(id, mut finalize) => {
@@ -457,6 +458,7 @@ impl<'a> Future for UploadFuture<'a> {
                     Ok(Async::Ready(media)) => {
                         if media.progress.is_none() || media.progress == Some(ProgressInfo::Success) {
                             let media = media.response.into_handle();
+                            self.timeout = media.valid_until;
                             let loader = self.alt_text.as_ref().map(|txt| self.metadata(id, txt));
                             if let Some(loader) = loader {
                                 self.status = UploadInner::Metadata(media, loader);
@@ -470,18 +472,24 @@ impl<'a> Future for UploadFuture<'a> {
                             Some(ProgressInfo::Pending(time)) |
                                 Some(ProgressInfo::InProgress(time)) =>
                             {
-                                let timer = try!(Timeout::new(Duration::from_secs(time), &self.handle));
+                                self.timeout = Instant::now() + Duration::from_secs(media.expires_after);
+                                let timer = match Timeout::new(Duration::from_secs(time), &self.handle) {
+                                    Ok(timer) => timer,
+                                    //this error will occur if the Core has been dropped
+                                    Err(e) => return Err(UploadError::finalize(self.timeout, e.into())),
+                                };
                                 self.status = UploadInner::PostProcessing(media.id, timer);
                                 self.poll()
                             },
                             Some(ProgressInfo::Failed(err)) =>
-                                Err(error::Error::MediaError(err)),
+                                Err(UploadError::finalize(self.timeout,
+                                                          error::Error::MediaError(err))),
                             None | Some(ProgressInfo::Success) => unreachable!(),
                         }
                     },
                     Err(e) => {
                         self.status = UploadInner::FailedFinalize(id);
-                        Err(e)
+                        Err(UploadError::finalize(self.timeout, e))
                     },
                 }
             },
@@ -508,7 +516,7 @@ impl<'a> Future for UploadFuture<'a> {
                     },
                     //tokio's Timeout will literally never return an error, so don't bother
                     //rerouting the state here
-                    Err(e) => Err(e.into()),
+                    Err(e) => Err(UploadError::finalize(self.timeout, e.into())),
                 }
             },
             UploadInner::Metadata(media, mut loader) => {
@@ -522,7 +530,7 @@ impl<'a> Future for UploadFuture<'a> {
                     },
                     Err(e) => {
                         self.status = UploadInner::FailedMetadata(media);
-                        Err(e)
+                        Err(UploadError::metadata(self.timeout, e))
                     },
                 }
             },
@@ -541,8 +549,103 @@ impl<'a> Future for UploadFuture<'a> {
 
                 self.poll()
             },
-            UploadInner::Invalid => Err(error::Error::FutureAlreadyCompleted),
+            UploadInner::Invalid => Err(UploadError::complete()),
         }
+    }
+}
+
+/// An error wrapper for `UploadFuture`, noting what stage of the upload an error occurred at.
+#[derive(Debug)]
+pub struct UploadError {
+    /// The stage of upload that the error occurred at.
+    pub state: UploadState,
+    /// The time when the `UploadFuture` will no longer be valid.
+    ///
+    /// Since Twitter only allows upload sessions to be open for a limited time period,
+    /// `UploadFuture` will automatically restart upload sessions if it detects that the timeout
+    /// has elapsed after a previous error. Note that even completed upload sessions have a timeout
+    /// for how long the ID can be used to attach the media, which is also reflected here if
+    /// `state` is `Metadata`.
+    ///
+    /// Note that if `state` is `Initialize`, this field doesn't apply, and is set to a dummy value
+    /// (specifically `Instant::now()`).
+    pub timeout: Instant,
+    /// The error that occurred in `UploadFuture`.
+    pub error: error::Error,
+}
+
+impl UploadError {
+    fn initialize(error: error::Error) -> UploadError {
+        UploadError {
+            state: UploadState::Initialize,
+            timeout: Instant::now(),
+            error: error,
+        }
+    }
+
+    fn chunk(timeout: Instant, error: error::Error) -> UploadError {
+        UploadError {
+            state: UploadState::ChunkUpload,
+            timeout: timeout,
+            error: error,
+        }
+    }
+
+    fn finalize(timeout: Instant, error: error::Error) -> UploadError {
+        UploadError {
+            state: UploadState::Finalize,
+            timeout: timeout,
+            error: error,
+        }
+    }
+
+    fn metadata(timeout: Instant, error: error::Error) -> UploadError {
+        UploadError {
+            state: UploadState::Metadata,
+            timeout: timeout,
+            error: error,
+        }
+    }
+
+    fn complete() -> UploadError {
+        UploadError {
+            state: UploadState::Complete,
+            timeout: Instant::now(),
+            error: error::Error::FutureAlreadyCompleted,
+        }
+    }
+}
+
+/// Represents the status of an `UploadFuture` when it encountered an error.
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum UploadState {
+    /// The `UploadFuture` was trying to initialize the upload session.
+    Initialize,
+    /// The `UploadFuture` was trying to upload a chunk of the media file.
+    ChunkUpload,
+    /// The `UploadFuture` was trying to finalize the upload session.
+    Finalize,
+    /// The `UploadFuture` was trying to apply alt-text metadata to the media after finalizing the
+    /// upload session.
+    Metadata,
+    /// The `UploadFuture` was fully completed, or previously encountered an error that dropped it
+    /// out of the upload process.
+    Complete,
+}
+
+impl fmt::Display for UploadError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Upload error during {:?}: \"{}\"", self.state, self.error)
+    }
+}
+
+impl StdError for UploadError {
+    fn description(&self) -> &str {
+        "error occurred while uploading media"
+    }
+
+    fn cause(&self) -> Option<&StdError> {
+        Some(&self.error)
     }
 }
 
