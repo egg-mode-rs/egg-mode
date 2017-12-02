@@ -209,8 +209,7 @@ pub fn codepoints_to_bytes(&mut (ref mut start, ref mut end): &mut (usize, usize
     for (ch_offset, (by_offset, _)) in text.char_indices().enumerate() {
         if ch_offset == *start {
             *start = by_offset;
-        }
-        else if ch_offset == *end {
+        } else if ch_offset == *end {
             *end = by_offset;
         }
     }
@@ -255,8 +254,7 @@ impl<Iter, Fun> Iterator for MergeBy<Iter, Fun>
 
         if is_left {
             self.left.next()
-        }
-        else {
+        } else {
             self.right.next()
         }
     }
@@ -279,8 +277,7 @@ pub fn max_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
         (Some(left), Some(right)) => {
             if left >= right {
                 Some(left)
-            }
-            else {
+            } else {
                 Some(right)
             }
         },
@@ -294,8 +291,7 @@ pub fn min_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
         (Some(left), Some(right)) => {
             if left <= right {
                 Some(left)
-            }
-            else {
+            } else {
                 Some(right)
             }
         },

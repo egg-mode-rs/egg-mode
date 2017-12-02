@@ -16,8 +16,7 @@ macro_rules! field_present {
         {
             if $input.find(stringify!($field)).is_none() {
                 return Err(::error::Error::MissingValue(stringify!($field)));
-            }
-            else if let Some(val) = $input.find(stringify!($field)) {
+            } else if let Some(val) = $input.find(stringify!($field)) {
                 if val.is_null() {
                     return Err(::error::Error::MissingValue(stringify!($field)));
                 }

@@ -39,8 +39,7 @@ pub fn retweets_of(id: u64, count: u32, token: &auth::Token, handle: &Handle)
 
     if count == 0 || count > 100 {
         add_param(&mut params, "count", 100.to_string());
-    }
-    else {
+    } else {
         add_param(&mut params, "count", count.to_string());
     }
 
@@ -123,8 +122,7 @@ pub fn lookup_map<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle
                                                                     Some(key.to_string())))));
             if val.is_null() {
                 map.insert(id, None);
-            }
-            else {
+            } else {
                 let tweet = try!(Tweet::from_json(&val));
                 map.insert(id, Some(tweet));
             }

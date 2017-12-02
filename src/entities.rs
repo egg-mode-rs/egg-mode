@@ -257,18 +257,14 @@ impl FromJson for MediaType {
         if let Some(s) = input.as_string() {
             if s == "photo" {
                 Ok(MediaType::Photo)
-            }
-            else if s == "video" {
+            } else if s == "video" {
                 Ok(MediaType::Video)
-            }
-            else if s == "animated_gif" {
+            } else if s == "animated_gif" {
                 Ok(MediaType::Gif)
-            }
-            else {
+            } else {
                 Err(InvalidResponse("unexpected string for MediaType", Some(s.to_string())))
             }
-        }
-        else {
+        } else {
             Err(InvalidResponse("MediaType received json that wasn't a string", Some(input.to_string())))
         }
     }
@@ -279,15 +275,12 @@ impl FromJson for ResizeMode {
         if let Some(s) = input.as_string() {
             if s == "fit" {
                 Ok(ResizeMode::Fit)
-            }
-            else if s == "crop" {
+            } else if s == "crop" {
                 Ok(ResizeMode::Crop)
-            }
-            else {
+            } else {
                 Err(InvalidResponse("unexpected string for ResizeMode", Some(s.to_string())))
             }
-        }
-        else {
+        } else {
             Err(InvalidResponse("ResizeMode received json that wasn't an object", Some(input.to_string())))
         }
     }
@@ -346,15 +339,13 @@ impl FromJson for UrlEntity {
 
         let display_url = if (|| { field_present!(input, display_url); Ok(()) })().is_ok() {
             try!(field(input, "display_url"))
-        }
-        else {
+        } else {
             url.clone()
         };
 
         let expanded_url = if (|| { field_present!(input, expanded_url); Ok(()) })().is_ok() {
             try!(field(input, "expanded_url"))
-        }
-        else {
+        } else {
             url.clone()
         };
 

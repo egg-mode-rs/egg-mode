@@ -654,11 +654,9 @@ impl<'a> Stream for UserSearch<'a> {
         if let Some(ref mut results) = self.current_results {
             if let Some(user) = results.next() {
                 return Ok(Async::Ready(Some(user)));
-            }
-            else if (results.len() as i32) < self.page_size {
+            } else if (results.len() as i32) < self.page_size {
                 return Ok(Async::Ready(None));
-            }
-            else {
+            } else {
                 self.page_num += 1;
             }
         }
@@ -696,8 +694,7 @@ impl FromJson for Relationship {
                 target: try!(field(relation, "target")),
                 source: try!(field(relation, "source")),
             })
-        }
-        else {
+        } else {
             Err(error::Error::MissingValue("relationship"))
         }
     }
@@ -877,8 +874,7 @@ impl FromJson for Connection {
                 "muting" => Ok(Connection::Muting),
                 _ => Err(InvalidResponse("unexpected string for Connection", Some(text.to_string()))),
             }
-        }
-        else {
+        } else {
             Err(InvalidResponse("Connection received json that wasn't a string", Some(input.to_string())))
         }
     }

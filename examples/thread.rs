@@ -58,8 +58,7 @@ fn main() {
             let parent = core.run(tweet::show(id, &c.token, &handle)).unwrap();
             thread_ids.insert(parent.id);
             thread.push_front(parent.response);
-        }
-        else {
+        } else {
             break;
         }
     }

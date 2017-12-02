@@ -59,8 +59,7 @@ fn print_user(user: &user::TwitterUser) {
     println!("Follows {}, followed by {}", user.friends_count, user.followers_count);
     if let Some(ref desc) = user.description {
         println!("{}", desc);
-    }
-    else {
+    } else {
         println!("(no description provided)");
     }
     match (&user.location, &user.url) {

@@ -267,8 +267,7 @@ impl<'a> ListUpdate<'a> {
         if let Some(public) = self.public {
             if public {
                 add_param(&mut params, "mode", "public");
-            }
-            else {
+            } else {
                 add_param(&mut params, "mode", "private");
             }
         }
