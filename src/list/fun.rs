@@ -141,8 +141,7 @@ pub fn is_subscribed<'id, T: Into<UserID<'id>>>(user: T,
                     //rate_headers method was factored out specifically for this location, since it's
                     //still there, just accompanying an error response instead of a user.
                     Ok(Response::map(rate_headers(headers), |_| false))
-                }
-                else {
+                } else {
                     Err(TwitterError(terrs))
                 }
             },
@@ -179,8 +178,7 @@ pub fn is_member<'id, T: Into<UserID<'id>>>(user: T,
                     //rate_headers method was factored out specifically for this location, since it's
                     //still there, just accompanying an error response instead of a user.
                     Ok(Response::map(rate_headers(headers), |_| false))
-                }
-                else {
+                } else {
                     Err(TwitterError(terrs))
                 }
             },
@@ -323,8 +321,7 @@ pub fn create(name: &str, public: bool, desc: Option<&str>, token: &auth::Token,
     add_param(&mut params, "name", name);
     if public {
         add_param(&mut params, "mode", "public");
-    }
-    else {
+    } else {
         add_param(&mut params, "mode", "private");
     }
     if let Some(desc) = desc {

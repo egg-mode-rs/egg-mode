@@ -325,8 +325,7 @@ impl<'a, T> CursorIter<'a, T>
                 iter: None,
                 ..self
             }
-        }
-        else {
+        } else {
             self
         }
     }

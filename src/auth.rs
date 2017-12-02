@@ -467,8 +467,9 @@ pub fn get(uri: &str,
                      .join("&");
 
         format!("{}?{}", uri, query)
-    }
-    else { uri.to_string() };
+    } else {
+        uri.to_string()
+    };
 
     let mut request: Request = Request::new(Method::Get, full_url.parse().unwrap());
     match *token {
@@ -498,8 +499,9 @@ pub fn post(uri: &str,
          .map(|(k, v)| format!("{}={}", k, percent_encode(v)))
          .collect::<Vec<_>>()
          .join("&")
-    }
-    else { "".to_string() };
+    } else {
+        "".to_string()
+    };
 
     let mut request: Request = Request::new(Method::Post, uri.parse().unwrap());
     request.set_body(body);
@@ -829,8 +831,7 @@ impl Future for AuthFuture {
                 },
                 try!(id.ok_or(error::Error::MissingValue("user_id"))),
                 try!(username.ok_or(error::Error::MissingValue("screen_name"))))))
-        }
-        else {
+        } else {
             Err(error::Error::FutureAlreadyCompleted)
         }
     }
@@ -898,8 +899,7 @@ pub fn invalidate_bearer(handle: &Handle, con_token: &KeyPair, token: &Token)
 {
     let token = if let Token::Bearer(ref token) = *token {
         token
-    }
-    else {
+    } else {
         panic!("non-bearer token passed to invalidate_bearer");
     };
 

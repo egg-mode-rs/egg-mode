@@ -297,8 +297,7 @@ impl<'a> SearchResult<'a> {
 
         if let Some(min_id) = self.statuses.iter().map(|t| t.id).min() {
             add_param(&mut params, "max_id", (min_id - 1).to_string());
-        }
-        else {
+        } else {
             params.remove("max_id");
         }
 
@@ -317,8 +316,7 @@ impl<'a> SearchResult<'a> {
 
         if let Some(max_id) = self.statuses.iter().map(|t| t.id).max() {
             add_param(&mut params, "since_id", max_id.to_string());
-        }
-        else {
+        } else {
             params.remove("since_id");
         }
 

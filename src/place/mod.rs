@@ -368,24 +368,18 @@ impl FromJson for PlaceType {
         if let Some(s) = input.as_string() {
             if s == "poi" {
                 Ok(PlaceType::Point)
-            }
-            else if s == "neighborhood" {
+            } else if s == "neighborhood" {
                 Ok(PlaceType::Neighborhood)
-            }
-            else if s == "city" {
+            } else if s == "city" {
                 Ok(PlaceType::City)
-            }
-            else if s == "admin" {
+            } else if s == "admin" {
                 Ok(PlaceType::Admin)
-            }
-            else if s == "country" {
+            } else if s == "country" {
                 Ok(PlaceType::Country)
-            }
-            else {
+            } else {
                 Err(InvalidResponse("unexpected string for PlaceType", Some(input.to_string())))
             }
-        }
-        else {
+        } else {
             Err(InvalidResponse("PlaceType received json that wasn't a string", Some(input.to_string())))
         }
     }
@@ -406,13 +400,11 @@ impl FromJson for Place {
                 }
 
                 attributes
-            }
-            else {
+            } else {
                 return Err(InvalidResponse("Place.attributes received json that wasn't an object",
                                            Some(json.to_string())));
             }
-        }
-        else {
+        } else {
             return Err(MissingValue("attributes"));
         };
 
@@ -421,8 +413,7 @@ impl FromJson for Place {
             let parsed = try!(<Vec<Vec<(f64, f64)>>>::from_json(vec));
             try!(parsed.into_iter().next().ok_or_else(|| InvalidResponse("Place.bounding_box received an empty array",
                                                                          Some(vec.to_string()))))
-        }
-        else {
+        } else {
             return Err(MissingValue("bounding_box"));
         };
 

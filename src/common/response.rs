@@ -142,8 +142,7 @@ impl<'a, T> Iterator for ResponseIterRef<'a, T> where T: 'a {
                 rate_limit_reset: self.rate_limit_reset,
                 response: resp,
             })
-        }
-        else {
+        } else {
             None
         }
     }
@@ -162,8 +161,7 @@ impl<'a, T> DoubleEndedIterator for ResponseIterRef<'a, T> where T: 'a {
                 rate_limit_reset: self.rate_limit_reset,
                 response: resp,
             })
-        }
-        else {
+        } else {
             None
         }
     }
@@ -207,8 +205,7 @@ impl<'a, T> Iterator for ResponseIterMut<'a, T> where T: 'a {
                 rate_limit_reset: self.rate_limit_reset,
                 response: resp,
             })
-        }
-        else {
+        } else {
             None
         }
     }
@@ -227,8 +224,7 @@ impl<'a, T> DoubleEndedIterator for ResponseIterMut<'a, T> where T: 'a {
                 rate_limit_reset: self.rate_limit_reset,
                 response: resp,
             })
-        }
-        else {
+        } else {
             None
         }
     }
@@ -274,8 +270,7 @@ impl<T> Iterator for ResponseIter<T> {
                 rate_limit_reset: self.rate_limit_reset,
                 response: resp,
             })
-        }
-        else {
+        } else {
             None
         }
     }
@@ -294,8 +289,7 @@ impl<T> DoubleEndedIterator for ResponseIter<T> {
                 rate_limit_reset: self.rate_limit_reset,
                 response: resp,
             })
-        }
-        else {
+        } else {
             None
         }
     }
@@ -341,8 +335,7 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
                 resp.rate_limit = item.rate_limit;
                 resp.rate_limit_remaining = item.rate_limit_remaining;
                 resp.rate_limit_reset = item.rate_limit_reset;
-            }
-            else if (item.rate_limit_reset == resp.rate_limit_reset) &&
+            } else if (item.rate_limit_reset == resp.rate_limit_reset) &&
                     (item.rate_limit_remaining < resp.rate_limit_remaining) {
                 resp.rate_limit = item.rate_limit;
                 resp.rate_limit_remaining = item.rate_limit_remaining;
@@ -421,8 +414,7 @@ impl Future for RawFuture {
                     }
                 }
             }
-        }
-        else {
+        } else {
             return Err(FutureAlreadyCompleted);
         };
 
@@ -439,8 +431,7 @@ impl Future for RawFuture {
                                 self.headers().get::<XRateLimitReset>().map(|h| h.0).unwrap()
                             )
                         );
-                    }
-                    else {
+                    } else {
                         return Err(TwitterError(err));
                     }
                 }

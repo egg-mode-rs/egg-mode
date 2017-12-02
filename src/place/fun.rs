@@ -67,8 +67,7 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
         if base_part != base {
             return Err(BadUrl);
         }
-    }
-    else {
+    } else {
         return Err(BadUrl);
     }
 
@@ -85,8 +84,7 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
         }
 
         Ok(p)
-    }
-    else {
+    } else {
         Err(BadUrl)
     }
 }

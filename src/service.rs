@@ -241,8 +241,7 @@ impl FromJson for RateLimitStatus {
                     };
                 }
             }
-        }
-        else {
+        } else {
             return Err(InvalidResponse("RateLimitStatus field 'resources' wasn't an object",
                                        Some(input.to_string())));
         }
