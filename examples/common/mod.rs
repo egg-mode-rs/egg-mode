@@ -61,12 +61,10 @@ impl Config {
                 println!("We've hit an error using your old tokens: {:?}", err);
                 println!("We'll have to reauthenticate before continuing.");
                 std::fs::remove_file("twitter_settings").unwrap();
-            }
-            else {
+            } else {
                 println!("Welcome back, {}!", username);
             }
-        }
-        else {
+        } else {
             let request_token = core.run(egg_mode::request_token(&con_token, "oob", &handle)).unwrap();
 
             println!("Go to the following URL, sign in, and give me the PIN that comes back:");
@@ -108,8 +106,7 @@ impl Config {
                 user_id: user_id,
                 screen_name: username,
             }
-        }
-        else {
+        } else {
             Self::load(core)
         }
     }
@@ -130,8 +127,7 @@ pub fn print_tweet(tweet: &egg_mode::tweet::Tweet) {
         }
         print_tweet(status);
         return;
-    }
-    else {
+    } else {
         println!("{}", tweet.text);
     }
 

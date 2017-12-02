@@ -244,8 +244,7 @@ impl FromJson for Tweet {
 
         let coords: Option<(f64, f64)> = if let Some(geo) = input.find("coordinates") {
             try!(field(geo, "coordinates"))
-        }
-        else {
+        } else {
             None
         };
 
@@ -332,8 +331,7 @@ fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Optio
             Some(id) => Ok(Some(id)),
             None => Err(InvalidResponse("invalid structure inside current_user_retweet", None)),
         }
-    }
-    else {
+    } else {
         Ok(None)
     }
 }
@@ -374,15 +372,13 @@ impl FromJson for TweetSource {
 
         let url = if let Some(cap) = RE_URL.captures(full) {
             cap.expand("$1")
-        }
-        else {
+        } else {
             return Err(InvalidResponse("TweetSource had no link href", Some(full.to_string())));
         };
 
         let name = if let Some(cap) = RE_NAME.captures(full) {
             cap.expand("$1")
-        }
-        else {
+        } else {
             return Err(InvalidResponse("TweetSource had no link text", Some(full.to_string())));
         };
 

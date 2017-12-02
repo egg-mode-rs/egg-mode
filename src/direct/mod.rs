@@ -442,8 +442,7 @@ fn merge(this: &mut DMConversations, conversations: DMConversations) {
         {
             messages.extend(old_convo);
             messages.extend(convo);
-        }
-        else {
+        } else {
             messages.extend(convo);
             messages.extend(old_convo);
         }
@@ -551,8 +550,7 @@ impl ConversationTimeline {
             for msg in merge_by(sent, received, |left, right| left.id > right.id) {
                 let recipient = if msg.sender_id == me_id {
                     msg.recipient_id
-                }
-                else {
+                } else {
                     msg.sender_id
                 };
 
