@@ -756,6 +756,7 @@ pub struct DraftTweet<'a> {
     ///List of media entities associated with tweet.
     ///
     ///It can be up to 4 images or 1 GIF/video.
+    //TODO: this shouldn't be a Cow, make it an array instead
     pub media_ids: Option<Cow<'a, [u64]>>,
     ///States whether the media attached with `media_ids` should be labeled as "possibly
     ///sensitive", to mask the image by default.

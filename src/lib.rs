@@ -110,6 +110,8 @@
 //!   or received, or by sending new ones.
 //! * `list`: This module lets you act on lists, from creating and deleting them, adding and
 //!   removing users, or loading the posts made by their members.
+//! * `media`: This module lets you upload images, GIFs, and videos to Twitter so you can attach
+//!   them to tweets.
 //!
 //! ## Secondary actions
 //!

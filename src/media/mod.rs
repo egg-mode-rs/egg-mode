@@ -2,9 +2,39 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-//!Media module
+//! Functionality to upload images, GIFs, and videos that can be attached to tweets.
 //!
-//!Provides functionality to upload images, GIFs and videos using Twitter Media API
+//! Tweet media is uploaded separately from the act of posting the tweet itself. In order to attach
+//! an image to a new tweet, you need to upload it first, then take the Media ID that Twitter
+//! generates and reference that when posting the tweet. The way this works in egg-mode is to
+//! create an [`UploadBuilder`] and turn that into an [`UploadFuture`], which manages the upload
+//! process.
+//!
+//! [`UploadBuilder`]: struct.UploadBuilder.html
+//! [`UploadFuture`]: struct.UploadFuture.html
+//!
+//! For example, here's a basic use of `UploadFuture` to upload an image, then attach it to a
+//! tweet:
+//!
+//! ```rust,no_run
+//! # extern crate egg_mode; extern crate tokio_core; extern crate futures;
+//! # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+//! # fn main() {
+//! # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+//! use egg_mode::media::{UploadBuilder, media_types};
+//! use egg_mode::tweet::DraftTweet;
+//!
+//! let image = vec![]; //pretend we loaded an image file into this
+//! let builder = UploadBuilder::new(image, media_types::image_png());
+//! let media_handle = core.run(builder.call(&token, &handle)).unwrap();
+//!
+//! let draft = DraftTweet::new("Hey, check out this cute cat!")
+//!                        .media_ids(vec![media_handle.id]);
+//! let tweet = core.run(draft.send(&token, &handle)).unwrap();
+//! # }
+//! ```
+//!
+//! For more information, see the [`UploadBuilder`] documentation.
 
 use std::borrow::Cow;
 use std::collections::{HashMap, BTreeMap};
@@ -26,6 +56,16 @@ use auth;
 use mime;
 
 /// A collection of convenience functions that return media types accepted by Twitter.
+///
+/// These are convenience types that can be handed to [`UploadBuilder::new`] to set the right media
+/// type of a piece of media. The functions in the module correspond to media types that Twitter is
+/// known to accept.
+///
+/// Note that using `image_gif` and `video_mp4` will automatically set the upload's
+/// `media_category` to `tweet_gif` and `tweet_video` respectively, allowing larger file sizes and
+/// extra processing time.
+///
+/// [`UploadBuilder::new`]: ../struct.UploadBuilder.html#method.new
 pub mod media_types {
     use mime::{self, Mime};
 
@@ -44,7 +84,7 @@ pub mod media_types {
         "image/webp".parse().unwrap()
     }
 
-    /// GIF images, both animated and static.
+    /// Animated GIF images.
     pub fn image_gif() -> Mime {
         mime::IMAGE_GIF
     }
@@ -93,12 +133,18 @@ impl FromJson for ProgressInfo {
 }
 
 /// A media ID returned by twitter upon successful media upload.
+///
+/// To get one of these, start with [`UploadBuilder`]. To use the `id` inside, see
+/// [`DraftTweet::media_ids`].
+///
+/// [`UploadBuilder`]: struct.UploadBuilder.html
+/// [`DraftTweet::media_ids`]: ../tweet/struct.DraftTweet.html#method.media_ids
 #[derive(Copy, Clone, Debug)]
 pub struct MediaHandle {
     /// The numeric ID that can be used to reference the media.
-    pub media_id: u64,
+    pub id: u64,
     /// The time after which the media ID will be rendered unusable from the API. You can use
-    /// `media_id` to attach the media to a tweet while `Instant::now() < handle.valid_until`.
+    /// `id` to attach the media to a tweet while `Instant::now() < handle.valid_until`.
     pub valid_until: Instant,
 }
 
@@ -115,7 +161,7 @@ struct RawMedia {
 impl RawMedia {
     fn into_handle(self) -> MediaHandle {
         MediaHandle {
-            media_id: self.id,
+            id: self.id,
             valid_until: Instant::now() + Duration::from_secs(self.expires_after),
         }
     }
@@ -163,6 +209,35 @@ impl ::std::fmt::Display for MediaCategory {
 }
 
 /// A builder struct that allows you to build up parameters to a media upload before initiating it.
+///
+/// `UploadBuilder` is your entry point to uploading media to Twitter. This allows you to configure
+/// an upload and set the proper metadata, so that when you `call` it to begin the upload proper,
+/// the resulting [`UploadFuture`] can take care of all the underlying details of the upload itself.
+///
+/// [`UploadFuture`]: struct.UploadFuture.html
+///
+/// To begin setting up an upload, call `new` with your data and its media type. (Convenience
+/// functions to create `Mime` instances for types Twitter is known to accept are available in the
+/// [`media_types`] module.) After that, you can configure the upload, and finally start the
+/// process with `call`. A basic example of using `UploadBuilder` to upload an image and attach it
+/// to a Tweet is in [the module documentation].
+///
+/// [`media_types`]: media_types/index.html
+/// [the module documentation]: index.html
+///
+/// To see more precise specifications for what media formats Twitter supports (resolution, file
+/// size, etc), see [their API documentation][media-best-practices]. Note that `UploadBuilder`
+/// automatically sets the underlying `media_category` to `tweet_gif` or `tweet_video` for
+/// `media_type`s of `"image/gif"` and `"video/mp4"` respectively. (Note that these are returned by
+/// [`media_types::image_gif`] and [`media_type::video_mp4`] as a convenience.)
+///
+/// [media-best-practices]: https://developer.twitter.com/en/docs/media/upload-media/uploading-media/media-best-practices
+/// [`media_types::image_gif`]: media_types/fn.image_gif.html
+/// [`media_types::video_mp4`]: media_types/fn.video_mp4.html
+///
+/// The lifetime parameter on `UploadBuilder` and [`UploadFuture`] is based on the data you hand to
+/// `new` and `alt_text`. Because they use `std::borrow::Cow` internally, if you hand them owned
+/// data (`Vec` or `String`), the resulting [`UploadFuture`] will have lifetime `'static`.
 pub struct UploadBuilder<'a> {
     data: Cow<'a, [u8]>,
     media_type: mime::Mime,
@@ -172,7 +247,7 @@ pub struct UploadBuilder<'a> {
 }
 
 impl<'a> UploadBuilder<'a> {
-    /// Begins setting up a media upload call, with the given data and media type.
+    /// Begins setting up a media upload session, with the given data and media type.
     ///
     /// For convenience functions to get known `media_type`s that Twitter will accept, see the
     /// [`media_types`] module.
@@ -196,6 +271,12 @@ impl<'a> UploadBuilder<'a> {
     }
 
     /// Sets how many bytes to upload in one network call. By default this is set to 512 KiB.
+    ///
+    /// `UploadFuture` uses Twitter's chunked media upload under-the-hood, and this allows you to
+    /// set the size of each chunk. This is useful for noting how often a connection is
+    /// re-negotiated, but also for when the upload can be retried, as `UploadFuture` allows you to
+    /// retry on failure. Note that once `call` is invoked to turn `UploadBuiler` into
+    /// `UploadFuture`, the chunk size cannot be changed.
     pub fn chunk_size(self, chunk_size: usize) -> Self {
         UploadBuilder {
             chunk_size: Some(chunk_size),
@@ -211,7 +292,7 @@ impl<'a> UploadBuilder<'a> {
         }
     }
 
-    /// Collects the built-up parameters and begins the chunked upload.
+    /// Collects the built-up parameters and begins the upload process.
     pub fn call(self, token: &auth::Token, handle: &Handle) -> UploadFuture<'a> {
         UploadFuture {
             data: self.data,
@@ -228,6 +309,49 @@ impl<'a> UploadBuilder<'a> {
 }
 
 /// A `Future` that represents an in-progress media upload.
+///
+/// This struct is obtained from an [`UploadBuilder`]. See those docs for specifics on creating
+/// one, and [the module docs] for more information on how to upload media in general.
+///
+/// [`UploadBuilder`]: struct.UploadBuilder.html
+/// [the module docs]: index.html
+///
+/// # Errors
+///
+/// Because `UploadFuture` represents a potentially long-running upload, it's set up so that if it
+/// fails at any point in the process, it will retry its last action upon its next `poll`. This
+/// also includes keeping its place in terms of how many chunks it's uploaded so far.
+///
+/// There's a complicating factor for this, though: Twitter only allows an upload session to be
+/// active for a limited time. `UploadFuture` keeps track of when its active session expires, and
+/// restarts the upload if it's `poll`ed from an error state when the time has elapsed. (Note that
+/// it will not check the timeout if it has not just encountered an error. If the last action was a
+/// successful one, it will send off the next action to Twitter, likely receiving an error for
+/// that, after which it will restart the upload.) This timeout is reflected in the [`UploadError`]
+/// it returns in any error case.
+///
+/// [`UploadError`]: struct.UploadError.html
+///
+/// To allow for better handling of individual errors and better retry logic, the [`UploadError`]
+/// also includes a mention of which state the `UploadFuture` was in before encountering the error.
+/// If the Future was attempting to upload an individual chunk, or finalizing the upload session,
+/// and the Future encountered a network error, it should be safe to retry the Future if network
+/// conditions improve before the timeout elapses. (The precise [`Error`] which was encountered is
+/// also included in the returned `UploadError`.)
+///
+/// [`Error`]: ../error/enum.Error.html
+///
+/// (Proper mechanisms for actually integrating retry logic into your application is beyond the
+/// scope of this library. There are dedicated libraries for retry logic, or you can use the
+/// built-in `shared` function on all `Futures`s to get a cloneable handle to a `Future` so you can
+/// keep a handle to send back into an executor. This is all just to say that an `UploadFuture` is
+/// not invalidated when it returns an `Err` from `poll`.)
+///
+/// # Lifetimes
+///
+/// The lifetime parameter to `UploadFuture` is based on the data (and alt text) given to the
+/// `UploadBuilder` that created it. If an owned `Vec` (and either no alt text or an owned
+/// `String`) was given to the `UploadBuilder`, this future will have a `'static` lifetime.
 #[must_use = "futures do nothing unless polled"]
 pub struct UploadFuture<'a> {
     data: Cow<'a, [u8]>,
@@ -439,9 +563,8 @@ impl<'a> Future for UploadFuture<'a> {
                     self.poll()
                 } else {
                     //this... should never happen? the FailedChunk status means that this specific
-                    //id/index should have yielded a chunk before. However, instead of panicking,
-                    //i'll just invalidate the future
-                    Err(UploadError::complete())
+                    //id/index should have yielded a chunk before.
+                    unreachable!()
                 }
             },
             UploadInner::Finalizing(id, mut finalize) => {
@@ -470,15 +593,18 @@ impl<'a> Future for UploadFuture<'a> {
                                 self.timeout = Instant::now() + Duration::from_secs(media.expires_after);
                                 let timer = match Timeout::new(Duration::from_secs(time), &self.handle) {
                                     Ok(timer) => timer,
-                                    //this error will occur if the Core has been dropped
+                                    //this error will occur if the Core has been dropped - there's
+                                    //no reason to set the state back at this point
                                     Err(e) => return Err(UploadError::finalize(self.timeout, e.into())),
                                 };
                                 self.status = UploadInner::PostProcessing(media.id, timer);
                                 self.poll()
                             },
-                            Some(ProgressInfo::Failed(err)) =>
+                            Some(ProgressInfo::Failed(err)) => {
+                                self.status = UploadInner::FailedFinalize(id);
                                 Err(UploadError::finalize(self.timeout,
-                                                          error::Error::MediaError(err))),
+                                                          error::Error::MediaError(err)))
+                            },
                             None | Some(ProgressInfo::Success) => unreachable!(),
                         }
                     },
@@ -534,12 +660,11 @@ impl<'a> Future for UploadFuture<'a> {
                     //we've timed out, restart the upload
                     self.status = UploadInner::PreInit;
                 } else if let Some(ref alt_text) = self.alt_text {
-                    let loader = self.metadata(media.media_id, alt_text);
+                    let loader = self.metadata(media.id, alt_text);
                     self.status = UploadInner::Metadata(media, loader);
                 } else {
-                    //what... are we even doing here??? if we uploaded metadata then we should
-                    //have had alt text to begin with
-                    return Ok(Async::Ready(media));
+                    //if we uploaded metadata then we should have had alt text to begin with
+                    unreachable!();
                 }
 
                 self.poll()
@@ -550,6 +675,12 @@ impl<'a> Future for UploadFuture<'a> {
 }
 
 /// An error wrapper for `UploadFuture`, noting what stage of the upload an error occurred at.
+///
+/// Since [`UploadFuture`] can retry its last action after an error, the error it returns includes
+/// additional information to allow for smarter retry logic if necessary. See the [`UploadFuture`]
+/// documentation for more details.
+///
+/// [`UploadFuture`]: struct.UploadFuture.html
 #[derive(Debug)]
 pub struct UploadError {
     /// The stage of upload that the error occurred at.
@@ -562,8 +693,8 @@ pub struct UploadError {
     /// for how long the ID can be used to attach the media, which is also reflected here if
     /// `state` is `Metadata`.
     ///
-    /// Note that if `state` is `Initialize`, this field doesn't apply, and is set to a dummy value
-    /// (specifically `Instant::now()`).
+    /// Note that if `state` is `Initialize` or `Complete`, this field is invalid, and is set to a
+    /// dummy value (specifically `Instant::now()`).
     pub timeout: Instant,
     /// The error that occurred in `UploadFuture`.
     pub error: error::Error,
@@ -612,6 +743,12 @@ impl UploadError {
 }
 
 /// Represents the status of an `UploadFuture` when it encountered an error.
+///
+/// This is a representation of the distinct phases of an [`UploadFuture`], given as part of an
+/// [`UploadError`]. See the [`UploadFuture`] documentation for details.
+///
+/// [`UploadFuture`]: struct.UploadFuture.html
+/// [`UploadError`]: struct.UploadError.html
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum UploadState {
     /// The `UploadFuture` was trying to initialize the upload session.
