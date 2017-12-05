@@ -755,11 +755,16 @@ pub struct DraftTweet<'a> {
     pub place_id: Option<Cow<'a, str>>,
     ///List of media entities associated with tweet.
     ///
-    ///It can be up to 4 images or 1 GIF/video.
-    //TODO: this shouldn't be a Cow, make it an array instead
-    pub media_ids: Option<Cow<'a, [u64]>>,
+    ///A tweet can have one video, one GIF, or up to four images attached to it. When attaching
+    ///them to a tweet, they're represented by a media ID, given through the upload process. (See
+    ///[the `media` module] for more information on how to upload media.)
+    ///
+    ///[the `media` module]: ../media/index.html
+    ///
+    ///`DraftTweet` treats zeros in this array as if the media were not present.
+    pub media_ids: [u64; 4],
     ///States whether the media attached with `media_ids` should be labeled as "possibly
-    ///sensitive", to mask the image by default.
+    ///sensitive", to mask the media by default.
     pub possibly_sensitive: Option<bool>,
 }
 
@@ -775,7 +780,7 @@ impl<'a> DraftTweet<'a> {
             coordinates: None,
             display_coordinates: None,
             place_id: None,
-            media_ids: None,
+            media_ids: [0; 4],
             possibly_sensitive: None,
         }
     }
@@ -861,10 +866,17 @@ impl<'a> DraftTweet<'a> {
         }
     }
 
-    ///Attaches media to tweet.
-    pub fn media_ids<V: Into<Cow<'a, [u64]>>>(self, media_ids: V) -> Self {
+    ///Attaches the given media ID(s) to this tweet. If more than four IDs are in this slice, only
+    ///the first four will be attached. Note that Twitter will only allow one GIF, one video, or up
+    ///to four images to be attached to a single tweet.
+    pub fn media_ids(self, media_ids: &[u64]) -> Self {
         DraftTweet {
-            media_ids: Some(media_ids.into()),
+            media_ids: {
+                let mut ret = [0; 4];
+                let len = ::std::cmp::min(media_ids.len(), 4);
+                ret[..len].copy_from_slice(&media_ids[..len]);
+                ret
+            },
             ..self
         }
     }
@@ -913,9 +925,14 @@ impl<'a> DraftTweet<'a> {
             add_param(&mut params, "place_id", place_id.clone());
         }
 
-        if let Some(ref media_ids) = self.media_ids {
-            let list = media_ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
-            add_param(&mut params, "media_ids", list);
+        let media = self.media_ids
+                        .iter()
+                        .filter(|&&id| id != 0)
+                        .map(|id| id.to_string())
+                        .collect::<Vec<String>>()
+                        .join(",");
+        if !media.is_empty() {
+            add_param(&mut params, "media_ids", media);
         }
 
         if let Some(sensitive) = self.possibly_sensitive {

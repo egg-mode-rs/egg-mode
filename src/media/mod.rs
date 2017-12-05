@@ -29,7 +29,7 @@
 //! let media_handle = core.run(builder.call(&token, &handle)).unwrap();
 //!
 //! let draft = DraftTweet::new("Hey, check out this cute cat!")
-//!                        .media_ids(vec![media_handle.id]);
+//!                        .media_ids(&[media_handle.id]);
 //! let tweet = core.run(draft.send(&token, &handle)).unwrap();
 //! # }
 //! ```
