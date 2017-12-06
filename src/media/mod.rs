@@ -132,7 +132,7 @@ impl FromJson for ProgressInfo {
     }
 }
 
-/// A media ID returned by twitter upon successful media upload.
+/// A media handle returned by twitter upon successful upload.
 ///
 /// To get one of these, start with [`UploadBuilder`]. To use the `id` inside, see
 /// [`DraftTweet::media_ids`].
@@ -141,11 +141,20 @@ impl FromJson for ProgressInfo {
 /// [`DraftTweet::media_ids`]: ../tweet/struct.DraftTweet.html#method.media_ids
 #[derive(Copy, Clone, Debug)]
 pub struct MediaHandle {
-    /// The numeric ID that can be used to reference the media.
+    /// The ID that can be used to reference the media.
     pub id: u64,
-    /// The time after which the media ID will be rendered unusable from the API. You can use
-    /// `id` to attach the media to a tweet while `Instant::now() < handle.valid_until`.
+    /// The time after which the media will be rendered unusable in the twitter API.
     pub valid_until: Instant,
+}
+
+impl MediaHandle {
+    #[inline]
+    /// Returns whether media is still valid to be used in API calls.
+    ///
+    /// Under hood it is `Instant::now() < handle.valid_until`.
+    pub fn is_valid(&self) -> bool {
+        Instant::now() < self.valid_until
+    }
 }
 
 ///Represents media file that is uploaded on twitter.
@@ -208,19 +217,18 @@ impl ::std::fmt::Display for MediaCategory {
     }
 }
 
-/// A builder struct that allows you to build up parameters to a media upload before initiating it.
+/// Represents a media upload before it is sent.
 ///
-/// `UploadBuilder` is your entry point to uploading media to Twitter. This allows you to configure
-/// an upload and set the proper metadata, so that when you `call` it to begin the upload proper,
-/// the resulting [`UploadFuture`] can take care of all the underlying details of the upload itself.
+/// `UploadBuilder` is the entry point to uploading media to Twitter.
+///  It allows you to configure an upload and set the proper metadata.
 ///
 /// [`UploadFuture`]: struct.UploadFuture.html
 ///
 /// To begin setting up an upload, call `new` with your data and its media type. (Convenience
 /// functions to create `Mime` instances for types Twitter is known to accept are available in the
-/// [`media_types`] module.) After that, you can configure the upload, and finally start the
-/// process with `call`. A basic example of using `UploadBuilder` to upload an image and attach it
-/// to a Tweet is in [the module documentation].
+/// [`media_types`] module.) With that, you can configure the upload, and finally start the
+/// process using the `call` method. See a basic example of using `UploadBuilder` to upload an image and attach it
+/// to a Tweet in [the module documentation].
 ///
 /// [`media_types`]: media_types/index.html
 /// [the module documentation]: index.html
@@ -247,7 +255,7 @@ pub struct UploadBuilder<'a> {
 }
 
 impl<'a> UploadBuilder<'a> {
-    /// Begins setting up a media upload session, with the given data and media type.
+    /// Creates a new instance of `UploadBuilder` with the given data and media type.
     ///
     /// For convenience functions to get known `media_type`s that Twitter will accept, see the
     /// [`media_types`] module.
@@ -273,10 +281,11 @@ impl<'a> UploadBuilder<'a> {
     /// Sets how many bytes to upload in one network call. By default this is set to 512 KiB.
     ///
     /// `UploadFuture` uses Twitter's chunked media upload under-the-hood, and this allows you to
-    /// set the size of each chunk. This is useful for noting how often a connection is
-    /// re-negotiated, but also for when the upload can be retried, as `UploadFuture` allows you to
-    /// retry on failure. Note that once `call` is invoked to turn `UploadBuiler` into
-    /// `UploadFuture`, the chunk size cannot be changed.
+    /// set the size of each chunk.
+    /// With a smaller chunk size, Twitter can "save" the data more often.
+    /// However, there's also network overhead, since each chunk needs a separate HTTP request.
+    /// Larger chunk sizes are better for stable network conditions, where you can reasonably expect a large upload to succeed.
+    /// Note that once the `UploadFuture` is created, the chunk size cannot be changed.
     pub fn chunk_size(self, chunk_size: usize) -> Self {
         UploadBuilder {
             chunk_size: Some(chunk_size),
@@ -284,7 +293,7 @@ impl<'a> UploadBuilder<'a> {
         }
     }
 
-    /// Applies the given alt text to an image or GIF when the image finishes uploading.
+    /// Applies the given alt text to the media when the upload is finished.
     pub fn alt_text<S: Into<Cow<'a, str>>>(self, alt_text: S) -> Self {
         UploadBuilder {
             alt_text: Some(alt_text.into()),
@@ -292,7 +301,7 @@ impl<'a> UploadBuilder<'a> {
         }
     }
 
-    /// Collects the built-up parameters and begins the upload process.
+    /// Starts the upload process and returns a `Future` that represents it.
     pub fn call(self, token: &auth::Token, handle: &Handle) -> UploadFuture<'a> {
         UploadFuture {
             data: self.data,
@@ -323,10 +332,10 @@ impl<'a> UploadBuilder<'a> {
 /// also includes keeping its place in terms of how many chunks it's uploaded so far.
 ///
 /// There's a complicating factor for this, though: Twitter only allows an upload session to be
-/// active for a limited time. `UploadFuture` keeps track of when its active session expires, and
+/// active for a limited time. `UploadFuture` keeps track of when the session expires, and
 /// restarts the upload if it's `poll`ed from an error state when the time has elapsed. (Note that
-/// it will not check the timeout if it has not just encountered an error. If the last action was a
-/// successful one, it will send off the next action to Twitter, likely receiving an error for
+/// timeout is checked only in case of errors. If the last action was a successful one,
+/// it will send off the next action to Twitter, likely receiving an error for
 /// that, after which it will restart the upload.) This timeout is reflected in the [`UploadError`]
 /// it returns in any error case.
 ///
@@ -674,7 +683,7 @@ impl<'a> Future for UploadFuture<'a> {
     }
 }
 
-/// An error wrapper for `UploadFuture`, noting what stage of the upload an error occurred at.
+/// A wrapper for `UploadFuture` errors, noting at which stage of the upload the error occurred at.
 ///
 /// Since [`UploadFuture`] can retry its last action after an error, the error it returns includes
 /// additional information to allow for smarter retry logic if necessary. See the [`UploadFuture`]
@@ -742,7 +751,7 @@ impl UploadError {
     }
 }
 
-/// Represents the status of an `UploadFuture` when it encountered an error.
+/// Represents the status of an `UploadFuture`.
 ///
 /// This is a representation of the distinct phases of an [`UploadFuture`], given as part of an
 /// [`UploadError`]. See the [`UploadFuture`] documentation for details.
