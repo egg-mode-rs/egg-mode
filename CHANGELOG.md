@@ -4,6 +4,15 @@
 ### Added
 - `media` module and all its contents, for uploading pictures/video/gifs to Twitter
   - Thanks to @DoumanAsh for the initial implementation!
+  - `UploadBuilder` and `UploadFuture`, for uploading images, GIFs, and videos to Twitter
+  - `MediaHandle`, a media ID wrapped with a marker of how long it's valid (returned by
+    `UploadFuture`)
+  - `UploadError` and `UploadState`, a special wrapper for `UploadFuture` errors
+  - `media::media_types`, convenience methods to get media types for formats Twitter can support
+- New methods on `DraftTweet`:
+  - `media_ids` to attach media to a tweet
+  - `possibly_sensitive` to mark attached media as "possibly sensitive", giving it a click-through
+    mask when posted
 
 ### Changed
 - `TwitterFuture` clones the `Handle` internally, removing its lifetime parameter
@@ -17,6 +26,8 @@
   - As `ConversationFuture` holds instances of `direct::Timeline`, it has also become `'static`
 - `tweet::Timeline`'s futures now consume the parent `Timeline` and return it (alongside the chunk
   of posts) upon success. This is a **breaking change**
+
+### Removed
 - The `text` module has been removed, in favor of a separate `egg-mode-text` crate
   - This is a **breaking change**, and the updated egg-mode-text has a different signature for
     `character_count` and `characters_remaining` due to the 280-character update
