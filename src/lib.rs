@@ -12,12 +12,23 @@
 //! this guideline are endpoints with many optional parameters, like posting a status update or
 //! updating the metadata of a list.
 //!
-//! To use the Twitter API, there are some extra steps you need to do, both inside and outside of
-//! your app code. Find the Authentication Overview and quick start guide in the [Token][]
-//! documentation. The following examples already have a `token` on hand. In addition, using
-//! asynchronous network calls, the various methods of this library assume the presence of a
-//! [tokio][] `Core` whose `Handle` you pass to any given call. These are also assumed to be
-//! present in each example.
+//! # About the examples in this documentation
+//!
+//! There are a couple prerequisites to using egg-mode, which its examples also assume:
+//!
+//! * All the network calls are tracked using a [tokio] `Core`, which is not supplied by this
+//!   library. Specifically, each call needs a `Handle`, so that it can associate its network calls
+//!   with that `Core`. These are introduced to each example "offscreen", to keep them from
+//!   distracting from the example at hand.
+//! * This library provides several types which implement the `Future` trait, but does not describe
+//!   how to interact with them. The examples use the `Core::run` method to show a synchronous
+//!   interaction, but more advanced scenarios are beyond the scope of this documentation. See the
+//!   [tokio] documentation for more information.
+//! * Twitter tracks API use through "tokens" which are managed by Twitter and processed separately
+//!   for each "authenticated user" you wish to connect to your app. egg-mode's [Token]
+//!   documentation describes how you can obtain one of these, but each example outside of the
+//!   authentication documentation brings in a `Token` "offscreen", alongside the `Core` and
+//!   `Handle`, to avoid distracting from the rest of the example.
 //!
 //! [Token]: enum.Token.html
 //! [tokio]: https://tokio.rs
