@@ -239,8 +239,10 @@ impl FromJson for Tweet {
             return Err(InvalidResponse("Tweet received json that wasn't an object", Some(input.to_string())));
         }
 
-        //TODO: when i start building streams, i want to extract "extended_tweet" and use its
-        //fields here
+        //streams are weird w.r.t. tweets over 140 - the regular payload acts like the regular
+        //pre-extension tweets, including short text and no "extended_entities", and all that
+        //metadata is put into this new field here
+        let extended_tweet: Option<json::Json> = try!(field(input, "extended_tweet"));
 
         let coords: Option<(f64, f64)> = if let Some(geo) = input.find("coordinates") {
             try!(field(geo, "coordinates"))
@@ -256,15 +258,26 @@ impl FromJson for Tweet {
         field_present!(input, source);
         field_present!(input, truncated);
 
-        let text: String = try!(field(input, "full_text").or(field(input, "text")));
-        let mut display_text_range: Option<(usize, usize)> = try!(field(input, "display_text_range"));
+        let text: String;
+        let mut display_text_range: Option<(usize, usize)>;
+        let mut entities: TweetEntities;
+        let mut extended_entities: Option<ExtendedTweetEntities>;
+
+        if let Some(ref ext) = extended_tweet {
+            text = try!(field(ext, "full_text").or(field(input, "text")));
+            display_text_range = try!(field(ext, "display_text_range"));
+            entities = try!(field(ext, "entities"));
+            extended_entities = try!(field(ext, "extended_entities"));
+        } else {
+            text = try!(field(input, "full_text").or(field(input, "text")));
+            display_text_range = try!(field(input, "display_text_range"));
+            entities = try!(field(input, "entities"));
+            extended_entities = try!(field(input, "extended_entities"));
+        }
 
         if let Some(ref mut range) = display_text_range {
             codepoints_to_bytes(range, &text);
         }
-
-        let mut entities: TweetEntities = try!(field(input, "entities"));
-        let mut extended_entities: Option<ExtendedTweetEntities> = try!(field(input, "extended_entities"));
 
         for entity in &mut entities.hashtags {
             codepoints_to_bytes(&mut entity.range, &text);
