@@ -869,6 +869,8 @@ impl<'a> DraftTweet<'a> {
     ///Attaches the given media ID(s) to this tweet. If more than four IDs are in this slice, only
     ///the first four will be attached. Note that Twitter will only allow one GIF, one video, or up
     ///to four images to be attached to a single tweet.
+    ///
+    ///Note that if this is called multiple times, only the last set of IDs will be kept.
     pub fn media_ids(self, media_ids: &[u64]) -> Self {
         DraftTweet {
             media_ids: {
