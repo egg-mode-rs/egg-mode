@@ -1,6 +1,6 @@
 # Changelog for egg-mode
 
-## Pending
+## [0.12.0] - 2017-12-08
 ### Added
 - `media` module and all its contents, for uploading pictures/video/gifs to Twitter
   - Thanks to @DoumanAsh for the initial implementation!

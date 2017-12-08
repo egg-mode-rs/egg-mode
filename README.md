@@ -2,7 +2,7 @@
 
 another twitter library for rust [![Build Status](https://travis-ci.org/QuietMisdreavus/twitter-rs.svg?branch=master)](https://travis-ci.org/QuietMisdreavus/twitter-rs) [![Build status](https://ci.appveyor.com/api/projects/status/3oi86ir82kj1rxu3/branch/master?svg=true)](https://ci.appveyor.com/project/QuietMisdreavus/twitter-rs/branch/master)
 
-[v0.11.0 Documentation][documentation] | [(Pending release documentation)][doc-dev]
+[v0.12.0 Documentation][documentation] | [(Pending release documentation)][doc-dev]
 
 [Documentation]: https://tonberry.quietmisdreavus.net/doc/egg_mode/
 [doc-dev]: https://tonberry.quietmisdreavus.net/doc-dev/egg_mode/
@@ -29,7 +29,7 @@ To start using this library, put the following into your Cargo.toml:
 
 ```TOML
 [dependencies]
-egg-mode = "0.11.0"
+egg-mode = "0.12.0"
 ```
 
 ...and the following in your lib.rs or main.rs:
@@ -84,9 +84,9 @@ println!("{} (@{})", rustlang.name, rustlang.screen_name);
 ```
 
 If you'd like to see the examples and implementation for the version currently on crates.io, check
-the [`v0.11.0`] tag.
+the [`v0.12.0`] tag.
 
-[`v0.11.0`]: https://github.com/QuietMisdreavus/twitter-rs/tree/v0.11.0
+[`v0.12.0`]: https://github.com/QuietMisdreavus/twitter-rs/tree/v0.12.0
 
 For more examples of how to use this library, check the files in the examples folder. The
 authentication code for most of them is in `examples/common/mod.rs`, though that's also mostly
