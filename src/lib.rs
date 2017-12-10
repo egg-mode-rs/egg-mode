@@ -180,6 +180,7 @@ pub mod place;
 pub mod direct;
 pub mod service;
 pub mod list;
+pub mod stream;
 mod links;
 
 pub use auth::{KeyPair, Token, AuthFuture, request_token, authorize_url, authenticate_url,

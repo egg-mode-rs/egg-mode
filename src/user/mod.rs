@@ -328,7 +328,7 @@ pub struct TwitterUser {
 }
 
 /// Container for URL entity information that may be paired with a user's profile.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct UserEntities {
     /// URL information that has been parsed out of the user's `description`. If no URLs were
     /// detected, then the contained Vec will be empty.
@@ -342,7 +342,7 @@ pub struct UserEntities {
 }
 
 /// Represents a collection of URL entity information paired with a specific user profile field.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct UserEntityDetail {
     /// Collection of URL entity information.
     ///
@@ -361,7 +361,6 @@ impl FromJson for TwitterUser {
         field_present!(input, created_at);
         field_present!(input, default_profile);
         field_present!(input, default_profile_image);
-        field_present!(input, entities);
         field_present!(input, favourites_count);
         field_present!(input, followers_count);
         field_present!(input, friends_count);
@@ -386,7 +385,8 @@ impl FromJson for TwitterUser {
 
         let description: Option<String> = try!(field(input, "description"));
         let url: Option<String> = try!(field(input, "url"));
-        let mut entities: UserEntities = try!(field(input, "entities"));
+        let entities: Option<UserEntities> = try!(field(input, "entities"));
+        let mut entities = entities.unwrap_or_default();
 
         if let Some(ref text) = description {
             for entity in entities.description.urls.iter_mut() {

@@ -105,3 +105,7 @@ pub mod service {
     pub const CONFIG: &'static str = "https://api.twitter.com/1.1/help/configuration.json";
     pub const RATE_LIMIT_STATUS: &'static str = "https://api.twitter.com/1.1/application/rate_limit_status.json";
 }
+
+pub mod stream {
+    pub const USER: &'static str = "https://userstream.twitter.com/1.1/user.json";
+}

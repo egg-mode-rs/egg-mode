@@ -348,6 +348,13 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
     }
 }
 
+pub fn get_response(handle: &Handle, request: Request) -> Result<FutureResponse, error::Error> {
+    // TODO: num-cpus?
+    let connector = try!(HttpsConnector::new(1, handle));
+    let client = hyper::Client::configure().connector(connector).build(handle);
+    Ok(client.request(request))
+}
+
 /// A `Future` that resolves a web request and loads the complete response into a String.
 ///
 /// This also does some header inspection, and attempts to parse the response as a `TwitterErrors`
@@ -376,10 +383,7 @@ impl Future for RawFuture {
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         if let Some(req) = self.request.take() {
             // needed to pull this section into the future so i could try!() on the connector
-            // TODO: num-cpus?
-            let connector = try!(HttpsConnector::new(1, &self.handle));
-            let client = hyper::Client::configure().connector(connector).build(&self.handle);
-            self.response = Some(client.request(req));
+            self.response = Some(try!(get_response(&self.handle, req)));
         }
 
         if let Some(mut resp) = self.response.take() {

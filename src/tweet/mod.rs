@@ -251,7 +251,6 @@ impl FromJson for Tweet {
         };
 
         field_present!(input, created_at);
-        field_present!(input, entities);
         field_present!(input, id);
         field_present!(input, lang);
         field_present!(input, retweet_count);
@@ -269,6 +268,8 @@ impl FromJson for Tweet {
             entities = try!(field(ext, "entities"));
             extended_entities = try!(field(ext, "extended_entities"));
         } else {
+            field_present!(input, entities);
+
             text = try!(field(input, "full_text").or(field(input, "text")));
             display_text_range = try!(field(input, "display_text_range"));
             entities = try!(field(input, "entities"));
