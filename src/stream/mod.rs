@@ -12,6 +12,7 @@ use hyper::client::{Request, FutureResponse};
 use rustc_serialize::json;
 
 use auth::{self, Token};
+use direct::DirectMessage;
 use error;
 use links;
 use tweet::Tweet;
@@ -23,11 +24,66 @@ use common::*;
 pub enum StreamMessage {
     /// A blank line, sent periodically to keep the connection alive.
     Ping,
+    /// A list of accounts the authenticated user follows, sent at the beginning of the session for
+    /// user streams.
+    FriendList(Vec<u64>),
     /// A new tweet.
     ///
     /// Note that the `entities` inside the `user` field will be empty for tweets received via the
     /// Streaming API.
     Tweet(Tweet),
+    /// A direct message.
+    DirectMessage(DirectMessage),
+    /// Notice given when a user deletes a post. Clients are expected to comply with these notices
+    /// by removing the status "from memory and any storage or archive, even in the rare case where
+    /// a deletion message arrives earlier in the stream than the Tweet it references."
+    Delete {
+        /// The status that was deleted.
+        status_id: u64,
+        /// The user that deleted the status.
+        user_id: u64
+    },
+    /// Notice given when a user removes geolocation information from their profile. Clients are
+    /// expected to comply by deleting cached geolocation information from tweets by the given
+    /// user, for any tweets up to and including the given status ID. According to Twitter's
+    /// documentation, "These messages may also arrive before a Tweet which falls into the
+    /// specified range, although this is rare."
+    ScrubGeo {
+        /// The user whose geolocation information needs to be scrubbed.
+        user_id: u64,
+        /// The last status ID to scrub information from.
+        up_to_status_id: u64,
+    },
+    /// Placeholder message used to indicate that a specific tweet has been withheld in certain
+    /// countries.
+    StatusWithheld {
+        /// The status that was withheld.
+        status_id: u64,
+        /// The user that posted the status.
+        user_id: u64,
+        /// A list of uppercase two-character country codes listing the countries where the tweet
+        /// was withheld.
+        withheld_in_countries: Vec<String>,
+    },
+    /// Placeholder message used to indicate that a specific user's content has been withheld in
+    /// certain countries.
+    UserWithheld {
+        /// The user whose content was withheld.
+        user_id: u64,
+        /// A list of uppercase two-character country codes listing the countries where the content
+        /// was withheld.
+        withheld_in_countries: Vec<String>,
+    },
+    /// An error message that may be delivered immediately prior to Twitter disconnecting the
+    /// stream. Note that if the stream is disconnected due to network issues or the client reading
+    /// messages too slowly, it's possible that this message may not be received.
+    ///
+    /// The enclosed values are an error code and error description. A non-exhaustive list of error
+    /// codes and their associated reasons are available on [Twitter's stream
+    /// docmentation][stream-doc], under "Disconnect messages (disconnect)".
+    ///
+    /// [stream-doc]: https://developer.twitter.com/en/docs/tweets/filter-realtime/guides/streaming-message-types
+    Disconnect(u64, String),
     /// An unhandled message payload.
     ///
     /// Twitter can add new streaming messages to the API, and egg-mode includes them here so that
@@ -38,12 +94,40 @@ pub enum StreamMessage {
 impl FromJson for StreamMessage {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if let Some(_event) = input.find("event") {
+            //TODO: all the event types -_-
+            Ok(StreamMessage::Unknown(input.clone()))
+        } else if let Some(del) = input.find_path(&["delete", "status"]) {
+            Ok(StreamMessage::Delete {
+                status_id: try!(field(del, "id")),
+                user_id: try!(field(del, "user_id")),
+            })
+        } else if let Some(scrub) = input.find("scrub_geo") {
+            Ok(StreamMessage::ScrubGeo {
+                user_id: try!(field(scrub, "user_id")),
+                up_to_status_id: try!(field(scrub, "up_to_status_id")),
+            })
+        } else if let Some(tweet) = input.find("status_withheld") {
+            Ok(StreamMessage::StatusWithheld {
+                status_id: try!(field(tweet, "id")),
+                user_id: try!(field(tweet, "user_id")),
+                withheld_in_countries: try!(field(tweet, "withheld_in_countries")),
+            })
+        } else if let Some(user) = input.find("user_withheld") {
+            Ok(StreamMessage::UserWithheld {
+                user_id: try!(field(user, "id")),
+                withheld_in_countries: try!(field(user, "withheld_in_countries")),
+            })
+        } else if let Some(err) = input.find("disconnect") {
+            Ok(StreamMessage::Disconnect(try!(field(err, "code")), try!(field(err, "reason"))))
+        } else if let Some(friends) = input.find("friends") {
+            Ok(StreamMessage::FriendList(try!(Vec::<u64>::from_json(friends))))
+        } else if let Some(dm) = input.find("direct_message") {
+            Ok(StreamMessage::DirectMessage(try!(DirectMessage::from_json(dm))))
+        } else if let Ok(tweet) = Tweet::from_json(input) {
+            Ok(StreamMessage::Tweet(tweet))
         } else {
-            if let Ok(tweet) = Tweet::from_json(input) {
-                return Ok(StreamMessage::Tweet(tweet));
-            }
+            Ok(StreamMessage::Unknown(input.clone()))
         }
-        Ok(StreamMessage::Unknown(input.clone()))
     }
 
     fn from_str(input: &str) -> Result<Self, error::Error> {
