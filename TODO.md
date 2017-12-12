@@ -191,4 +191,4 @@ them.
 
 - [ ] statuses/sample
 - [ ] statuses/filter
-- [ ] user
+- [x] user (`stream::user`)
