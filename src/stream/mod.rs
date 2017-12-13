@@ -6,6 +6,7 @@
 
 use std::{self, io};
 
+use chrono;
 use futures::{Future, Stream, Poll, Async};
 use hyper::Body;
 use hyper::client::{Request, FutureResponse};
@@ -16,6 +17,7 @@ use direct::DirectMessage;
 use error;
 use links;
 use tweet::Tweet;
+use user::TwitterUser;
 
 use common::*;
 
@@ -34,20 +36,55 @@ pub enum StreamMessage {
     Tweet(Tweet),
     /// A direct message.
     DirectMessage(DirectMessage),
-    /// Notice given when a user deletes a post. Clients are expected to comply with these notices
-    /// by removing the status "from memory and any storage or archive, even in the rare case where
-    /// a deletion message arrives earlier in the stream than the Tweet it references."
+    /// Notification that the given user has liked the given tweet.
+    ///
+    /// Note that this message can be sent for both "other user liked the authenticated user's
+    /// tweet" and "authenticated user liked someone else's tweet".
+    Like(chrono::DateTime<chrono::Utc>, TwitterUser, Tweet),
+    /// Notification that the given user has cleared their like of the given tweet.
+    ///
+    /// As with `StreamMessage::Like`, this can be sent for actions taken either by the
+    /// authenticated user or upon one of the authenticated user's tweets.
+    Unlike(chrono::DateTime<chrono::Utc>, TwitterUser, Tweet),
+    /// The authenticated user has blocked the given account.
+    Block(chrono::DateTime<chrono::Utc>, TwitterUser),
+    /// The authenticated user has unblocked the given account.
+    Unblock(chrono::DateTime<chrono::Utc>, TwitterUser),
+    /// The `source` user has followed the `target` user.
+    ///
+    /// This is sent both when the authenticated user follows an account, and when another account
+    /// follows the authenticated user.
+    Follow {
+        /// The timestamp when the event occurred.
+        at: chrono::DateTime<chrono::Utc>,
+        /// The user who initiated the follow.
+        source: TwitterUser,
+        /// The user who was followed.
+        target: TwitterUser,
+    },
+    /// The authenticated user has unfollowed the given account.
+    Unfollow(chrono::DateTime<chrono::Utc>, TwitterUser),
+    /// The given user has quote-tweeted one of the authenticated user's statuses.
+    Quoted(chrono::DateTime<chrono::Utc>, TwitterUser, Tweet),
+    /// The authenticated user has updated their profile information.
+    ProfileUpdate(chrono::DateTime<chrono::Utc>, TwitterUser),
+    /// Notice given when a user deletes a post.
+    ///
+    /// Clients are expected to comply with these notices by removing the status "from memory and
+    /// any storage or archive, even in the rare case where a deletion message arrives earlier in
+    /// the stream than the Tweet it references."
     Delete {
         /// The status that was deleted.
         status_id: u64,
         /// The user that deleted the status.
         user_id: u64
     },
-    /// Notice given when a user removes geolocation information from their profile. Clients are
-    /// expected to comply by deleting cached geolocation information from tweets by the given
-    /// user, for any tweets up to and including the given status ID. According to Twitter's
-    /// documentation, "These messages may also arrive before a Tweet which falls into the
-    /// specified range, although this is rare."
+    /// Notice given when a user removes geolocation information from their profile.
+    ///
+    /// Clients are expected to comply by deleting cached geolocation information from tweets by
+    /// the given user, for any tweets up to and including the given status ID. According to
+    /// Twitter's documentation, "These messages may also arrive before a Tweet which falls into
+    /// the specified range, although this is rare."
     ScrubGeo {
         /// The user whose geolocation information needs to be scrubbed.
         user_id: u64,
@@ -75,7 +112,9 @@ pub enum StreamMessage {
         withheld_in_countries: Vec<String>,
     },
     /// An error message that may be delivered immediately prior to Twitter disconnecting the
-    /// stream. Note that if the stream is disconnected due to network issues or the client reading
+    /// stream.
+    ///
+    /// Note that if the stream is disconnected due to network issues or the client reading
     /// messages too slowly, it's possible that this message may not be received.
     ///
     /// The enclosed values are an error code and error description. A non-exhaustive list of error
@@ -89,13 +128,63 @@ pub enum StreamMessage {
     /// Twitter can add new streaming messages to the API, and egg-mode includes them here so that
     /// they can be used before egg-mode has a chance to handle them.
     Unknown(json::Json),
+    //TODO: stall warnings? "follows over limit" warnings? (other warnings?)
 }
 
 impl FromJson for StreamMessage {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if let Some(_event) = input.find("event") {
+        if let Some(event) = input.find("event").and_then(|ev| ev.as_string()) {
             //TODO: all the event types -_-
-            Ok(StreamMessage::Unknown(input.clone()))
+            match event {
+                "favorite" => {
+                    Ok(StreamMessage::Like(
+                        try!(field(input, "created_at")),
+                        try!(field(input, "source")),
+                        try!(field(input, "target_object"))))
+                }
+                "unfavorite" => {
+                    Ok(StreamMessage::Unlike(
+                        try!(field(input, "created_at")),
+                        try!(field(input, "source")),
+                        try!(field(input, "target_object"))))
+                }
+                "block" => {
+                    Ok(StreamMessage::Block(
+                        try!(field(input, "created_at")),
+                        try!(field(input, "target"))))
+                }
+                "unblock" => {
+                    Ok(StreamMessage::Unblock(
+                        try!(field(input, "created_at")),
+                        try!(field(input, "target"))))
+                }
+                "follow" => {
+                    Ok(StreamMessage::Follow {
+                        at: try!(field(input, "created_at")),
+                        source: try!(field(input, "source")),
+                        target: try!(field(input, "target")),
+                    })
+                }
+                "unfollow" => {
+                    Ok(StreamMessage::Unfollow(
+                        try!(field(input, "created_at")),
+                        try!(field(input, "target"))))
+                }
+                "quoted_tweet" => {
+                    Ok(StreamMessage::Quoted(
+                        try!(field(input, "created_at")),
+                        try!(field(input, "source")),
+                        try!(field(input, "target_object"))))
+                }
+                "user_update" => {
+                    Ok(StreamMessage::ProfileUpdate(
+                        try!(field(input, "created_at")),
+                        try!(field(input, "source"))))
+                }
+                _ => {
+                    Ok(StreamMessage::Unknown(input.clone()))
+                }
+            }
         } else if let Some(del) = input.find_path(&["delete", "status"]) {
             Ok(StreamMessage::Delete {
                 status_id: try!(field(del, "id")),
