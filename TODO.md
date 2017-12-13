@@ -189,6 +189,6 @@ public, so I don't plan to implement them unless asked. They shouldn't be much d
 other streams, though, so once I have these ones working, all I'd need is the request to implement
 them.
 
-- [ ] statuses/sample
+- [x] statuses/sample (`stream::sample`)
 - [ ] statuses/filter
 - [x] user (`stream::user`)

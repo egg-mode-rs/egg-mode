@@ -372,3 +372,10 @@ pub fn user(handle: &Handle, token: &Token) -> TwitterStream {
 
     TwitterStream::new(handle, req)
 }
+
+/// Opens a `TwitterStream` returning "a small random sample of all public statuses".
+pub fn sample(handle: &Handle, token: &Token) -> TwitterStream {
+    let req = auth::get(links::stream::SAMPLE, token, None);
+
+    TwitterStream::new(handle, req)
+}

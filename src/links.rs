@@ -108,4 +108,5 @@ pub mod service {
 
 pub mod stream {
     pub const USER: &'static str = "https://userstream.twitter.com/1.1/user.json";
+    pub const SAMPLE: &'static str = "https://stream.twitter.com/1.1/statuses/sample.json";
 }
