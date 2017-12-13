@@ -16,6 +16,7 @@ use auth::{self, Token};
 use direct::DirectMessage;
 use error;
 use links;
+use list::List;
 use tweet::Tweet;
 use user::TwitterUser;
 
@@ -68,6 +69,28 @@ pub enum StreamMessage {
     Quoted(chrono::DateTime<chrono::Utc>, TwitterUser, Tweet),
     /// The authenticated user has updated their profile information.
     ProfileUpdate(chrono::DateTime<chrono::Utc>, TwitterUser),
+    /// The given user was added to the given list.
+    ///
+    /// Note that this is sent both for the authenticated user adding members to their own lists,
+    /// and other accounts adding the authenticated user to their own lists.
+    AddListMember(chrono::DateTime<chrono::Utc>, TwitterUser, List),
+    /// The given user was removed from the given list.
+    ///
+    /// As with `AddListMember`, this is sent both when the authenticated user removes an account
+    /// from their own list, or when another account has removed the authenticated user from their
+    /// own list.
+    RemoveListMember(chrono::DateTime<chrono::Utc>, TwitterUser, List),
+    /// The given user has subscried to the given list.
+    ///
+    /// This is sent for both the authenticated user subscribing to someone else's list, and for
+    /// another user subscribing to one of the authenticated user's lists.
+    ListSubscribe(chrono::DateTime<chrono::Utc>, TwitterUser, List),
+    /// The given user has unsubscribed from the given list.
+    ///
+    /// As with `ListSubscribe`, this is sent both when the authenticated user unsubscribes from
+    /// someone else's list, and when another user subscribes to one of the authenticated user's
+    /// lists.
+    ListUnsubscribe(chrono::DateTime<chrono::Utc>, TwitterUser, List),
     /// Notice given when a user deletes a post.
     ///
     /// Clients are expected to comply with these notices by removing the status "from memory and
@@ -134,7 +157,7 @@ pub enum StreamMessage {
 impl FromJson for StreamMessage {
     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
         if let Some(event) = input.find("event").and_then(|ev| ev.as_string()) {
-            //TODO: all the event types -_-
+            //TODO: if i ever support site streams, add "access_revoked" here
             match event {
                 "favorite" => {
                     Ok(StreamMessage::Like(
@@ -180,6 +203,30 @@ impl FromJson for StreamMessage {
                     Ok(StreamMessage::ProfileUpdate(
                         try!(field(input, "created_at")),
                         try!(field(input, "source"))))
+                }
+                "list_member_added" => {
+                    Ok(StreamMessage::AddListMember(
+                        try!(field(input, "created_at")),
+                        try!(field(input, "target")),
+                        try!(field(input, "target_object"))))
+                }
+                "list_member_removed" => {
+                    Ok(StreamMessage::RemoveListMember(
+                        try!(field(input, "created_at")),
+                        try!(field(input, "target")),
+                        try!(field(input, "target_object"))))
+                }
+                "list_user_subscribed" => {
+                    Ok(StreamMessage::ListSubscribe(
+                        try!(field(input, "created_at")),
+                        try!(field(input, "source")),
+                        try!(field(input, "target_object"))))
+                }
+                "list_user_unsubscribed" => {
+                    Ok(StreamMessage::ListUnsubscribe(
+                        try!(field(input, "created_at")),
+                        try!(field(input, "source")),
+                        try!(field(input, "target_object"))))
                 }
                 _ => {
                     Ok(StreamMessage::Unknown(input.clone()))
