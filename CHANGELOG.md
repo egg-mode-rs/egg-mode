@@ -1,5 +1,16 @@
 # Changelog for egg-mode
 
+## Pending
+### Added
+- `stream` module and its contents, for accessing the streaming API
+  - `filter`, `sample`, and `user`, entry points to access streams
+  - `StreamBuilder`, to assemble filter/inclusion parameters to streams
+  - `FilterLevel`, part of `StreamBuilder`'s parameters
+  - `TwitterStream`, the `Stream` type itself, and `StreamMessage`, its Item type
+
+### Changed
+- `Tweet` now has a `filter_level` field, given to tweets obtained through streams
+
 ## [0.12.0] - 2017-12-08
 ### Added
 - `media` module and all its contents, for uploading pictures/video/gifs to Twitter
