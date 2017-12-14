@@ -11,6 +11,14 @@
 ### Changed
 - `Tweet` now has a `filter_level` field, given to tweets obtained through streams
 
+### TODO before release
+- Remaining parameters in `StreamBuilder`
+- User stream in an example
+  - Bonus points if i can also add something like "Press Enter to start composing a tweet"
+- Docs pass
+  - Basic use
+  - Notes about retry logic and connection churn from "Connecting to a streaming endpoint" page
+
 ## [0.12.0] - 2017-12-08
 ### Added
 - `media` module and all its contents, for uploading pictures/video/gifs to Twitter
