@@ -368,11 +368,56 @@ impl Stream for TwitterStream {
     }
 }
 
+/// Represents the amount of filtering that can be done to streams on Twitter's side.
+///
+/// According to Twitter's documentation, "When displaying a stream of Tweets to end users
+/// (dashboards or live feeds at a presentation or conference, for example) it is suggested that
+/// you set this value to medium."
+#[derive(Copy, Clone, Debug)]
+pub enum FilterLevel {
+    /// No filtering.
+    None,
+    /// A light amount of filtering.
+    Low,
+    /// A medium amount of filtering.
+    Medium,
+}
+
+/// `Display` impl to turn `FilterLevel` variants into the form needed for stream parameters. This
+/// is basically "the variant name, in lowercase".
+impl ::std::fmt::Display for FilterLevel {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match *self {
+            FilterLevel::None => write!(f, "none"),
+            FilterLevel::Low => write!(f, "low"),
+            FilterLevel::Medium => write!(f, "medium"),
+        }
+    }
+}
+
+impl FromJson for FilterLevel {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        if let Some(val) = input.as_string() {
+            match val {
+                "none" => Ok(FilterLevel::None),
+                "low" => Ok(FilterLevel::Low),
+                "medium" => Ok(FilterLevel::Medium),
+                _ => Err(error::Error::InvalidResponse("FilterLevel received an invalid string",
+                                                       Some(val.to_string()))),
+            }
+        } else {
+            Err(error::Error::InvalidResponse("FilterLevel received json that wasn't a string",
+                                              Some(input.to_string())))
+        }
+    }
+}
+
 /// Represents a `TwitterStream` before it is started.
 pub struct StreamBuilder {
     url: &'static str,
     with_follows: Option<bool>,
     all_replies: bool,
+    filter_level: Option<FilterLevel>,
 }
 
 impl StreamBuilder {
@@ -381,6 +426,7 @@ impl StreamBuilder {
             url: url,
             with_follows: None,
             all_replies: false,
+            filter_level: None,
         }
     }
 
@@ -410,6 +456,19 @@ impl StreamBuilder {
         }
     }
 
+    /// Applies the given `FilterLevel` to the stream. Tweets with a `filter_level` below the given
+    /// value will not be shown in the stream.
+    ///
+    /// According to Twitter's documentation, "When displaying a stream of Tweets to end users
+    /// (dashboards or live feeds at a presentation or conference, for example) it is suggested
+    /// that you set this value to medium."
+    pub fn filter_level(self, filter_level: FilterLevel) -> StreamBuilder {
+        StreamBuilder {
+            filter_level: Some(filter_level),
+            ..self
+        }
+    }
+
     /// Finalizes the stream parameters and returns the resulting `TwitterStream`.
     pub fn start(self, handle: &Handle, token: &Token) -> TwitterStream {
         let mut params = HashMap::new();
@@ -424,6 +483,10 @@ impl StreamBuilder {
 
         if self.all_replies {
             add_param(&mut params, "replies", "all");
+        }
+
+        if let Some(filter_level) = self.filter_level {
+            add_param(&mut params, "filter_level", filter_level.to_string());
         }
 
         let req = if self.url == links::stream::USER {

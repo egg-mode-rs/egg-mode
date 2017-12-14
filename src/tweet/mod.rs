@@ -69,6 +69,7 @@ use error;
 use error::Error::InvalidResponse;
 use entities;
 use place;
+use stream::FilterLevel;
 use common::*;
 
 mod fun;
@@ -171,9 +172,9 @@ pub struct Tweet {
     pub favorite_count: i32,
     ///Indicates whether the authenticated user has liked this tweet.
     pub favorited: Option<bool>,
-    //Indicates the maximum `FilterLevel` parameter that can be applied to a stream and still show
-    //this tweet.
-    //pub filter_level: FilterLevel,
+    ///Indicates the maximum `FilterLevel` parameter that can be applied to a stream and still show
+    ///this tweet.
+    pub filter_level: Option<FilterLevel>,
     ///Numeric ID for this tweet.
     pub id: u64,
     ///If the tweet is a reply, contains the ID of the user that was replied to.
@@ -314,7 +315,7 @@ impl FromJson for Tweet {
             extended_entities: extended_entities,
             favorite_count: field(input, "favorite_count").unwrap_or(0),
             favorited: try!(field(input, "favorited")),
-            //filter_level: FilterLevel,
+            filter_level: try!(field(input, "filter_level")),
             id: try!(field(input, "id")),
             in_reply_to_user_id: try!(field(input, "in_reply_to_user_id")),
             in_reply_to_screen_name: try!(field(input, "in_reply_to_screen_name")),
