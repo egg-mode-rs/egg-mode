@@ -279,6 +279,7 @@ impl FromJson for StreamMessage {
 }
 
 /// A `Stream` that represents a connection to the Twitter Streaming API.
+#[must_use = "Streams are lazy and do nothing unless polled"]
 pub struct TwitterStream {
     buf: Vec<u8>,
     handle: Handle,
