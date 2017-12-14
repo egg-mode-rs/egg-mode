@@ -446,6 +446,14 @@ pub fn filter() -> StreamBuilder {
 }
 
 /// Opens a `TwitterStream` returning "a small random sample of all public statuses".
+///
+/// As sample streams don't have the same configuration options as user streams or filter streams,
+/// this directly returns a `TwitterStream`, rather than going through a [`StreamBuilder`]. To apply
+/// filter options on the public stream, start with [`filter`] and add parameters to the
+/// [`StreamBuilder`] returned there.
+///
+/// [`StreamBuilder`]: struct.StreamBuilder.html
+/// [`filter`]: fn.filter.html
 pub fn sample(handle: &Handle, token: &Token) -> TwitterStream {
     let req = auth::get(links::stream::SAMPLE, token, None);
 
