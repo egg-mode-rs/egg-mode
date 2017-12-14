@@ -237,7 +237,7 @@ impl ::std::fmt::Display for MediaCategory {
 /// size, etc), see [their API documentation][media-best-practices]. Note that `UploadBuilder`
 /// automatically sets the underlying `media_category` to `tweet_gif` or `tweet_video` for
 /// `media_type`s of `"image/gif"` and `"video/mp4"` respectively. (Note that these are returned by
-/// [`media_types::image_gif`] and [`media_type::video_mp4`] as a convenience.)
+/// [`media_types::image_gif`] and [`media_types::video_mp4`] as a convenience.)
 ///
 /// [media-best-practices]: https://developer.twitter.com/en/docs/media/upload-media/uploading-media/media-best-practices
 /// [`media_types::image_gif`]: media_types/fn.image_gif.html
