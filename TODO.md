@@ -190,5 +190,5 @@ other streams, though, so once I have these ones working, all I'd need is the re
 them.
 
 - [x] statuses/sample (`stream::sample`)
-- [ ] statuses/filter
+- [x] statuses/filter (`stream::filter`)
 - [x] user (`stream::user`)

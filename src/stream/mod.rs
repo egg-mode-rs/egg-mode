@@ -5,6 +5,7 @@
 //! Access to the Streaming API.
 
 use std::{self, io};
+use std::collections::HashMap;
 
 use chrono;
 use futures::{Future, Stream, Poll, Async};
@@ -366,11 +367,82 @@ impl Stream for TwitterStream {
     }
 }
 
-/// Opens a `TwitterStream` to the authenticated user's home stream.
-pub fn user(handle: &Handle, token: &Token) -> TwitterStream {
-    let req = auth::get(links::stream::USER, token, None);
+/// Represents a `TwitterStream` before it is started.
+pub struct StreamBuilder {
+    url: &'static str,
+    with_follows: Option<bool>,
+    all_replies: bool,
+}
 
-    TwitterStream::new(handle, req)
+impl StreamBuilder {
+    fn new(url: &'static str) -> StreamBuilder {
+        StreamBuilder {
+            url: url,
+            with_follows: None,
+            all_replies: false,
+        }
+    }
+
+    /// For User Streams, sets whether to include posts from just the authenticated user or from
+    /// the accounts they follow as well.
+    ///
+    /// By default, this is set to `true`, meaning the stream will include posts from the accounts
+    /// the user follows. This makes the stream act like the user's timeline.
+    pub fn with_follows(self, with_follows: bool) -> StreamBuilder {
+        StreamBuilder {
+            with_follows: Some(with_follows),
+            ..self
+        }
+    }
+
+    /// For User Streams, sets whether to return all @replies by followed users, or just those
+    /// which are also to accounts the authenticated user follows.
+    ///
+    /// By default, user streams will only emit @replies if the authenticated user follows both the
+    /// account that posted it *and the account they are replying to*. This mirrors the user's home
+    /// timeline. By setting this to `true`, you can see all posts by the followed accounts,
+    /// regardless of whether they're replying to someone the authenticated user is not following.
+    pub fn all_replies(self, all_replies: bool) -> StreamBuilder {
+        StreamBuilder {
+            all_replies: all_replies,
+            ..self
+        }
+    }
+
+    /// Finalizes the stream parameters and returns the resulting `TwitterStream`.
+    pub fn start(self, handle: &Handle, token: &Token) -> TwitterStream {
+        let mut params = HashMap::new();
+
+        if let Some(with_follows) = self.with_follows {
+            if with_follows {
+                add_param(&mut params, "with", "followings");
+            } else {
+                add_param(&mut params, "with", "user");
+            }
+        }
+
+        if self.all_replies {
+            add_param(&mut params, "replies", "all");
+        }
+
+        let req = if self.url == links::stream::USER {
+            auth::get(self.url, token, Some(&params))
+        } else {
+            auth::post(self.url, token, Some(&params))
+        };
+
+        TwitterStream::new(handle, req)
+    }
+}
+
+/// Begins building a request to the authenticated user's home stream.
+pub fn user() -> StreamBuilder {
+    StreamBuilder::new(links::stream::USER)
+}
+
+/// Begins building a request to a filtered public stream.
+pub fn filter() -> StreamBuilder {
+    StreamBuilder::new(links::stream::FILTER)
 }
 
 /// Opens a `TwitterStream` returning "a small random sample of all public statuses".
