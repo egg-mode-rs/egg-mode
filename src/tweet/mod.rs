@@ -1013,10 +1013,11 @@ mod tests {
         assert!(sample.extended_entities.is_some());
         assert_eq!(sample.extended_entities.unwrap().media.len(), 1);
 
-        //text contains no leading mentions or extended link, so the display range is the whole
-        //tweet
+        //text contains extended link, which is outside of display_text_range
         let range = sample.display_text_range.unwrap();
-        assert_eq!(&sample.text[range.0..range.1], sample.text);
+        assert_eq!(&sample.text[range.0..range.1],
+                   ".@Serrayak said he’d use what-ev-er I came up with as his Halloween avatar so I’m just making sure you all know he said that"
+        );
         assert_eq!(sample.truncated, false);
     }
 

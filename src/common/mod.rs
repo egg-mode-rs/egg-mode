@@ -206,16 +206,20 @@ pub type WebResponse<T> = Result<Response<T>, ::error::Error>;
 pub type FutureResponse<T> = TwitterFuture<Response<T>>;
 
 pub fn codepoints_to_bytes(&mut (ref mut start, ref mut end): &mut (usize, usize), text: &str) {
+    let mut byte_start = *start;
+    let mut byte_end = *end;
     for (ch_offset, (by_offset, _)) in text.char_indices().enumerate() {
         if ch_offset == *start {
-            *start = by_offset;
+            byte_start = by_offset;
         } else if ch_offset == *end {
-            *end = by_offset;
+            byte_end = by_offset;
         }
     }
-
+    *start = byte_start;
     if text.chars().count() == *end {
-        *end = text.len();
+        *end = text.len()
+    } else {
+        *end = byte_end
     }
 }
 
@@ -297,5 +301,24 @@ pub fn min_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
         },
         (left, None) => left,
         (None, right) => right,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_codepoints_to_bytes() {
+        let unicode = "frônt Iñtërnâtiônàližætiøn ënd";
+        // suppose we want to slice out the middle word.
+        // 30 codepoints of which we want the middle 20;
+        let mut range = (6, 26);
+        codepoints_to_bytes(&mut range, unicode);
+        assert_eq!(&unicode[range.0..range.1], "Iñtërnâtiônàližætiøn");
+
+        let mut range = (6, 30);
+        codepoints_to_bytes(&mut range, unicode);
+        assert_eq!(&unicode[range.0..range.1], "Iñtërnâtiônàližætiøn ënd");
     }
 }
