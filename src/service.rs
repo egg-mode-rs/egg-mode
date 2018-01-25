@@ -132,7 +132,7 @@ pub fn rate_limit_status_raw(token: &auth::Token, handle: &Handle)
 ///
 ///Finally, loading `non_username_paths` allows you to handle `twitter.com/[name]` links as if they
 ///were a user mention, while still keeping site-level links working properly.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Configuration {
     ///The character limit in direct messages.
     pub dm_text_character_limit: i32,
@@ -192,7 +192,8 @@ impl FromJson for Configuration {
 /// querying, see the `*Method` enums available in [`egg_mode::service`][].
 ///
 /// [`egg_mode::service`]: index.html
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
+// TODO this deserialize obviously wrong
 pub struct RateLimitStatus {
     ///The rate-limit status for methods in the `direct` module.
     pub direct: HashMap<DirectMethod, Response<()>>,
@@ -342,7 +343,7 @@ impl FromStr for Method {
 }
 
 ///Method identifiers from the `direct` module, for use by `rate_limit_status`.
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
 pub enum DirectMethod {
     ///`direct::show`
     Show,
@@ -353,7 +354,7 @@ pub enum DirectMethod {
 }
 
 ///Method identifiers from the `place` module, for use by `rate_limit_status`.
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
 pub enum PlaceMethod {
     ///`place::show`
     Show,
@@ -364,7 +365,7 @@ pub enum PlaceMethod {
 }
 
 ///Method identifiers from the `search` module, for use by `rate_limit_status`.
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
 pub enum SearchMethod {
     ///`search::search`
     Search,
@@ -372,7 +373,7 @@ pub enum SearchMethod {
 
 ///Method identifiers from the `service` module, for use by `rate_limit_status`. Also includes
 ///`verify_tokens` from the egg-mode top-level methods.
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
 pub enum ServiceMethod {
     ///`service::terms`
     Terms,
@@ -387,7 +388,7 @@ pub enum ServiceMethod {
 }
 
 ///Method identifiers from the `tweet` module, for use by `rate_limit_status`.
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
 pub enum TweetMethod {
     ///`tweet::show`
     Show,
@@ -410,7 +411,7 @@ pub enum TweetMethod {
 }
 
 ///Method identifiers from the `user` module, for use by `rate_limit_status`.
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
 pub enum UserMethod {
     ///`user::show`
     Show,
@@ -449,7 +450,7 @@ pub enum UserMethod {
 }
 
 ///Method identifiers from the `list` module, for use by `rate_limit_status`.
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
 pub enum ListMethod {
     ///`list::show`
     Show,

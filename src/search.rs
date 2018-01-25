@@ -257,7 +257,7 @@ impl<'a> Future for SearchFuture<'a> {
 }
 
 ///Represents a page of search results, along with metadata to request the next or previous page.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct SearchResult<'a> {
     ///The list of statuses in this page of results.
     pub statuses: Vec<Tweet>,

@@ -18,6 +18,7 @@ use rustc_serialize::json;
 use super::{FromJson, field};
 use error::{self, TwitterErrors};
 use error::Error::*;
+use serde;
 
 header! { (XRateLimitLimit, "X-Rate-Limit-Limit") => [i32] }
 header! { (XRateLimitRemaining, "X-Rate-Limit-Remaining") => [i32] }
@@ -31,7 +32,8 @@ header! { (XRateLimitReset, "X-Rate-Limit-Reset") => [i32] }
 ///
 ///As this implements `Deref` and `DerefMut`, you can transparently use the contained `response`'s
 ///methods as if they were methods on this struct.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
+// TODO Deserialize or DerserializeOwned?
 pub struct Response<T> {
     ///The rate limit ceiling for the given request.
     pub rate_limit: i32,

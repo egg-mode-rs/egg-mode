@@ -145,7 +145,7 @@ pub use self::fun::*;
 ///* `withheld_copyright`
 ///* `withheld_in_countries`
 ///* `withheld_scope`
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Tweet {
     //If the user has contributors enabled, this will show which accounts contributed to this
     //tweet.
@@ -359,7 +359,7 @@ fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Optio
 ///
 ///Note that if you're going to reconstruct a link from this, the source URL has `rel="nofollow"`
 ///in the anchor tag.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct TweetSource {
     ///The name of the app, given by its developer.
     pub name: String,
@@ -412,7 +412,7 @@ impl FromJson for TweetSource {
 ///Note that for media attached to a tweet, this struct will only contain the first image of a
 ///photo set, or a thumbnail of a video or GIF. Full media information is available in the tweet's
 ///`extended_entities` field.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct TweetEntities {
     ///Collection of hashtags parsed from the tweet.
     pub hashtags: Vec<entities::HashtagEntity>,
@@ -448,7 +448,7 @@ impl FromJson for TweetEntities {
 ///If a tweet has a photo, set of photos, gif, or video attached to it, this field will be present
 ///and contain the real media information. The information available in the `media` field of
 ///`entities` will only contain the first photo of a set, or a thumbnail of a gif or video.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ExtendedTweetEntities {
     ///Collection of extended media information attached to the tweet.
     pub media: Vec<entities::MediaEntity>,

@@ -186,7 +186,7 @@ impl<'a> From<&'a UserID<'a>> for UserID<'a> {
 /// * `show_all_inline_media`
 /// * `time_zone`/`utc_offset`
 /// * `withheld_in_countries`/`withheld_scope`
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct TwitterUser {
     /// Indicates this user has an account with "contributor mode" enabled, allowing
     /// for Tweets issued by the user to be co-authored by another account. Rarely `true`.
@@ -328,7 +328,7 @@ pub struct TwitterUser {
 }
 
 /// Container for URL entity information that may be paired with a user's profile.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub struct UserEntities {
     /// URL information that has been parsed out of the user's `description`. If no URLs were
     /// detected, then the contained Vec will be empty.
@@ -342,7 +342,7 @@ pub struct UserEntities {
 }
 
 /// Represents a collection of URL entity information paired with a specific user profile field.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub struct UserEntityDetail {
     /// Collection of URL entity information.
     ///
@@ -667,7 +667,7 @@ impl<'a> Stream for UserSearch<'a> {
 }
 
 /// Represents relationship settings between two Twitter accounts.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Relationship {
     /// Contains settings from the perspective of the target account.
     pub target: RelationTarget,
@@ -702,7 +702,7 @@ impl FromJson for Relationship {
 
 /// Represents relationship settings between two Twitter accounts, from the perspective of the
 /// target user.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct RelationTarget {
     /// Numeric ID for this account.
     pub id: u64,
@@ -741,7 +741,7 @@ impl FromJson for RelationTarget {
 /// visible to the user that set them. While you can see relationships between any two arbitrary
 /// users, if the "source" account is the same one whose access token you're using, you can see
 /// extra information about this relationship.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct RelationSource {
     /// Numeric ID for this account.
     pub id: u64,

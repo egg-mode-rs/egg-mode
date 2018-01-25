@@ -166,6 +166,10 @@ extern crate rustc_serialize;
 extern crate mime;
 extern crate chrono;
 extern crate regex;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
 
 #[macro_use] mod common;
 mod auth;

@@ -42,7 +42,7 @@ mod fun;
 pub use self::fun::*;
 
 ///Represents a named location.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Place {
     ///Alphanumeric ID of the location.
     pub id: String,
@@ -68,7 +68,7 @@ pub struct Place {
 }
 
 ///Represents the type of region represented by a given place.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Deserialize)]
 pub enum PlaceType {
     ///A coordinate with no area.
     Point,
@@ -92,6 +92,7 @@ pub enum Accuracy {
 }
 
 ///Represents the result of a location search, either via `reverse_geocode` or `search`.
+#[derive(Deserialize)]
 pub struct SearchResult {
     ///The full URL used to pull the result list. This can be fed to the `_url` version of your
     ///original call to avoid having to fill out the argument list again.

@@ -95,8 +95,9 @@ pub mod media_types {
     }
 }
 
+// TODO this Deserialize obviously isn't correct
 ///RawMedia's upload progressing info.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Deserialize)]
 enum ProgressInfo {
     ///Video is pending for processing. Contains number of seconds after which to check.
     Pending(u64),
@@ -158,6 +159,7 @@ impl MediaHandle {
 }
 
 ///Represents media file that is uploaded on twitter.
+#[derive(Deserialize)]
 struct RawMedia {
     ///ID that can be used in API calls (e.g. attach to tweet).
     pub id: u64,

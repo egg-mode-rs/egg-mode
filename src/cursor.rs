@@ -44,6 +44,7 @@ pub trait Cursor {
 ///list of users to iterate over. See that struct's documentation for details.
 ///
 ///[`CursorIter`]: struct.CursorIter.html
+#[derive(Deserialize)]
 pub struct UserCursor {
     ///Numeric reference to the previous page of results.
     pub previous_cursor: i64,
@@ -93,6 +94,7 @@ impl Cursor for UserCursor {
 ///list of IDs to iterate over. See that struct's documentation for details.
 ///
 ///[`CursorIter`]: struct.CursorIter.html
+#[derive(Deserialize)]
 pub struct IDCursor {
     ///Numeric reference to the previous page of results.
     pub previous_cursor: i64,
@@ -142,6 +144,7 @@ impl Cursor for IDCursor {
 ///list of lists to iterate over. See that struct's documentation for details.
 ///
 ///[`CursorIter`]: struct.CursorIter.html
+#[derive(Deserialize)]
 pub struct ListCursor {
     ///Numeric reference to the previous page of results.
     pub previous_cursor: i64,

@@ -68,7 +68,7 @@ impl fmt::Display for TwitterErrorCode {
 }
 
 /// Represents an error that can occur during media processing.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct MediaError {
     /// A numeric error code assigned to the error.
     pub code: i32,

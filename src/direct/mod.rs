@@ -70,7 +70,7 @@ type DMFuture = TwitterFuture<Response<Vec<DirectMessage>>>;
 ///As a DM has far less metadata than a regular tweet, the structure consequently contains far
 ///fewer fields. The basic fields are `id`, `text`, `entities`, and `created_at`; everything else
 ///either refers to the sender or receiver in some manner.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct DirectMessage {
     ///Numeric ID for this DM.
     pub id: u64,
@@ -104,7 +104,7 @@ pub struct DirectMessage {
 ///
 ///For all other fields, if the message contains no hashtags, financial symbols ("cashtags"),
 ///links, or mentions, those corresponding fields will still be present, just empty.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct DMEntities {
     ///Collection of hashtags parsed from the DM.
     pub hashtags: Vec<entities::HashtagEntity>,

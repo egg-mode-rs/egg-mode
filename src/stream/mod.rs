@@ -373,7 +373,7 @@ impl Stream for TwitterStream {
 /// According to Twitter's documentation, "When displaying a stream of Tweets to end users
 /// (dashboards or live feeds at a presentation or conference, for example) it is suggested that
 /// you set this value to medium."
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Deserialize)]
 pub enum FilterLevel {
     /// No filtering.
     None,
