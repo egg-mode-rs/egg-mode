@@ -9,7 +9,7 @@ use chrono::{self, TimeZone};
 use error;
 use error::Error::InvalidResponse;
 use mime;
-use serde::{self, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer};
 use serde::de::Error;
 
 ///Helper macro to return MissingValue for null/absent fields that aren't optional.
@@ -217,7 +217,7 @@ impl FromJson for chrono::DateTime<chrono::Utc> {
     }
 }
 
-pub fn datetime_deserialize<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error> where D: Deserializer<'de> {
+pub fn deserialize_datetime<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error> where D: Deserializer<'de> {
     let s = String::deserialize(ser)?;
     let date = (chrono::Utc).datetime_from_str(&s, "%a %b %d %T %z %Y").map_err(|e| D::Error::custom(e))?;
     Ok(date)

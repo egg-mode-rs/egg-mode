@@ -192,6 +192,7 @@ pub struct TwitterUser {
     /// for Tweets issued by the user to be co-authored by another account. Rarely `true`.
     pub contributors_enabled: bool,
     /// The UTC timestamp for when this user account was created on Twitter.
+    #[serde(deserialize_with = "deserialize_datetime")]
     pub created_at: chrono::DateTime<chrono::Utc>,
     /// When true, indicates that this user has not altered the theme or background of
     /// their user profile.

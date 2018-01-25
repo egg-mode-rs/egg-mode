@@ -61,6 +61,8 @@ use chrono;
 use regex::Regex;
 use hyper::client::Request;
 use futures::{Future, Poll, Async};
+use serde::{Deserialize, Deserializer};
+use serde::de::Error;
 
 use auth;
 use links;
@@ -153,7 +155,7 @@ pub struct Tweet {
     ///If present, the location coordinate attached to the tweet, as a (latitude, longitude) pair.
     pub coordinates: Option<(f64, f64)>,
     ///UTC timestamp from when the tweet was posted.
-    #[serde(deserialize_with = "datetime_deserialize")]
+    #[serde(deserialize_with = "deserialize_datetime")]
     pub created_at: chrono::DateTime<chrono::Utc>,
     ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
     pub current_user_retweet: Option<u64>,
@@ -211,10 +213,12 @@ pub struct Tweet {
     ///who retweeted the status, as well as the original poster.
     pub retweeted_status: Option<Box<Tweet>>,
     ///The application used to post the tweet.
+    #[serde(deserialize_with = "deserialize_tweet_source")]
     pub source: TweetSource,
     ///The text of the tweet. For "extended" tweets, opening reply mentions and/or attached media
     ///or quoted tweet links do not count against character count, so this could be longer than 140
     ///characters in those situations.
+    #[serde(rename = "full_text")]
     pub text: String,
     ///Indicates whether this tweet is a truncated "compatibility" form of an extended tweet whose
     ///full text is longer than 140 characters.
@@ -223,6 +227,7 @@ pub struct Tweet {
     ///`TwitterUser`.
     pub user: Option<Box<user::TwitterUser>>,
     ///If present and `true`, indicates that this tweet has been withheld due to a DMCA complaint.
+    #[serde(default)]
     pub withheld_copyright: bool,
     ///If present, contains two-letter country codes indicating where this tweet is being withheld.
     ///
@@ -368,12 +373,9 @@ pub struct TweetSource {
     pub url: String,
 }
 
-impl FromJson for TweetSource {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        let full = try!(input.as_string()
-                             .ok_or_else(|| InvalidResponse("TweetSource received json that wasn't a string",
-                                                            Some(input.to_string()))));
-
+// TODO should this be the FromStr trait?
+impl TweetSource {
+    fn from_str(full: &str) -> Result<TweetSource, error::Error> {
         if full == "web" {
             return Ok(TweetSource {
                 name: "Twitter Web Client".to_string(),
@@ -403,6 +405,20 @@ impl FromJson for TweetSource {
             url: url,
         })
     }
+}
+
+impl FromJson for TweetSource {
+    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+        let full = try!(input.as_string()
+                             .ok_or_else(|| InvalidResponse("TweetSource received json that wasn't a string",
+                                                            Some(input.to_string()))));
+        TweetSource::from_str(&full)
+    }
+}
+
+fn deserialize_tweet_source<'de, D>(ser: D) -> Result<TweetSource, D::Error> where D: Deserializer<'de> {
+    let s = String::deserialize(ser)?;
+    Ok(TweetSource::from_str(&s).map_err(|e| D::Error::custom(e))?)
 }
 
 ///Container for URL, hashtag, mention, and media information associated with a tweet.
