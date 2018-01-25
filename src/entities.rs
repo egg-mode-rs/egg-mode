@@ -53,6 +53,7 @@ use mime;
 pub struct HashtagEntity {
     ///The byte offsets where the hashtag is located. The first index is the location of the # or $
     ///character; the second is the location of the first character following the hashtag.
+    #[serde(rename = "indices")]
     pub range: (usize, usize),
     ///The text of the hashtag, without the leading # or $ character.
     pub text: String,
@@ -81,6 +82,7 @@ pub struct MediaEntity {
     ///The byte offsets where the media URL is located. The first index is the location of the
     ///first character of the URL; the second is the location of the first character following the
     ///URL.
+    #[serde(rename = "indices")]
     pub range: (usize, usize),
     ///A URL pointing directly to the media file. Uses HTTP as the protocol.
     ///
@@ -98,6 +100,7 @@ pub struct MediaEntity {
     ///contains the ID of the original tweet.
     pub source_status_id: Option<u64>,
     ///The type of media being represented.
+    #[serde(rename = "type")]
     pub media_type: MediaType,
     ///The t.co link from the original text.
     pub url: String,
@@ -110,10 +113,13 @@ pub struct MediaEntity {
 #[derive(Debug, Copy, Clone, Deserialize)]
 pub enum MediaType {
     ///A static image.
+    #[serde(rename = "photo")]
     Photo,
     ///A video.
+    #[serde(rename = "video")]
     Video,
     ///An animated GIF, delivered as a video without audio.
+    #[serde(rename = "gif")]
     Gif,
 }
 
@@ -134,8 +140,10 @@ pub struct MediaSizes {
 #[derive(Debug, Copy, Clone, Deserialize)]
 pub enum ResizeMode {
     ///The media was resized to fit one dimension, keeping its aspect ratio.
+    #[serde(rename = "fit")]
     Fit,
     ///The media was cropped to fit a specific resolution.
+    #[serde(rename = "crop")]
     Crop,
 }
 
@@ -200,6 +208,7 @@ pub struct MentionEntity {
     ///The byte offsets where the user mention is located in the original text. The first index is
     ///the location of the @ symbol; the second is the location of the first character following
     ///the user screen name.
+    #[serde(rename = "indices")]
     pub range: (usize, usize),
     ///Display name of the mentioned user.
     pub name: String,
