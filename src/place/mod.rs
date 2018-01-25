@@ -29,6 +29,9 @@
 use std::collections::HashMap;
 use std::fmt;
 
+use serde::{Deserialize, Deserializer};
+use serde::de::Error;
+use serde_json;
 use rustc_serialize::json;
 
 use auth;
@@ -52,6 +55,7 @@ pub struct Place {
     ///[attrib]: https://dev.twitter.com/overview/api/places#attributes
     pub attributes: HashMap<String, String>,
     ///A bounding box of latitude/longitude coordinates that encloses this place.
+    #[serde(deserialize_with = "deserialize_bounding_box")]
     pub bounding_box: Vec<(f64, f64)>,
     ///Name of the country containing this place.
     pub country: String,
@@ -71,14 +75,19 @@ pub struct Place {
 #[derive(Debug, Copy, Clone, Deserialize)]
 pub enum PlaceType {
     ///A coordinate with no area.
+    #[serde(rename = "point")]
     Point,
     ///A region within a city.
+    #[serde(rename = "neighborhood")]
     Neighborhood,
     ///An entire city.
+    #[serde(rename = "city")]
     City,
     ///An administrative area, e.g. state or province.
+    #[serde(rename = "admin")]
     Admin,
     ///An entire country.
+    #[serde(rename = "country")]
     Country,
 }
 
@@ -437,6 +446,16 @@ impl FromJson for Place {
             contained_within: try!(field(input, "contained_within")),
         })
     }
+}
+
+fn deserialize_bounding_box<'de, D>(ser: D) -> Result<Vec<(f64, f64)>, D::Error> where D: Deserializer<'de> {
+    let s = serde_json::Value::deserialize(ser)?;
+    s.get("coordinates")
+        .and_then(|arr| arr.get(0).cloned())
+        .ok_or_else(|| D::Error::custom("Malformed 'bounding_box' attribute"))
+        .and_then(|inner_arr| serde_json::from_value::<Vec<(f64, f64)>>(inner_arr)
+                .map_err(|e| D::Error::custom(e))
+        )
 }
 
 impl FromJson for SearchResult {
