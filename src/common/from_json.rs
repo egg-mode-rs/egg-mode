@@ -9,6 +9,8 @@ use chrono::{self, TimeZone};
 use error;
 use error::Error::InvalidResponse;
 use mime;
+use serde::{self, Deserialize, Deserializer};
+use serde::de::Error;
 
 ///Helper macro to return MissingValue for null/absent fields that aren't optional.
 macro_rules! field_present {
@@ -214,6 +216,13 @@ impl FromJson for chrono::DateTime<chrono::Utc> {
         Ok(date)
     }
 }
+
+pub fn datetime_deserialize<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error> where D: Deserializer<'de> {
+    let s = String::deserialize(ser)?;
+    let date = (chrono::Utc).datetime_from_str(&s, "%a %b %d %T %z %Y").map_err(|e| D::Error::custom(e))?;
+    Ok(date)
+}
+
 
 ///Load the given field from the given JSON structure as the desired type.
 pub fn field<T: FromJson>(input: &json::Json, field: &'static str) -> Result<T, error::Error> {

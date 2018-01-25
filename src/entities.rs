@@ -186,6 +186,7 @@ pub struct UrlEntity {
     ///Meant to be used as hover-text when a user mouses over a link.
     pub expanded_url: String,
     ///The byte offsets in the companion text where the URL was extracted from.
+    #[serde(rename = "(indices)")]
     pub range: (usize, usize),
     ///The t.co URL extracted from the companion text.
     pub url: String,

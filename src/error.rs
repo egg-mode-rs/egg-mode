@@ -21,6 +21,7 @@ use native_tls;
 use rustc_serialize;
 use rustc_serialize::json;
 use chrono;
+use serde_json;
 
 use common::*;
 
@@ -143,6 +144,9 @@ pub enum Error {
     ///An error occurred while loading the JSON response. The enclosed error was returned from
     ///rustc_serialize.
     DecodeError(rustc_serialize::json::DecoderError),
+    ///An error occurred while loading the JSON response. The enclosed error was returned from
+    ///serde_json
+    DeserializeError(serde_json::Error),
     ///An error occurred when parsing a timestamp from Twitter. The enclosed error was returned
     ///from chrono.
     TimestampParseError(chrono::ParseError),
@@ -164,6 +168,8 @@ impl std::fmt::Display for Error {
             Error::IOError(ref err) => write!(f, "IO error: {}", err),
             Error::JSONError(ref err) => write!(f, "JSON parse Error: {}", err),
             Error::DecodeError(ref err) => write!(f, "JSON decode error: {}", err),
+            // TODO rename, eventually
+            Error::DeserializeError(ref err) => write!(f, "JSON deserialize error: {}", err),
             Error::TimestampParseError(ref err) => write!(f, "Error parsing timestamp: {}", err),
         }
     }
@@ -185,6 +191,7 @@ impl std::error::Error for Error {
             Error::IOError(ref err) => err.description(),
             Error::JSONError(ref err) => err.description(),
             Error::DecodeError(ref err) => err.description(),
+            Error::DeserializeError(ref err) => err.description(),
             Error::TimestampParseError(ref err) => err.description(),
         }
     }
@@ -229,6 +236,12 @@ impl From<rustc_serialize::json::ParserError> for Error {
 impl From<rustc_serialize::json::DecoderError> for Error {
     fn from(err: rustc_serialize::json::DecoderError) -> Error {
         Error::DecodeError(err)
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Error {
+        Error::DeserializeError(err)
     }
 }
 

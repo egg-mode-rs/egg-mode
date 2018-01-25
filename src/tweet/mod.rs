@@ -153,6 +153,7 @@ pub struct Tweet {
     ///If present, the location coordinate attached to the tweet, as a (latitude, longitude) pair.
     pub coordinates: Option<(f64, f64)>,
     ///UTC timestamp from when the tweet was posted.
+    #[serde(deserialize_with = "datetime_deserialize")]
     pub created_at: chrono::DateTime<chrono::Utc>,
     ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
     pub current_user_retweet: Option<u64>,
@@ -981,9 +982,19 @@ mod tests {
         Tweet::from_str(&sample_str).unwrap()
     }
 
+    fn load_tweet_serde(path: &str) -> Tweet {
+        let sample_str = {
+            let mut file = File::open(path).unwrap();
+            let mut ret = String::new();
+            file.read_to_string(&mut ret).unwrap();
+            ret
+        };
+        ::serde_json::from_str(&sample_str).unwrap()
+    }
+
     #[test]
     fn parse_basic() {
-        let sample = load_tweet("src/tweet/sample-extended-onepic.json");
+        let sample = load_tweet_serde("src/tweet/sample-extended-onepic.json");
 
         assert_eq!(sample.text,
                    ".@Serrayak said he’d use what-ev-er I came up with as his Halloween avatar so I’m just making sure you all know he said that https://t.co/MvgxCwDwSa");

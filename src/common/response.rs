@@ -19,6 +19,7 @@ use super::{FromJson, field};
 use error::{self, TwitterErrors};
 use error::Error::*;
 use serde;
+use serde_json;
 
 header! { (XRateLimitLimit, "X-Rate-Limit-Limit") => [i32] }
 header! { (XRateLimitRemaining, "X-Rate-Limit-Remaining") => [i32] }
@@ -33,7 +34,6 @@ header! { (XRateLimitReset, "X-Rate-Limit-Reset") => [i32] }
 ///As this implements `Deref` and `DerefMut`, you can transparently use the contained `response`'s
 ///methods as if they were methods on this struct.
 #[derive(Debug, Deserialize)]
-// TODO Deserialize or DerserializeOwned?
 pub struct Response<T> {
     ///The rate limit ceiling for the given request.
     pub rate_limit: i32,
@@ -513,6 +513,16 @@ pub fn make_response<T: FromJson>(full_resp: String, headers: &Headers)
     Ok(Response::map(rate_headers(headers), |_| out))
 }
 
+/// Shortcut `MakeResponse` method that attempts to parse the given type from the response and
+/// loads rate-limit information from the response headers.
+pub fn make_response_serde<T: for <'a> serde::Deserialize<'a>>(full_resp: String, headers: &Headers)
+                                        -> Result<Response<T>, error::Error>
+{
+    println!("Deserialize:\n{}\n as {}", full_resp, unsafe { ::std::intrinsics::type_name::<T>() });
+    let out = serde_json::from_str(&full_resp)?; // TODO OK to use ?
+    Ok(Response::map(rate_headers(headers), |_| out))
+}
+
 pub fn make_future<T>(handle: &Handle,
                       request: Request,
                       make_resp: fn(String, &Headers) -> Result<T, error::Error>)
@@ -529,6 +539,13 @@ pub fn make_parsed_future<T: FromJson>(handle: &Handle, request: Request)
     -> TwitterFuture<Response<T>>
 {
     make_future(handle, request, make_response)
+}
+
+/// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
+pub fn make_parsed_future_serde<T: for <'de> serde::Deserialize<'de>>(handle: &Handle, request: Request)
+                                                                      -> TwitterFuture<Response<T>>
+{
+    make_future(handle, request, make_response_serde)
 }
 
 pub fn rate_headers(resp: &Headers) -> Response<()> {
