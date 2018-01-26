@@ -14,7 +14,6 @@ use hyper::header::{Headers, ContentLength};
 use hyper_tls::HttpsConnector;
 use tokio_core::reactor::Handle;
 use futures::{Async, Future, Poll, Stream};
-use rustc_serialize::json;
 use error::{self, TwitterErrors};
 use error::Error::*;
 use serde;
@@ -406,7 +405,7 @@ impl Future for RawFuture {
             Err(_) => Err(io::Error::new(io::ErrorKind::InvalidData,
                                          "stream did not contain valid UTF-8").into()),
             Ok(resp) => {
-                if let Ok(err) = json::decode::<TwitterErrors>(&resp) {
+                if let Ok(err) = serde_json::from_str::<TwitterErrors>(&resp) {
                     if err.errors.iter().any(|e| e.code == 88) &&
                         self.headers().has::<XRateLimitReset>()
                     {

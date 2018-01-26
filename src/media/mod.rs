@@ -37,15 +37,14 @@
 //! For more information, see the [`UploadBuilder`] documentation.
 
 use std::borrow::Cow;
-use std::collections::{HashMap, BTreeMap};
+use std::collections::HashMap;
 use std::error::Error as StdError;
 use std::fmt;
 use std::time::{Instant, Duration};
 
 use futures::{Future, Async, Poll};
-use rustc_serialize::{json, base64};
-use rustc_serialize::base64::{ToBase64};
 use tokio_core::reactor::Timeout;
+use base64;
 
 use common::*;
 use error;
@@ -420,16 +419,17 @@ impl<'a> UploadFuture<'a> {
         if let Some(chunk) = chunk {
             let mut params = HashMap::new();
 
-            let config = base64::Config {
-                char_set: base64::CharacterSet::Standard,
-                newline: base64::Newline::LF,
-                pad: true,
-                line_length: None,
-            };
+            let config = base64::Config::new(
+                base64::CharacterSet::Standard,
+                true,
+                true,
+                // TODO do we want line-wrapping?
+                base64::LineWrap::NoWrap
+            );
 
             add_param(&mut params, "command", "APPEND");
             add_param(&mut params, "media_id", media_id.to_string());
-            add_param(&mut params, "media_data", chunk.to_base64(config));
+            add_param(&mut params, "media_data", base64::encode_config(chunk, config));
             add_param(&mut params, "segment_index", chunk_num.to_string());
 
             let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
@@ -469,16 +469,17 @@ impl<'a> UploadFuture<'a> {
     }
 
     fn metadata(&self, media_id: u64, alt_text: &str) -> FutureResponse<()> {
-        use rustc_serialize::json::Json;
+        use serde_json::map::Map;
+        use serde_json::Value;
 
-        let mut inner = BTreeMap::new();
-        inner.insert("text".to_string(), Json::String(alt_text.to_string()));
+        let mut inner = Map::new();
+        inner.insert("text".to_string(), Value::String(alt_text.to_string()));
 
-        let mut outer = BTreeMap::new();
-        outer.insert("media_id".to_string(), Json::String(media_id.to_string()));
-        outer.insert("alt_text".to_string(), Json::Object(inner));
+        let mut outer = Map::new();
+        outer.insert("media_id".to_string(), Value::String(media_id.to_string()));
+        outer.insert("alt_text".to_string(), Value::Object(inner));
 
-        let body = Json::Object(outer);
+        let body = Value::Object(outer);
 
         let req = auth::post_json(links::media::METADATA, &self.token, &body);
 

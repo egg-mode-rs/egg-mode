@@ -120,12 +120,6 @@ pub enum Error {
     ///An error was experienced while processing the response stream. The enclosed error was
     ///returned from libstd.
     IOError(std::io::Error),
-    ///An error occurred while parsing the JSON resposne. The enclosed error was returned from
-    ///rustc_serialize.
-    JSONError(rustc_serialize::json::ParserError),
-    ///An error occurred while loading the JSON response. The enclosed error was returned from
-    ///rustc_serialize.
-    DecodeError(rustc_serialize::json::DecoderError),
     ///An error occurred while loading the JSON response. The enclosed error was returned from
     ///serde_json
     DeserializeError(serde_json::Error),
@@ -148,8 +142,6 @@ impl std::fmt::Display for Error {
             Error::NetError(ref err) => write!(f, "Network error: {}", err),
             Error::TlsError(ref err) => write!(f, "TLS error: {}", err),
             Error::IOError(ref err) => write!(f, "IO error: {}", err),
-            Error::JSONError(ref err) => write!(f, "JSON parse Error: {}", err),
-            Error::DecodeError(ref err) => write!(f, "JSON decode error: {}", err),
             // TODO rename, eventually
             Error::DeserializeError(ref err) => write!(f, "JSON deserialize error: {}", err),
             Error::TimestampParseError(ref err) => write!(f, "Error parsing timestamp: {}", err),
@@ -171,8 +163,6 @@ impl std::error::Error for Error {
             Error::NetError(ref err) => err.description(),
             Error::TlsError(ref err) => err.description(),
             Error::IOError(ref err) => err.description(),
-            Error::JSONError(ref err) => err.description(),
-            Error::DecodeError(ref err) => err.description(),
             Error::DeserializeError(ref err) => err.description(),
             Error::TimestampParseError(ref err) => err.description(),
         }
@@ -183,9 +173,8 @@ impl std::error::Error for Error {
             Error::NetError(ref err) => Some(err),
             Error::TlsError(ref err) => Some(err),
             Error::IOError(ref err) => Some(err),
-            Error::JSONError(ref err) => Some(err),
-            Error::DecodeError(ref err) => Some(err),
             Error::TimestampParseError(ref err) => Some(err),
+            Error::DeserializeError(ref err) => Some(err),
             _ => None,
         }
     }

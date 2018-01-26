@@ -134,12 +134,14 @@ use list;
 
 pub use tokio_core::reactor::Handle;
 pub use hyper::Headers;
+use chrono::{self, TimeZone};
+use serde::{Deserialize, Deserializer};
+use serde::de::Error;
 
-#[macro_use] mod from_json;
+// TODO fix up the docs
 mod response;
 
 pub use common::response::*;
-pub use common::from_json::*;
 
 ///Convenience type used to hold parameters to an API call.
 pub type ParamList<'a> = HashMap<Cow<'a, str>, Cow<'a, str>>;

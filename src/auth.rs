@@ -13,14 +13,14 @@ use std::error::Error;
 use std::borrow::Cow;
 use std::time::{UNIX_EPOCH, SystemTime};
 
+use base64;
 use futures::{Future, Poll, Async};
 use hmac::{Hmac, Mac};
 use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer, Headers};
 use hyper::{Method, Request};
 use mime::Mime;
 use rand::{self, Rng};
-use rustc_serialize::base64::{self, ToBase64};
-use rustc_serialize::json;
+use serde_json;
 use sha_1::Sha1;
 use tokio_core::reactor::Handle;
 use url::percent_encoding::{EncodeSet, utf8_percent_encode};
@@ -411,17 +411,17 @@ fn sign(header: TwitterOAuth,
     let mut digest = Hmac::<Sha1>::new(key.as_bytes());
     digest.input(base_str.as_bytes());
 
-    let config = base64::Config {
-        char_set: base64::CharacterSet::Standard,
-        newline: base64::Newline::LF,
-        pad: true,
-        line_length: None,
-    };
+    let config = base64::Config::new(
+        base64::CharacterSet::Standard,
+        true,
+        true,
+        // TODO do we want line-wrapping?
+        base64::LineWrap::NoWrap
+    );
 
-    TwitterOAuth {
-        signature: Some(digest.result().code().to_base64(config)),
-        ..header
-    }
+    let signature = Some(base64::encode_config(digest.result().code(), config));
+
+    TwitterOAuth {signature, ..header}
 }
 
 ///With the given method parameters, return a signed OAuth header.
@@ -526,7 +526,7 @@ pub fn post(uri: &str,
 }
 
 /// Assemble a signed POST request to the given URL with the given JSON body.
-pub fn post_json(uri: &str, token: &Token, body: &json::Json) -> Request {
+pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request {
     let content: Mime = "application/json; charset=UTF-8".parse().unwrap();
     let body = body.to_string();
 
@@ -877,9 +877,9 @@ pub fn bearer_token(con_token: &KeyPair, handle: &Handle)
     request.set_body("grant_type=client_credentials");
 
     fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
-        let decoded = try!(json::Json::from_str(&full_resp));
-        let result = try!(decoded.find("access_token")
-                                 .and_then(|s| s.as_string())
+        let decoded: serde_json::Value = try!(serde_json::from_str(&full_resp));
+        let result = try!(decoded.get("access_token")
+                                 .and_then(|s| s.as_str())
                                  .ok_or(error::Error::MissingValue("access_token")));
 
         Ok(Token::Bearer(result.to_owned()))
@@ -912,9 +912,9 @@ pub fn invalidate_bearer(handle: &Handle, con_token: &KeyPair, token: &Token)
     request.set_body(format!("access_token={}", token));
 
     fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
-        let decoded = try!(json::Json::from_str(&full_resp));
-        let result = try!(decoded.find("access_token")
-                                 .and_then(|s| s.as_string())
+        let decoded: serde_json::Value = try!(serde_json::from_str(&full_resp));
+        let result = try!(decoded.get("access_token")
+                                 .and_then(|s| s.as_str())
                                  .ok_or(error::Error::MissingValue("access_token")));
 
         Ok(Token::Bearer(result.to_owned()))

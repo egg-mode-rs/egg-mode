@@ -152,6 +152,7 @@
 #![warn(unused_extern_crates)]
 #![warn(unused_qualifications)]
 
+extern crate base64;
 #[macro_use] extern crate hyper;
 #[macro_use] extern crate lazy_static;
 extern crate futures;
@@ -162,7 +163,6 @@ extern crate url;
 extern crate rand;
 extern crate hmac;
 extern crate sha_1;
-extern crate rustc_serialize;
 extern crate mime;
 extern crate chrono;
 extern crate regex;
