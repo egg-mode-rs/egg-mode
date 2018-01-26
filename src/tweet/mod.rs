@@ -63,6 +63,7 @@ use hyper::client::Request;
 use futures::{Future, Poll, Async};
 use serde::{Deserialize, Deserializer};
 use serde::de::Error;
+use serde_json;
 
 use auth;
 use links;
@@ -75,6 +76,7 @@ use stream::FilterLevel;
 use common::*;
 
 mod fun;
+mod raw;
 
 pub use self::fun::*;
 
@@ -147,7 +149,7 @@ pub use self::fun::*;
 ///* `withheld_copyright`
 ///* `withheld_in_countries`
 ///* `withheld_scope`
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Tweet {
     //If the user has contributors enabled, this will show which accounts contributed to this
     //tweet.
@@ -155,7 +157,6 @@ pub struct Tweet {
     ///If present, the location coordinate attached to the tweet, as a (latitude, longitude) pair.
     pub coordinates: Option<(f64, f64)>,
     ///UTC timestamp from when the tweet was posted.
-    #[serde(deserialize_with = "deserialize_datetime")]
     pub created_at: chrono::DateTime<chrono::Utc>,
     ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
     pub current_user_retweet: Option<u64>,
@@ -213,12 +214,10 @@ pub struct Tweet {
     ///who retweeted the status, as well as the original poster.
     pub retweeted_status: Option<Box<Tweet>>,
     ///The application used to post the tweet.
-    #[serde(deserialize_with = "deserialize_tweet_source")]
     pub source: TweetSource,
     ///The text of the tweet. For "extended" tweets, opening reply mentions and/or attached media
     ///or quoted tweet links do not count against character count, so this could be longer than 140
     ///characters in those situations.
-    #[serde(rename = "full_text")]  // TODO this does not match from_json impl
     pub text: String,
     ///Indicates whether this tweet is a truncated "compatibility" form of an extended tweet whose
     ///full text is longer than 140 characters.
@@ -227,7 +226,6 @@ pub struct Tweet {
     ///`TwitterUser`.
     pub user: Option<Box<user::TwitterUser>>,
     ///If present and `true`, indicates that this tweet has been withheld due to a DMCA complaint.
-    #[serde(default)]
     pub withheld_copyright: bool,
     ///If present, contains two-letter country codes indicating where this tweet is being withheld.
     ///
@@ -240,111 +238,151 @@ pub struct Tweet {
     pub withheld_scope: Option<String>,
 }
 
-impl FromJson for Tweet {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("Tweet received json that wasn't an object", Some(input.to_string())));
-        }
-
-        //streams are weird w.r.t. tweets over 140 - the regular payload acts like the regular
-        //pre-extension tweets, including short text and no "extended_entities", and all that
-        //metadata is put into this new field here
-        let extended_tweet: Option<json::Json> = try!(field(input, "extended_tweet"));
-
-        let coords: Option<(f64, f64)> = if let Some(geo) = input.find("coordinates") {
-            try!(field(geo, "coordinates"))
-        } else {
-            None
-        };
-
-        field_present!(input, created_at);
-        field_present!(input, id);
-        field_present!(input, lang);
-        field_present!(input, retweet_count);
-        field_present!(input, source);
-        field_present!(input, truncated);
-
-        let text: String;
-        let mut display_text_range: Option<(usize, usize)>;
-        let mut entities: TweetEntities;
-        let mut extended_entities: Option<ExtendedTweetEntities>;
-
-        if let Some(ref ext) = extended_tweet {
-            text = try!(field(ext, "full_text").or(field(input, "text")));
-            display_text_range = try!(field(ext, "display_text_range"));
-            entities = try!(field(ext, "entities"));
-            extended_entities = try!(field(ext, "extended_entities"));
-        } else {
-            field_present!(input, entities);
-
-            text = try!(field(input, "full_text").or(field(input, "text")));
-            display_text_range = try!(field(input, "display_text_range"));
-            entities = try!(field(input, "entities"));
-            extended_entities = try!(field(input, "extended_entities"));
-        }
-
-        if let Some(ref mut range) = display_text_range {
-            codepoints_to_bytes(range, &text);
-        }
-
-        for entity in &mut entities.hashtags {
-            codepoints_to_bytes(&mut entity.range, &text);
-        }
-        for entity in &mut entities.symbols {
-            codepoints_to_bytes(&mut entity.range, &text);
-        }
-        for entity in &mut entities.urls {
-            codepoints_to_bytes(&mut entity.range, &text);
-        }
-        for entity in &mut entities.user_mentions {
-            codepoints_to_bytes(&mut entity.range, &text);
-        }
-        if let Some(ref mut media) = entities.media {
-            for entity in media.iter_mut() {
-                codepoints_to_bytes(&mut entity.range, &text);
-            }
-        }
-
-        if let Some(ref mut entities) = extended_entities {
-            for entity in entities.media.iter_mut() {
-                codepoints_to_bytes(&mut entity.range, &text);
-            }
-        }
-
+impl<'de> Deserialize<'de> for Tweet {
+    fn deserialize<D>(deser: D) -> Result<Tweet, D::Error> where D: Deserializer<'de> {
+        // TODO remove unwrap
+        let raw = raw::RawTweet::deserialize(deser)?;
+        let text = raw.text
+            .or(raw.full_text)
+            .or(raw.extended_tweet.map(|xt| xt.full_text)).unwrap();
         Ok(Tweet {
-            //contributors: Option<Contributors>,
-            coordinates: coords.map(|(lon, lat)| (lat, lon)),
-            created_at: try!(field(input, "created_at")),
-            current_user_retweet: try!(current_user_retweet(input, "current_user_retweet")),
-            display_text_range: display_text_range,
-            entities: entities,
-            extended_entities: extended_entities,
-            favorite_count: field(input, "favorite_count").unwrap_or(0),
-            favorited: try!(field(input, "favorited")),
-            filter_level: try!(field(input, "filter_level")),
-            id: try!(field(input, "id")),
-            in_reply_to_user_id: try!(field(input, "in_reply_to_user_id")),
-            in_reply_to_screen_name: try!(field(input, "in_reply_to_screen_name")),
-            in_reply_to_status_id: try!(field(input, "in_reply_to_status_id")),
-            lang: try!(field(input, "lang")),
-            place: try!(field(input, "place")),
-            possibly_sensitive: try!(field(input, "possibly_sensitive")),
-            quoted_status_id: try!(field(input, "quoted_status_id")),
-            quoted_status: try!(field(input, "quoted_status")),
-            //scopes: Option<Scopes>,
-            retweet_count: try!(field(input, "retweet_count")),
-            retweeted: try!(field(input, "retweeted")),
-            retweeted_status: try!(field(input, "retweeted_status")),
-            source: try!(field(input, "source")),
-            text: text,
-            truncated: try!(field(input, "truncated")),
-            user: try!(field(input, "user")),
-            withheld_copyright: field(input, "withheld_copyright").unwrap_or(false),
-            withheld_in_countries: try!(field(input, "withheld_in_countries")),
-            withheld_scope: try!(field(input, "withheld_scope")),
+            coordinates: raw.coordinates,
+            created_at: raw.created_at,
+            current_user_retweet: raw.current_user_retweet,
+            display_text_range: raw.display_text_range,
+            entities: raw.entities,
+            extended_entities: raw.extended_entities,
+            favorite_count: raw.favorite_count,
+            favorited: raw.favorited,
+            filter_level: raw.filter_level,
+            id: raw.id,
+            in_reply_to_user_id: raw.in_reply_to_user_id,
+            in_reply_to_screen_name: raw.in_reply_to_screen_name,
+            in_reply_to_status_id: raw.in_reply_to_status_id,
+            lang: raw.lang,
+            place: raw.place,
+            possibly_sensitive: raw.possibly_sensitive,
+            quoted_status_id: raw.quoted_status_id,
+            quoted_status: raw.quoted_status,
+            retweet_count: raw.retweet_count,
+            retweeted: raw.retweeted,
+            retweeted_status: raw.retweeted_status,
+            source: raw.source,
+            truncated: raw.truncated,
+            user: raw.user,
+            withheld_copyright: raw.withheld_copyright,
+            withheld_in_countries: raw.withheld_in_countries,
+            withheld_scope: raw.withheld_scope,
+            text,
         })
     }
 }
+
+// impl FromJson for Tweet {
+//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+//         if !input.is_object() {
+//             return Err(InvalidResponse("Tweet received json that wasn't an object", Some(input.to_string())));
+//         }
+
+//         //streams are weird w.r.t. tweets over 140 - the regular payload acts like the regular
+//         //pre-extension tweets, including short text and no "extended_entities", and all that
+//         //metadata is put into this new field here
+//         let extended_tweet: Option<json::Json> = try!(field(input, "extended_tweet"));
+
+//         let coords: Option<(f64, f64)> = if let Some(geo) = input.find("coordinates") {
+//             try!(field(geo, "coordinates"))
+//         } else {
+//             None
+//         };
+
+//         field_present!(input, created_at);
+//         field_present!(input, id);
+//         field_present!(input, lang);
+//         field_present!(input, retweet_count);
+//         field_present!(input, source);
+//         field_present!(input, truncated);
+
+//         let text: String;
+//         let mut display_text_range: Option<(usize, usize)>;
+//         let mut entities: TweetEntities;
+//         let mut extended_entities: Option<ExtendedTweetEntities>;
+
+//         if let Some(ref ext) = extended_tweet {
+//             text = try!(field(ext, "full_text").or(field(input, "text")));
+//             display_text_range = try!(field(ext, "display_text_range"));
+//             entities = try!(field(ext, "entities"));
+//             extended_entities = try!(field(ext, "extended_entities"));
+//         } else {
+//             field_present!(input, entities);
+
+//             text = try!(field(input, "full_text").or(field(input, "text")));
+//             display_text_range = try!(field(input, "display_text_range"));
+//             entities = try!(field(input, "entities"));
+//             extended_entities = try!(field(input, "extended_entities"));
+//         }
+
+//         if let Some(ref mut range) = display_text_range {
+//             codepoints_to_bytes(range, &text);
+//         }
+
+//         for entity in &mut entities.hashtags {
+//             codepoints_to_bytes(&mut entity.range, &text);
+//         }
+//         for entity in &mut entities.symbols {
+//             codepoints_to_bytes(&mut entity.range, &text);
+//         }
+//         for entity in &mut entities.urls {
+//             codepoints_to_bytes(&mut entity.range, &text);
+//         }
+//         for entity in &mut entities.user_mentions {
+//             codepoints_to_bytes(&mut entity.range, &text);
+//         }
+//         if let Some(ref mut media) = entities.media {
+//             for entity in media.iter_mut() {
+//                 codepoints_to_bytes(&mut entity.range, &text);
+//             }
+//         }
+
+//         if let Some(ref mut entities) = extended_entities {
+//             for entity in entities.media.iter_mut() {
+//                 codepoints_to_bytes(&mut entity.range, &text);
+//             }
+//         }
+
+//         Ok(Tweet {
+//             //contributors: Option<Contributors>,
+//             coordinates: coords.map(|(lon, lat)| (lat, lon)),
+//             created_at: try!(field(input, "created_at")),
+//             current_user_retweet: try!(current_user_retweet(input, "current_user_retweet")),
+//             display_text_range: display_text_range,
+//             entities: entities,
+//             extended_entities: extended_entities,
+//             favorite_count: field(input, "favorite_count").unwrap_or(0),
+//             favorited: try!(field(input, "favorited")),
+//             filter_level: try!(field(input, "filter_level")),
+//             id: try!(field(input, "id")),
+//             in_reply_to_user_id: try!(field(input, "in_reply_to_user_id")),
+//             in_reply_to_screen_name: try!(field(input, "in_reply_to_screen_name")),
+//             in_reply_to_status_id: try!(field(input, "in_reply_to_status_id")),
+//             lang: try!(field(input, "lang")),
+//             place: try!(field(input, "place")),
+//             possibly_sensitive: try!(field(input, "possibly_sensitive")),
+//             quoted_status_id: try!(field(input, "quoted_status_id")),
+//             quoted_status: try!(field(input, "quoted_status")),
+//             //scopes: Option<Scopes>,
+//             retweet_count: try!(field(input, "retweet_count")),
+//             retweeted: try!(field(input, "retweeted")),
+//             retweeted_status: try!(field(input, "retweeted_status")),
+//             source: try!(field(input, "source")),
+//             text: text,
+//             truncated: try!(field(input, "truncated")),
+//             user: try!(field(input, "user")),
+//             withheld_copyright: field(input, "withheld_copyright").unwrap_or(false),
+//             withheld_in_countries: try!(field(input, "withheld_in_countries")),
+//             withheld_scope: try!(field(input, "withheld_scope")),
+//         })
+//     }
+// }
 
 fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Option<u64>, error::Error> {
     if let Some(obj) = input.find(field).and_then(|f| f.as_object()) {
@@ -988,16 +1026,6 @@ mod tests {
     use std::fs::File;
     use std::io::Read;
 
-    fn load_tweet(path: &str) -> Tweet {
-        let sample_str = {
-            let mut file = File::open(path).unwrap();
-            let mut ret = String::new();
-            file.read_to_string(&mut ret).unwrap();
-            ret
-        };
-        Tweet::from_str(&sample_str).unwrap()
-    }
-
     fn load_tweet_serde(path: &str) -> Tweet {
         let sample_str = {
             let mut file = File::open(path).unwrap();
@@ -1006,46 +1034,6 @@ mod tests {
             ret
         };
         ::serde_json::from_str(&sample_str).unwrap()
-    }
-
-    #[test]
-    fn parse_basic() {
-        let sample = load_tweet("src/tweet/sample-extended-onepic.json");
-
-        assert_eq!(sample.text,
-                   ".@Serrayak said he’d use what-ev-er I came up with as his Halloween avatar so I’m just making sure you all know he said that https://t.co/MvgxCwDwSa");
-        assert!(sample.user.is_some());
-        assert_eq!(sample.user.unwrap().screen_name, "0xabad1dea");
-        assert_eq!(sample.id, 782349500404862976);
-        assert_eq!(sample.source.name, "Tweetbot for iΟS"); //note that's an omicron, not an O
-        assert_eq!(sample.source.url, "http://tapbots.com/tweetbot");
-        assert_eq!(sample.created_at.weekday(), Weekday::Sat);
-        assert_eq!(sample.created_at.year(), 2016);
-        assert_eq!(sample.created_at.month(), 10);
-        assert_eq!(sample.created_at.day(), 1);
-        assert_eq!(sample.created_at.hour(), 22);
-        assert_eq!(sample.created_at.minute(), 40);
-        assert_eq!(sample.created_at.second(), 30);
-        assert_eq!(sample.favorite_count, 20);
-        assert_eq!(sample.retweet_count, 0);
-        assert_eq!(sample.lang, "en");
-        assert_eq!(sample.coordinates, None);
-        assert!(sample.place.is_none());
-
-        assert_eq!(sample.favorited, Some(false));
-        assert_eq!(sample.retweeted, Some(false));
-        assert!(sample.current_user_retweet.is_none());
-
-        assert!(sample.entities.user_mentions.iter().any(|m| m.screen_name == "Serrayak"));
-        assert!(sample.extended_entities.is_some());
-        assert_eq!(sample.extended_entities.unwrap().media.len(), 1);
-
-        // text contains extended link, which is outside of display_text_range
-        let range = sample.display_text_range.unwrap();
-        assert_eq!(&sample.text[range.0..range.1],
-                   ".@Serrayak said he’d use what-ev-er I came up with as his Halloween avatar so I’m just making sure you all know he said that"
-        );
-        assert_eq!(sample.truncated, false);
     }
 
     #[test]
@@ -1089,16 +1077,6 @@ mod tests {
         assert_eq!(sample.truncated, false);
     }
 
-
-    #[test]
-    fn parse_reply() {
-        let sample = load_tweet("src/tweet/sample-reply.json");
-
-        assert_eq!(sample.in_reply_to_screen_name, Some("QuietMisdreavus".to_string()));
-        assert_eq!(sample.in_reply_to_user_id, Some(2977334326));
-        assert_eq!(sample.in_reply_to_status_id, Some(782643731665080322));
-    }
-
     #[test]
     fn parse_reply_serde() {
         let sample = load_tweet_serde("src/tweet/sample-reply.json");
@@ -1109,16 +1087,6 @@ mod tests {
     }
 
     #[test]
-    fn parse_quote() {
-        let sample = load_tweet("src/tweet/sample-quote.json");
-
-        assert_eq!(sample.quoted_status_id, Some(783004145485840384));
-        assert!(sample.quoted_status.is_some());
-        assert_eq!(sample.quoted_status.unwrap().text,
-                   "@chalkboardsband hot damn i should call up my friends in austin, i might actually be able to make one of these now :D");
-    }
-
-    #[test]
     fn parse_quote_serde() {
         let sample = load_tweet_serde("src/tweet/sample-quote.json");
 
@@ -1126,15 +1094,6 @@ mod tests {
         assert!(sample.quoted_status.is_some());
         assert_eq!(sample.quoted_status.unwrap().text,
                    "@chalkboardsband hot damn i should call up my friends in austin, i might actually be able to make one of these now :D");
-    }
-
-    #[test]
-    fn parse_retweet() {
-        let sample = load_tweet("src/tweet/sample-retweet.json");
-
-        assert!(sample.retweeted_status.is_some());
-        assert_eq!(sample.retweeted_status.unwrap().text,
-                   "it's working: follow @andrewhuangbot for a random lyric of mine every hour. we'll call this version 0.1.0. wanna get line breaks in there");
     }
 
     #[test]

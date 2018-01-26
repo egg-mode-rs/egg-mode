@@ -156,23 +156,23 @@ pub struct ListCursor {
     pub lists: Vec<list::List>,
 }
 
-impl FromJson for ListCursor {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("ListCursor received json that wasn't an object", Some(input.to_string())));
-        }
+// impl FromJson for ListCursor {
+//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+//         if !input.is_object() {
+//             return Err(InvalidResponse("ListCursor received json that wasn't an object", Some(input.to_string())));
+//         }
 
-        field_present!(input, previous_cursor);
-        field_present!(input, next_cursor);
-        field_present!(input, lists);
+//         field_present!(input, previous_cursor);
+//         field_present!(input, next_cursor);
+//         field_present!(input, lists);
 
-        Ok(ListCursor {
-            previous_cursor: try!(field(input, "previous_cursor")),
-            next_cursor: try!(field(input, "next_cursor")),
-            lists: try!(field(input, "lists")),
-        })
-    }
-}
+//         Ok(ListCursor {
+//             previous_cursor: try!(field(input, "previous_cursor")),
+//             next_cursor: try!(field(input, "next_cursor")),
+//             lists: try!(field(input, "lists")),
+//         })
+//     }
+// }
 
 impl Cursor for ListCursor {
     type Item = list::List;

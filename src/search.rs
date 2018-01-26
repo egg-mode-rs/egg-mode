@@ -271,23 +271,23 @@ pub struct SearchResult<'a> {
     params: Option<ParamList<'a>>,
 }
 
-impl<'a> FromJson for SearchResult<'a> {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("SearchResult received json that wasn't an object", Some(input.to_string())));
-        }
+// impl<'a> FromJson for SearchResult<'a> {
+//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+//         if !input.is_object() {
+//             return Err(InvalidResponse("SearchResult received json that wasn't an object", Some(input.to_string())));
+//         }
 
-        let metadata = try!(input.find("search_metadata").ok_or(MissingValue("search_metadata")));
+//         let metadata = try!(input.find("search_metadata").ok_or(MissingValue("search_metadata")));
 
-        Ok(SearchResult {
-            statuses: try!(field(input, "statuses")),
-            query: try!(field(metadata, "query")),
-            max_id: try!(field(metadata, "max_id")),
-            since_id: try!(field(metadata, "since_id")),
-            params: None,
-        })
-    }
-}
+//         Ok(SearchResult {
+//             statuses: try!(field(input, "statuses")),
+//             query: try!(field(metadata, "query")),
+//             max_id: try!(field(metadata, "max_id")),
+//             since_id: try!(field(metadata, "since_id")),
+//             params: None,
+//         })
+//     }
+// }
 
 impl<'a> SearchResult<'a> {
     ///Load the next page of search results for the same query.

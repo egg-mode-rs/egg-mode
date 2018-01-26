@@ -12,6 +12,8 @@ use futures::{Future, Stream, Poll, Async};
 use hyper::Body;
 use hyper::client::{Request, FutureResponse};
 use rustc_serialize::json;
+use serde::Deserialize;
+use serde_json;
 
 use auth::{self, Token};
 use direct::DirectMessage;
@@ -23,8 +25,9 @@ use user::TwitterUser;
 
 use common::*;
 
+// TODO Obviously this won't deserialize as-is
 /// Represents the kinds of messages that can be sent over Twitter's Streaming API.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub enum StreamMessage {
     /// A blank line, sent periodically to keep the connection alive.
     Ping,
@@ -151,129 +154,141 @@ pub enum StreamMessage {
     ///
     /// Twitter can add new streaming messages to the API, and egg-mode includes them here so that
     /// they can be used before egg-mode has a chance to handle them.
-    Unknown(json::Json),
+    Unknown(serde_json::Value),
     //TODO: stall warnings? "follows over limit" warnings? (other warnings?)
 }
 
-impl FromJson for StreamMessage {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if let Some(event) = input.find("event").and_then(|ev| ev.as_string()) {
-            //TODO: if i ever support site streams, add "access_revoked" here
-            match event {
-                "favorite" => {
-                    Ok(StreamMessage::Like(
-                        try!(field(input, "created_at")),
-                        try!(field(input, "source")),
-                        try!(field(input, "target_object"))))
-                }
-                "unfavorite" => {
-                    Ok(StreamMessage::Unlike(
-                        try!(field(input, "created_at")),
-                        try!(field(input, "source")),
-                        try!(field(input, "target_object"))))
-                }
-                "block" => {
-                    Ok(StreamMessage::Block(
-                        try!(field(input, "created_at")),
-                        try!(field(input, "target"))))
-                }
-                "unblock" => {
-                    Ok(StreamMessage::Unblock(
-                        try!(field(input, "created_at")),
-                        try!(field(input, "target"))))
-                }
-                "follow" => {
-                    Ok(StreamMessage::Follow {
-                        at: try!(field(input, "created_at")),
-                        source: try!(field(input, "source")),
-                        target: try!(field(input, "target")),
-                    })
-                }
-                "unfollow" => {
-                    Ok(StreamMessage::Unfollow(
-                        try!(field(input, "created_at")),
-                        try!(field(input, "target"))))
-                }
-                "quoted_tweet" => {
-                    Ok(StreamMessage::Quoted(
-                        try!(field(input, "created_at")),
-                        try!(field(input, "source")),
-                        try!(field(input, "target_object"))))
-                }
-                "user_update" => {
-                    Ok(StreamMessage::ProfileUpdate(
-                        try!(field(input, "created_at")),
-                        try!(field(input, "source"))))
-                }
-                "list_member_added" => {
-                    Ok(StreamMessage::AddListMember(
-                        try!(field(input, "created_at")),
-                        try!(field(input, "target")),
-                        try!(field(input, "target_object"))))
-                }
-                "list_member_removed" => {
-                    Ok(StreamMessage::RemoveListMember(
-                        try!(field(input, "created_at")),
-                        try!(field(input, "target")),
-                        try!(field(input, "target_object"))))
-                }
-                "list_user_subscribed" => {
-                    Ok(StreamMessage::ListSubscribe(
-                        try!(field(input, "created_at")),
-                        try!(field(input, "source")),
-                        try!(field(input, "target_object"))))
-                }
-                "list_user_unsubscribed" => {
-                    Ok(StreamMessage::ListUnsubscribe(
-                        try!(field(input, "created_at")),
-                        try!(field(input, "source")),
-                        try!(field(input, "target_object"))))
-                }
-                _ => {
-                    Ok(StreamMessage::Unknown(input.clone()))
-                }
-            }
-        } else if let Some(del) = input.find_path(&["delete", "status"]) {
-            Ok(StreamMessage::Delete {
-                status_id: try!(field(del, "id")),
-                user_id: try!(field(del, "user_id")),
-            })
-        } else if let Some(scrub) = input.find("scrub_geo") {
-            Ok(StreamMessage::ScrubGeo {
-                user_id: try!(field(scrub, "user_id")),
-                up_to_status_id: try!(field(scrub, "up_to_status_id")),
-            })
-        } else if let Some(tweet) = input.find("status_withheld") {
-            Ok(StreamMessage::StatusWithheld {
-                status_id: try!(field(tweet, "id")),
-                user_id: try!(field(tweet, "user_id")),
-                withheld_in_countries: try!(field(tweet, "withheld_in_countries")),
-            })
-        } else if let Some(user) = input.find("user_withheld") {
-            Ok(StreamMessage::UserWithheld {
-                user_id: try!(field(user, "id")),
-                withheld_in_countries: try!(field(user, "withheld_in_countries")),
-            })
-        } else if let Some(err) = input.find("disconnect") {
-            Ok(StreamMessage::Disconnect(try!(field(err, "code")), try!(field(err, "reason"))))
-        } else if let Some(friends) = input.find("friends") {
-            Ok(StreamMessage::FriendList(try!(Vec::<u64>::from_json(friends))))
-        } else if let Some(dm) = input.find("direct_message") {
-            Ok(StreamMessage::DirectMessage(try!(DirectMessage::from_json(dm))))
-        } else if let Ok(tweet) = Tweet::from_json(input) {
-            Ok(StreamMessage::Tweet(tweet))
-        } else {
-            Ok(StreamMessage::Unknown(input.clone()))
-        }
-    }
+// impl FromJson for StreamMessage {
+//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+//         if let Some(event) = input.find("event").and_then(|ev| ev.as_string()) {
+//             //TODO: if i ever support site streams, add "access_revoked" here
+//             match event {
+//                 "favorite" => {
+//                     Ok(StreamMessage::Like(
+//                         try!(field(input, "created_at")),
+//                         try!(field(input, "source")),
+//                         try!(field(input, "target_object"))))
+//                 }
+//                 "unfavorite" => {
+//                     Ok(StreamMessage::Unlike(
+//                         try!(field(input, "created_at")),
+//                         try!(field(input, "source")),
+//                         try!(field(input, "target_object"))))
+//                 }
+//                 "block" => {
+//                     Ok(StreamMessage::Block(
+//                         try!(field(input, "created_at")),
+//                         try!(field(input, "target"))))
+//                 }
+//                 "unblock" => {
+//                     Ok(StreamMessage::Unblock(
+//                         try!(field(input, "created_at")),
+//                         try!(field(input, "target"))))
+//                 }
+//                 "follow" => {
+//                     Ok(StreamMessage::Follow {
+//                         at: try!(field(input, "created_at")),
+//                         source: try!(field(input, "source")),
+//                         target: try!(field(input, "target")),
+//                     })
+//                 }
+//                 "unfollow" => {
+//                     Ok(StreamMessage::Unfollow(
+//                         try!(field(input, "created_at")),
+//                         try!(field(input, "target"))))
+//                 }
+//                 "quoted_tweet" => {
+//                     Ok(StreamMessage::Quoted(
+//                         try!(field(input, "created_at")),
+//                         try!(field(input, "source")),
+//                         try!(field(input, "target_object"))))
+//                 }
+//                 "user_update" => {
+//                     Ok(StreamMessage::ProfileUpdate(
+//                         try!(field(input, "created_at")),
+//                         try!(field(input, "source"))))
+//                 }
+//                 "list_member_added" => {
+//                     Ok(StreamMessage::AddListMember(
+//                         try!(field(input, "created_at")),
+//                         try!(field(input, "target")),
+//                         try!(field(input, "target_object"))))
+//                 }
+//                 "list_member_removed" => {
+//                     Ok(StreamMessage::RemoveListMember(
+//                         try!(field(input, "created_at")),
+//                         try!(field(input, "target")),
+//                         try!(field(input, "target_object"))))
+//                 }
+//                 "list_user_subscribed" => {
+//                     Ok(StreamMessage::ListSubscribe(
+//                         try!(field(input, "created_at")),
+//                         try!(field(input, "source")),
+//                         try!(field(input, "target_object"))))
+//                 }
+//                 "list_user_unsubscribed" => {
+//                     Ok(StreamMessage::ListUnsubscribe(
+//                         try!(field(input, "created_at")),
+//                         try!(field(input, "source")),
+//                         try!(field(input, "target_object"))))
+//                 }
+//                 _ => {
+//                     Ok(StreamMessage::Unknown(input.clone()))
+//                 }
+//             }
+//         } else if let Some(del) = input.find_path(&["delete", "status"]) {
+//             Ok(StreamMessage::Delete {
+//                 status_id: try!(field(del, "id")),
+//                 user_id: try!(field(del, "user_id")),
+//             })
+//         } else if let Some(scrub) = input.find("scrub_geo") {
+//             Ok(StreamMessage::ScrubGeo {
+//                 user_id: try!(field(scrub, "user_id")),
+//                 up_to_status_id: try!(field(scrub, "up_to_status_id")),
+//             })
+//         } else if let Some(tweet) = input.find("status_withheld") {
+//             Ok(StreamMessage::StatusWithheld {
+//                 status_id: try!(field(tweet, "id")),
+//                 user_id: try!(field(tweet, "user_id")),
+//                 withheld_in_countries: try!(field(tweet, "withheld_in_countries")),
+//             })
+//         } else if let Some(user) = input.find("user_withheld") {
+//             Ok(StreamMessage::UserWithheld {
+//                 user_id: try!(field(user, "id")),
+//                 withheld_in_countries: try!(field(user, "withheld_in_countries")),
+//             })
+//         } else if let Some(err) = input.find("disconnect") {
+//             Ok(StreamMessage::Disconnect(try!(field(err, "code")), try!(field(err, "reason"))))
+//         } else if let Some(friends) = input.find("friends") {
+//             Ok(StreamMessage::FriendList(try!(Vec::<u64>::from_json(friends))))
+//         } else if let Some(dm) = input.find("direct_message") {
+//             Ok(StreamMessage::DirectMessage(try!(DirectMessage::from_json(dm))))
+//         } else if let Ok(tweet) = Tweet::from_json(input) {
+//             Ok(StreamMessage::Tweet(tweet))
+//         } else {
+//             Ok(StreamMessage::Unknown(input.clone()))
+//         }
+//     }
 
+//     fn from_str(input: &str) -> Result<Self, error::Error> {
+//         if input.trim().is_empty() {
+//             Ok(StreamMessage::Ping)
+//         } else {
+//             let json = try!(json::Json::from_str(input.trim()));
+
+//             StreamMessage::from_json(&json)
+//         }
+//     }
+// }
+
+// TODO  FromStr trait?
+impl StreamMessage {
     fn from_str(input: &str) -> Result<Self, error::Error> {
         if input.trim().is_empty() {
             Ok(StreamMessage::Ping)
         } else {
-            let json = try!(json::Json::from_str(input.trim()));
-
-            StreamMessage::from_json(&json)
+            let json = try!(serde_json::to_value(input.trim()));
+            Ok(StreamMessage::deserialize(&json)?)
         }
     }
 }
