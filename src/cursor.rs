@@ -10,13 +10,11 @@
 //! what types come out of functions that return `CursorIter`.
 
 use futures::{Future, Stream, Poll, Async};
-use rustc_serialize::json;
 use serde::Deserialize;
 
 use common::*;
 use auth;
 use error;
-use error::Error::InvalidResponse;
 use list;
 use user;
 
@@ -56,24 +54,6 @@ pub struct UserCursor {
     pub users: Vec<user::TwitterUser>,
 }
 
-// impl FromJson for UserCursor {
-//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-//         if !input.is_object() {
-//             return Err(InvalidResponse("UserCursor received json that wasn't an object", Some(input.to_string())));
-//         }
-
-//         field_present!(input, previous_cursor);
-//         field_present!(input, next_cursor);
-//         field_present!(input, users);
-
-//         Ok(UserCursor {
-//             previous_cursor: try!(field(input, "previous_cursor")),
-//             next_cursor: try!(field(input, "next_cursor")),
-//             users: try!(field(input, "users")),
-//         })
-//     }
-// }
-
 impl Cursor for UserCursor {
     type Item = user::TwitterUser;
 
@@ -104,24 +84,6 @@ pub struct IDCursor {
     pub next_cursor: i64,
     ///The list of user IDs in this page of results.
     pub ids: Vec<u64>,
-}
-
-impl FromJson for IDCursor {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("IDCursor received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, previous_cursor);
-        field_present!(input, next_cursor);
-        field_present!(input, ids);
-
-        Ok(IDCursor {
-            previous_cursor: try!(field(input, "previous_cursor")),
-            next_cursor: try!(field(input, "next_cursor")),
-            ids: try!(field(input, "ids")),
-        })
-    }
 }
 
 impl Cursor for IDCursor {
@@ -155,24 +117,6 @@ pub struct ListCursor {
     ///The list of lists in this page of results.
     pub lists: Vec<list::List>,
 }
-
-// impl FromJson for ListCursor {
-//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-//         if !input.is_object() {
-//             return Err(InvalidResponse("ListCursor received json that wasn't an object", Some(input.to_string())));
-//         }
-
-//         field_present!(input, previous_cursor);
-//         field_present!(input, next_cursor);
-//         field_present!(input, lists);
-
-//         Ok(ListCursor {
-//             previous_cursor: try!(field(input, "previous_cursor")),
-//             next_cursor: try!(field(input, "next_cursor")),
-//             lists: try!(field(input, "lists")),
-//         })
-//     }
-// }
 
 impl Cursor for ListCursor {
     type Item = list::List;

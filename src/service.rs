@@ -19,13 +19,11 @@
 use std::str::FromStr;
 use std::collections::HashMap;
 
-use rustc_serialize::json;
 use serde_json;
 
 use auth;
 use entities;
 use error;
-use error::Error::{InvalidResponse, MissingValue};
 use links;
 use common::*;
 
@@ -151,29 +149,6 @@ pub struct Configuration {
     pub non_username_paths: Vec<String>,
 }
 
-impl FromJson for Configuration {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("Configuration received json that wasn't an object",
-                                       Some(input.to_string())));
-        }
-
-        field_present!(input, dm_text_character_limit);
-        field_present!(input, photo_sizes);
-        field_present!(input, short_url_length);
-        field_present!(input, short_url_length_https);
-        field_present!(input, non_username_paths);
-
-        Ok(Configuration {
-            dm_text_character_limit: try!(field(input, "dm_text_character_limit")),
-            photo_sizes: try!(field(input, "photo_sizes")),
-            short_url_length: try!(field(input, "short_url_length")),
-            short_url_length_https: try!(field(input, "short_url_length_https")),
-            non_username_paths: try!(field(input, "non_username_paths")),
-        })
-    }
-}
-
 /// Represents the current rate-limit status of many Twitter API calls.
 ///
 /// This is organized by module, so for example, if you wanted to see your rate-limit status for
@@ -216,53 +191,53 @@ pub struct RateLimitStatus {
     pub list: HashMap<ListMethod, Response<()>>,
 }
 
-impl FromJson for RateLimitStatus {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("RateLimitStatus received json that wasn't an object",
-                                       Some(input.to_string())));
-        }
+// impl FromJson for RateLimitStatus {
+//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+//         if !input.is_object() {
+//             return Err(InvalidResponse("RateLimitStatus received json that wasn't an object",
+//                                        Some(input.to_string())));
+//         }
 
-        let mut direct = HashMap::new();
-        let mut place = HashMap::new();
-        let mut search = HashMap::new();
-        let mut service = HashMap::new();
-        let mut tweet = HashMap::new();
-        let mut user = HashMap::new();
-        let mut list = HashMap::new();
+//         let mut direct = HashMap::new();
+//         let mut place = HashMap::new();
+//         let mut search = HashMap::new();
+//         let mut service = HashMap::new();
+//         let mut tweet = HashMap::new();
+//         let mut user = HashMap::new();
+//         let mut list = HashMap::new();
 
-        let map = try!(input.find("resources").ok_or(MissingValue("resources")));
+//         let map = try!(input.find("resources").ok_or(MissingValue("resources")));
 
-        if let Some(map) = map.as_object() {
-            for (k, v) in map.values().filter_map(|v| v.as_object()).flat_map(|v| v.iter()) {
-                if let Ok(method) = k.parse::<Method>() {
-                    match method {
-                        Method::Direct(m) => direct.insert(m, try!(FromJson::from_json(v))),
-                        Method::Place(p) => place.insert(p, try!(FromJson::from_json(v))),
-                        Method::Search(s) => search.insert(s, try!(FromJson::from_json(v))),
-                        Method::Service(s) => service.insert(s, try!(FromJson::from_json(v))),
-                        Method::Tweet(t) => tweet.insert(t, try!(FromJson::from_json(v))),
-                        Method::User(u) => user.insert(u, try!(FromJson::from_json(v))),
-                        Method::List(l) => list.insert(l, try!(FromJson::from_json(v))),
-                    };
-                }
-            }
-        } else {
-            return Err(InvalidResponse("RateLimitStatus field 'resources' wasn't an object",
-                                       Some(input.to_string())));
-        }
+//         if let Some(map) = map.as_object() {
+//             for (k, v) in map.values().filter_map(|v| v.as_object()).flat_map(|v| v.iter()) {
+//                 if let Ok(method) = k.parse::<Method>() {
+//                     match method {
+//                         Method::Direct(m) => direct.insert(m, try!(FromJson::from_json(v))),
+//                         Method::Place(p) => place.insert(p, try!(FromJson::from_json(v))),
+//                         Method::Search(s) => search.insert(s, try!(FromJson::from_json(v))),
+//                         Method::Service(s) => service.insert(s, try!(FromJson::from_json(v))),
+//                         Method::Tweet(t) => tweet.insert(t, try!(FromJson::from_json(v))),
+//                         Method::User(u) => user.insert(u, try!(FromJson::from_json(v))),
+//                         Method::List(l) => list.insert(l, try!(FromJson::from_json(v))),
+//                     };
+//                 }
+//             }
+//         } else {
+//             return Err(InvalidResponse("RateLimitStatus field 'resources' wasn't an object",
+//                                        Some(input.to_string())));
+//         }
 
-        Ok(RateLimitStatus {
-            direct: direct,
-            place: place,
-            search: search,
-            service: service,
-            tweet: tweet,
-            user: user,
-            list: list,
-        })
-    }
-}
+//         Ok(RateLimitStatus {
+//             direct: direct,
+//             place: place,
+//             search: search,
+//             service: service,
+//             tweet: tweet,
+//             user: user,
+//             list: list,
+//         })
+//     }
+// }
 
 ///Method identifiers, used by `rate_limit_status` to return rate-limit information.
 enum Method {

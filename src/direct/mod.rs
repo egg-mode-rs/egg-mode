@@ -47,7 +47,6 @@ use common::*;
 use std::collections::HashMap;
 use std::mem;
 
-use rustc_serialize::json;
 use chrono;
 use hyper::client::Request;
 use futures::{Async, Future, Poll};
@@ -57,7 +56,6 @@ use auth;
 use user;
 use entities;
 use error;
-use error::Error::InvalidResponse;
 
 mod fun;
 
@@ -172,28 +170,6 @@ pub struct DMEntities {
 //         })
 //     }
 // }
-
-impl FromJson for DMEntities {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("DMEntities received json that wasn't an object",
-                                       Some(input.to_string())));
-        }
-
-        field_present!(input, hashtags);
-        field_present!(input, symbols);
-        field_present!(input, urls);
-        field_present!(input, user_mentions);
-
-        Ok(DMEntities {
-            hashtags: try!(field(input, "hashtags")),
-            symbols: try!(field(input, "symbols")),
-            urls: try!(field(input, "urls")),
-            user_mentions: try!(field(input, "user_mentions")),
-            media: try!(field(input, "media")),
-        })
-    }
-}
 
 /// Helper struct to navigate collections of direct messages by requesting DMs older or newer than
 /// certain IDs.

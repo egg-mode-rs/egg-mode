@@ -43,9 +43,6 @@
 //!   with the parent text. This is useful to show users where the link resolves to, without
 //!   potentially filling up a lot of space with the fullly expanded URL.
 use common::*;
-use error;
-use error::Error::InvalidResponse;
-use rustc_serialize::json;
 use mime;
 
 ///Represents a hashtag or symbol extracted from another piece of text.
@@ -119,7 +116,7 @@ pub enum MediaType {
     #[serde(rename = "video")]
     Video,
     ///An animated GIF, delivered as a video without audio.
-    #[serde(rename = "gif")]
+    #[serde(rename = "animated_gif")]
     Gif,
 }
 
@@ -216,210 +213,36 @@ pub struct MentionEntity {
     pub screen_name: String,
 }
 
-impl FromJson for HashtagEntity {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("HashtagEntity received json that wasn't an object", Some(input.to_string())));
-        }
+// impl FromJson for UrlEntity {
+//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+//         if !input.is_object() {
+//             return Err(InvalidResponse("UrlEntity received json that wasn't an object", Some(input.to_string())));
+//         }
 
-        field_present!(input, indices);
-        field_present!(input, text);
+//         field_present!(input, indices);
 
-        Ok(HashtagEntity {
-            range: try!(field(input, "indices")),
-            text: try!(field(input, "text")),
-        })
-    }
-}
+//         //i have, somehow, run into a user whose profile url arrived in a UrlEntity that didn't
+//         //include display_url or expanded_url fields. in this case let's just populate those fields
+//         //with the full url and carry on.
+//         let url: String = try!(field(input, "url"));
 
-impl FromJson for MediaEntity {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("MediaEntity received json that wasn't an object", Some(input.to_string())));
-        }
+//         let display_url = if (|| { field_present!(input, display_url); Ok(()) })().is_ok() {
+//             try!(field(input, "display_url"))
+//         } else {
+//             url.clone()
+//         };
 
-        field_present!(input, display_url);
-        field_present!(input, expanded_url);
-        field_present!(input, id);
-        field_present!(input, indices);
-        field_present!(input, media_url);
-        field_present!(input, media_url_https);
-        field_present!(input, sizes);
-        field_present!(input, type);
-        field_present!(input, url);
+//         let expanded_url = if (|| { field_present!(input, expanded_url); Ok(()) })().is_ok() {
+//             try!(field(input, "expanded_url"))
+//         } else {
+//             url.clone()
+//         };
 
-        Ok(MediaEntity {
-            display_url: try!(field(input, "display_url")),
-            expanded_url: try!(field(input, "expanded_url")),
-            id: try!(field(input, "id")),
-            range: try!(field(input, "indices")),
-            media_url: try!(field(input, "media_url")),
-            media_url_https: try!(field(input, "media_url_https")),
-            sizes: try!(field(input, "sizes")),
-            source_status_id: try!(field(input, "source_status_id")),
-            media_type: try!(field(input, "type")),
-            url: try!(field(input, "url")),
-            video_info: None,
-        })
-    }
-}
-
-impl FromJson for MediaType {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if let Some(s) = input.as_string() {
-            if s == "photo" {
-                Ok(MediaType::Photo)
-            } else if s == "video" {
-                Ok(MediaType::Video)
-            } else if s == "animated_gif" {
-                Ok(MediaType::Gif)
-            } else {
-                Err(InvalidResponse("unexpected string for MediaType", Some(s.to_string())))
-            }
-        } else {
-            Err(InvalidResponse("MediaType received json that wasn't a string", Some(input.to_string())))
-        }
-    }
-}
-
-impl FromJson for ResizeMode {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if let Some(s) = input.as_string() {
-            if s == "fit" {
-                Ok(ResizeMode::Fit)
-            } else if s == "crop" {
-                Ok(ResizeMode::Crop)
-            } else {
-                Err(InvalidResponse("unexpected string for ResizeMode", Some(s.to_string())))
-            }
-        } else {
-            Err(InvalidResponse("ResizeMode received json that wasn't an object", Some(input.to_string())))
-        }
-    }
-}
-
-impl FromJson for MediaSize {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("MediaSize received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, w);
-        field_present!(input, h);
-        field_present!(input, resize);
-
-        Ok(MediaSize {
-            w: try!(field(input, "w")),
-            h: try!(field(input, "h")),
-            resize: try!(field(input, "resize")),
-        })
-    }
-}
-
-impl FromJson for MediaSizes {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("MediaSizes received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, thumb);
-        field_present!(input, small);
-        field_present!(input, medium);
-        field_present!(input, large);
-
-        Ok(MediaSizes {
-            thumb: try!(field(input, "thumb")),
-            small: try!(field(input, "small")),
-            medium: try!(field(input, "medium")),
-            large: try!(field(input, "large")),
-        })
-    }
-}
-
-impl FromJson for UrlEntity {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("UrlEntity received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, indices);
-
-        //i have, somehow, run into a user whose profile url arrived in a UrlEntity that didn't
-        //include display_url or expanded_url fields. in this case let's just populate those fields
-        //with the full url and carry on.
-        let url: String = try!(field(input, "url"));
-
-        let display_url = if (|| { field_present!(input, display_url); Ok(()) })().is_ok() {
-            try!(field(input, "display_url"))
-        } else {
-            url.clone()
-        };
-
-        let expanded_url = if (|| { field_present!(input, expanded_url); Ok(()) })().is_ok() {
-            try!(field(input, "expanded_url"))
-        } else {
-            url.clone()
-        };
-
-        Ok(UrlEntity {
-            display_url: display_url,
-            expanded_url: expanded_url,
-            range: try!(field(input, "indices")),
-            url: url,
-        })
-    }
-}
-
-impl FromJson for VideoInfo {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("VideoInfo received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, aspect_ratio);
-        field_present!(input, variants);
-
-        Ok(VideoInfo {
-            aspect_ratio: try!(field(input, "aspect_ratio")),
-            duration_millis: try!(field(input, "duration_millis")),
-            variants: try!(field(input, "variants")),
-        })
-    }
-}
-
-impl FromJson for VideoVariant {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("VideoVariant received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, content_type);
-        field_present!(input, url);
-
-        Ok(VideoVariant {
-            bitrate: try!(field(input, "bitrate")),
-            content_type: try!(field(input, "content_type")),
-            url: try!(field(input, "url")),
-        })
-    }
-}
-
-impl FromJson for MentionEntity {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("MentionEntity received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, id);
-        field_present!(input, indices);
-        field_present!(input, name);
-        field_present!(input, screen_name);
-
-        Ok(MentionEntity {
-            id: try!(field(input, "id")),
-            range: try!(field(input, "indices")),
-            name: try!(field(input, "name")),
-            screen_name: try!(field(input, "screen_name")),
-        })
-    }
-}
+//         Ok(UrlEntity {
+//             display_url: display_url,
+//             expanded_url: expanded_url,
+//             range: try!(field(input, "indices")),
+//             url: url,
+//         })
+//     }
+// }
