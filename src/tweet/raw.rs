@@ -1,7 +1,4 @@
 use chrono;
-use serde::{Deserialize, Deserializer};
-use serde::de::Error;
-use serde_json;
 use place;
 use user;
 
@@ -10,12 +7,13 @@ use super::{
     Tweet, deserialize_tweet_source, deserialize_datetime
 };
 
+// TODO move the 'deserialize_with' to Tweet. This is supposed to be raw
 #[derive(Debug, Clone, Deserialize)]
 pub struct RawTweet {
     pub coordinates: Option<(f64, f64)>,
     #[serde(deserialize_with = "deserialize_datetime")]
     pub created_at: chrono::DateTime<chrono::Utc>,
-    pub current_user_retweet: Option<u64>,
+    pub current_user_retweet: Option<CurrentUserRetweet>,
     pub display_text_range: Option<(usize, usize)>,
     pub entities: TweetEntities,
     pub extended_entities: Option<ExtendedTweetEntities>,
@@ -53,4 +51,10 @@ pub struct RawExtendedTweet {
     pub display_text_range: Option<(usize, usize)>,
     pub entities: TweetEntities,
     pub extended_entities: Option<ExtendedTweetEntities>
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CurrentUserRetweet {
+    pub id: u64,
+    pub id_str: String
 }

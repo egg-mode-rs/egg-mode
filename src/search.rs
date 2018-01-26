@@ -52,12 +52,10 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 
-use rustc_serialize::json;
 use futures::{Future, Poll, Async};
 
 use auth;
 use error;
-use error::Error::{InvalidResponse, MissingValue};
 use links;
 use tweet::Tweet;
 use common::*;

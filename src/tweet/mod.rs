@@ -56,14 +56,12 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use rustc_serialize::json;
 use chrono;
 use regex::Regex;
 use hyper::client::Request;
 use futures::{Future, Poll, Async};
 use serde::{Deserialize, Deserializer};
 use serde::de::Error;
-use serde_json;
 
 use auth;
 use links;
@@ -250,10 +248,10 @@ impl<'de> Deserialize<'de> for Tweet {
         let text = raw.text
             .or(raw.full_text)
             .or(raw.extended_tweet.map(|xt| xt.full_text)).unwrap();
+        let current_user_retweet = raw.current_user_retweet.map(|cur| cur.id);
         Ok(Tweet {
             coordinates: raw.coordinates,
             created_at: raw.created_at,
-            current_user_retweet: raw.current_user_retweet,
             display_text_range: raw.display_text_range,
             entities: raw.entities,
             extended_entities: raw.extended_entities,
@@ -278,19 +276,8 @@ impl<'de> Deserialize<'de> for Tweet {
             withheld_copyright: raw.withheld_copyright,
             withheld_in_countries: raw.withheld_in_countries,
             withheld_scope: raw.withheld_scope,
-            text,
+            text, current_user_retweet
         })
-    }
-}
-
-fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Option<u64>, error::Error> {
-    if let Some(obj) = input.find(field).and_then(|f| f.as_object()) {
-        match obj.get("id").and_then(|o| o.as_u64()) {
-            Some(id) => Ok(Some(id)),
-            None => Err(InvalidResponse("invalid structure inside current_user_retweet", None)),
-        }
-    } else {
-        Ok(None)
     }
 }
 

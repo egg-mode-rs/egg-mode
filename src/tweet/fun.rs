@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::collections::HashMap;
-use rustc_serialize::json;
 use serde_json;
 use auth;
 use cursor;

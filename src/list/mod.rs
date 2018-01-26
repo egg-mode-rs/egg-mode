@@ -71,13 +71,11 @@ use std::collections::HashMap;
 
 use common::*;
 
-use rustc_serialize::json;
 use chrono;
 
 use auth;
 use links;
 use user;
-use error::Error::InvalidResponse;
 use error;
 
 mod fun;
@@ -169,39 +167,6 @@ pub struct List {
     ///UTC timestamp of when the list was created.
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
-
-// impl FromJson for List {
-//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-//         if !input.is_object() {
-//             return Err(InvalidResponse("List received json that wasn't an object", Some(input.to_string())));
-//         }
-
-//         field_present!(input, uri);
-//         field_present!(input, full_name);
-//         field_present!(input, description);
-//         field_present!(input, slug);
-//         field_present!(input, name);
-//         field_present!(input, subscriber_count);
-//         field_present!(input, member_count);
-//         field_present!(input, id);
-//         field_present!(input, name);
-//         field_present!(input, created_at);
-//         field_present!(input, user);
-
-//         Ok(List {
-//             created_at: try!(field(input, "created_at")),
-//             name: try!(field(input, "name")),
-//             slug: try!(field(input, "slug")),
-//             id: try!(field(input, "id")),
-//             user: try!(field(input, "user")),
-//             subscriber_count: try!(field(input, "subscriber_count")),
-//             member_count: try!(field(input, "member_count")),
-//             full_name: try!(field(input, "full_name")),
-//             description: try!(field(input, "description")),
-//             uri: try!(field(input, "uri"))
-//         })
-//     }
-// }
 
 /// Represents a pending update to a list's metadata.
 ///

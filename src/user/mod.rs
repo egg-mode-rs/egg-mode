@@ -65,7 +65,6 @@ use auth;
 use common::*;
 use entities;
 use error;
-use error::Error::InvalidResponse;
 use links;
 use tweet;
 
