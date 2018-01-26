@@ -54,9 +54,3 @@ pub struct RawExtendedTweet {
     pub entities: TweetEntities,
     pub extended_entities: Option<ExtendedTweetEntities>
 }
-
-//         if let Some(ref ext) = extended_tweet {
-//             text = try!(field(ext, "full_text").or(field(input, "text")));
-//             display_text_range = try!(field(ext, "display_text_range"));
-//             entities = try!(field(ext, "entities"));
-//             extended_entities = try!(field(ext, "extended_entities"));

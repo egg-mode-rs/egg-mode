@@ -241,6 +241,11 @@ pub struct Tweet {
 impl<'de> Deserialize<'de> for Tweet {
     fn deserialize<D>(deser: D) -> Result<Tweet, D::Error> where D: Deserializer<'de> {
         // TODO remove unwrap
+        //         if let Some(ref ext) = extended_tweet {
+        //             text = try!(field(ext, "full_text").or(field(input, "text")));
+        //             display_text_range = try!(field(ext, "display_text_range"));
+        //             entities = try!(field(ext, "entities"));
+        //             extended_entities = try!(field(ext, "extended_entities"));
         let raw = raw::RawTweet::deserialize(deser)?;
         let text = raw.text
             .or(raw.full_text)
@@ -277,112 +282,6 @@ impl<'de> Deserialize<'de> for Tweet {
         })
     }
 }
-
-// impl FromJson for Tweet {
-//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-//         if !input.is_object() {
-//             return Err(InvalidResponse("Tweet received json that wasn't an object", Some(input.to_string())));
-//         }
-
-//         //streams are weird w.r.t. tweets over 140 - the regular payload acts like the regular
-//         //pre-extension tweets, including short text and no "extended_entities", and all that
-//         //metadata is put into this new field here
-//         let extended_tweet: Option<json::Json> = try!(field(input, "extended_tweet"));
-
-//         let coords: Option<(f64, f64)> = if let Some(geo) = input.find("coordinates") {
-//             try!(field(geo, "coordinates"))
-//         } else {
-//             None
-//         };
-
-//         field_present!(input, created_at);
-//         field_present!(input, id);
-//         field_present!(input, lang);
-//         field_present!(input, retweet_count);
-//         field_present!(input, source);
-//         field_present!(input, truncated);
-
-//         let text: String;
-//         let mut display_text_range: Option<(usize, usize)>;
-//         let mut entities: TweetEntities;
-//         let mut extended_entities: Option<ExtendedTweetEntities>;
-
-//         if let Some(ref ext) = extended_tweet {
-//             text = try!(field(ext, "full_text").or(field(input, "text")));
-//             display_text_range = try!(field(ext, "display_text_range"));
-//             entities = try!(field(ext, "entities"));
-//             extended_entities = try!(field(ext, "extended_entities"));
-//         } else {
-//             field_present!(input, entities);
-
-//             text = try!(field(input, "full_text").or(field(input, "text")));
-//             display_text_range = try!(field(input, "display_text_range"));
-//             entities = try!(field(input, "entities"));
-//             extended_entities = try!(field(input, "extended_entities"));
-//         }
-
-//         if let Some(ref mut range) = display_text_range {
-//             codepoints_to_bytes(range, &text);
-//         }
-
-//         for entity in &mut entities.hashtags {
-//             codepoints_to_bytes(&mut entity.range, &text);
-//         }
-//         for entity in &mut entities.symbols {
-//             codepoints_to_bytes(&mut entity.range, &text);
-//         }
-//         for entity in &mut entities.urls {
-//             codepoints_to_bytes(&mut entity.range, &text);
-//         }
-//         for entity in &mut entities.user_mentions {
-//             codepoints_to_bytes(&mut entity.range, &text);
-//         }
-//         if let Some(ref mut media) = entities.media {
-//             for entity in media.iter_mut() {
-//                 codepoints_to_bytes(&mut entity.range, &text);
-//             }
-//         }
-
-//         if let Some(ref mut entities) = extended_entities {
-//             for entity in entities.media.iter_mut() {
-//                 codepoints_to_bytes(&mut entity.range, &text);
-//             }
-//         }
-
-//         Ok(Tweet {
-//             //contributors: Option<Contributors>,
-//             coordinates: coords.map(|(lon, lat)| (lat, lon)),
-//             created_at: try!(field(input, "created_at")),
-//             current_user_retweet: try!(current_user_retweet(input, "current_user_retweet")),
-//             display_text_range: display_text_range,
-//             entities: entities,
-//             extended_entities: extended_entities,
-//             favorite_count: field(input, "favorite_count").unwrap_or(0),
-//             favorited: try!(field(input, "favorited")),
-//             filter_level: try!(field(input, "filter_level")),
-//             id: try!(field(input, "id")),
-//             in_reply_to_user_id: try!(field(input, "in_reply_to_user_id")),
-//             in_reply_to_screen_name: try!(field(input, "in_reply_to_screen_name")),
-//             in_reply_to_status_id: try!(field(input, "in_reply_to_status_id")),
-//             lang: try!(field(input, "lang")),
-//             place: try!(field(input, "place")),
-//             possibly_sensitive: try!(field(input, "possibly_sensitive")),
-//             quoted_status_id: try!(field(input, "quoted_status_id")),
-//             quoted_status: try!(field(input, "quoted_status")),
-//             //scopes: Option<Scopes>,
-//             retweet_count: try!(field(input, "retweet_count")),
-//             retweeted: try!(field(input, "retweeted")),
-//             retweeted_status: try!(field(input, "retweeted_status")),
-//             source: try!(field(input, "source")),
-//             text: text,
-//             truncated: try!(field(input, "truncated")),
-//             user: try!(field(input, "user")),
-//             withheld_copyright: field(input, "withheld_copyright").unwrap_or(false),
-//             withheld_in_countries: try!(field(input, "withheld_in_countries")),
-//             withheld_scope: try!(field(input, "withheld_scope")),
-//         })
-//     }
-// }
 
 fn current_user_retweet(input: &json::Json, field: &'static str) -> Result<Option<u64>, error::Error> {
     if let Some(obj) = input.find(field).and_then(|f| f.as_object()) {
@@ -445,15 +344,6 @@ impl TweetSource {
     }
 }
 
-impl FromJson for TweetSource {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        let full = try!(input.as_string()
-                             .ok_or_else(|| InvalidResponse("TweetSource received json that wasn't a string",
-                                                            Some(input.to_string()))));
-        TweetSource::from_str(&full)
-    }
-}
-
 fn deserialize_tweet_source<'de, D>(ser: D) -> Result<TweetSource, D::Error> where D: Deserializer<'de> {
     let s = String::deserialize(ser)?;
     Ok(TweetSource::from_str(&s).map_err(|e| D::Error::custom(e))?)
@@ -482,22 +372,6 @@ pub struct TweetEntities {
     pub media: Option<Vec<entities::MediaEntity>>,
 }
 
-impl FromJson for TweetEntities {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("TweetEntities received json that wasn't an object", Some(input.to_string())));
-        }
-
-        Ok(TweetEntities {
-            hashtags: try!(field(input, "hashtags")),
-            symbols: try!(field(input, "symbols")),
-            urls: try!(field(input, "urls")),
-            user_mentions: try!(field(input, "user_mentions")),
-            media: try!(field(input, "media")),
-        })
-    }
-}
-
 ///Container for extended media information for a tweet.
 ///
 ///If a tweet has a photo, set of photos, gif, or video attached to it, this field will be present
@@ -507,18 +381,6 @@ impl FromJson for TweetEntities {
 pub struct ExtendedTweetEntities {
     ///Collection of extended media information attached to the tweet.
     pub media: Vec<entities::MediaEntity>,
-}
-
-impl FromJson for ExtendedTweetEntities {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("ExtendedTweetEntities received json that wasn't an object", Some(input.to_string())));
-        }
-
-        Ok(ExtendedTweetEntities {
-            media: try!(field(input, "media")),
-        })
-    }
 }
 
 /// Helper struct to navigate collections of tweets by requesting tweets older or newer than certain
@@ -1018,7 +880,6 @@ impl<'a> DraftTweet<'a> {
 
 #[cfg(test)]
 mod tests {
-    use common::FromJson;
     use super::Tweet;
 
     use chrono::{Weekday, Datelike, Timelike};
