@@ -15,7 +15,6 @@ use hyper_tls::HttpsConnector;
 use tokio_core::reactor::Handle;
 use futures::{Async, Future, Poll, Stream};
 use rustc_serialize::json;
-use super::{FromJson, field};
 use error::{self, TwitterErrors};
 use error::Error::*;
 use serde;
@@ -84,27 +83,6 @@ impl<T> Response<Vec<T>> {
             rate_limit_reset: self.rate_limit_reset,
             resp_iter: self.response.iter_mut(),
         }
-    }
-}
-
-//This impl is used for service::rate_limit_status, to represent the individual method statuses
-impl FromJson for Response<()> {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("Response<()> received json that wasn't an object",
-                                       Some(input.to_string())));
-        }
-
-        field_present!(input, limit);
-        field_present!(input, remaining);
-        field_present!(input, reset);
-
-        Ok(Response {
-            rate_limit: try!(field(input, "limit")),
-            rate_limit_remaining: try!(field(input, "remaining")),
-            rate_limit_reset: try!(field(input, "reset")),
-            response: (),
-        })
     }
 }
 

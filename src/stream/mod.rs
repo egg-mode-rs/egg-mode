@@ -11,7 +11,6 @@ use chrono;
 use futures::{Future, Stream, Poll, Async};
 use hyper::Body;
 use hyper::client::{Request, FutureResponse};
-use rustc_serialize::json;
 use serde::Deserialize;
 use serde_json;
 
@@ -391,38 +390,25 @@ impl Stream for TwitterStream {
 #[derive(Copy, Clone, Debug, Deserialize)]
 pub enum FilterLevel {
     /// No filtering.
+    #[serde(rename = "none")]
     None,
     /// A light amount of filtering.
+    #[serde(rename = "low")]
     Low,
     /// A medium amount of filtering.
+    #[serde(rename = "medium")]
     Medium,
 }
 
 /// `Display` impl to turn `FilterLevel` variants into the form needed for stream parameters. This
 /// is basically "the variant name, in lowercase".
+// TODO Probably can remove this somehow
 impl ::std::fmt::Display for FilterLevel {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match *self {
             FilterLevel::None => write!(f, "none"),
             FilterLevel::Low => write!(f, "low"),
             FilterLevel::Medium => write!(f, "medium"),
-        }
-    }
-}
-
-impl FromJson for FilterLevel {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if let Some(val) = input.as_string() {
-            match val {
-                "none" => Ok(FilterLevel::None),
-                "low" => Ok(FilterLevel::Low),
-                "medium" => Ok(FilterLevel::Medium),
-                _ => Err(error::Error::InvalidResponse("FilterLevel received an invalid string",
-                                                       Some(val.to_string()))),
-            }
-        } else {
-            Err(error::Error::InvalidResponse("FilterLevel received json that wasn't a string",
-                                              Some(input.to_string())))
         }
     }
 }

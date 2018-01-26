@@ -42,7 +42,6 @@
 //! - `display_url`: This is a truncated version of `expanded_url`, meant to be displayed inline
 //!   with the parent text. This is useful to show users where the link resolves to, without
 //!   potentially filling up a lot of space with the fullly expanded URL.
-use common::*;
 use mime;
 
 ///Represents a hashtag or symbol extracted from another piece of text.

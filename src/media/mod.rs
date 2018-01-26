@@ -109,29 +109,29 @@ enum ProgressInfo {
     Success
 }
 
-impl FromJson for ProgressInfo {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        field_present!(input, state);
-        let state: String = try!(field(input, "state"));
+// impl FromJson for ProgressInfo {
+//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+//         field_present!(input, state);
+//         let state: String = try!(field(input, "state"));
 
-        match state.as_ref() {
-            "pending" => {
-                field_present!(input, check_after_secs);
-                Ok(ProgressInfo::Pending(try!(field(input, "check_after_secs"))))
-            },
-            "in_progress" => {
-                field_present!(input, check_after_secs);
-                Ok(ProgressInfo::InProgress(try!(field(input, "check_after_secs"))))
-            },
-            "failed" => {
-                field_present!(input, error);
-                Ok(ProgressInfo::Failed(try!(field(input, "error"))))
-            },
-            "succeeded" => Ok(ProgressInfo::Success),
-            state => Err(InvalidResponse("Unexpected progress info state", Some(state.to_string())))
-        }
-    }
-}
+//         match state.as_ref() {
+//             "pending" => {
+//                 field_present!(input, check_after_secs);
+//                 Ok(ProgressInfo::Pending(try!(field(input, "check_after_secs"))))
+//             },
+//             "in_progress" => {
+//                 field_present!(input, check_after_secs);
+//                 Ok(ProgressInfo::InProgress(try!(field(input, "check_after_secs"))))
+//             },
+//             "failed" => {
+//                 field_present!(input, error);
+//                 Ok(ProgressInfo::Failed(try!(field(input, "error"))))
+//             },
+//             "succeeded" => Ok(ProgressInfo::Success),
+//             state => Err(InvalidResponse("Unexpected progress info state", Some(state.to_string())))
+//         }
+//     }
+// }
 
 /// A media handle returned by twitter upon successful upload.
 ///
@@ -164,6 +164,8 @@ struct RawMedia {
     ///ID that can be used in API calls (e.g. attach to tweet).
     pub id: u64,
     ///Number of second the media can be used in other API calls.
+    //We can miss this field on failed upload in which case 0 is pretty reasonable value.
+    #[serde(default)]
     pub expires_after: u64,
     ///Progress information. If present determines whether RawMedia can be used.
     pub progress: Option<ProgressInfo>
@@ -175,23 +177,6 @@ impl RawMedia {
             id: self.id,
             valid_until: Instant::now() + Duration::from_secs(self.expires_after),
         }
-    }
-}
-
-impl FromJson for RawMedia {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("Tweet received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, media_id);
-
-        Ok(RawMedia {
-            id: try!(field(input, "media_id")),
-            //We can miss this field on failed upload in which case 0 is pretty reasonable value.
-            expires_after: field(input, "expires_after_secs").unwrap_or(0),
-            progress: try!(field(input, "processing_info"))
-        })
     }
 }
 

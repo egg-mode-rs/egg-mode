@@ -304,6 +304,12 @@ pub fn min_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
     }
 }
 
+pub fn deserialize_datetime<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error> where D: Deserializer<'de> {
+    let s = String::deserialize(ser)?;
+    let date = (chrono::Utc).datetime_from_str(&s, "%a %b %d %T %z %Y").map_err(|e| D::Error::custom(e))?;
+    Ok(date)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

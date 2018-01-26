@@ -18,19 +18,15 @@
 use std::{self, fmt};
 use hyper;
 use native_tls;
-use rustc_serialize;
-use rustc_serialize::json;
 use chrono;
 use serde_json;
-
-use common::*;
 
 ///Represents a collection of errors returned from a Twitter API call.
 ///
 ///This is returned as part of [`Error::TwitterError`][] whenever Twitter has rejected a call.
 ///
 ///[`Error::TwitterError`]: enum.Error.html
-#[derive(Debug, RustcDecodable, RustcEncodable)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct TwitterErrors {
     ///A collection of errors returned by Twitter.
     pub errors: Vec<TwitterErrorCode>,
@@ -51,7 +47,7 @@ impl fmt::Display for TwitterErrors {
 }
 
 ///Represents a specific error returned from a Twitter API call.
-#[derive(Debug, RustcDecodable, RustcEncodable)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct TwitterErrorCode {
     ///The error message returned by Twitter.
     pub message: String,
@@ -77,20 +73,6 @@ pub struct MediaError {
     pub name: String,
     /// The full text of the error message.
     pub message: String,
-}
-
-impl FromJson for MediaError {
-    fn from_json(input: &json::Json) -> Result<Self, Error> {
-        field_present!(input, code);
-        field_present!(input, name);
-        field_present!(input, message);
-
-        Ok(MediaError {
-            code: try!(field(input, "code")),
-            name: try!(field(input, "name")),
-            message: try!(field(input, "message")),
-        })
-    }
 }
 
 /// A set of errors that can occur when interacting with Twitter.
@@ -224,18 +206,6 @@ impl From<native_tls::Error> for Error {
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Error {
         Error::IOError(err)
-    }
-}
-
-impl From<rustc_serialize::json::ParserError> for Error {
-    fn from(err: rustc_serialize::json::ParserError) -> Error {
-        Error::JSONError(err)
-    }
-}
-
-impl From<rustc_serialize::json::DecoderError> for Error {
-    fn from(err: rustc_serialize::json::DecoderError) -> Error {
-        Error::DecodeError(err)
     }
 }
 
