@@ -59,7 +59,6 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use futures::{Future, Stream, Poll, Async};
-use rustc_serialize::json;
 use chrono;
 
 use auth;
@@ -186,6 +185,7 @@ impl<'a> From<&'a UserID<'a>> for UserID<'a> {
 /// * `show_all_inline_media`
 /// * `time_zone`/`utc_offset`
 /// * `withheld_in_countries`/`withheld_scope`
+// TODO codepoints_to_bytes on entity ranges
 #[derive(Debug, Clone, Deserialize)]
 pub struct TwitterUser {
     /// Indicates this user has an account with "contributor mode" enabled, allowing
@@ -350,130 +350,6 @@ pub struct UserEntityDetail {
     /// There should be one of these per URL in the paired field. In the case of the user's
     /// `description`, if no URLs are present, this field will still be present, but empty.
     pub urls: Vec<entities::UrlEntity>,
-}
-
-// impl FromJson for TwitterUser {
-//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-//         if !input.is_object() {
-//             return Err(InvalidResponse("TwitterUser received json that wasn't an object", Some(input.to_string())));
-//         }
-
-//         field_present!(input, contributors_enabled);
-//         field_present!(input, created_at);
-//         field_present!(input, default_profile);
-//         field_present!(input, default_profile_image);
-//         field_present!(input, favourites_count);
-//         field_present!(input, followers_count);
-//         field_present!(input, friends_count);
-//         field_present!(input, geo_enabled);
-//         field_present!(input, id);
-//         field_present!(input, is_translator);
-//         field_present!(input, lang);
-//         field_present!(input, listed_count);
-//         field_present!(input, name);
-//         field_present!(input, profile_background_color);
-//         field_present!(input, profile_image_url);
-//         field_present!(input, profile_image_url_https);
-//         field_present!(input, profile_link_color);
-//         field_present!(input, profile_sidebar_border_color);
-//         field_present!(input, profile_sidebar_fill_color);
-//         field_present!(input, profile_text_color);
-//         field_present!(input, profile_use_background_image);
-//         field_present!(input, protected);
-//         field_present!(input, screen_name);
-//         field_present!(input, statuses_count);
-//         field_present!(input, verified);
-
-//         let description: Option<String> = try!(field(input, "description"));
-//         let url: Option<String> = try!(field(input, "url"));
-//         let entities: Option<UserEntities> = try!(field(input, "entities"));
-//         let mut entities = entities.unwrap_or_default();
-
-//         if let Some(ref text) = description {
-//             for entity in entities.description.urls.iter_mut() {
-//                 codepoints_to_bytes(&mut entity.range, &text);
-//             }
-//         }
-//         if let (&Some(ref text), &mut Some(ref mut entities)) = (&url, &mut entities.url) {
-//             for entity in entities.urls.iter_mut() {
-//                 codepoints_to_bytes(&mut entity.range, &text);
-//             }
-//         }
-
-//         Ok(TwitterUser {
-//             contributors_enabled: field(input, "contributors_enabled").unwrap_or(false),
-//             created_at: try!(field(input, "created_at")),
-//             default_profile: try!(field(input, "default_profile")),
-//             default_profile_image: try!(field(input, "default_profile_image")),
-//             description: description,
-//             entities: entities,
-//             favourites_count: try!(field(input, "favourites_count")),
-//             follow_request_sent: try!(field(input, "follow_request_sent")),
-//             following: try!(field(input, "following")),
-//             followers_count: try!(field(input, "followers_count")),
-//             friends_count: try!(field(input, "friends_count")),
-//             geo_enabled: try!(field(input, "geo_enabled")),
-//             id: try!(field(input, "id")),
-//             is_translator: try!(field(input, "is_translator")),
-//             lang: try!(field(input, "lang")),
-//             listed_count: try!(field(input, "listed_count")),
-//             location: try!(field(input, "location")),
-//             name: try!(field(input, "name")),
-//             notifications: try!(field(input, "notifications")),
-//             profile_background_color: try!(field(input, "profile_background_color")),
-//             profile_background_image_url: try!(field(input, "profile_background_image_url")),
-//             profile_background_image_url_https: try!(field(input, "profile_background_image_url_https")),
-//             profile_background_tile: try!(field(input, "profile_background_tile")),
-//             profile_banner_url: try!(field(input, "profile_banner_url")),
-//             profile_image_url: try!(field(input, "profile_image_url")),
-//             profile_image_url_https: try!(field(input, "profile_image_url_https")),
-//             profile_link_color: try!(field(input, "profile_link_color")),
-//             profile_sidebar_border_color: try!(field(input, "profile_sidebar_border_color")),
-//             profile_sidebar_fill_color: try!(field(input, "profile_sidebar_fill_color")),
-//             profile_text_color: try!(field(input, "profile_text_color")),
-//             profile_use_background_image: try!(field(input, "profile_use_background_image")),
-//             protected: try!(field(input, "protected")),
-//             screen_name: try!(field(input, "screen_name")),
-//             show_all_inline_media: try!(field(input, "show_all_inline_media")),
-//             status: try!(field(input, "status")),
-//             statuses_count: try!(field(input, "statuses_count")),
-//             time_zone: try!(field(input, "time_zone")),
-//             url: url,
-//             utc_offset: try!(field(input, "utc_offset")),
-//             verified: try!(field(input, "verified")),
-//             withheld_in_countries: input.find("withheld_in_countries").and_then(|f| f.as_array())
-//                                         .and_then(|arr| arr.iter().map(|x| x.as_string().map(|x| x.to_string()))
-//                                                            .collect::<Option<Vec<String>>>()),
-//             withheld_scope: try!(field(input, "withheld_scope")),
-//         })
-//     }
-// }
-
-impl FromJson for UserEntities {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("UserEntities received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, description);
-
-        Ok(UserEntities {
-            description: try!(field(input, "description")),
-            url: try!(field(input, "url")),
-        })
-    }
-}
-
-impl FromJson for UserEntityDetail {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("UserEntityDetail received json that wasn't an object", Some(input.to_string())));
-        }
-
-        Ok(UserEntityDetail {
-            urls: try!(field(input, "urls")),
-        })
-    }
 }
 
 /// Represents an active user search.
@@ -681,26 +557,6 @@ pub struct Relationship {
     pub source: RelationSource,
 }
 
-impl FromJson for Relationship {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("Relationship received json that wasn't an object", Some(input.to_string())));
-        }
-
-        if let Some(relation) = input.find("relationship") {
-            field_present!(relation, target);
-            field_present!(relation, source);
-
-            Ok(Relationship {
-                target: try!(field(relation, "target")),
-                source: try!(field(relation, "source")),
-            })
-        } else {
-            Err(error::Error::MissingValue("relationship"))
-        }
-    }
-}
-
 /// Represents relationship settings between two Twitter accounts, from the perspective of the
 /// target user.
 #[derive(Debug, Deserialize)]
@@ -713,26 +569,6 @@ pub struct RelationTarget {
     pub followed_by: bool,
     /// Indicates whether this target account follows the source account.
     pub following: bool,
-}
-
-impl FromJson for RelationTarget {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("RelationTarget received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, id);
-        field_present!(input, screen_name);
-        field_present!(input, followed_by);
-        field_present!(input, following);
-
-        Ok(RelationTarget {
-            id: try!(field(input, "id")),
-            screen_name: try!(field(input, "screen_name")),
-            followed_by: try!(field(input, "followed_by")),
-            following: try!(field(input, "following")),
-        })
-    }
 }
 
 /// Represents relationship settings between two Twitter accounts, from the perspective of the
@@ -777,33 +613,6 @@ pub struct RelationSource {
     pub notifications_enabled: Option<bool>,
 }
 
-impl FromJson for RelationSource {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("RelationSource received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, id);
-        field_present!(input, screen_name);
-        field_present!(input, following);
-        field_present!(input, followed_by);
-        field_present!(input, can_dm);
-
-        Ok(RelationSource {
-            id: try!(field(input, "id")),
-            screen_name: try!(field(input, "screen_name")),
-            following: try!(field(input, "following")),
-            followed_by: try!(field(input, "followed_by")),
-            can_dm: try!(field(input, "can_dm")),
-            blocking: try!(field(input, "blocking")),
-            marked_spam: try!(field(input, "marked_spam")),
-            all_replies: try!(field(input, "all_replies")),
-            want_retweets: try!(field(input, "want_retweets")),
-            notifications_enabled: try!(field(input, "notifications_enabled")),
-        })
-    }
-}
-
 /// Represents the relation the authenticated user has to a given account.
 ///
 /// This is returned by `relation_lookup`, as opposed to `Relationship`, which is returned by
@@ -821,26 +630,6 @@ pub struct RelationLookup {
     /// If the target account has no relation to the authenticated user, this will not be empty; its
     /// only element will be `None`.
     pub connections: Vec<Connection>,
-}
-
-impl FromJson for RelationLookup {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("RelationLookup received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, name);
-        field_present!(input, screen_name);
-        field_present!(input, id);
-        field_present!(input, connections);
-
-        Ok(RelationLookup {
-            name: try!(field(input, "name")),
-            screen_name: try!(field(input, "screen_name")),
-            id: try!(field(input, "id")),
-            connections: try!(field(input, "connections")),
-        })
-    }
 }
 
 /// Represents the ways a target account can be connected to another account.
@@ -867,23 +656,4 @@ pub enum Connection {
     /// The authenticated user has muted the target account.
     #[serde(rename = "muting")]
     Muting,
-}
-
-impl FromJson for Connection {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if let Some(text) = input.as_string() {
-            match text {
-                "none" => Ok(Connection::None),
-                "following_requested" => Ok(Connection::FollowingRequested),
-                "following_received" => Ok(Connection::FollowingReceived),
-                "followed_by" => Ok(Connection::FollowedBy),
-                "following" => Ok(Connection::Following),
-                "blocking" => Ok(Connection::Blocking),
-                "muting" => Ok(Connection::Muting),
-                _ => Err(InvalidResponse("unexpected string for Connection", Some(text.to_string()))),
-            }
-        } else {
-            Err(InvalidResponse("Connection received json that wasn't a string", Some(input.to_string())))
-        }
-    }
 }
