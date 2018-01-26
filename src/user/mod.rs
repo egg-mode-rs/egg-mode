@@ -808,7 +808,7 @@ impl FromJson for RelationSource {
 ///
 /// This is returned by `relation_lookup`, as opposed to `Relationship`, which is returned by
 /// `relation`.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct RelationLookup {
     /// The display name of the target account.
     pub name: String,
@@ -844,21 +844,28 @@ impl FromJson for RelationLookup {
 }
 
 /// Represents the ways a target account can be connected to another account.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub enum Connection {
     /// The target account has no relation.
+    #[serde(rename = "none")]
     None,
     /// The authenticated user has requested to follow the target account.
+    #[serde(rename = "following_requested")]
     FollowingRequested,
     /// The target account has requested to follow the authenticated user.
+    #[serde(rename = "following_received")]
     FollowingReceived,
     /// The target account follows the authenticated user.
+    #[serde(rename = "followed_by")]
     FollowedBy,
     /// The authenticated user follows the target account.
+    #[serde(rename = "following")]
     Following,
     /// The authenticated user has blocked the target account.
+    #[serde(rename = "blocking")]
     Blocking,
     /// The authenticated user has muted the target account.
+    #[serde(rename = "muting")]
     Muting,
 }
 

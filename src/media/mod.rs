@@ -423,7 +423,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "media_category", self.media_category.to_string());
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future(&self.handle, req)
+        make_parsed_future_serde(&self.handle, req)
     }
 
     fn append(&self, chunk_num: usize, media_id: u64) -> Option<FutureResponse<()>> {
@@ -470,7 +470,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "media_id", media_id.to_string());
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future(&self.handle, req)
+        make_parsed_future_serde(&self.handle, req)
     }
 
     fn status(&self, media_id: u64) -> FutureResponse<RawMedia> {
@@ -480,7 +480,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "media_id", media_id.to_string());
 
         let req = auth::get(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future(&self.handle, req)
+        make_parsed_future_serde(&self.handle, req)
     }
 
     fn metadata(&self, media_id: u64, alt_text: &str) -> FutureResponse<()> {

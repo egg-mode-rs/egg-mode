@@ -278,6 +278,6 @@ impl<'a> ListUpdate<'a> {
 
         let req = auth::post(links::lists::UPDATE, token, Some(&params));
 
-        make_parsed_future(handle, req)
+        make_parsed_future_serde(handle, req)
     }
 }

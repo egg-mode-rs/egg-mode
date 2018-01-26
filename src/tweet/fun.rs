@@ -4,6 +4,7 @@
 
 use std::collections::HashMap;
 use rustc_serialize::json;
+use serde_json;
 use auth;
 use cursor;
 use user::UserID;
@@ -24,7 +25,7 @@ pub fn show(id: u64, token: &auth::Token, handle: &Handle)
 
     let req = auth::get(links::statuses::SHOW, token, Some(&params));
 
-    make_parsed_future(handle, req)
+    make_parsed_future_serde(handle, req)
 }
 
 ///Lookup the most recent 100 (or fewer) retweets of the given tweet.
@@ -47,7 +48,7 @@ pub fn retweets_of(id: u64, count: u32, token: &auth::Token, handle: &Handle)
 
     let req = auth::get(&url, token, Some(&params));
 
-    make_parsed_future(handle, req)
+    make_parsed_future_serde(handle, req)
 }
 
 ///Lookup the user IDs that have retweeted the given tweet.
@@ -82,7 +83,7 @@ pub fn lookup<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle: &H
 
     let req = auth::post(links::statuses::LOOKUP, token, Some(&params));
 
-    make_parsed_future(handle, req)
+    make_parsed_future_serde(handle, req)
 }
 
 ///Lookup tweet information for the given list of tweet IDs, and return a map indicating which IDs
@@ -110,11 +111,11 @@ pub fn lookup_map<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle
     fn parse_map(full_resp: String, headers: &Headers)
         -> Result<Response<HashMap<u64, Option<Tweet>>>, error::Error>
     {
-        let parsed: Response<json::Json> = try!(make_response(full_resp, headers));
+        let parsed: Response<serde_json::Value> = try!(make_response_serde(full_resp, headers));
         let mut map = HashMap::new();
 
         for (key, val) in try!(parsed.response
-                                     .find("id")
+                                     .get("id")
                                      .and_then(|v| v.as_object())
                                      .ok_or_else(|| InvalidResponse("unexpected response for lookup_map",
                                                                     Some(parsed.response.to_string())))) {
@@ -123,7 +124,7 @@ pub fn lookup_map<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle
             if val.is_null() {
                 map.insert(id, None);
             } else {
-                let tweet = try!(Tweet::from_json(&val));
+                let tweet = try!(Tweet::deserialize(val));
                 map.insert(id, Some(tweet));
             }
         }
@@ -209,7 +210,7 @@ pub fn retweet(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<
 
     let req = auth::post(&url, token, Some(&params));
 
-    make_parsed_future(handle, req)
+    make_parsed_future_serde(handle, req)
 }
 
 ///Unretweet the given status as the authenticated user.
@@ -226,7 +227,7 @@ pub fn unretweet(id: u64, token: &auth::Token, handle: &Handle) -> FutureRespons
 
     let req = auth::post(&url, token, Some(&params));
 
-    make_parsed_future(handle, req)
+    make_parsed_future_serde(handle, req)
 }
 
 ///Like the given status as the authenticated user.
@@ -239,7 +240,7 @@ pub fn like(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<Twe
 
     let req = auth::post(links::statuses::LIKE, token, Some(&params));
 
-    make_parsed_future(handle, req)
+    make_parsed_future_serde(handle, req)
 }
 
 ///Clears a like of the given status as the authenticated user.
@@ -252,7 +253,7 @@ pub fn unlike(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<T
 
     let req = auth::post(links::statuses::UNLIKE, token, Some(&params));
 
-    make_parsed_future(handle, req)
+    make_parsed_future_serde(handle, req)
 }
 
 ///Delete the given tweet. The authenticated user must be the user who posted the given tweet.
@@ -266,5 +267,5 @@ pub fn delete(id: u64, token: &auth::Token, handle: &Handle) -> FutureResponse<T
 
     let req = auth::post(&url, token, Some(&params));
 
-    make_parsed_future(handle, req)
+    make_parsed_future_serde(handle, req)
 }

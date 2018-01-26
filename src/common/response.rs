@@ -505,20 +505,9 @@ impl<T> Future for TwitterFuture<T> {
 
 /// Shortcut `MakeResponse` method that attempts to parse the given type from the response and
 /// loads rate-limit information from the response headers.
-pub fn make_response<T: FromJson>(full_resp: String, headers: &Headers)
+pub fn make_response_serde<T: for <'a> serde::Deserialize<'a>>(full_resp: String, headers: &Headers)
     -> Result<Response<T>, error::Error>
 {
-    let out = try!(T::from_str(&full_resp));
-
-    Ok(Response::map(rate_headers(headers), |_| out))
-}
-
-/// Shortcut `MakeResponse` method that attempts to parse the given type from the response and
-/// loads rate-limit information from the response headers.
-pub fn make_response_serde<T: for <'a> serde::Deserialize<'a>>(full_resp: String, headers: &Headers)
-                                        -> Result<Response<T>, error::Error>
-{
-    println!("Deserialize:\n{}\n as {}", full_resp, unsafe { ::std::intrinsics::type_name::<T>() });
     let out = serde_json::from_str(&full_resp)?; // TODO OK to use ?
     Ok(Response::map(rate_headers(headers), |_| out))
 }
@@ -535,15 +524,8 @@ pub fn make_future<T>(handle: &Handle,
 }
 
 /// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
-pub fn make_parsed_future<T: FromJson>(handle: &Handle, request: Request)
-    -> TwitterFuture<Response<T>>
-{
-    make_future(handle, request, make_response)
-}
-
-/// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
 pub fn make_parsed_future_serde<T: for <'de> serde::Deserialize<'de>>(handle: &Handle, request: Request)
-                                                                      -> TwitterFuture<Response<T>>
+    -> TwitterFuture<Response<T>>
 {
     make_future(handle, request, make_response_serde)
 }

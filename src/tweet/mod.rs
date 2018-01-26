@@ -602,7 +602,7 @@ impl<'a> Timeline<'a> {
     ///ID to bound with.
     pub fn older(self, since_id: Option<u64>) -> TimelineFuture<'a> {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
-        let loader = make_parsed_future(&self.handle, req);
+        let loader = make_parsed_future_serde(&self.handle, req);
 
         TimelineFuture {
             timeline: Some(self),
@@ -614,7 +614,7 @@ impl<'a> Timeline<'a> {
     ///ID to bound with.
     pub fn newer(self, max_id: Option<u64>) -> TimelineFuture<'a> {
         let req = self.request(self.max_id, max_id);
-        let loader = make_parsed_future(&self.handle, req);
+        let loader = make_parsed_future_serde(&self.handle, req);
 
         TimelineFuture {
             timeline: Some(self),
@@ -630,7 +630,7 @@ impl<'a> Timeline<'a> {
     ///If the range of tweets given by the IDs would return more than `self.count`, the newest set
     ///of tweets will be returned.
     pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>) -> FutureResponse<Vec<Tweet>> {
-        make_parsed_future(&self.handle, self.request(since_id, max_id))
+        make_parsed_future_serde(&self.handle, self.request(since_id, max_id))
     }
 
     ///Helper function to construct a `Request` from the current state.
@@ -974,7 +974,7 @@ impl<'a> DraftTweet<'a> {
         }
 
         let req = auth::post(links::statuses::UPDATE, token, Some(&params));
-        make_parsed_future(handle, req)
+        make_parsed_future_serde(handle, req)
     }
 }
 

@@ -11,6 +11,8 @@
 
 use futures::{Future, Stream, Poll, Async};
 use rustc_serialize::json;
+use serde::Deserialize;
+
 use common::*;
 use auth;
 use error;
@@ -54,23 +56,23 @@ pub struct UserCursor {
     pub users: Vec<user::TwitterUser>,
 }
 
-impl FromJson for UserCursor {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("UserCursor received json that wasn't an object", Some(input.to_string())));
-        }
+// impl FromJson for UserCursor {
+//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
+//         if !input.is_object() {
+//             return Err(InvalidResponse("UserCursor received json that wasn't an object", Some(input.to_string())));
+//         }
 
-        field_present!(input, previous_cursor);
-        field_present!(input, next_cursor);
-        field_present!(input, users);
+//         field_present!(input, previous_cursor);
+//         field_present!(input, next_cursor);
+//         field_present!(input, users);
 
-        Ok(UserCursor {
-            previous_cursor: try!(field(input, "previous_cursor")),
-            next_cursor: try!(field(input, "next_cursor")),
-            users: try!(field(input, "users")),
-        })
-    }
-}
+//         Ok(UserCursor {
+//             previous_cursor: try!(field(input, "previous_cursor")),
+//             next_cursor: try!(field(input, "next_cursor")),
+//             users: try!(field(input, "users")),
+//         })
+//     }
+// }
 
 impl Cursor for UserCursor {
     type Item = user::TwitterUser;
@@ -277,7 +279,7 @@ impl Cursor for ListCursor {
 /// ```
 #[must_use = "cursor iterators are lazy and do nothing unless consumed"]
 pub struct CursorIter<'a, T>
-    where T: Cursor + FromJson + 'a
+    where T: Cursor + for<'de> Deserialize<'de> + 'a
 {
     link: &'static str,
     token: auth::Token,
@@ -308,7 +310,7 @@ pub struct CursorIter<'a, T>
 }
 
 impl<'a, T> CursorIter<'a, T>
-    where T: Cursor + FromJson + 'a
+    where T: Cursor + for<'de> Deserialize<'de> + 'a
 {
     ///Sets the number of results returned in a single network call.
     ///
@@ -347,7 +349,7 @@ impl<'a, T> CursorIter<'a, T>
 
         let req = auth::get(self.link, &self.token, Some(&params));
 
-        make_parsed_future(&self.handle, req)
+        make_parsed_future_serde(&self.handle, req)
     }
 
     ///Creates a new instance of CursorIter, with the given parameters and empty initial results.
@@ -372,7 +374,7 @@ impl<'a, T> CursorIter<'a, T>
 }
 
 impl<'a, T> Stream for CursorIter<'a, T>
-    where T: Cursor + FromJson + 'a
+    where T: Cursor + for<'de> Deserialize<'de> + 'a
 {
     type Item = Response<T::Item>;
     type Error = error::Error;

@@ -224,7 +224,7 @@ impl<'a> SearchBuilder<'a> {
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
         SearchFuture {
-            loader: make_parsed_future(handle, req),
+            loader: make_parsed_future_serde(handle, req),
             params: Some(params),
         }
     }
@@ -304,7 +304,7 @@ impl<'a> SearchResult<'a> {
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
         SearchFuture {
-            loader: make_parsed_future(handle, req),
+            loader: make_parsed_future_serde(handle, req),
             params: Some(params),
         }
     }
@@ -323,7 +323,7 @@ impl<'a> SearchResult<'a> {
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
         SearchFuture {
-            loader: make_parsed_future(handle, req),
+            loader: make_parsed_future_serde(handle, req),
             params: Some(params),
         }
     }

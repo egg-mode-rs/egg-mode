@@ -20,6 +20,7 @@ use std::str::FromStr;
 use std::collections::HashMap;
 
 use rustc_serialize::json;
+use serde_json;
 
 use auth;
 use entities;
@@ -36,10 +37,12 @@ pub fn terms(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
     let req = auth::get(links::service::TERMS, token, None);
 
     fn parse_terms(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
-        let ret: Response<json::Json> = try!(make_response(full_resp, headers));
+        let ret: Response<serde_json::Value> = try!(make_response_serde(full_resp, headers));
 
-        let tos = try!(field(&ret.response, "tos"));
-        Ok(Response::map(ret, |_| tos))
+        panic!();
+        // TODO Fix this panic!
+        // let tos = try!(field(&ret.response, "tos"));
+        // Ok(Response::map(ret, |_| tos))
     }
 
     make_future(handle, req, parse_terms)
@@ -53,10 +56,12 @@ pub fn privacy(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
     let req = auth::get(links::service::PRIVACY, token, None);
 
     fn parse_policy(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
-        let ret: Response<json::Json> = try!(make_response(full_resp, headers));
+        let ret: Response<serde_json::Value> = try!(make_response_serde(full_resp, headers));
 
-        let privacy = try!(field(&ret.response, "privacy"));
-        Ok(Response::map(ret, |_| privacy))
+        panic!();
+        // TODO Fix this panic!
+        // let privacy = try!(field(&ret.response, "privacy"));
+        // Ok(Response::map(ret, |_| privacy))
     }
 
     make_future(handle, req, parse_policy)
@@ -75,7 +80,7 @@ pub fn privacy(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
 pub fn config(token: &auth::Token, handle: &Handle) -> FutureResponse<Configuration> {
     let req = auth::get(links::service::CONFIG, token, None);
 
-    make_parsed_future(handle, req)
+    make_parsed_future_serde(handle, req)
 }
 
 ///Return the current rate-limit status for all available methods from the authenticated user.
@@ -90,7 +95,7 @@ pub fn rate_limit_status(token: &auth::Token, handle: &Handle)
 {
     let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
 
-    make_parsed_future(handle, req)
+    make_parsed_future_serde(handle, req)
 }
 
 ///Like `rate_limit_status`, but returns the raw JSON without processing it. Only intended to
@@ -98,11 +103,11 @@ pub fn rate_limit_status(token: &auth::Token, handle: &Handle)
 ///associated enums.
 #[doc(hidden)]
 pub fn rate_limit_status_raw(token: &auth::Token, handle: &Handle)
-    -> FutureResponse<json::Json>
+    -> FutureResponse<serde_json::Value>
 {
     let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
 
-    make_parsed_future(handle, req)
+    make_parsed_future_serde(handle, req)
 }
 
 ///Represents a service configuration from Twitter.
