@@ -293,7 +293,7 @@ impl<'a, T> CursorIter<'a, T>
 
         let req = auth::get(self.link, &self.token, Some(&params));
 
-        make_parsed_future_serde(&self.handle, req)
+        make_parsed_future(&self.handle, req)
     }
 
     ///Creates a new instance of CursorIter, with the given parameters and empty initial results.

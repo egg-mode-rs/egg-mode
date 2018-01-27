@@ -933,7 +933,7 @@ pub fn verify_tokens(token: &Token, handle: &Handle)
 {
     let req = get(links::auth::VERIFY_CREDENTIALS, token, None);
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 #[cfg(test)]

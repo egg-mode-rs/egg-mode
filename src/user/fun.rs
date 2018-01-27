@@ -88,7 +88,7 @@ pub fn lookup<'a, T, I>(accts: I, token: &auth::Token, handle: &Handle)
 
     let req = auth::post(links::users::LOOKUP, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 /// Lookup user information for a single user.
@@ -100,7 +100,7 @@ pub fn show<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &Hand
 
     let req = auth::get(links::users::SHOW, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 /// Lookup the user IDs that the authenticating user has disabled retweets from.
@@ -111,7 +111,7 @@ pub fn friends_no_retweets(token: &auth::Token, handle: &Handle)
 {
     let req = auth::get(links::users::FRIENDS_NO_RETWEETS, token, None);
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 /// Lookup relationship settings between two arbitrary users.
@@ -132,7 +132,7 @@ pub fn relation<'a, F, T>(from: F, to: T, token: &auth::Token, handle: &Handle)
 
     let req = auth::get(links::users::FRIENDSHIP_SHOW, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 /// Lookup the relations between the authenticated user and the given accounts.
@@ -148,7 +148,7 @@ pub fn relation_lookup<'a, T, I>(accts: I, token: &auth::Token, handle: &Handle)
 
     let req = auth::get(links::users::FRIENDSHIP_LOOKUP, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 //---Cursored collections---
@@ -318,7 +318,7 @@ pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool,
 
     let req = auth::post(links::users::FOLLOW, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 /// Unfollow the given account with the authenticated user.
@@ -335,7 +335,7 @@ pub fn unfollow<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &
 
     let req = auth::post(links::users::UNFOLLOW, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 /// Update notification settings and reweet visibility for the given user.
@@ -360,7 +360,7 @@ pub fn update_follow<'a, T>(acct: T, notifications: Option<bool>, retweets: Opti
 
     let req = auth::post(links::users::FRIENDSHIP_UPDATE, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 /// Block the given account with the authenticated user.
@@ -374,7 +374,7 @@ pub fn block<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &Han
 
     let req = auth::post(links::users::BLOCK, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 /// Block the given account and report it for spam, with the authenticated user.
@@ -388,7 +388,7 @@ pub fn report_spam<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle
 
     let req = auth::post(links::users::REPORT_SPAM, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 /// Unblock the given user with the authenticated user.
@@ -402,7 +402,7 @@ pub fn unblock<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &H
 
     let req = auth::post(links::users::UNBLOCK, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 /// Mute the given user with the authenticated user.
@@ -416,7 +416,7 @@ pub fn mute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &Hand
 
     let req = auth::post(links::users::MUTE, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 /// Unmute the given user with the authenticated user.
@@ -430,5 +430,5 @@ pub fn unmute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token, handle: &Ha
 
     let req = auth::post(links::users::UNMUTE, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }

@@ -34,7 +34,7 @@ pub fn show(id: &str, token: &auth::Token, handle: &Handle) -> FutureResponse<Pl
 
     let req = auth::get(&url, token, None);
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 /// Begins building a reverse-geocode search with the given coordinate.
@@ -207,7 +207,7 @@ impl<'a> Future for CachedSearchFuture<'a> {
             Some(Ok(params)) => {
                 let req = auth::get(self.stem, &self.token, Some(&params));
 
-                self.future = Some(make_parsed_future_serde(&self.handle, req));
+                self.future = Some(make_parsed_future(&self.handle, req));
             }
             Some(Err(e)) => {
                 return Err(e);

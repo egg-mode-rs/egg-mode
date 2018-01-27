@@ -238,15 +238,10 @@ pub struct Tweet {
 
 impl<'de> Deserialize<'de> for Tweet {
     fn deserialize<D>(deser: D) -> Result<Tweet, D::Error> where D: Deserializer<'de> {
-        // TODO remove unwrap
-        //         if let Some(ref ext) = extended_tweet {
-        //             text = try!(field(ext, "full_text").or(field(input, "text")));
-        //             display_text_range = try!(field(ext, "display_text_range"));
-        //             entities = try!(field(ext, "entities"));
-        //             extended_entities = try!(field(ext, "extended_entities"));
         let raw = raw::RawTweet::deserialize(deser)?;
         let text = raw.text
             .or(raw.full_text)
+            // TODO remove unwrap
             .or(raw.extended_tweet.map(|xt| xt.full_text)).unwrap();
         let current_user_retweet = raw.current_user_retweet.map(|cur| cur.id);
         Ok(Tweet {
@@ -489,7 +484,7 @@ impl<'a> Timeline<'a> {
     ///ID to bound with.
     pub fn older(self, since_id: Option<u64>) -> TimelineFuture<'a> {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
-        let loader = make_parsed_future_serde(&self.handle, req);
+        let loader = make_parsed_future(&self.handle, req);
 
         TimelineFuture {
             timeline: Some(self),
@@ -501,7 +496,7 @@ impl<'a> Timeline<'a> {
     ///ID to bound with.
     pub fn newer(self, max_id: Option<u64>) -> TimelineFuture<'a> {
         let req = self.request(self.max_id, max_id);
-        let loader = make_parsed_future_serde(&self.handle, req);
+        let loader = make_parsed_future(&self.handle, req);
 
         TimelineFuture {
             timeline: Some(self),
@@ -517,7 +512,7 @@ impl<'a> Timeline<'a> {
     ///If the range of tweets given by the IDs would return more than `self.count`, the newest set
     ///of tweets will be returned.
     pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>) -> FutureResponse<Vec<Tweet>> {
-        make_parsed_future_serde(&self.handle, self.request(since_id, max_id))
+        make_parsed_future(&self.handle, self.request(since_id, max_id))
     }
 
     ///Helper function to construct a `Request` from the current state.
@@ -861,7 +856,7 @@ impl<'a> DraftTweet<'a> {
         }
 
         let req = auth::post(links::statuses::UPDATE, token, Some(&params));
-        make_parsed_future_serde(handle, req)
+        make_parsed_future(handle, req)
     }
 }
 
@@ -874,7 +869,7 @@ mod tests {
     use std::fs::File;
     use std::io::Read;
 
-    fn load_tweet_serde(path: &str) -> Tweet {
+    fn load_tweet(path: &str) -> Tweet {
         let sample_str = {
             let mut file = File::open(path).unwrap();
             let mut ret = String::new();
@@ -885,8 +880,8 @@ mod tests {
     }
 
     #[test]
-    fn parse_basic_serde() {
-        let sample = load_tweet_serde("src/tweet/sample-extended-onepic.json");
+    fn parse_basic() {
+        let sample = load_tweet("src/tweet/test_samples/sample-extended-onepic.json");
 
         assert_eq!(sample.text,
                    ".@Serrayak said he’d use what-ev-er I came up with as his Halloween avatar so I’m just making sure you all know he said that https://t.co/MvgxCwDwSa");
@@ -926,8 +921,20 @@ mod tests {
     }
 
     #[test]
-    fn parse_reply_serde() {
-        let sample = load_tweet_serde("src/tweet/sample-reply.json");
+    fn parse_samples() {
+        // Just check we can parse them without error, taken from
+        // https://github.com/twitterdev/tweet-updates/tree/686982b586dcc87d669151e89532ffea7e29e0d8/samples/initial
+        load_tweet("src/tweet/test_samples/compatibilityplus_classic_13994.json");
+        load_tweet("src/tweet/test_samples/compatibilityplus_classic_hidden_13797.json");
+        load_tweet("src/tweet/test_samples/compatibilityplus_extended_13997.json");
+        load_tweet("src/tweet/test_samples/extended_classic_14002.json");
+        load_tweet("src/tweet/test_samples/extended_classic_hidden_13761.json");
+        load_tweet("src/tweet/test_samples/extended_extended_14001.json");
+    }
+
+    #[test]
+    fn parse_reply() {
+        let sample = load_tweet("src/tweet/test_samples/sample-reply.json");
 
         assert_eq!(sample.in_reply_to_screen_name, Some("QuietMisdreavus".to_string()));
         assert_eq!(sample.in_reply_to_user_id, Some(2977334326));
@@ -935,8 +942,8 @@ mod tests {
     }
 
     #[test]
-    fn parse_quote_serde() {
-        let sample = load_tweet_serde("src/tweet/sample-quote.json");
+    fn parse_quote() {
+        let sample = load_tweet("src/tweet/test_samples/sample-quote.json");
 
         assert_eq!(sample.quoted_status_id, Some(783004145485840384));
         assert!(sample.quoted_status.is_some());
@@ -945,8 +952,8 @@ mod tests {
     }
 
     #[test]
-    fn parse_retweet_serde() {
-        let sample = load_tweet_serde("src/tweet/sample-retweet.json");
+    fn parse_retweet() {
+        let sample = load_tweet("src/tweet/test_samples/sample-retweet.json");
 
         assert!(sample.retweeted_status.is_some());
         assert_eq!(sample.retweeted_status.unwrap().text,

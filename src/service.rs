@@ -35,7 +35,7 @@ pub fn terms(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
     let req = auth::get(links::service::TERMS, token, None);
 
     fn parse_terms(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
-        let ret: Response<serde_json::Value> = try!(make_response_serde(full_resp, headers));
+        let ret: Response<serde_json::Value> = try!(make_response(full_resp, headers));
 
         panic!();
         // TODO Fix this panic!
@@ -54,7 +54,7 @@ pub fn privacy(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
     let req = auth::get(links::service::PRIVACY, token, None);
 
     fn parse_policy(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
-        let ret: Response<serde_json::Value> = try!(make_response_serde(full_resp, headers));
+        let ret: Response<serde_json::Value> = try!(make_response(full_resp, headers));
 
         panic!();
         // TODO Fix this panic!
@@ -78,7 +78,7 @@ pub fn privacy(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
 pub fn config(token: &auth::Token, handle: &Handle) -> FutureResponse<Configuration> {
     let req = auth::get(links::service::CONFIG, token, None);
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Return the current rate-limit status for all available methods from the authenticated user.
@@ -93,7 +93,7 @@ pub fn rate_limit_status(token: &auth::Token, handle: &Handle)
 {
     let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Like `rate_limit_status`, but returns the raw JSON without processing it. Only intended to
@@ -105,7 +105,7 @@ pub fn rate_limit_status_raw(token: &auth::Token, handle: &Handle)
 {
     let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Represents a service configuration from Twitter.

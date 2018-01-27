@@ -196,7 +196,7 @@ impl GeocodeBuilder {
 
         let req = auth::get(links::place::REVERSE_GEOCODE, token, Some(&params));
 
-        make_parsed_future_serde(handle, req)
+        make_parsed_future(handle, req)
     }
 }
 
@@ -343,7 +343,7 @@ impl<'a> SearchBuilder<'a> {
 
         let req = auth::get(links::place::SEARCH, token, Some(&params));
 
-        make_parsed_future_serde(handle, req)
+        make_parsed_future(handle, req)
     }
 }
 

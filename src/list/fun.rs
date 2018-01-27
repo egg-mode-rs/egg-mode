@@ -49,7 +49,7 @@ pub fn list<'id, T: Into<UserID<'id>>>(user: T,
 
     let req = auth::get(links::lists::LIST, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Look up the lists the given user is subscribed to, but not ones the user made themselves.
@@ -84,7 +84,7 @@ pub fn show(list: ListID, token: &auth::Token, handle: &Handle) -> FutureRespons
 
     let req = auth::get(links::lists::SHOW, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Look up the users that have been added to the given list.
@@ -130,7 +130,7 @@ pub fn is_subscribed<'id, T: Into<UserID<'id>>>(user: T,
     let req = auth::get(links::lists::IS_SUBSCRIBER, token, Some(&params));
 
     fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<bool>, error::Error> {
-        let out: WebResponse<TwitterUser> = make_response_serde(full_resp, headers);
+        let out: WebResponse<TwitterUser> = make_response(full_resp, headers);
 
         match out {
             Ok(user) => Ok(Response::map(user, |_| true)),
@@ -167,7 +167,7 @@ pub fn is_member<'id, T: Into<UserID<'id>>>(user: T,
     let req = auth::get(links::lists::IS_MEMBER, token, Some(&params));
 
     fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<bool>, error::Error> {
-        let out: WebResponse<TwitterUser> = make_response_serde(full_resp, headers);
+        let out: WebResponse<TwitterUser> = make_response(full_resp, headers);
 
         match out {
             Ok(user) => Ok(Response::map(user, |_| true)),
@@ -222,7 +222,7 @@ pub fn add_member<'id, T: Into<UserID<'id>>>(list: ListID,
 
     let req = auth::post(links::lists::ADD, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Adds a set of users to the given list.
@@ -258,7 +258,7 @@ pub fn add_member_list<'id, T, I>(members: I,
 
     let req = auth::post(links::lists::ADD_LIST, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Removes the given user from the given list.
@@ -274,7 +274,7 @@ pub fn remove_member<'id, T: Into<UserID<'id>>>(list: ListID,
 
     let req = auth::post(links::lists::REMOVE_MEMBER, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Removes a set of users from the given list.
@@ -306,7 +306,7 @@ pub fn remove_member_list<'a, T, I>(members: I, list: ListID, token: &auth::Toke
 
     let req = auth::post(links::lists::REMOVE_LIST, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Creates a list, with the given name, visibility, and description.
@@ -330,7 +330,7 @@ pub fn create(name: &str, public: bool, desc: Option<&str>, token: &auth::Token,
 
     let req = auth::post(links::lists::CREATE, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Deletes the given list.
@@ -342,7 +342,7 @@ pub fn delete(list: ListID, token: &auth::Token, handle: &Handle) -> FutureRespo
 
     let req = auth::post(links::lists::DELETE, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Subscribes the authenticated user to the given list.
@@ -355,7 +355,7 @@ pub fn subscribe(list: ListID, token: &auth::Token, handle: &Handle) -> FutureRe
 
     let req = auth::post(links::lists::SUBSCRIBE, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Unsubscribes the authenticated user from the given list.
@@ -365,7 +365,7 @@ pub fn unsubscribe(list: ListID, token: &auth::Token, handle: &Handle) -> Future
 
     let req = auth::post(links::lists::UNSUBSCRIBE, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Begins updating a list's metadata.

@@ -288,7 +288,7 @@ impl Timeline {
     ///bound with.
     pub fn older<'s>(&'s mut self, since_id: Option<u64>) -> TimelineFuture<'s> {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
-        let loader = make_parsed_future_serde(&self.handle, req);
+        let loader = make_parsed_future(&self.handle, req);
 
         TimelineFuture {
             timeline: self,
@@ -300,7 +300,7 @@ impl Timeline {
     ///bound with.
     pub fn newer<'s>(&'s mut self, max_id: Option<u64>) -> TimelineFuture<'s> {
         let req = self.request(self.max_id, max_id);
-        let loader = make_parsed_future_serde(&self.handle, req);
+        let loader = make_parsed_future(&self.handle, req);
 
         TimelineFuture {
             timeline: self,
@@ -318,7 +318,7 @@ impl Timeline {
     pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>)
         -> FutureResponse<Vec<DirectMessage>>
     {
-        make_parsed_future_serde(&self.handle, self.request(since_id, max_id))
+        make_parsed_future(&self.handle, self.request(since_id, max_id))
     }
 
     ///Helper builder function to set the page size.

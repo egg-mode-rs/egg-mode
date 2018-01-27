@@ -42,9 +42,11 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::time::{Instant, Duration};
 
-use futures::{Future, Async, Poll};
-use tokio_core::reactor::Timeout;
 use base64;
+use futures::{Future, Async, Poll};
+use serde::{self, Deserialize, Deserializer};
+use serde::de::Error;
+use tokio_core::reactor::Timeout;
 
 use common::*;
 use error;
@@ -96,7 +98,7 @@ pub mod media_types {
 
 // TODO this Deserialize obviously isn't correct
 ///RawMedia's upload progressing info.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq)]
 enum ProgressInfo {
     ///Video is pending for processing. Contains number of seconds after which to check.
     Pending(u64),
@@ -108,29 +110,43 @@ enum ProgressInfo {
     Success
 }
 
-// impl FromJson for ProgressInfo {
-//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-//         field_present!(input, state);
-//         let state: String = try!(field(input, "state"));
+#[derive(Debug, Deserialize)]
+enum RawProgressInfoTag {
+    #[serde(rename = "pending")]
+    Pending,
+    #[serde(rename = "in_progress")]
+    InProgress,
+    #[serde(rename = "failed")]
+    Failed,
+    #[serde(rename = "succeeded")]
+    Success
+}
 
-//         match state.as_ref() {
-//             "pending" => {
-//                 field_present!(input, check_after_secs);
-//                 Ok(ProgressInfo::Pending(try!(field(input, "check_after_secs"))))
-//             },
-//             "in_progress" => {
-//                 field_present!(input, check_after_secs);
-//                 Ok(ProgressInfo::InProgress(try!(field(input, "check_after_secs"))))
-//             },
-//             "failed" => {
-//                 field_present!(input, error);
-//                 Ok(ProgressInfo::Failed(try!(field(input, "error"))))
-//             },
-//             "succeeded" => Ok(ProgressInfo::Success),
-//             state => Err(InvalidResponse("Unexpected progress info state", Some(state.to_string())))
-//         }
-//     }
-// }
+#[derive(Debug, Deserialize)]
+struct RawProgressInfo {
+    state: RawProgressInfoTag,
+    progress_percent: Option<f64>,
+    check_after_secs: Option<u64>,
+    error: Option<error::MediaError>
+}
+
+
+impl<'de> Deserialize<'de> for ProgressInfo {
+    fn deserialize<D>(deser: D) -> Result<ProgressInfo, D::Error> where D: Deserializer<'de> {
+        use self::RawProgressInfoTag::*;
+        let raw = RawProgressInfo::deserialize(deser)?;
+        let check_after = raw.check_after_secs.ok_or_else(|| D::Error::custom("Missing field: check_after_secs"));
+        Ok(match raw.state {
+            Pending => ProgressInfo::Pending(check_after?),
+            InProgress => ProgressInfo::InProgress(check_after?),
+            Success => ProgressInfo::Success,
+            Failed => {
+                let err = raw.error.ok_or_else(|| D::Error::custom("Missing field: error"))?;
+                ProgressInfo::Failed(err)
+            }
+        })
+    }
+}
 
 /// A media handle returned by twitter upon successful upload.
 ///
@@ -161,12 +177,15 @@ impl MediaHandle {
 #[derive(Deserialize)]
 struct RawMedia {
     ///ID that can be used in API calls (e.g. attach to tweet).
+    #[serde(rename = "media_id")]
     pub id: u64,
     ///Number of second the media can be used in other API calls.
     //We can miss this field on failed upload in which case 0 is pretty reasonable value.
     #[serde(default)]
+    #[serde(rename = "expires_after_secs")]
     pub expires_after: u64,
     ///Progress information. If present determines whether RawMedia can be used.
+    #[serde(rename = "processing_info")]
     pub progress: Option<ProgressInfo>
 }
 
@@ -407,7 +426,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "media_category", self.media_category.to_string());
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future_serde(&self.handle, req)
+        make_parsed_future(&self.handle, req)
     }
 
     fn append(&self, chunk_num: usize, media_id: u64) -> Option<FutureResponse<()>> {
@@ -455,7 +474,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "media_id", media_id.to_string());
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future_serde(&self.handle, req)
+        make_parsed_future(&self.handle, req)
     }
 
     fn status(&self, media_id: u64) -> FutureResponse<RawMedia> {
@@ -465,7 +484,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "media_id", media_id.to_string());
 
         let req = auth::get(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future_serde(&self.handle, req)
+        make_parsed_future(&self.handle, req)
     }
 
     fn metadata(&self, media_id: u64, alt_text: &str) -> FutureResponse<()> {
@@ -780,8 +799,6 @@ impl StdError for UploadError {
 
 #[cfg(test)]
 mod tests {
-    use common::FromJson;
-
     use super::RawMedia;
 
     use std::fs::File;
@@ -791,7 +808,7 @@ mod tests {
         let mut file = File::open(path).unwrap();
         let mut content = String::new();
         file.read_to_string(&mut content).unwrap();
-        RawMedia::from_str(&content).unwrap()
+        ::serde_json::from_str::<RawMedia>(&content).unwrap()
     }
 
     #[test]

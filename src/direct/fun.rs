@@ -20,7 +20,7 @@ pub fn show(id: u64, token: &auth::Token, handle: &Handle)
 
     let req = auth::get(links::direct::SHOW, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Create a `Timeline` struct to navigate the direct messages received by the authenticated user.
@@ -52,7 +52,7 @@ pub fn send<'id, T: Into<UserID<'id>>>(to: T, text: &str, token: &auth::Token, h
 
     let req = auth::post(links::direct::SEND, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Delete the direct message with the given ID.
@@ -69,7 +69,7 @@ pub fn delete(id: u64, token: &auth::Token, handle: &Handle)
 
     let req = auth::post(links::direct::DELETE, token, Some(&params));
 
-    make_parsed_future_serde(handle, req)
+    make_parsed_future(handle, req)
 }
 
 ///Create a `ConversationTimeline` loader that can load direct messages as a collection of
