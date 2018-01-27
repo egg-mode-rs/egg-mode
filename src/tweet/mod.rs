@@ -241,8 +241,8 @@ impl<'de> Deserialize<'de> for Tweet {
         let raw = raw::RawTweet::deserialize(deser)?;
         let text = raw.text
             .or(raw.full_text)
-            // TODO remove unwrap
-            .or(raw.extended_tweet.map(|xt| xt.full_text)).unwrap();
+            .or(raw.extended_tweet.map(|xt| xt.full_text))
+            .ok_or_else(|| D::Error::custom("Tweet missing text field"))?;
         let current_user_retweet = raw.current_user_retweet.map(|cur| cur.id);
         Ok(Tweet {
             coordinates: raw.coordinates,

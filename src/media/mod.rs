@@ -44,7 +44,7 @@ use std::time::{Instant, Duration};
 
 use base64;
 use futures::{Future, Async, Poll};
-use serde::{self, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer};
 use serde::de::Error;
 use tokio_core::reactor::Timeout;
 

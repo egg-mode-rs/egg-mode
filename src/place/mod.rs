@@ -100,13 +100,29 @@ pub enum Accuracy {
 }
 
 ///Represents the result of a location search, either via `reverse_geocode` or `search`.
-#[derive(Deserialize)]
 pub struct SearchResult {
     ///The full URL used to pull the result list. This can be fed to the `_url` version of your
     ///original call to avoid having to fill out the argument list again.
     pub url: String,
     ///The list of results from the search.
     pub results: Vec<Place>,
+}
+
+impl<'de> Deserialize<'de> for SearchResult {
+    fn deserialize<D>(deser: D) -> Result<SearchResult, D::Error> where D: Deserializer<'de> {
+        let raw: serde_json::Value = serde_json::Value::deserialize(deser)?;
+        let url = raw.get("query")
+            .and_then(|obj| obj.get("url"))
+            .ok_or_else(|| D::Error::custom("Malformed search result"))?
+            .to_string();
+        let results = raw.get("result")
+            .and_then(|obj| obj.get("places"))
+            .and_then(|arr| <Vec<Place>>::deserialize(arr).ok())
+            .ok_or_else(|| D::Error::custom("Malformed search result"))?;
+        Ok(SearchResult {
+            url, results
+        })
+    }
 }
 
 ///Represents a `reverse_geocode` query before it is sent.
