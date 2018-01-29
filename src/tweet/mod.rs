@@ -245,7 +245,7 @@ impl<'de> Deserialize<'de> for Tweet {
             .ok_or_else(|| D::Error::custom("Tweet missing text field"))?;
         let current_user_retweet = raw.current_user_retweet.map(|cur| cur.id);
         Ok(Tweet {
-            coordinates: raw.coordinates,
+            coordinates: raw.coordinates.map(|coords| coords.coordinates),
             created_at: raw.created_at,
             display_text_range: raw.display_text_range,
             entities: raw.entities,

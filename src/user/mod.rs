@@ -203,6 +203,7 @@ pub struct TwitterUser {
     pub description: Option<String>,
     /// Link information that has been parsed out of the `url` or `description` fields given by the
     /// user.
+    #[serde(default)]
     pub entities: UserEntities,
     /// The number of tweets this user has favorited or liked in the account's lifetime.
     /// The term "favourites" and its British spelling are used for historical reasons.

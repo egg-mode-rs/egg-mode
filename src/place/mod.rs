@@ -445,22 +445,3 @@ fn deserialize_bounding_box<'de, D>(ser: D) -> Result<Vec<(f64, f64)>, D::Error>
                 .map_err(|e| D::Error::custom(e))
         )
 }
-
-// impl FromJson for SearchResult {
-//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-//         if !input.is_object() {
-//             return Err(InvalidResponse("place::SearchResult received json that wasn't an object",
-//                                        Some(input.to_string())));
-//         }
-
-//         let query = try!(input.find("query").ok_or(MissingValue("query")));
-//         let result = try!(input.find("result").ok_or(MissingValue("result")));
-
-//         field_present!(query, url);
-
-//         Ok(SearchResult {
-//             url: try!(field(query, "url")),
-//             results: try!(field(result, "places")),
-//         })
-//     }
-// }

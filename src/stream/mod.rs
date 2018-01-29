@@ -387,6 +387,7 @@ impl Stream for TwitterStream {
                             self.body = Some(body);
                             let pos = pos + 2;
                             let resp = if let Ok(msg_str) = std::str::from_utf8(&self.buf[..pos]) {
+                                println!("{}", msg_str);
                                 StreamMessage::from_str(msg_str)
                             } else {
                                 Err(io::Error::new(io::ErrorKind::InvalidData,
@@ -554,16 +555,19 @@ mod tests {
     use std::fs::File;
     use std::io::prelude::*;
 
-    #[test]
-    fn parse_tweet_stream() {
-        let sample = {
-            let sample_path = "src/tweet/test_samples/sample-extended-onepic.json";
-            let mut file = File::open(sample_path).unwrap();
+    fn load_stream(path: &str) -> StreamMessage {
+        let sample_str = {
+            let mut file = File::open(path).unwrap();
             let mut ret = String::new();
             file.read_to_string(&mut ret).unwrap();
             ret
         };
-        let msg = StreamMessage::from_str(&sample).unwrap();
+        ::serde_json::from_str(&sample_str).unwrap()
+    }
+
+    #[test]
+    fn parse_tweet_stream() {
+        let msg = load_stream("src/stream/sample.json");
         if let StreamMessage::Tweet(_tweet) = msg {
             // OK
         } else {
