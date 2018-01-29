@@ -415,7 +415,6 @@ fn sign(header: TwitterOAuth,
         base64::CharacterSet::Standard,
         true,
         true,
-        // TODO do we want line-wrapping?
         base64::LineWrap::NoWrap
     );
 

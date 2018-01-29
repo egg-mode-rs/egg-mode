@@ -41,7 +41,6 @@ mod fun;
 
 pub use self::fun::*;
 
-// TODO This looks to be a complicated derivation
 // https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/geo-objects#place
 ///Represents a named location.
 #[derive(Debug, Clone, Deserialize)]
@@ -71,7 +70,7 @@ pub struct Place {
 }
 
 ///Represents the type of region represented by a given place.
-#[derive(Debug, Copy, Clone, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum PlaceType {
     ///A coordinate with no area.
     #[serde(rename = "poi")]
@@ -363,18 +362,13 @@ impl<'a> SearchBuilder<'a> {
     }
 }
 
-// TODO possibly remove this?
 ///Display impl to make `to_string()` format the enum for sending to Twitter. This is *mostly* just
 ///a lowercase version of the variants, but `Point` is rendered as `"poi"` instead.
 impl fmt::Display for PlaceType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            PlaceType::PointOfInterest => write!(f, "poi"),
-            PlaceType::Neighborhood => write!(f, "neighborhood"),
-            PlaceType::City => write!(f, "city"),
-            PlaceType::Admin => write!(f, "admin"),
-            PlaceType::Country => write!(f, "country"),
-        }
+        let quoted = serde_json::to_string(self).unwrap();
+        let inner = &quoted[1..quoted.len() - 1]; // ignore the quote marks
+        write!(f, "{}", inner)
     }
 }
 

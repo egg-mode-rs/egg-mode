@@ -96,7 +96,6 @@ pub mod media_types {
     }
 }
 
-// TODO this Deserialize obviously isn't correct
 ///RawMedia's upload progressing info.
 #[derive(Debug, PartialEq)]
 enum ProgressInfo {

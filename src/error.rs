@@ -142,7 +142,6 @@ impl std::fmt::Display for Error {
             Error::NetError(ref err) => write!(f, "Network error: {}", err),
             Error::TlsError(ref err) => write!(f, "TLS error: {}", err),
             Error::IOError(ref err) => write!(f, "IO error: {}", err),
-            // TODO rename, eventually
             Error::DeserializeError(ref err) => write!(f, "JSON deserialize error: {}", err),
             Error::TimestampParseError(ref err) => write!(f, "Error parsing timestamp: {}", err),
         }
