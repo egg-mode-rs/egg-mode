@@ -32,10 +32,12 @@ fn main() {
                   .for_each(|id| { followers.insert(id); Ok(()) })).unwrap();
 
     let reciprocals = friends.intersection(&followers).cloned().collect::<Vec<_>>();
+    let reciprocals_ct = reciprocals.len();
+    println!("{} accounts that you follow follow you back.", reciprocals_ct);
 
-    println!("{} accounts that you follow follow you back.", reciprocals.len());
-
-    for user in core.run(user::lookup(&reciprocals, &config.token, &handle)).unwrap() {
-        println!("{} (@{})", user.name, user.screen_name);
+    if reciprocals_ct > 0 {
+        for user in core.run(user::lookup(&reciprocals, &config.token, &handle)).unwrap() {
+            println!("{} (@{})", user.name, user.screen_name);
+        }
     }
 }
