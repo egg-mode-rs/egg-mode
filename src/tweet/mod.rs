@@ -959,4 +959,5 @@ mod tests {
         assert_eq!(sample.retweeted_status.unwrap().text,
                    "it's working: follow @andrewhuangbot for a random lyric of mine every hour. we'll call this version 0.1.0. wanna get line breaks in there");
     }
+
 }

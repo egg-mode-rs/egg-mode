@@ -5,6 +5,7 @@
 //! Access to the Streaming API.
 
 use std::{self, io};
+use std::str::FromStr;
 use std::collections::HashMap;
 
 use chrono;
@@ -25,7 +26,6 @@ use user::TwitterUser;
 
 use common::*;
 
-// TODO Obviously this won't deserialize as-is
 /// Represents the kinds of messages that can be sent over Twitter's Streaming API.
 #[derive(Debug)]
 pub enum StreamMessage {
@@ -285,15 +285,15 @@ impl<'de> Deserialize<'de> for StreamMessage {
             StreamMessage::Disconnect(fetch!(err, "code")?, fetch!(err, "reason")?)
         } else if let Some(friends) = input.get("friends") {
             StreamMessage::FriendList(
-                // TODO remove unwrap
-                serde_json::from_value(friends.clone()).unwrap()
+                serde_json::from_value(friends.clone()).map_err(
+                    |e| D::Error::custom(format!("{}", e)))?
             )
         } else if let Some(dm) = input.get("direct_message") {
             StreamMessage::DirectMessage(
-                // TODO remove unwrap
-                serde_json::from_value(dm.clone()).unwrap()
+                serde_json::from_value(dm.clone()).map_err(
+                    |e| D::Error::custom(format!("{}", e)))?
             )
-        // TODO remove clone
+        // TODO remove clone?
         } else if let Ok(tweet) = serde_json::from_value::<Tweet>(input.clone()) {
             StreamMessage::Tweet(tweet)
         } else {
@@ -303,28 +303,15 @@ impl<'de> Deserialize<'de> for StreamMessage {
     }
 }
 
-//     fn from_str(input: &str) -> Result<Self, error::Error> {
-//         if input.trim().is_empty() {
-//             Ok(StreamMessage::Ping)
-//         } else {
-//             let json = try!(json::Json::from_str(input.trim()));
-
-//             StreamMessage::from_json(&json)
-//         }
-//     }
-// }
-
-// TODO  FromStr trait?
-impl StreamMessage {
+impl FromStr for StreamMessage {
+    type Err = error::Error;
     fn from_str(input: &str) -> Result<Self, error::Error> {
-        let json: serde_json::Value = try!(serde_json::from_str(input.trim()));
-        Ok(StreamMessage::deserialize(&json)?)
-        // if input.trim().is_empty() {
-        //     Ok(StreamMessage::Ping)
-        // } else {
-        //     let json = try!(serde_json::to_value(input.trim()));
-        //     Ok(StreamMessage::deserialize(&json)?)
-        // }
+        let input = input.trim();
+        if input.is_empty() {
+            Ok(StreamMessage::Ping)
+        } else {
+            Ok(serde_json::from_str(input)?)
+        }
     }
 }
 
@@ -560,3 +547,38 @@ pub fn sample(handle: &Handle, token: &Token) -> TwitterStream {
 
     TwitterStream::new(handle, req)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::File;
+    use std::io::prelude::*;
+
+    #[test]
+    fn parse_tweet_stream() {
+        let sample = {
+            let sample_path = "src/tweet/test_samples/sample-extended-onepic.json";
+            let mut file = File::open(sample_path).unwrap();
+            let mut ret = String::new();
+            file.read_to_string(&mut ret).unwrap();
+            ret
+        };
+        let msg = StreamMessage::from_str(&sample).unwrap();
+        if let StreamMessage::Tweet(_tweet) = msg {
+            // OK
+        } else {
+            panic!("Not a tweet")
+        }
+    }
+
+    #[test]
+    fn parse_empty_stream() {
+        let msg = StreamMessage::from_str("").unwrap();
+        if let StreamMessage::Ping = msg {
+            // OK
+        } else {
+            panic!("Not a ping")
+        }
+    }
+}
+
