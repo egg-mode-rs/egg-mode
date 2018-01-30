@@ -118,6 +118,7 @@ pub struct DMEntities {
     pub media: Option<Vec<entities::MediaEntity>>,
 }
 
+
 // impl FromJson for DirectMessage {
 //     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
 //         if !input.is_object() {

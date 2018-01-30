@@ -34,12 +34,16 @@ header! { (XRateLimitReset, "X-Rate-Limit-Reset") => [i32] }
 #[derive(Debug, Deserialize)]
 pub struct Response<T> {
     ///The rate limit ceiling for the given request.
+    #[serde(rename = "limit")]
     pub rate_limit: i32,
     ///The number of requests left for the 15-minute window.
+    #[serde(rename = "remaining")]
     pub rate_limit_remaining: i32,
     ///The UTC Unix timestamp at which the rate window resets.
+    #[serde(rename = "reset")]
     pub rate_limit_reset: i32,
     ///The decoded response from the request.
+    #[serde(default)]
     pub response: T,
 }
 

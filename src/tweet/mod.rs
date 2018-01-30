@@ -951,7 +951,7 @@ mod tests {
         load_tweet("src/tweet/test_samples/extended_classic_14002.json");
         load_tweet("src/tweet/test_samples/extended_classic_hidden_13761.json");
         load_tweet("src/tweet/test_samples/extended_extended_14001.json");
-        load_tweet("src/tweet/test_samples/problematic.json");
+        load_tweet("src/tweet/test_samples/nullable_user_mention.json");
     }
 
     #[test]

@@ -19,11 +19,14 @@
 use std::str::FromStr;
 use std::collections::HashMap;
 
+use serde::{Deserialize, Deserializer};
+use serde::de::Error;
 use serde_json;
 
 use auth;
 use entities;
 use error;
+use error::Error::{InvalidResponse, MissingValue};
 use links;
 use common::*;
 
@@ -41,7 +44,7 @@ pub fn terms(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
             .get("tos")
             .and_then(|tos| tos.as_str())
             .map(String::from)
-            .ok_or_else(|| error::Error::InvalidResponse("Missing field: tos", None))?;
+            .ok_or_else(|| InvalidResponse("Missing field: tos", None))?;
         Ok(Response::map(ret, |_| tos))
     }
 
@@ -62,7 +65,7 @@ pub fn privacy(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
             .get("privacy")
             .and_then(|tos| tos.as_str())
             .map(String::from)
-            .ok_or_else(|| error::Error::InvalidResponse("Missing field: privacy", None))?;
+            .ok_or_else(|| InvalidResponse("Missing field: privacy", None))?;
         Ok(Response::map(ret, |_| privacy))
     }
 
@@ -176,8 +179,7 @@ pub struct Configuration {
 /// querying, see the `*Method` enums available in [`egg_mode::service`][].
 ///
 /// [`egg_mode::service`]: index.html
-#[derive(Debug, Deserialize)]
-// TODO this deserialize obviously wrong
+#[derive(Debug)]
 pub struct RateLimitStatus {
     ///The rate-limit status for methods in the `direct` module.
     pub direct: HashMap<DirectMethod, Response<()>>,
@@ -195,53 +197,53 @@ pub struct RateLimitStatus {
     pub list: HashMap<ListMethod, Response<()>>,
 }
 
-// impl FromJson for RateLimitStatus {
-//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-//         if !input.is_object() {
-//             return Err(InvalidResponse("RateLimitStatus received json that wasn't an object",
-//                                        Some(input.to_string())));
-//         }
+impl<'de> Deserialize<'de> for RateLimitStatus {
+    fn deserialize<D>(ser: D) -> Result<Self, D::Error>
+    where D: Deserializer<'de> {
+        use serde_json::from_value;
 
-//         let mut direct = HashMap::new();
-//         let mut place = HashMap::new();
-//         let mut search = HashMap::new();
-//         let mut service = HashMap::new();
-//         let mut tweet = HashMap::new();
-//         let mut user = HashMap::new();
-//         let mut list = HashMap::new();
+        let input = serde_json::Value::deserialize(ser)?;
 
-//         let map = try!(input.find("resources").ok_or(MissingValue("resources")));
+        let mut direct = HashMap::new();
+        let mut place = HashMap::new();
+        let mut search = HashMap::new();
+        let mut service = HashMap::new();
+        let mut tweet = HashMap::new();
+        let mut user = HashMap::new();
+        let mut list = HashMap::new();
 
-//         if let Some(map) = map.as_object() {
-//             for (k, v) in map.values().filter_map(|v| v.as_object()).flat_map(|v| v.iter()) {
-//                 if let Ok(method) = k.parse::<Method>() {
-//                     match method {
-//                         Method::Direct(m) => direct.insert(m, try!(FromJson::from_json(v))),
-//                         Method::Place(p) => place.insert(p, try!(FromJson::from_json(v))),
-//                         Method::Search(s) => search.insert(s, try!(FromJson::from_json(v))),
-//                         Method::Service(s) => service.insert(s, try!(FromJson::from_json(v))),
-//                         Method::Tweet(t) => tweet.insert(t, try!(FromJson::from_json(v))),
-//                         Method::User(u) => user.insert(u, try!(FromJson::from_json(v))),
-//                         Method::List(l) => list.insert(l, try!(FromJson::from_json(v))),
-//                     };
-//                 }
-//             }
-//         } else {
-//             return Err(InvalidResponse("RateLimitStatus field 'resources' wasn't an object",
-//                                        Some(input.to_string())));
-//         }
+        let map = input.get("resources").ok_or_else(|| D::Error::custom(MissingValue("resources")))?;
 
-//         Ok(RateLimitStatus {
-//             direct: direct,
-//             place: place,
-//             search: search,
-//             service: service,
-//             tweet: tweet,
-//             user: user,
-//             list: list,
-//         })
-//     }
-// }
+        if let Some(map) = map.as_object() {
+            for (k, v) in map.values().filter_map(|v| v.as_object()).flat_map(|v| v.iter()) {
+                if let Ok(method) = k.parse::<Method>() {
+                    match method {
+                        Method::Direct(m) => direct.insert(m, from_value(v.clone()).map_err(D::Error::custom)?),
+                        Method::Place(p) => place.insert(p, from_value(v.clone()).map_err(D::Error::custom)?),
+                        Method::Search(s) => search.insert(s, from_value(v.clone()).map_err(D::Error::custom)?),
+                        Method::Service(s) => service.insert(s, from_value(v.clone()).map_err(D::Error::custom)?),
+                        Method::Tweet(t) => tweet.insert(t, from_value(v.clone()).map_err(D::Error::custom)?),
+                        Method::User(u) => user.insert(u, from_value(v.clone()).map_err(D::Error::custom)?),
+                        Method::List(l) => list.insert(l, from_value(v.clone()).map_err(D::Error::custom)?),
+                    };
+                }
+            }
+        } else {
+            return Err(D::Error::custom(InvalidResponse("RateLimitStatus field 'resources' wasn't an object",
+                                       Some(input.to_string()))));
+        }
+
+        Ok(RateLimitStatus {
+            direct: direct,
+            place: place,
+            search: search,
+            service: service,
+            tweet: tweet,
+            user: user,
+            list: list,
+        })
+    }
+}
 
 ///Method identifiers, used by `rate_limit_status` to return rate-limit information.
 enum Method {
