@@ -7,7 +7,6 @@ use super::{
     Tweet, deserialize_tweet_source, deserialize_datetime
 };
 
-// TODO move the 'deserialize_with' to Tweet. This is supposed to be raw
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct RawTweet {
     pub coordinates: Option<RawCoordinates>,

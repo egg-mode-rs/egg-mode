@@ -457,3 +457,16 @@ pub enum ListMethod {
     ///`list::statuses`
     Statuses,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use common::tests::load_file;
+
+    #[test]
+    fn parse_rate_limit() {
+        let sample = load_file("samples/rate_limit_sample.json");
+        ::serde_json::from_str::<RateLimitStatus>(&sample).unwrap();
+    }
+
+}

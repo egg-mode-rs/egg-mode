@@ -551,17 +551,11 @@ pub fn sample(handle: &Handle, token: &Token) -> TwitterStream {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::File;
-    use std::io::prelude::*;
+    use common::tests::load_file;
 
     fn load_stream(path: &str) -> StreamMessage {
-        let sample_str = {
-            let mut file = File::open(path).unwrap();
-            let mut ret = String::new();
-            file.read_to_string(&mut ret).unwrap();
-            ret
-        };
-        ::serde_json::from_str(&sample_str).unwrap()
+        let sample = load_file(path);
+        ::serde_json::from_str(&sample).unwrap()
     }
 
     #[test]

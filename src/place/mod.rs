@@ -383,59 +383,6 @@ impl fmt::Display for Accuracy {
     }
 }
 
-// impl FromJson for Place {
-//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-//         if !input.is_object() {
-//             return Err(InvalidResponse("Place received json that wasn't an object", Some(input.to_string())));
-//         }
-
-//         let attributes = if let Some(json) = input.find("attributes") {
-//             if let Some(attr) = json.as_object() {
-//                 let mut attributes = HashMap::new();
-
-//                 for (k, v) in attr.iter() {
-//                     attributes.insert(k.clone(), try!(String::from_json(v)));
-//                 }
-
-//                 attributes
-//             } else {
-//                 return Err(InvalidResponse("Place.attributes received json that wasn't an object",
-//                                            Some(json.to_string())));
-//             }
-//         } else {
-//             return Err(MissingValue("attributes"));
-//         };
-
-//         let bounding_box = if let Some(vec) = input.find_path(&["bounding_box", "coordinates"]) {
-//             //"Array of Array of Array of Float" https://dev.twitter.com/overview/api/places#obj-boundingbox
-//             let parsed = try!(<Vec<Vec<(f64, f64)>>>::from_json(vec));
-//             try!(parsed.into_iter().next().ok_or_else(|| InvalidResponse("Place.bounding_box received an empty array",
-//                                                                          Some(vec.to_string()))))
-//         } else {
-//             return Err(MissingValue("bounding_box"));
-//         };
-
-//         field_present!(input, id);
-//         field_present!(input, country);
-//         field_present!(input, country_code);
-//         field_present!(input, full_name);
-//         field_present!(input, name);
-//         field_present!(input, place_type);
-
-//         Ok(Place {
-//             id: try!(field(input, "id")),
-//             attributes: attributes,
-//             bounding_box: bounding_box,
-//             country: try!(field(input, "country")),
-//             country_code: try!(field(input, "country_code")),
-//             full_name: try!(field(input, "full_name")),
-//             name: try!(field(input, "name")),
-//             place_type: try!(field(input, "place_type")),
-//             contained_within: try!(field(input, "contained_within")),
-//         })
-//     }
-// }
-
 fn deserialize_bounding_box<'de, D>(ser: D) -> Result<Vec<(f64, f64)>, D::Error> where D: Deserializer<'de> {
     let s = serde_json::Value::deserialize(ser)?;
     s.get("coordinates")

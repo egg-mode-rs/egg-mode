@@ -319,8 +319,17 @@ pub fn deserialize_mime<'de, D>(ser: D) -> Result<mime::Mime, D::Error> where D:
 }
 
 #[cfg(test)]
-mod tests {
+pub (crate) mod tests {
     use super::*;
+    use std::fs::File;
+    use std::io::Read;
+
+    pub(crate) fn load_file(path: &str) -> String {
+        let mut file = File::open(path).unwrap();
+        let mut content = String::new();
+        file.read_to_string(&mut content).unwrap();
+        content
+    }
 
     #[test]
     fn test_codepoints_to_bytes() {

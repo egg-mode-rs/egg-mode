@@ -892,20 +892,13 @@ impl<'a> DraftTweet<'a> {
 #[cfg(test)]
 mod tests {
     use super::Tweet;
+    use common::tests::load_file;
 
     use chrono::{Weekday, Datelike, Timelike};
 
-    use std::fs::File;
-    use std::io::Read;
-
     fn load_tweet(path: &str) -> Tweet {
-        let sample_str = {
-            let mut file = File::open(path).unwrap();
-            let mut ret = String::new();
-            file.read_to_string(&mut ret).unwrap();
-            ret
-        };
-        ::serde_json::from_str(&sample_str).unwrap()
+        let sample = load_file(path);
+        ::serde_json::from_str(&sample).unwrap()
     }
 
     #[test]
@@ -941,11 +934,10 @@ mod tests {
         assert_eq!(sample.extended_entities.unwrap().media.len(), 1);
 
         //text contains extended link, which is outside of display_text_range
-        // TODO This will be tricky to fix
-        // let range = sample.display_text_range.unwrap();
-        // assert_eq!(&sample.text[range.0..range.1],
-        //            ".@Serrayak said he’d use what-ev-er I came up with as his Halloween avatar so I’m just making sure you all know he said that"
-        // );
+        let range = sample.display_text_range.unwrap();
+        assert_eq!(&sample.text[range.0..range.1],
+                   ".@Serrayak said he’d use what-ev-er I came up with as his Halloween avatar so I’m just making sure you all know he said that"
+        );
         assert_eq!(sample.truncated, false);
     }
 

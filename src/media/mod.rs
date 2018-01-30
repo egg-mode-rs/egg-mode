@@ -798,14 +798,10 @@ impl StdError for UploadError {
 #[cfg(test)]
 mod tests {
     use super::RawMedia;
-
-    use std::fs::File;
-    use std::io::Read;
+    use common::tests::load_file;
 
     fn load_media(path: &str) -> RawMedia {
-        let mut file = File::open(path).unwrap();
-        let mut content = String::new();
-        file.read_to_string(&mut content).unwrap();
+        let content = load_file(path);
         ::serde_json::from_str::<RawMedia>(&content).unwrap()
     }
 
