@@ -73,6 +73,7 @@ pub struct DirectMessage {
     ///Numeric ID for this DM.
     pub id: u64,
     ///UTC timestamp from when this DM was created.
+    #[serde(deserialize_with = "deserialize_datetime")]
     pub created_at: chrono::DateTime<chrono::Utc>,
     ///The text of the DM.
     pub text: String,

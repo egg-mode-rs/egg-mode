@@ -44,6 +44,8 @@
 //!   potentially filling up a lot of space with the fullly expanded URL.
 use mime;
 
+use common::deserialize_mime;
+
 ///Represents a hashtag or symbol extracted from another piece of text.
 #[derive(Debug, Clone, Deserialize)]
 pub struct HashtagEntity {
@@ -172,10 +174,9 @@ pub struct VideoInfo {
 pub struct VideoVariant {
     ///The bitrate of the video. This value is present for GIFs, but it will be zero.
     pub bitrate: Option<i32>,
-    //pub content_type: mime::Mime,
-    //TODO write Deserialize for mime
     ///The file format of the video variant.
-    pub content_type: String,
+    #[serde(deserialize_with = "deserialize_mime")]
+    pub content_type: mime::Mime,
     ///The URL for the video variant.
     pub url: String,
 }
@@ -184,10 +185,12 @@ pub struct VideoVariant {
 #[derive(Debug, Clone, Deserialize)]
 pub struct UrlEntity {
     ///A truncated URL meant to be displayed inline with the text.
+    #[serde(default)]
     pub display_url: String,
     ///The URL that the t.co URL resolves to.
     ///
     ///Meant to be used as hover-text when a user mouses over a link.
+    #[serde(default)]
     pub expanded_url: String,
     ///The byte offsets in the companion text where the URL was extracted from.
     #[serde(rename = "indices")]
@@ -211,37 +214,3 @@ pub struct MentionEntity {
     ///Screen name of the mentioned user, without the leading @ symbol.
     pub screen_name: String,
 }
-
-// impl FromJson for UrlEntity {
-//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-//         if !input.is_object() {
-//             return Err(InvalidResponse("UrlEntity received json that wasn't an object", Some(input.to_string())));
-//         }
-
-//         field_present!(input, indices);
-
-//         //i have, somehow, run into a user whose profile url arrived in a UrlEntity that didn't
-//         //include display_url or expanded_url fields. in this case let's just populate those fields
-//         //with the full url and carry on.
-//         let url: String = try!(field(input, "url"));
-
-//         let display_url = if (|| { field_present!(input, display_url); Ok(()) })().is_ok() {
-//             try!(field(input, "display_url"))
-//         } else {
-//             url.clone()
-//         };
-
-//         let expanded_url = if (|| { field_present!(input, expanded_url); Ok(()) })().is_ok() {
-//             try!(field(input, "expanded_url"))
-//         } else {
-//             url.clone()
-//         };
-
-//         Ok(UrlEntity {
-//             display_url: display_url,
-//             expanded_url: expanded_url,
-//             range: try!(field(input, "indices")),
-//             url: url,
-//         })
-//     }
-// }

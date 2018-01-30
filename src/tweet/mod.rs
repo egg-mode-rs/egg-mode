@@ -55,6 +55,7 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use chrono;
 use regex::Regex;
@@ -319,8 +320,9 @@ pub struct TweetSource {
     pub url: String,
 }
 
-// TODO should this be the FromStr trait?
-impl TweetSource {
+impl FromStr for TweetSource {
+    type Err = error::Error;
+
     fn from_str(full: &str) -> Result<TweetSource, error::Error> {
         if full == "web" {
             return Ok(TweetSource {

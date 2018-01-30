@@ -135,6 +135,7 @@ use list;
 pub use tokio_core::reactor::Handle;
 pub use hyper::Headers;
 use chrono::{self, TimeZone};
+use mime;
 use serde::{Deserialize, Deserializer};
 use serde::de::Error;
 
@@ -310,6 +311,11 @@ pub fn deserialize_datetime<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::U
     let s = String::deserialize(ser)?;
     let date = (chrono::Utc).datetime_from_str(&s, "%a %b %d %T %z %Y").map_err(|e| D::Error::custom(e))?;
     Ok(date)
+}
+
+pub fn deserialize_mime<'de, D>(ser: D) -> Result<mime::Mime, D::Error> where D: Deserializer<'de> {
+    let str = String::deserialize(ser)?;
+    str.parse().map_err(|e| D::Error::custom(e))
 }
 
 #[cfg(test)]
