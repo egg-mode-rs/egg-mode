@@ -55,7 +55,6 @@ use std::fmt;
 // TODO check & tweak import orders
 use futures::{Future, Poll, Async};
 use serde::{Deserialize, Deserializer};
-use serde::de::Error;
 
 use auth;
 use error;

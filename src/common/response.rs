@@ -485,10 +485,6 @@ impl<T> Future for TwitterFuture<T> {
 pub fn make_response<T: for <'a> serde::Deserialize<'a>>(full_resp: String, headers: &Headers)
     -> Result<Response<T>, error::Error>
 {
-    // TODO remove
-    // let dbg: serde_json::Value = serde_json::from_str(&full_resp).unwrap();
-    // println!("{:#}", dbg);
-
     let out = serde_json::from_str(&full_resp)?; // TODO OK to use ?
     Ok(Response::map(rate_headers(headers), |_| out))
 }

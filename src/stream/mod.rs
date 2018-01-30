@@ -387,7 +387,6 @@ impl Stream for TwitterStream {
                             self.body = Some(body);
                             let pos = pos + 2;
                             let resp = if let Ok(msg_str) = std::str::from_utf8(&self.buf[..pos]) {
-                                println!("{}", msg_str);
                                 StreamMessage::from_str(msg_str)
                             } else {
                                 Err(io::Error::new(io::ErrorKind::InvalidData,

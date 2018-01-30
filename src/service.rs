@@ -37,10 +37,12 @@ pub fn terms(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
     fn parse_terms(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
         let ret: Response<serde_json::Value> = try!(make_response(full_resp, headers));
 
-        panic!();
-        // TODO Fix this panic!
-        // let tos = try!(field(&ret.response, "tos"));
-        // Ok(Response::map(ret, |_| tos))
+        let tos = ret.response
+            .get("tos")
+            .and_then(|tos| tos.as_str())
+            .map(String::from)
+            .ok_or_else(|| error::Error::InvalidResponse("Missing field: tos", None))?;
+        Ok(Response::map(ret, |_| tos))
     }
 
     make_future(handle, req, parse_terms)
@@ -56,10 +58,12 @@ pub fn privacy(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
     fn parse_policy(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
         let ret: Response<serde_json::Value> = try!(make_response(full_resp, headers));
 
-        panic!();
-        // TODO Fix this panic!
-        // let privacy = try!(field(&ret.response, "privacy"));
-        // Ok(Response::map(ret, |_| privacy))
+        let privacy = ret.response
+            .get("privacy")
+            .and_then(|tos| tos.as_str())
+            .map(String::from)
+            .ok_or_else(|| error::Error::InvalidResponse("Missing field: privacy", None))?;
+        Ok(Response::map(ret, |_| privacy))
     }
 
     make_future(handle, req, parse_policy)
