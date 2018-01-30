@@ -1,0 +1,169 @@
+{
+    "created_at": "Mon Jan 29 21:18:31 +0000 2018",
+    "id": 958086982432735232,
+    "id_str": "958086982432735232",
+    "text": "El mejor club de Tlaxcala https:\/\/t.co\/EFCu3lEdtd",
+    "display_text_range": [0, 25],
+    "source": "\u003ca href=\"http:\/\/twitter.com\/download\/iphone\" rel=\"nofollow\"\u003eTwitter for iPhone\u003c\/a\u003e",
+    "truncated": false,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "in_reply_to_screen_name": null,
+    "user": {
+        "id": 849309746897321985,
+        "id_str": "849309746897321985",
+        "name": "Luxordesdensw",
+        "screen_name": "Luxordesdensw",
+        "location": "Tlaxcala, M\u00e9xico",
+        "url": "http:\/\/www.desdenswluxor.com",
+        "description": null,
+        "translator_type": "none",
+        "protected": false,
+        "verified": false,
+        "followers_count": 231,
+        "friends_count": 59,
+        "listed_count": 1,
+        "favourites_count": 2,
+        "statuses_count": 50,
+        "created_at": "Tue Apr 04 17:16:37 +0000 2017",
+        "utc_offset": null,
+        "time_zone": null,
+        "geo_enabled": true,
+        "lang": "es",
+        "contributors_enabled": false,
+        "is_translator": false,
+        "profile_background_color": "F5F8FA",
+        "profile_background_image_url": "",
+        "profile_background_image_url_https": "",
+        "profile_background_tile": false,
+        "profile_link_color": "1DA1F2",
+        "profile_sidebar_border_color": "C0DEED",
+        "profile_sidebar_fill_color": "DDEEF6",
+        "profile_text_color": "333333",
+        "profile_use_background_image": true,
+        "profile_image_url": "http:\/\/pbs.twimg.com\/profile_images\/956325277218488321\/4U5dQkM9_normal.jpg",
+        "profile_image_url_https": "https:\/\/pbs.twimg.com\/profile_images\/956325277218488321\/4U5dQkM9_normal.jpg",
+        "profile_banner_url": "https:\/\/pbs.twimg.com\/profile_banners\/849309746897321985\/1516840636",
+        "default_profile": true,
+        "default_profile_image": false,
+        "following": null,
+        "follow_request_sent": null,
+        "notifications": null
+    },
+    "geo": {
+        "type": "Point",
+        "coordinates": [19.34738907, -98.19352015]
+    },
+    "coordinates": {
+        "type": "Point",
+        "coordinates": [-98.19352015, 19.34738907]
+    },
+    "place": {
+        "id": "8e6925ce510d226e",
+        "url": "https:\/\/api.twitter.com\/1.1\/geo\/id\/8e6925ce510d226e.json",
+        "place_type": "city",
+        "name": "Apetatitl\u00e1n de Antonio Carvajal",
+        "full_name": "Apetatitl\u00e1n de Antonio Carvajal, Tlaxcala",
+        "country_code": "MX",
+        "country": "M\u00e9xico",
+        "bounding_box": {
+            "type": "Polygon",
+            "coordinates": [[
+                    [-98.228743, 19.323942],
+                    [-98.228743, 19.376820],
+                    [-98.175223, 19.376820],
+                    [-98.175223, 19.323942]
+                ]
+            ]
+        },
+        "attributes": {}
+    },
+    "contributors": null,
+    "is_quote_status": false,
+    "quote_count": 0,
+    "reply_count": 0,
+    "retweet_count": 0,
+    "favorite_count": 0,
+    "entities": {
+        "hashtags": [],
+        "urls": [],
+        "user_mentions": [],
+        "symbols": [],
+        "media": [{
+            "id": 958086975289942016,
+            "id_str": "958086975289942016",
+            "indices": [26, 49],
+            "media_url": "http:\/\/pbs.twimg.com\/media\/DUvPByIV4AAhx3j.jpg",
+            "media_url_https": "https:\/\/pbs.twimg.com\/media\/DUvPByIV4AAhx3j.jpg",
+            "url": "https:\/\/t.co\/EFCu3lEdtd",
+            "display_url": "pic.twitter.com\/EFCu3lEdtd",
+            "expanded_url": "https:\/\/twitter.com\/Luxordesdensw\/status\/958086982432735232\/photo\/1",
+            "type": "photo",
+            "sizes": {
+                "medium": {
+                    "w": 480,
+                    "h": 662,
+                    "resize": "fit"
+                },
+                "thumb": {
+                    "w": 150,
+                    "h": 150,
+                    "resize": "crop"
+                },
+                "small": {
+                    "w": 480,
+                    "h": 662,
+                    "resize": "fit"
+                },
+                "large": {
+                    "w": 480,
+                    "h": 662,
+                    "resize": "fit"
+                }
+            }
+        }]
+    },
+    "extended_entities": {
+        "media": [{
+            "id": 958086975289942016,
+            "id_str": "958086975289942016",
+            "indices": [26, 49],
+            "media_url": "http:\/\/pbs.twimg.com\/media\/DUvPByIV4AAhx3j.jpg",
+            "media_url_https": "https:\/\/pbs.twimg.com\/media\/DUvPByIV4AAhx3j.jpg",
+            "url": "https:\/\/t.co\/EFCu3lEdtd",
+            "display_url": "pic.twitter.com\/EFCu3lEdtd",
+            "expanded_url": "https:\/\/twitter.com\/Luxordesdensw\/status\/958086982432735232\/photo\/1",
+            "type": "photo",
+            "sizes": {
+                "medium": {
+                    "w": 480,
+                    "h": 662,
+                    "resize": "fit"
+                },
+                "thumb": {
+                    "w": 150,
+                    "h": 150,
+                    "resize": "crop"
+                },
+                "small": {
+                    "w": 480,
+                    "h": 662,
+                    "resize": "fit"
+                },
+                "large": {
+                    "w": 480,
+                    "h": 662,
+                    "resize": "fit"
+                }
+            }
+        }]
+    },
+    "favorited": false,
+    "retweeted": false,
+    "possibly_sensitive": false,
+    "filter_level": "low",
+    "lang": "es",
+    "timestamp_ms": "1517260711664"
+}
