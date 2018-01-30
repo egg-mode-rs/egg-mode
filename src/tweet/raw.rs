@@ -9,7 +9,7 @@ use super::{
 
 // TODO move the 'deserialize_with' to Tweet. This is supposed to be raw
 #[derive(Debug, Clone, Deserialize)]
-pub struct RawTweet {
+pub(crate) struct RawTweet {
     pub coordinates: Option<RawCoordinates>,
     #[serde(deserialize_with = "deserialize_datetime")]
     pub created_at: chrono::DateTime<chrono::Utc>,
@@ -46,7 +46,7 @@ pub struct RawTweet {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct RawExtendedTweet {
+pub(crate) struct RawExtendedTweet {
     pub full_text: String,
     pub display_text_range: Option<(usize, usize)>,
     pub entities: TweetEntities,
@@ -54,14 +54,14 @@ pub struct RawExtendedTweet {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct RawCoordinates {
+pub(crate) struct RawCoordinates {
     #[serde(rename = "type")]
     pub kind: String,
     pub coordinates: (f64, f64)
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct CurrentUserRetweet {
+pub(crate) struct CurrentUserRetweet {
     pub id: u64,
     pub id_str: String
 }

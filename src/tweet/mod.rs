@@ -238,12 +238,39 @@ pub struct Tweet {
 
 impl<'de> Deserialize<'de> for Tweet {
     fn deserialize<D>(deser: D) -> Result<Tweet, D::Error> where D: Deserializer<'de> {
-        let raw = raw::RawTweet::deserialize(deser)?;
+        let mut raw = raw::RawTweet::deserialize(deser)?;
         let text = raw.text
             .or(raw.full_text)
             .or(raw.extended_tweet.map(|xt| xt.full_text))
             .ok_or_else(|| D::Error::custom("Tweet missing text field"))?;
         let current_user_retweet = raw.current_user_retweet.map(|cur| cur.id);
+
+        if let Some(ref mut range) = raw.display_text_range {
+            codepoints_to_bytes(range, &text);
+        }
+        for entity in &mut raw.entities.hashtags {
+            codepoints_to_bytes(&mut entity.range, &text);
+        }
+        for entity in &mut raw.entities.symbols {
+            codepoints_to_bytes(&mut entity.range, &text);
+        }
+        for entity in &mut raw.entities.urls {
+            codepoints_to_bytes(&mut entity.range, &text);
+        }
+        for entity in &mut raw.entities.user_mentions {
+            codepoints_to_bytes(&mut entity.range, &text);
+        }
+        if let Some(ref mut media) = raw.entities.media {
+            for entity in media.iter_mut() {
+                codepoints_to_bytes(&mut entity.range, &text);
+            }
+        }
+        if let Some(ref mut entities) = raw.extended_entities {
+            for entity in entities.media.iter_mut() {
+                codepoints_to_bytes(&mut entity.range, &text);
+            }
+        }
+
         Ok(Tweet {
             coordinates: raw.coordinates.map(|coords| coords.coordinates),
             created_at: raw.created_at,
