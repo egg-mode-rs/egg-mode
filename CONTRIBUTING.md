@@ -103,8 +103,9 @@ A fair amount of the code in egg-mode is infrastructure to support the API calls
 function may just be "collect the parameters, call Twitter, parse the result", but the framework
 underpinning that may require some additional work to support new functionality.
 
-If you need to parse a new struct from an API response, put it into a plain struct and implement
-`FromJson` for it. Look at some of the other `FromJson` implementations for hints. For example,
-`DMEntities` is a fairly basic implementation, that leans on other `FromJson` implementations to
-assemble the struct. On the other end, `Tweet` has a more involved implementation, notably for
-having to convert the codepoint indices into byte offsets, and for `current_user_retweet`.
+If you need to parse a new struct from an API response, put it into a plain struct and derive
+`Deserialize` for it. It may be that a custom `Deserialize` implementation is necessary, in which case
+look at some of the other `Deserialize` implementations for hints. For example, `Tweet` uses a custom
+implementation which uses an internal `RawTweet` struct for the initial deserialization, then perfoms
+some extra logic (notably having to convert the codepoint indices into byte offsets) before creating the
+struct proper.

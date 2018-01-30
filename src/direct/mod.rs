@@ -68,6 +68,7 @@ type DMFuture = TwitterFuture<Response<Vec<DirectMessage>>>;
 ///As a DM has far less metadata than a regular tweet, the structure consequently contains far
 ///fewer fields. The basic fields are `id`, `text`, `entities`, and `created_at`; everything else
 ///either refers to the sender or receiver in some manner.
+// TODO is it worth a custom deserialize to fize the codepoints?
 #[derive(Debug, Deserialize)]
 pub struct DirectMessage {
     ///Numeric ID for this DM.
@@ -117,61 +118,6 @@ pub struct DMEntities {
     ///from it.
     pub media: Option<Vec<entities::MediaEntity>>,
 }
-
-
-// impl FromJson for DirectMessage {
-//     fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-//         if !input.is_object() {
-//             return Err(InvalidResponse("DirectMessage received json that wasn't an object",
-//                                        Some(input.to_string())));
-//         }
-
-//         field_present!(input, id);
-//         field_present!(input, created_at);
-//         field_present!(input, text);
-//         field_present!(input, entities);
-//         field_present!(input, sender_screen_name);
-//         field_present!(input, sender_id);
-//         field_present!(input, sender);
-//         field_present!(input, recipient_screen_name);
-//         field_present!(input, recipient_id);
-//         field_present!(input, recipient);
-
-//         let text: String = try!(field(input, "text"));
-//         let mut entities: DMEntities = try!(field(input, "entities"));
-
-//         for entity in &mut entities.hashtags {
-//             codepoints_to_bytes(&mut entity.range, &text);
-//         }
-//         for entity in &mut entities.symbols {
-//             codepoints_to_bytes(&mut entity.range, &text);
-//         }
-//         for entity in &mut entities.urls {
-//             codepoints_to_bytes(&mut entity.range, &text);
-//         }
-//         for entity in &mut entities.user_mentions {
-//             codepoints_to_bytes(&mut entity.range, &text);
-//         }
-//         if let Some(ref mut media) = entities.media {
-//             for entity in media.iter_mut() {
-//                 codepoints_to_bytes(&mut entity.range, &text);
-//             }
-//         }
-
-//         Ok(DirectMessage {
-//             id: try!(field(input, "id")),
-//             created_at: try!(field(input, "created_at")),
-//             text: text,
-//             entities: entities,
-//             sender_screen_name: try!(field(input, "sender_screen_name")),
-//             sender_id: try!(field(input, "sender_id")),
-//             sender: try!(field(input, "sender")),
-//             recipient_screen_name: try!(field(input, "recipient_screen_name")),
-//             recipient_id: try!(field(input, "recipient_id")),
-//             recipient: try!(field(input, "recipient")),
-//         })
-//     }
-// }
 
 /// Helper struct to navigate collections of direct messages by requesting DMs older or newer than
 /// certain IDs.

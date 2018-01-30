@@ -52,7 +52,6 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 
-// TODO check & tweak import orders
 use futures::{Future, Poll, Async};
 use serde::{Deserialize, Deserializer};
 

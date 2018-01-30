@@ -68,23 +68,6 @@
 //! `std::cmp::{min,max}` require `Ord` and `min_opt` won't reach for the None if it's there,
 //! unlike the derived `PartialOrd` which considers None to be less than Some.
 //!
-//! ## `FromJson`
-//!
-//! `FromJson` is factored into its own file, but its contents are spilled into this one and
-//! re-exported, so it's worth mentioning them here. `FromJson` itself is a lynchpin infrastructure
-//! trait that i lean on very heavily to convert the raw JSON responses from Twitter into the final
-//! structure that i hand to users. It has a bunch of standard implementations that are documented
-//! in that module.
-//!
-//! `field` is a function that loads up the given field from the given JSON, running it through a
-//! desired `FromJson` implementation.
-//!
-//! `field_present!()` is a macro that i use in `FromJson` implementations when i assume a value
-//! needs to be present at all times. It checks whether the given field is either absent or null,
-//! and returns `Error::MissingValue` if so. This could *probably* be extended to act like
-//! `try!()`, i.e. evaluate the whole macro to `field(input, field)` if it's actually there. I
-//! haven't done that yet.
-//!
 //! ## `Response`
 //!
 //! Also in its own module, `Response` is a public structure that contains rate-limit information
@@ -119,7 +102,7 @@
 //! function pointer is handed in directly.
 //!
 //! `make_parsed_future` is the most common `TwitterFuture` constructor, which just uses
-//! `make_response` (which just calls `FromJson` and loads up the rate-limit headers - it's also
+//! `make_response` (which just calls `serde_json` and loads up the rate-limit headers - it's also
 //! exported) as the processor.
 //!
 //! `rate_headers` is an infra function that takes the `Headers` and returns an empty `Response`
@@ -139,7 +122,6 @@ use mime;
 use serde::{Deserialize, Deserializer};
 use serde::de::Error;
 
-// TODO fix up the docs
 mod response;
 
 pub use common::response::*;
