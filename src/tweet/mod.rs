@@ -240,9 +240,9 @@ pub struct Tweet {
 impl<'de> Deserialize<'de> for Tweet {
     fn deserialize<D>(deser: D) -> Result<Tweet, D::Error> where D: Deserializer<'de> {
         let mut raw = raw::RawTweet::deserialize(deser)?;
-        let text = raw.text
-            .or(raw.full_text)
+        let text = raw.full_text
             .or(raw.extended_tweet.map(|xt| xt.full_text))
+            .or(raw.text)
             .ok_or_else(|| D::Error::custom("Tweet missing text field"))?;
         let current_user_retweet = raw.current_user_retweet.map(|cur| cur.id);
 
