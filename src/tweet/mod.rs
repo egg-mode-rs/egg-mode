@@ -903,7 +903,7 @@ mod tests {
 
     #[test]
     fn parse_basic() {
-        let sample = load_tweet("src/tweet/test_samples/sample-extended-onepic.json");
+        let sample = load_tweet("sample_payloads/sample-extended-onepic.json");
 
         assert_eq!(sample.text,
                    ".@Serrayak said he’d use what-ev-er I came up with as his Halloween avatar so I’m just making sure you all know he said that https://t.co/MvgxCwDwSa");
@@ -945,18 +945,18 @@ mod tests {
     fn parse_samples() {
         // Just check we can parse them without error, taken from
         // https://github.com/twitterdev/tweet-updates/tree/686982b586dcc87d669151e89532ffea7e29e0d8/samples/initial
-        load_tweet("src/tweet/test_samples/compatibilityplus_classic_13994.json");
-        load_tweet("src/tweet/test_samples/compatibilityplus_classic_hidden_13797.json");
-        load_tweet("src/tweet/test_samples/compatibilityplus_extended_13997.json");
-        load_tweet("src/tweet/test_samples/extended_classic_14002.json");
-        load_tweet("src/tweet/test_samples/extended_classic_hidden_13761.json");
-        load_tweet("src/tweet/test_samples/extended_extended_14001.json");
-        load_tweet("src/tweet/test_samples/nullable_user_mention.json");
+        load_tweet("sample_payloads/compatibilityplus_classic_13994.json");
+        load_tweet("sample_payloads/compatibilityplus_classic_hidden_13797.json");
+        load_tweet("sample_payloads/compatibilityplus_extended_13997.json");
+        load_tweet("sample_payloads/extended_classic_14002.json");
+        load_tweet("sample_payloads/extended_classic_hidden_13761.json");
+        load_tweet("sample_payloads/extended_extended_14001.json");
+        load_tweet("sample_payloads/nullable_user_mention.json");
     }
 
     #[test]
     fn parse_reply() {
-        let sample = load_tweet("src/tweet/test_samples/sample-reply.json");
+        let sample = load_tweet("sample_payloads/sample-reply.json");
 
         assert_eq!(sample.in_reply_to_screen_name, Some("QuietMisdreavus".to_string()));
         assert_eq!(sample.in_reply_to_user_id, Some(2977334326));
@@ -965,7 +965,7 @@ mod tests {
 
     #[test]
     fn parse_quote() {
-        let sample = load_tweet("src/tweet/test_samples/sample-quote.json");
+        let sample = load_tweet("sample_payloads/sample-quote.json");
 
         assert_eq!(sample.quoted_status_id, Some(783004145485840384));
         assert!(sample.quoted_status.is_some());
@@ -975,7 +975,7 @@ mod tests {
 
     #[test]
     fn parse_retweet() {
-        let sample = load_tweet("src/tweet/test_samples/sample-retweet.json");
+        let sample = load_tweet("sample_payloads/sample-retweet.json");
 
         assert!(sample.retweeted_status.is_some());
         assert_eq!(sample.retweeted_status.unwrap().text,

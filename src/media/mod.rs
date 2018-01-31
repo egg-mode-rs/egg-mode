@@ -807,7 +807,7 @@ mod tests {
 
     #[test]
     fn parse_media() {
-        let media = load_media("src/media/media.json");
+        let media = load_media("sample_payloads/media.json");
 
         assert_eq!(media.id, 710511363345354753);
         assert_eq!(media.expires_after, 86400);
@@ -815,7 +815,7 @@ mod tests {
 
     #[test]
     fn parse_media_pending() {
-        let media = load_media("src/media/media_pending.json");
+        let media = load_media("sample_payloads/media_pending.json");
 
         assert_eq!(media.id, 13);
         assert_eq!(media.expires_after, 86400);
@@ -829,7 +829,7 @@ mod tests {
 
     #[test]
     fn parse_media_in_progress() {
-        let media = load_media("src/media/media_in_progress.json");
+        let media = load_media("sample_payloads/media_in_progress.json");
 
         assert_eq!(media.id, 13);
         assert_eq!(media.expires_after, 3595);
@@ -843,7 +843,7 @@ mod tests {
 
     #[test]
     fn parse_media_fail() {
-        let media = load_media("src/media/media_fail.json");
+        let media = load_media("sample_payloads/media_fail.json");
 
         assert_eq!(media.id, 710511363345354753);
         assert_eq!(media.expires_after, 0);

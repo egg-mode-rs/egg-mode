@@ -467,7 +467,7 @@ mod tests {
 
     #[test]
     fn parse_rate_limit() {
-        let sample = load_file("samples/rate_limit_sample.json");
+        let sample = load_file("sample_payloads/rate_limit_sample.json");
         ::serde_json::from_str::<RateLimitStatus>(&sample).unwrap();
     }
 
