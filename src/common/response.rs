@@ -489,8 +489,6 @@ impl<T> Future for TwitterFuture<T> {
 pub fn make_response<T: for <'a> serde::Deserialize<'a>>(full_resp: String, headers: &Headers)
     -> Result<Response<T>, error::Error>
 {
-    let out = serde_json::from_str::<serde_json::Value>(&full_resp).unwrap();
-    println!("{:#}", out);
     let out = serde_json::from_str(&full_resp)?;
     Ok(Response::map(rate_headers(headers), |_| out))
 }
