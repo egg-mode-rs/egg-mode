@@ -23,7 +23,7 @@ use rustc_serialize::base64::{self, ToBase64};
 use rustc_serialize::json;
 use sha_1::Sha1;
 use tokio_core::reactor::Handle;
-use url::percent_encoding::{EncodeSet, utf8_percent_encode};
+use url::percent_encoding::{EncodeSet, PercentEncode, utf8_percent_encode};
 
 use links;
 use error;
@@ -44,8 +44,8 @@ impl EncodeSet for TwitterEncodeSet {
 }
 
 ///Encodes the given string slice for transmission to Twitter.
-fn percent_encode(src: &str) -> String {
-    utf8_percent_encode(src, TwitterEncodeSet).collect::<String>()
+fn percent_encode(src: &str) -> PercentEncode<TwitterEncodeSet> {
+    utf8_percent_encode(src, TwitterEncodeSet)
 }
 
 ///OAuth header set given to Twitter calls.
@@ -451,8 +451,8 @@ fn get_header(method: Method,
 
 fn bearer_request(con_token: &KeyPair) -> Basic {
     Basic {
-        username: percent_encode(&con_token.key),
-        password: Some(percent_encode(&con_token.secret)),
+        username: percent_encode(&con_token.key).collect(),
+        password: Some(percent_encode(&con_token.secret).collect()),
     }
 }
 
