@@ -267,16 +267,14 @@ struct RawSearchMetaData<'a> {
     completed_in: f64,
     count: u64,
     max_id: u64,
-    max_id_str: &'a str,
     next_results: &'a str,
     query: &'a str,
     refresh_url: &'a str,
     since_id: u64,
-    since_id_str: &'a str
 }
 
-impl<'a, 'de> Deserialize<'de> for SearchResult<'a> {
-    fn deserialize<D>(deser: D) -> Result<SearchResult<'a>, D::Error> where D: Deserializer<'de> {
+impl<'de> Deserialize<'de> for SearchResult<'static> {
+    fn deserialize<D>(deser: D) -> Result<SearchResult<'static>, D::Error> where D: Deserializer<'de> {
         let raw = RawSearch::deserialize(deser)?;
         Ok(SearchResult {
             statuses: raw.statuses,

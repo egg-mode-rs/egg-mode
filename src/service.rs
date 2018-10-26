@@ -329,7 +329,7 @@ impl FromStr for Method {
 }
 
 ///Method identifiers from the `direct` module, for use by `rate_limit_status`.
-#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum DirectMethod {
     ///`direct::show`
     Show,
@@ -340,7 +340,7 @@ pub enum DirectMethod {
 }
 
 ///Method identifiers from the `place` module, for use by `rate_limit_status`.
-#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum PlaceMethod {
     ///`place::show`
     Show,
@@ -351,7 +351,7 @@ pub enum PlaceMethod {
 }
 
 ///Method identifiers from the `search` module, for use by `rate_limit_status`.
-#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum SearchMethod {
     ///`search::search`
     Search,
@@ -359,7 +359,7 @@ pub enum SearchMethod {
 
 ///Method identifiers from the `service` module, for use by `rate_limit_status`. Also includes
 ///`verify_tokens` from the egg-mode top-level methods.
-#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum ServiceMethod {
     ///`service::terms`
     Terms,
@@ -374,7 +374,7 @@ pub enum ServiceMethod {
 }
 
 ///Method identifiers from the `tweet` module, for use by `rate_limit_status`.
-#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum TweetMethod {
     ///`tweet::show`
     Show,
@@ -397,7 +397,7 @@ pub enum TweetMethod {
 }
 
 ///Method identifiers from the `user` module, for use by `rate_limit_status`.
-#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum UserMethod {
     ///`user::show`
     Show,
@@ -436,7 +436,7 @@ pub enum UserMethod {
 }
 
 ///Method identifiers from the `list` module, for use by `rate_limit_status`.
-#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum ListMethod {
     ///`list::show`
     Show,

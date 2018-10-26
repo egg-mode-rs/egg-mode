@@ -50,7 +50,7 @@ pub enum StreamMessage {
         TwitterUser,
         Tweet
     ),
-    // Notification that the given user has cleared their like of the given tweet.
+    /// Notification that the given user has cleared their like of the given tweet.
     ///
     /// As with `StreamMessage::Like`, this can be sent for actions taken either by the
     /// authenticated user or upon one of the authenticated user's tweets.

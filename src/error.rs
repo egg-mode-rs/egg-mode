@@ -121,7 +121,7 @@ pub enum Error {
     ///returned from libstd.
     IOError(std::io::Error),
     ///An error occurred while loading the JSON response. The enclosed error was returned from
-    ///serde_json
+    ///`serde_json`.
     DeserializeError(serde_json::Error),
     ///An error occurred when parsing a timestamp from Twitter. The enclosed error was returned
     ///from chrono.

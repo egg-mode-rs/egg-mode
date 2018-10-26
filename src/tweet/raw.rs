@@ -62,5 +62,4 @@ pub(crate) struct RawCoordinates {
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct CurrentUserRetweet {
     pub id: u64,
-    pub id_str: String
 }
