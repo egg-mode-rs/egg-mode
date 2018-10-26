@@ -52,12 +52,11 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 
-use rustc_serialize::json;
 use futures::{Future, Poll, Async};
+use serde::{Deserialize, Deserializer};
 
 use auth;
 use error;
-use error::Error::{InvalidResponse, MissingValue};
 use links;
 use tweet::Tweet;
 use common::*;
@@ -256,6 +255,37 @@ impl<'a> Future for SearchFuture<'a> {
     }
 }
 
+#[derive(Debug, Deserialize)]
+struct RawSearch<'a> {
+    #[serde(borrow)]
+    search_metadata: RawSearchMetaData<'a>,
+    statuses: Vec<Tweet>
+}
+
+#[derive(Debug, Deserialize)]
+struct RawSearchMetaData<'a> {
+    completed_in: f64,
+    count: u64,
+    max_id: u64,
+    next_results: &'a str,
+    query: &'a str,
+    refresh_url: &'a str,
+    since_id: u64,
+}
+
+impl<'de> Deserialize<'de> for SearchResult<'static> {
+    fn deserialize<D>(deser: D) -> Result<SearchResult<'static>, D::Error> where D: Deserializer<'de> {
+        let raw = RawSearch::deserialize(deser)?;
+        Ok(SearchResult {
+            statuses: raw.statuses,
+            query: raw.search_metadata.query.into(),
+            max_id: raw.search_metadata.max_id,
+            since_id: raw.search_metadata.since_id,
+            params: None
+        })
+    }
+}
+
 ///Represents a page of search results, along with metadata to request the next or previous page.
 #[derive(Debug)]
 pub struct SearchResult<'a> {
@@ -269,24 +299,6 @@ pub struct SearchResult<'a> {
     ///First tweet id in this page of results. This id can be used in `SearchBuilder::since_tweet`
     pub since_id: u64,
     params: Option<ParamList<'a>>,
-}
-
-impl<'a> FromJson for SearchResult<'a> {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("SearchResult received json that wasn't an object", Some(input.to_string())));
-        }
-
-        let metadata = try!(input.find("search_metadata").ok_or(MissingValue("search_metadata")));
-
-        Ok(SearchResult {
-            statuses: try!(field(input, "statuses")),
-            query: try!(field(metadata, "query")),
-            max_id: try!(field(metadata, "max_id")),
-            since_id: try!(field(metadata, "since_id")),
-            params: None,
-        })
-    }
 }
 
 impl<'a> SearchResult<'a> {

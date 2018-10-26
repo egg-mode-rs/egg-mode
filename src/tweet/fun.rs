@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::collections::HashMap;
-use rustc_serialize::json;
+use serde_json;
 use auth;
 use cursor;
 use user::UserID;
@@ -110,11 +110,11 @@ pub fn lookup_map<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle
     fn parse_map(full_resp: String, headers: &Headers)
         -> Result<Response<HashMap<u64, Option<Tweet>>>, error::Error>
     {
-        let parsed: Response<json::Json> = try!(make_response(full_resp, headers));
+        let parsed: Response<serde_json::Value> = try!(make_response(full_resp, headers));
         let mut map = HashMap::new();
 
         for (key, val) in try!(parsed.response
-                                     .find("id")
+                                     .get("id")
                                      .and_then(|v| v.as_object())
                                      .ok_or_else(|| InvalidResponse("unexpected response for lookup_map",
                                                                     Some(parsed.response.to_string())))) {
@@ -123,7 +123,7 @@ pub fn lookup_map<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token, handle
             if val.is_null() {
                 map.insert(id, None);
             } else {
-                let tweet = try!(Tweet::from_json(&val));
+                let tweet = try!(Tweet::deserialize(val));
                 map.insert(id, Some(tweet));
             }
         }

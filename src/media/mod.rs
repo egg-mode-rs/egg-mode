@@ -37,14 +37,15 @@
 //! For more information, see the [`UploadBuilder`] documentation.
 
 use std::borrow::Cow;
-use std::collections::{HashMap, BTreeMap};
+use std::collections::HashMap;
 use std::error::Error as StdError;
 use std::fmt;
 use std::time::{Instant, Duration};
 
+use base64;
 use futures::{Future, Async, Poll};
-use rustc_serialize::{json, base64};
-use rustc_serialize::base64::{ToBase64};
+use serde::{Deserialize, Deserializer};
+use serde::de::Error;
 use tokio_core::reactor::Timeout;
 
 use common::*;
@@ -108,27 +109,41 @@ enum ProgressInfo {
     Success
 }
 
-impl FromJson for ProgressInfo {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        field_present!(input, state);
-        let state: String = try!(field(input, "state"));
+#[derive(Debug, Deserialize)]
+enum RawProgressInfoTag {
+    #[serde(rename = "pending")]
+    Pending,
+    #[serde(rename = "in_progress")]
+    InProgress,
+    #[serde(rename = "failed")]
+    Failed,
+    #[serde(rename = "succeeded")]
+    Success
+}
 
-        match state.as_ref() {
-            "pending" => {
-                field_present!(input, check_after_secs);
-                Ok(ProgressInfo::Pending(try!(field(input, "check_after_secs"))))
-            },
-            "in_progress" => {
-                field_present!(input, check_after_secs);
-                Ok(ProgressInfo::InProgress(try!(field(input, "check_after_secs"))))
-            },
-            "failed" => {
-                field_present!(input, error);
-                Ok(ProgressInfo::Failed(try!(field(input, "error"))))
-            },
-            "succeeded" => Ok(ProgressInfo::Success),
-            state => Err(InvalidResponse("Unexpected progress info state", Some(state.to_string())))
-        }
+#[derive(Debug, Deserialize)]
+struct RawProgressInfo {
+    state: RawProgressInfoTag,
+    progress_percent: Option<f64>,
+    check_after_secs: Option<u64>,
+    error: Option<error::MediaError>
+}
+
+
+impl<'de> Deserialize<'de> for ProgressInfo {
+    fn deserialize<D>(deser: D) -> Result<ProgressInfo, D::Error> where D: Deserializer<'de> {
+        use self::RawProgressInfoTag::*;
+        let raw = RawProgressInfo::deserialize(deser)?;
+        let check_after = raw.check_after_secs.ok_or_else(|| D::Error::custom("Missing field: check_after_secs"));
+        Ok(match raw.state {
+            Pending => ProgressInfo::Pending(check_after?),
+            InProgress => ProgressInfo::InProgress(check_after?),
+            Success => ProgressInfo::Success,
+            Failed => {
+                let err = raw.error.ok_or_else(|| D::Error::custom("Missing field: error"))?;
+                ProgressInfo::Failed(err)
+            }
+        })
     }
 }
 
@@ -158,12 +173,18 @@ impl MediaHandle {
 }
 
 ///Represents media file that is uploaded on twitter.
+#[derive(Deserialize)]
 struct RawMedia {
     ///ID that can be used in API calls (e.g. attach to tweet).
+    #[serde(rename = "media_id")]
     pub id: u64,
     ///Number of second the media can be used in other API calls.
+    //We can miss this field on failed upload in which case 0 is pretty reasonable value.
+    #[serde(default)]
+    #[serde(rename = "expires_after_secs")]
     pub expires_after: u64,
     ///Progress information. If present determines whether RawMedia can be used.
+    #[serde(rename = "processing_info")]
     pub progress: Option<ProgressInfo>
 }
 
@@ -173,23 +194,6 @@ impl RawMedia {
             id: self.id,
             valid_until: Instant::now() + Duration::from_secs(self.expires_after),
         }
-    }
-}
-
-impl FromJson for RawMedia {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("Tweet received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, media_id);
-
-        Ok(RawMedia {
-            id: try!(field(input, "media_id")),
-            //We can miss this field on failed upload in which case 0 is pretty reasonable value.
-            expires_after: field(input, "expires_after_secs").unwrap_or(0),
-            progress: try!(field(input, "processing_info"))
-        })
     }
 }
 
@@ -433,16 +437,16 @@ impl<'a> UploadFuture<'a> {
         if let Some(chunk) = chunk {
             let mut params = HashMap::new();
 
-            let config = base64::Config {
-                char_set: base64::CharacterSet::Standard,
-                newline: base64::Newline::LF,
-                pad: true,
-                line_length: None,
-            };
+            let config = base64::Config::new(
+                base64::CharacterSet::Standard,
+                true,
+                true,
+                base64::LineWrap::NoWrap
+            );
 
             add_param(&mut params, "command", "APPEND");
             add_param(&mut params, "media_id", media_id.to_string());
-            add_param(&mut params, "media_data", chunk.to_base64(config));
+            add_param(&mut params, "media_data", base64::encode_config(chunk, config));
             add_param(&mut params, "segment_index", chunk_num.to_string());
 
             let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
@@ -482,16 +486,17 @@ impl<'a> UploadFuture<'a> {
     }
 
     fn metadata(&self, media_id: u64, alt_text: &str) -> FutureResponse<()> {
-        use rustc_serialize::json::Json;
+        use serde_json::map::Map;
+        use serde_json::Value;
 
-        let mut inner = BTreeMap::new();
-        inner.insert("text".to_string(), Json::String(alt_text.to_string()));
+        let mut inner = Map::new();
+        inner.insert("text".to_string(), Value::String(alt_text.to_string()));
 
-        let mut outer = BTreeMap::new();
-        outer.insert("media_id".to_string(), Json::String(media_id.to_string()));
-        outer.insert("alt_text".to_string(), Json::Object(inner));
+        let mut outer = Map::new();
+        outer.insert("media_id".to_string(), Value::String(media_id.to_string()));
+        outer.insert("alt_text".to_string(), Value::Object(inner));
 
-        let body = Json::Object(outer);
+        let body = Value::Object(outer);
 
         let req = auth::post_json(links::media::METADATA, &self.token, &body);
 
@@ -792,23 +797,17 @@ impl StdError for UploadError {
 
 #[cfg(test)]
 mod tests {
-    use common::FromJson;
-
     use super::RawMedia;
-
-    use std::fs::File;
-    use std::io::Read;
+    use common::tests::load_file;
 
     fn load_media(path: &str) -> RawMedia {
-        let mut file = File::open(path).unwrap();
-        let mut content = String::new();
-        file.read_to_string(&mut content).unwrap();
-        RawMedia::from_str(&content).unwrap()
+        let content = load_file(path);
+        ::serde_json::from_str::<RawMedia>(&content).unwrap()
     }
 
     #[test]
     fn parse_media() {
-        let media = load_media("src/media/media.json");
+        let media = load_media("sample_payloads/media.json");
 
         assert_eq!(media.id, 710511363345354753);
         assert_eq!(media.expires_after, 86400);
@@ -816,7 +815,7 @@ mod tests {
 
     #[test]
     fn parse_media_pending() {
-        let media = load_media("src/media/media_pending.json");
+        let media = load_media("sample_payloads/media_pending.json");
 
         assert_eq!(media.id, 13);
         assert_eq!(media.expires_after, 86400);
@@ -830,7 +829,7 @@ mod tests {
 
     #[test]
     fn parse_media_in_progress() {
-        let media = load_media("src/media/media_in_progress.json");
+        let media = load_media("sample_payloads/media_in_progress.json");
 
         assert_eq!(media.id, 13);
         assert_eq!(media.expires_after, 3595);
@@ -844,7 +843,7 @@ mod tests {
 
     #[test]
     fn parse_media_fail() {
-        let media = load_media("src/media/media_fail.json");
+        let media = load_media("sample_payloads/media_fail.json");
 
         assert_eq!(media.id, 710511363345354753);
         assert_eq!(media.expires_after, 0);

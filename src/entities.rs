@@ -42,17 +42,17 @@
 //! - `display_url`: This is a truncated version of `expanded_url`, meant to be displayed inline
 //!   with the parent text. This is useful to show users where the link resolves to, without
 //!   potentially filling up a lot of space with the fullly expanded URL.
-use common::*;
-use error;
-use error::Error::InvalidResponse;
-use rustc_serialize::json;
 use mime;
+use serde::{Deserialize, Deserializer};
+
+use common::deserialize_mime;
 
 ///Represents a hashtag or symbol extracted from another piece of text.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct HashtagEntity {
     ///The byte offsets where the hashtag is located. The first index is the location of the # or $
     ///character; the second is the location of the first character following the hashtag.
+    #[serde(rename = "indices")]
     pub range: (usize, usize),
     ///The text of the hashtag, without the leading # or $ character.
     pub text: String,
@@ -70,7 +70,7 @@ pub struct HashtagEntity {
 ///appending a colon and one of the available sizes in the `MediaSizes` struct. For example, the
 ///cropped thumbnail can be viewed by appending `:thumb` to the end of the URL, and the full-size
 ///image can be viewed by appending `:large`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct MediaEntity {
     ///A shortened URL to display to clients.
     pub display_url: String,
@@ -81,6 +81,7 @@ pub struct MediaEntity {
     ///The byte offsets where the media URL is located. The first index is the location of the
     ///first character of the URL; the second is the location of the first character following the
     ///URL.
+    #[serde(rename = "indices")]
     pub range: (usize, usize),
     ///A URL pointing directly to the media file. Uses HTTP as the protocol.
     ///
@@ -98,6 +99,7 @@ pub struct MediaEntity {
     ///contains the ID of the original tweet.
     pub source_status_id: Option<u64>,
     ///The type of media being represented.
+    #[serde(rename = "type")]
     pub media_type: MediaType,
     ///The t.co link from the original text.
     pub url: String,
@@ -107,18 +109,21 @@ pub struct MediaEntity {
 }
 
 ///Represents the types of media that can be attached to a tweet.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Deserialize)]
 pub enum MediaType {
     ///A static image.
+    #[serde(rename = "photo")]
     Photo,
     ///A video.
+    #[serde(rename = "video")]
     Video,
     ///An animated GIF, delivered as a video without audio.
+    #[serde(rename = "animated_gif")]
     Gif,
 }
 
 ///Represents the available sizes for a media file.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Deserialize)]
 pub struct MediaSizes {
     ///Information for a thumbnail-sized version of the media.
     pub thumb: MediaSize,
@@ -131,16 +136,18 @@ pub struct MediaSizes {
 }
 
 ///Represents how an image has been resized for a given size variant.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Deserialize)]
 pub enum ResizeMode {
     ///The media was resized to fit one dimension, keeping its aspect ratio.
+    #[serde(rename = "fit")]
     Fit,
     ///The media was cropped to fit a specific resolution.
+    #[serde(rename = "crop")]
     Crop,
 }
 
 ///Represents the dimensions of a media file.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Deserialize)]
 pub struct MediaSize {
     ///The size variant's width in pixels.
     pub w: i32,
@@ -151,7 +158,7 @@ pub struct MediaSize {
 }
 
 ///Represents metadata specific to videos.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct VideoInfo {
     ///The aspect ratio of the video.
     pub aspect_ratio: (i32, i32),
@@ -164,250 +171,59 @@ pub struct VideoInfo {
 }
 
 ///Represents information about a specific encoding of a video.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct VideoVariant {
     ///The bitrate of the video. This value is present for GIFs, but it will be zero.
     pub bitrate: Option<i32>,
     ///The file format of the video variant.
+    #[serde(deserialize_with = "deserialize_mime")]
     pub content_type: mime::Mime,
     ///The URL for the video variant.
     pub url: String,
 }
 
 ///Represents a link extracted from another piece of text.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct UrlEntity {
     ///A truncated URL meant to be displayed inline with the text.
+    #[serde(default)]
     pub display_url: String,
     ///The URL that the t.co URL resolves to.
     ///
     ///Meant to be used as hover-text when a user mouses over a link.
+    #[serde(default)]
     pub expanded_url: String,
     ///The byte offsets in the companion text where the URL was extracted from.
+    #[serde(rename = "indices")]
     pub range: (usize, usize),
     ///The t.co URL extracted from the companion text.
     pub url: String,
 }
 
 ///Represnts a user mention extracted from another piece of text.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct MentionEntity {
     ///Numeric ID of the mentioned user.
+    #[serde(deserialize_with = "nullable_id")]  // Very rarely this field is null
     pub id: u64,
     ///The byte offsets where the user mention is located in the original text. The first index is
     ///the location of the @ symbol; the second is the location of the first character following
     ///the user screen name.
+    #[serde(rename = "indices")]
     pub range: (usize, usize),
     ///Display name of the mentioned user.
+    #[serde(deserialize_with = "nullable_str")]  // Very rarely, this field is null
     pub name: String,
     ///Screen name of the mentioned user, without the leading @ symbol.
     pub screen_name: String,
 }
 
-impl FromJson for HashtagEntity {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("HashtagEntity received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, indices);
-        field_present!(input, text);
-
-        Ok(HashtagEntity {
-            range: try!(field(input, "indices")),
-            text: try!(field(input, "text")),
-        })
-    }
+fn nullable_id<'de, D>(deserializer: D) -> Result<u64, D::Error> where D: Deserializer<'de> {
+    let opt = Option::deserialize(deserializer)?;
+    Ok(opt.unwrap_or_default())
 }
 
-impl FromJson for MediaEntity {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("MediaEntity received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, display_url);
-        field_present!(input, expanded_url);
-        field_present!(input, id);
-        field_present!(input, indices);
-        field_present!(input, media_url);
-        field_present!(input, media_url_https);
-        field_present!(input, sizes);
-        field_present!(input, type);
-        field_present!(input, url);
-
-        Ok(MediaEntity {
-            display_url: try!(field(input, "display_url")),
-            expanded_url: try!(field(input, "expanded_url")),
-            id: try!(field(input, "id")),
-            range: try!(field(input, "indices")),
-            media_url: try!(field(input, "media_url")),
-            media_url_https: try!(field(input, "media_url_https")),
-            sizes: try!(field(input, "sizes")),
-            source_status_id: try!(field(input, "source_status_id")),
-            media_type: try!(field(input, "type")),
-            url: try!(field(input, "url")),
-            video_info: None,
-        })
-    }
-}
-
-impl FromJson for MediaType {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if let Some(s) = input.as_string() {
-            if s == "photo" {
-                Ok(MediaType::Photo)
-            } else if s == "video" {
-                Ok(MediaType::Video)
-            } else if s == "animated_gif" {
-                Ok(MediaType::Gif)
-            } else {
-                Err(InvalidResponse("unexpected string for MediaType", Some(s.to_string())))
-            }
-        } else {
-            Err(InvalidResponse("MediaType received json that wasn't a string", Some(input.to_string())))
-        }
-    }
-}
-
-impl FromJson for ResizeMode {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if let Some(s) = input.as_string() {
-            if s == "fit" {
-                Ok(ResizeMode::Fit)
-            } else if s == "crop" {
-                Ok(ResizeMode::Crop)
-            } else {
-                Err(InvalidResponse("unexpected string for ResizeMode", Some(s.to_string())))
-            }
-        } else {
-            Err(InvalidResponse("ResizeMode received json that wasn't an object", Some(input.to_string())))
-        }
-    }
-}
-
-impl FromJson for MediaSize {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("MediaSize received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, w);
-        field_present!(input, h);
-        field_present!(input, resize);
-
-        Ok(MediaSize {
-            w: try!(field(input, "w")),
-            h: try!(field(input, "h")),
-            resize: try!(field(input, "resize")),
-        })
-    }
-}
-
-impl FromJson for MediaSizes {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("MediaSizes received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, thumb);
-        field_present!(input, small);
-        field_present!(input, medium);
-        field_present!(input, large);
-
-        Ok(MediaSizes {
-            thumb: try!(field(input, "thumb")),
-            small: try!(field(input, "small")),
-            medium: try!(field(input, "medium")),
-            large: try!(field(input, "large")),
-        })
-    }
-}
-
-impl FromJson for UrlEntity {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("UrlEntity received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, indices);
-
-        //i have, somehow, run into a user whose profile url arrived in a UrlEntity that didn't
-        //include display_url or expanded_url fields. in this case let's just populate those fields
-        //with the full url and carry on.
-        let url: String = try!(field(input, "url"));
-
-        let display_url = if (|| { field_present!(input, display_url); Ok(()) })().is_ok() {
-            try!(field(input, "display_url"))
-        } else {
-            url.clone()
-        };
-
-        let expanded_url = if (|| { field_present!(input, expanded_url); Ok(()) })().is_ok() {
-            try!(field(input, "expanded_url"))
-        } else {
-            url.clone()
-        };
-
-        Ok(UrlEntity {
-            display_url: display_url,
-            expanded_url: expanded_url,
-            range: try!(field(input, "indices")),
-            url: url,
-        })
-    }
-}
-
-impl FromJson for VideoInfo {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("VideoInfo received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, aspect_ratio);
-        field_present!(input, variants);
-
-        Ok(VideoInfo {
-            aspect_ratio: try!(field(input, "aspect_ratio")),
-            duration_millis: try!(field(input, "duration_millis")),
-            variants: try!(field(input, "variants")),
-        })
-    }
-}
-
-impl FromJson for VideoVariant {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("VideoVariant received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, content_type);
-        field_present!(input, url);
-
-        Ok(VideoVariant {
-            bitrate: try!(field(input, "bitrate")),
-            content_type: try!(field(input, "content_type")),
-            url: try!(field(input, "url")),
-        })
-    }
-}
-
-impl FromJson for MentionEntity {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("MentionEntity received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, id);
-        field_present!(input, indices);
-        field_present!(input, name);
-        field_present!(input, screen_name);
-
-        Ok(MentionEntity {
-            id: try!(field(input, "id")),
-            range: try!(field(input, "indices")),
-            name: try!(field(input, "name")),
-            screen_name: try!(field(input, "screen_name")),
-        })
-    }
+fn nullable_str<'de, D>(deserializer: D) -> Result<String, D::Error> where D: Deserializer<'de> {
+    let opt = Option::deserialize(deserializer)?;
+    Ok(opt.unwrap_or_default())
 }

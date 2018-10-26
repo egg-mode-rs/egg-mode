@@ -19,7 +19,9 @@
 use std::str::FromStr;
 use std::collections::HashMap;
 
-use rustc_serialize::json;
+use serde::{Deserialize, Deserializer};
+use serde::de::Error;
+use serde_json;
 
 use auth;
 use entities;
@@ -36,9 +38,13 @@ pub fn terms(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
     let req = auth::get(links::service::TERMS, token, None);
 
     fn parse_terms(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
-        let ret: Response<json::Json> = try!(make_response(full_resp, headers));
+        let ret: Response<serde_json::Value> = try!(make_response(full_resp, headers));
 
-        let tos = try!(field(&ret.response, "tos"));
+        let tos = ret.response
+            .get("tos")
+            .and_then(|tos| tos.as_str())
+            .map(String::from)
+            .ok_or_else(|| InvalidResponse("Missing field: tos", None))?;
         Ok(Response::map(ret, |_| tos))
     }
 
@@ -53,9 +59,13 @@ pub fn privacy(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
     let req = auth::get(links::service::PRIVACY, token, None);
 
     fn parse_policy(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
-        let ret: Response<json::Json> = try!(make_response(full_resp, headers));
+        let ret: Response<serde_json::Value> = try!(make_response(full_resp, headers));
 
-        let privacy = try!(field(&ret.response, "privacy"));
+        let privacy = ret.response
+            .get("privacy")
+            .and_then(|tos| tos.as_str())
+            .map(String::from)
+            .ok_or_else(|| InvalidResponse("Missing field: privacy", None))?;
         Ok(Response::map(ret, |_| privacy))
     }
 
@@ -98,7 +108,7 @@ pub fn rate_limit_status(token: &auth::Token, handle: &Handle)
 ///associated enums.
 #[doc(hidden)]
 pub fn rate_limit_status_raw(token: &auth::Token, handle: &Handle)
-    -> FutureResponse<json::Json>
+    -> FutureResponse<serde_json::Value>
 {
     let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
 
@@ -132,7 +142,7 @@ pub fn rate_limit_status_raw(token: &auth::Token, handle: &Handle)
 ///
 ///Finally, loading `non_username_paths` allows you to handle `twitter.com/[name]` links as if they
 ///were a user mention, while still keeping site-level links working properly.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Configuration {
     ///The character limit in direct messages.
     pub dm_text_character_limit: i32,
@@ -144,29 +154,6 @@ pub struct Configuration {
     pub short_url_length_https: i32,
     ///A list of URL slugs that are not valid usernames when in a URL like `twitter.com/[slug]`.
     pub non_username_paths: Vec<String>,
-}
-
-impl FromJson for Configuration {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("Configuration received json that wasn't an object",
-                                       Some(input.to_string())));
-        }
-
-        field_present!(input, dm_text_character_limit);
-        field_present!(input, photo_sizes);
-        field_present!(input, short_url_length);
-        field_present!(input, short_url_length_https);
-        field_present!(input, non_username_paths);
-
-        Ok(Configuration {
-            dm_text_character_limit: try!(field(input, "dm_text_character_limit")),
-            photo_sizes: try!(field(input, "photo_sizes")),
-            short_url_length: try!(field(input, "short_url_length")),
-            short_url_length_https: try!(field(input, "short_url_length_https")),
-            non_username_paths: try!(field(input, "non_username_paths")),
-        })
-    }
 }
 
 /// Represents the current rate-limit status of many Twitter API calls.
@@ -210,12 +197,12 @@ pub struct RateLimitStatus {
     pub list: HashMap<ListMethod, Response<()>>,
 }
 
-impl FromJson for RateLimitStatus {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("RateLimitStatus received json that wasn't an object",
-                                       Some(input.to_string())));
-        }
+impl<'de> Deserialize<'de> for RateLimitStatus {
+    fn deserialize<D>(ser: D) -> Result<Self, D::Error>
+    where D: Deserializer<'de> {
+        use serde_json::from_value;
+
+        let input = serde_json::Value::deserialize(ser)?;
 
         let mut direct = HashMap::new();
         let mut place = HashMap::new();
@@ -225,25 +212,25 @@ impl FromJson for RateLimitStatus {
         let mut user = HashMap::new();
         let mut list = HashMap::new();
 
-        let map = try!(input.find("resources").ok_or(MissingValue("resources")));
+        let map = input.get("resources").ok_or_else(|| D::Error::custom(MissingValue("resources")))?;
 
         if let Some(map) = map.as_object() {
             for (k, v) in map.values().filter_map(|v| v.as_object()).flat_map(|v| v.iter()) {
                 if let Ok(method) = k.parse::<Method>() {
                     match method {
-                        Method::Direct(m) => direct.insert(m, try!(FromJson::from_json(v))),
-                        Method::Place(p) => place.insert(p, try!(FromJson::from_json(v))),
-                        Method::Search(s) => search.insert(s, try!(FromJson::from_json(v))),
-                        Method::Service(s) => service.insert(s, try!(FromJson::from_json(v))),
-                        Method::Tweet(t) => tweet.insert(t, try!(FromJson::from_json(v))),
-                        Method::User(u) => user.insert(u, try!(FromJson::from_json(v))),
-                        Method::List(l) => list.insert(l, try!(FromJson::from_json(v))),
+                        Method::Direct(m) => direct.insert(m, from_value(v.clone()).map_err(D::Error::custom)?),
+                        Method::Place(p) => place.insert(p, from_value(v.clone()).map_err(D::Error::custom)?),
+                        Method::Search(s) => search.insert(s, from_value(v.clone()).map_err(D::Error::custom)?),
+                        Method::Service(s) => service.insert(s, from_value(v.clone()).map_err(D::Error::custom)?),
+                        Method::Tweet(t) => tweet.insert(t, from_value(v.clone()).map_err(D::Error::custom)?),
+                        Method::User(u) => user.insert(u, from_value(v.clone()).map_err(D::Error::custom)?),
+                        Method::List(l) => list.insert(l, from_value(v.clone()).map_err(D::Error::custom)?),
                     };
                 }
             }
         } else {
-            return Err(InvalidResponse("RateLimitStatus field 'resources' wasn't an object",
-                                       Some(input.to_string())));
+            return Err(D::Error::custom(InvalidResponse("RateLimitStatus field 'resources' wasn't an object",
+                                       Some(input.to_string()))));
         }
 
         Ok(RateLimitStatus {
@@ -471,4 +458,17 @@ pub enum ListMethod {
     IsSubscribed,
     ///`list::statuses`
     Statuses,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use common::tests::load_file;
+
+    #[test]
+    fn parse_rate_limit() {
+        let sample = load_file("sample_payloads/rate_limit_sample.json");
+        ::serde_json::from_str::<RateLimitStatus>(&sample).unwrap();
+    }
+
 }

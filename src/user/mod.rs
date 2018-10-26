@@ -59,18 +59,18 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use futures::{Future, Stream, Poll, Async};
-use rustc_serialize::json;
 use chrono;
+use serde::{Deserialize, Deserializer};
 
 use auth;
 use common::*;
 use entities;
 use error;
-use error::Error::InvalidResponse;
 use links;
 use tweet;
 
 mod fun;
+mod raw;
 
 pub use self::fun::*;
 
@@ -210,9 +210,6 @@ pub struct TwitterUser {
     /// When true, indicates that the authenticating user has issued a follow request to
     /// this protected account.
     pub follow_request_sent: Option<bool>,
-    /// Indicates whether the authenticating user is following this account. Deprecated
-    /// (and thus hidden) due to increasing error conditions where this returns None.
-    following: Option<bool>,
     /// The number of followers this account has.
     ///
     /// In certain server-stress conditions, this may temporarily mistakenly return 0.
@@ -244,10 +241,6 @@ pub struct TwitterUser {
     pub location: Option<String>,
     /// The user-entered display name.
     pub name: String,
-    /// Indicates whether the authenticated user has chosen to received this user's tweets
-    /// via SMS. Deprecated (and thus hidden) due to bugs where this incorrectly returns
-    /// false.
-    notifications: Option<bool>,
     /// The hex color chosen by the user for their profile background.
     pub profile_background_color: String,
     /// A URL pointing to the background image chosen by the user for their profile. Uses
@@ -327,8 +320,69 @@ pub struct TwitterUser {
     pub withheld_scope: Option<String>,
 }
 
+impl<'de> Deserialize<'de> for TwitterUser {
+    fn deserialize<D>(deser: D) -> Result<TwitterUser, D::Error> where D: Deserializer<'de> {
+        let mut raw = try!(raw::RawTwitterUser::deserialize(deser));
+
+        if let Some(ref description) = raw.description {
+            for entity in &mut raw.entities.description.urls {
+                codepoints_to_bytes(&mut entity.range, description);
+            }
+        }
+
+        if let (&mut Some(ref url), &mut Some(ref mut entities)) = (&mut raw.url, &mut raw.entities.url) {
+            for entity in &mut entities.urls {
+                codepoints_to_bytes(&mut entity.range, url);
+            }
+        }
+
+        Ok(TwitterUser {
+            contributors_enabled: raw.contributors_enabled,
+            created_at: raw.created_at,
+            default_profile: raw.default_profile,
+            default_profile_image: raw.default_profile_image,
+            description: raw.description,
+            entities: raw.entities,
+            favourites_count: raw.favourites_count,
+            follow_request_sent: raw.follow_request_sent,
+            followers_count: raw.followers_count,
+            friends_count: raw.friends_count,
+            geo_enabled: raw.geo_enabled,
+            id: raw.id,
+            is_translator: raw.is_translator,
+            lang: raw.lang,
+            listed_count: raw.listed_count,
+            location: raw.location,
+            name: raw.name,
+            profile_background_color: raw.profile_background_color,
+            profile_background_image_url: raw.profile_background_image_url,
+            profile_background_image_url_https: raw.profile_background_image_url_https,
+            profile_background_tile: raw.profile_background_tile,
+            profile_banner_url: raw.profile_banner_url,
+            profile_image_url: raw.profile_image_url,
+            profile_image_url_https: raw.profile_image_url_https,
+            profile_link_color: raw.profile_link_color,
+            profile_sidebar_border_color: raw.profile_sidebar_border_color,
+            profile_sidebar_fill_color: raw.profile_sidebar_fill_color,
+            profile_text_color: raw.profile_text_color,
+            profile_use_background_image: raw.profile_use_background_image,
+            protected: raw.protected,
+            screen_name: raw.screen_name,
+            show_all_inline_media: raw.show_all_inline_media,
+            status: raw.status,
+            statuses_count: raw.statuses_count,
+            time_zone: raw.time_zone,
+            url: raw.url,
+            utc_offset: raw.utc_offset,
+            verified: raw.verified,
+            withheld_in_countries: raw.withheld_in_countries,
+            withheld_scope: raw.withheld_scope,
+        })
+    }
+}
+
 /// Container for URL entity information that may be paired with a user's profile.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub struct UserEntities {
     /// URL information that has been parsed out of the user's `description`. If no URLs were
     /// detected, then the contained Vec will be empty.
@@ -342,137 +396,13 @@ pub struct UserEntities {
 }
 
 /// Represents a collection of URL entity information paired with a specific user profile field.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub struct UserEntityDetail {
     /// Collection of URL entity information.
     ///
     /// There should be one of these per URL in the paired field. In the case of the user's
     /// `description`, if no URLs are present, this field will still be present, but empty.
     pub urls: Vec<entities::UrlEntity>,
-}
-
-impl FromJson for TwitterUser {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("TwitterUser received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, contributors_enabled);
-        field_present!(input, created_at);
-        field_present!(input, default_profile);
-        field_present!(input, default_profile_image);
-        field_present!(input, favourites_count);
-        field_present!(input, followers_count);
-        field_present!(input, friends_count);
-        field_present!(input, geo_enabled);
-        field_present!(input, id);
-        field_present!(input, is_translator);
-        field_present!(input, lang);
-        field_present!(input, listed_count);
-        field_present!(input, name);
-        field_present!(input, profile_background_color);
-        field_present!(input, profile_image_url);
-        field_present!(input, profile_image_url_https);
-        field_present!(input, profile_link_color);
-        field_present!(input, profile_sidebar_border_color);
-        field_present!(input, profile_sidebar_fill_color);
-        field_present!(input, profile_text_color);
-        field_present!(input, profile_use_background_image);
-        field_present!(input, protected);
-        field_present!(input, screen_name);
-        field_present!(input, statuses_count);
-        field_present!(input, verified);
-
-        let description: Option<String> = try!(field(input, "description"));
-        let url: Option<String> = try!(field(input, "url"));
-        let entities: Option<UserEntities> = try!(field(input, "entities"));
-        let mut entities = entities.unwrap_or_default();
-
-        if let Some(ref text) = description {
-            for entity in entities.description.urls.iter_mut() {
-                codepoints_to_bytes(&mut entity.range, &text);
-            }
-        }
-        if let (&Some(ref text), &mut Some(ref mut entities)) = (&url, &mut entities.url) {
-            for entity in entities.urls.iter_mut() {
-                codepoints_to_bytes(&mut entity.range, &text);
-            }
-        }
-
-        Ok(TwitterUser {
-            contributors_enabled: field(input, "contributors_enabled").unwrap_or(false),
-            created_at: try!(field(input, "created_at")),
-            default_profile: try!(field(input, "default_profile")),
-            default_profile_image: try!(field(input, "default_profile_image")),
-            description: description,
-            entities: entities,
-            favourites_count: try!(field(input, "favourites_count")),
-            follow_request_sent: try!(field(input, "follow_request_sent")),
-            following: try!(field(input, "following")),
-            followers_count: try!(field(input, "followers_count")),
-            friends_count: try!(field(input, "friends_count")),
-            geo_enabled: try!(field(input, "geo_enabled")),
-            id: try!(field(input, "id")),
-            is_translator: try!(field(input, "is_translator")),
-            lang: try!(field(input, "lang")),
-            listed_count: try!(field(input, "listed_count")),
-            location: try!(field(input, "location")),
-            name: try!(field(input, "name")),
-            notifications: try!(field(input, "notifications")),
-            profile_background_color: try!(field(input, "profile_background_color")),
-            profile_background_image_url: try!(field(input, "profile_background_image_url")),
-            profile_background_image_url_https: try!(field(input, "profile_background_image_url_https")),
-            profile_background_tile: try!(field(input, "profile_background_tile")),
-            profile_banner_url: try!(field(input, "profile_banner_url")),
-            profile_image_url: try!(field(input, "profile_image_url")),
-            profile_image_url_https: try!(field(input, "profile_image_url_https")),
-            profile_link_color: try!(field(input, "profile_link_color")),
-            profile_sidebar_border_color: try!(field(input, "profile_sidebar_border_color")),
-            profile_sidebar_fill_color: try!(field(input, "profile_sidebar_fill_color")),
-            profile_text_color: try!(field(input, "profile_text_color")),
-            profile_use_background_image: try!(field(input, "profile_use_background_image")),
-            protected: try!(field(input, "protected")),
-            screen_name: try!(field(input, "screen_name")),
-            show_all_inline_media: try!(field(input, "show_all_inline_media")),
-            status: try!(field(input, "status")),
-            statuses_count: try!(field(input, "statuses_count")),
-            time_zone: try!(field(input, "time_zone")),
-            url: url,
-            utc_offset: try!(field(input, "utc_offset")),
-            verified: try!(field(input, "verified")),
-            withheld_in_countries: input.find("withheld_in_countries").and_then(|f| f.as_array())
-                                        .and_then(|arr| arr.iter().map(|x| x.as_string().map(|x| x.to_string()))
-                                                           .collect::<Option<Vec<String>>>()),
-            withheld_scope: try!(field(input, "withheld_scope")),
-        })
-    }
-}
-
-impl FromJson for UserEntities {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("UserEntities received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, description);
-
-        Ok(UserEntities {
-            description: try!(field(input, "description")),
-            url: try!(field(input, "url")),
-        })
-    }
-}
-
-impl FromJson for UserEntityDetail {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("UserEntityDetail received json that wasn't an object", Some(input.to_string())));
-        }
-
-        Ok(UserEntityDetail {
-            urls: try!(field(input, "urls")),
-        })
-    }
 }
 
 /// Represents an active user search.
@@ -667,7 +597,7 @@ impl<'a> Stream for UserSearch<'a> {
 }
 
 /// Represents relationship settings between two Twitter accounts.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Relationship {
     /// Contains settings from the perspective of the target account.
     pub target: RelationTarget,
@@ -680,29 +610,9 @@ pub struct Relationship {
     pub source: RelationSource,
 }
 
-impl FromJson for Relationship {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("Relationship received json that wasn't an object", Some(input.to_string())));
-        }
-
-        if let Some(relation) = input.find("relationship") {
-            field_present!(relation, target);
-            field_present!(relation, source);
-
-            Ok(Relationship {
-                target: try!(field(relation, "target")),
-                source: try!(field(relation, "source")),
-            })
-        } else {
-            Err(error::Error::MissingValue("relationship"))
-        }
-    }
-}
-
 /// Represents relationship settings between two Twitter accounts, from the perspective of the
 /// target user.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct RelationTarget {
     /// Numeric ID for this account.
     pub id: u64,
@@ -714,26 +624,6 @@ pub struct RelationTarget {
     pub following: bool,
 }
 
-impl FromJson for RelationTarget {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("RelationTarget received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, id);
-        field_present!(input, screen_name);
-        field_present!(input, followed_by);
-        field_present!(input, following);
-
-        Ok(RelationTarget {
-            id: try!(field(input, "id")),
-            screen_name: try!(field(input, "screen_name")),
-            followed_by: try!(field(input, "followed_by")),
-            following: try!(field(input, "following")),
-        })
-    }
-}
-
 /// Represents relationship settings between two Twitter accounts, from the perspective of the
 /// source user.
 ///
@@ -741,7 +631,7 @@ impl FromJson for RelationTarget {
 /// visible to the user that set them. While you can see relationships between any two arbitrary
 /// users, if the "source" account is the same one whose access token you're using, you can see
 /// extra information about this relationship.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct RelationSource {
     /// Numeric ID for this account.
     pub id: u64,
@@ -776,38 +666,11 @@ pub struct RelationSource {
     pub notifications_enabled: Option<bool>,
 }
 
-impl FromJson for RelationSource {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("RelationSource received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, id);
-        field_present!(input, screen_name);
-        field_present!(input, following);
-        field_present!(input, followed_by);
-        field_present!(input, can_dm);
-
-        Ok(RelationSource {
-            id: try!(field(input, "id")),
-            screen_name: try!(field(input, "screen_name")),
-            following: try!(field(input, "following")),
-            followed_by: try!(field(input, "followed_by")),
-            can_dm: try!(field(input, "can_dm")),
-            blocking: try!(field(input, "blocking")),
-            marked_spam: try!(field(input, "marked_spam")),
-            all_replies: try!(field(input, "all_replies")),
-            want_retweets: try!(field(input, "want_retweets")),
-            notifications_enabled: try!(field(input, "notifications_enabled")),
-        })
-    }
-}
-
 /// Represents the relation the authenticated user has to a given account.
 ///
 /// This is returned by `relation_lookup`, as opposed to `Relationship`, which is returned by
 /// `relation`.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct RelationLookup {
     /// The display name of the target account.
     pub name: String,
@@ -822,60 +685,28 @@ pub struct RelationLookup {
     pub connections: Vec<Connection>,
 }
 
-impl FromJson for RelationLookup {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("RelationLookup received json that wasn't an object", Some(input.to_string())));
-        }
-
-        field_present!(input, name);
-        field_present!(input, screen_name);
-        field_present!(input, id);
-        field_present!(input, connections);
-
-        Ok(RelationLookup {
-            name: try!(field(input, "name")),
-            screen_name: try!(field(input, "screen_name")),
-            id: try!(field(input, "id")),
-            connections: try!(field(input, "connections")),
-        })
-    }
-}
-
 /// Represents the ways a target account can be connected to another account.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub enum Connection {
     /// The target account has no relation.
+    #[serde(rename = "none")]
     None,
     /// The authenticated user has requested to follow the target account.
+    #[serde(rename = "following_requested")]
     FollowingRequested,
     /// The target account has requested to follow the authenticated user.
+    #[serde(rename = "following_received")]
     FollowingReceived,
     /// The target account follows the authenticated user.
+    #[serde(rename = "followed_by")]
     FollowedBy,
     /// The authenticated user follows the target account.
+    #[serde(rename = "following")]
     Following,
     /// The authenticated user has blocked the target account.
+    #[serde(rename = "blocking")]
     Blocking,
     /// The authenticated user has muted the target account.
+    #[serde(rename = "muting")]
     Muting,
-}
-
-impl FromJson for Connection {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if let Some(text) = input.as_string() {
-            match text {
-                "none" => Ok(Connection::None),
-                "following_requested" => Ok(Connection::FollowingRequested),
-                "following_received" => Ok(Connection::FollowingReceived),
-                "followed_by" => Ok(Connection::FollowedBy),
-                "following" => Ok(Connection::Following),
-                "blocking" => Ok(Connection::Blocking),
-                "muting" => Ok(Connection::Muting),
-                _ => Err(InvalidResponse("unexpected string for Connection", Some(text.to_string()))),
-            }
-        } else {
-            Err(InvalidResponse("Connection received json that wasn't a string", Some(input.to_string())))
-        }
-    }
 }

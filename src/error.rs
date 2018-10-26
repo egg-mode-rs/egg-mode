@@ -18,18 +18,15 @@
 use std::{self, fmt};
 use hyper;
 use native_tls;
-use rustc_serialize;
-use rustc_serialize::json;
 use chrono;
-
-use common::*;
+use serde_json;
 
 ///Represents a collection of errors returned from a Twitter API call.
 ///
 ///This is returned as part of [`Error::TwitterError`][] whenever Twitter has rejected a call.
 ///
 ///[`Error::TwitterError`]: enum.Error.html
-#[derive(Debug, RustcDecodable, RustcEncodable)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct TwitterErrors {
     ///A collection of errors returned by Twitter.
     pub errors: Vec<TwitterErrorCode>,
@@ -50,7 +47,7 @@ impl fmt::Display for TwitterErrors {
 }
 
 ///Represents a specific error returned from a Twitter API call.
-#[derive(Debug, RustcDecodable, RustcEncodable)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct TwitterErrorCode {
     ///The error message returned by Twitter.
     pub message: String,
@@ -68,7 +65,7 @@ impl fmt::Display for TwitterErrorCode {
 }
 
 /// Represents an error that can occur during media processing.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct MediaError {
     /// A numeric error code assigned to the error.
     pub code: i32,
@@ -76,20 +73,6 @@ pub struct MediaError {
     pub name: String,
     /// The full text of the error message.
     pub message: String,
-}
-
-impl FromJson for MediaError {
-    fn from_json(input: &json::Json) -> Result<Self, Error> {
-        field_present!(input, code);
-        field_present!(input, name);
-        field_present!(input, message);
-
-        Ok(MediaError {
-            code: try!(field(input, "code")),
-            name: try!(field(input, "name")),
-            message: try!(field(input, "message")),
-        })
-    }
 }
 
 /// A set of errors that can occur when interacting with Twitter.
@@ -137,12 +120,9 @@ pub enum Error {
     ///An error was experienced while processing the response stream. The enclosed error was
     ///returned from libstd.
     IOError(std::io::Error),
-    ///An error occurred while parsing the JSON resposne. The enclosed error was returned from
-    ///rustc_serialize.
-    JSONError(rustc_serialize::json::ParserError),
     ///An error occurred while loading the JSON response. The enclosed error was returned from
-    ///rustc_serialize.
-    DecodeError(rustc_serialize::json::DecoderError),
+    ///`serde_json`.
+    DeserializeError(serde_json::Error),
     ///An error occurred when parsing a timestamp from Twitter. The enclosed error was returned
     ///from chrono.
     TimestampParseError(chrono::ParseError),
@@ -162,8 +142,7 @@ impl std::fmt::Display for Error {
             Error::NetError(ref err) => write!(f, "Network error: {}", err),
             Error::TlsError(ref err) => write!(f, "TLS error: {}", err),
             Error::IOError(ref err) => write!(f, "IO error: {}", err),
-            Error::JSONError(ref err) => write!(f, "JSON parse Error: {}", err),
-            Error::DecodeError(ref err) => write!(f, "JSON decode error: {}", err),
+            Error::DeserializeError(ref err) => write!(f, "JSON deserialize error: {}", err),
             Error::TimestampParseError(ref err) => write!(f, "Error parsing timestamp: {}", err),
         }
     }
@@ -183,8 +162,7 @@ impl std::error::Error for Error {
             Error::NetError(ref err) => err.description(),
             Error::TlsError(ref err) => err.description(),
             Error::IOError(ref err) => err.description(),
-            Error::JSONError(ref err) => err.description(),
-            Error::DecodeError(ref err) => err.description(),
+            Error::DeserializeError(ref err) => err.description(),
             Error::TimestampParseError(ref err) => err.description(),
         }
     }
@@ -194,9 +172,8 @@ impl std::error::Error for Error {
             Error::NetError(ref err) => Some(err),
             Error::TlsError(ref err) => Some(err),
             Error::IOError(ref err) => Some(err),
-            Error::JSONError(ref err) => Some(err),
-            Error::DecodeError(ref err) => Some(err),
             Error::TimestampParseError(ref err) => Some(err),
+            Error::DeserializeError(ref err) => Some(err),
             _ => None,
         }
     }
@@ -220,15 +197,9 @@ impl From<std::io::Error> for Error {
     }
 }
 
-impl From<rustc_serialize::json::ParserError> for Error {
-    fn from(err: rustc_serialize::json::ParserError) -> Error {
-        Error::JSONError(err)
-    }
-}
-
-impl From<rustc_serialize::json::DecoderError> for Error {
-    fn from(err: rustc_serialize::json::DecoderError) -> Error {
-        Error::DecodeError(err)
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Error {
+        Error::DeserializeError(err)
     }
 }
 

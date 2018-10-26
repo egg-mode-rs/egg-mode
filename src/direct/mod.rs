@@ -47,19 +47,19 @@ use common::*;
 use std::collections::HashMap;
 use std::mem;
 
-use rustc_serialize::json;
 use chrono;
 use hyper::client::Request;
 use futures::{Async, Future, Poll};
 use futures::future::Join;
+use serde::{Deserialize, Deserializer};
 
 use auth;
 use user;
 use entities;
 use error;
-use error::Error::InvalidResponse;
 
 mod fun;
+mod raw;
 
 pub use self::fun::*;
 
@@ -94,6 +94,43 @@ pub struct DirectMessage {
     pub recipient: Box<user::TwitterUser>,
 }
 
+impl<'de> Deserialize<'de> for DirectMessage {
+    fn deserialize<D>(deser: D) -> Result<DirectMessage, D::Error> where D: Deserializer<'de> {
+        let mut raw = try!(raw::RawDirectMessage::deserialize(deser));
+
+        for entity in &mut raw.entities.hashtags {
+            codepoints_to_bytes(&mut entity.range, &raw.text);
+        }
+        for entity in &mut raw.entities.symbols {
+            codepoints_to_bytes(&mut entity.range, &raw.text);
+        }
+        for entity in &mut raw.entities.urls {
+            codepoints_to_bytes(&mut entity.range, &raw.text);
+        }
+        for entity in &mut raw.entities.user_mentions {
+            codepoints_to_bytes(&mut entity.range, &raw.text);
+        }
+        if let Some(ref mut media) = raw.entities.media {
+            for entity in media.iter_mut() {
+                codepoints_to_bytes(&mut entity.range, &raw.text);
+            }
+        }
+
+        Ok(DirectMessage {
+            id: raw.id,
+            created_at: raw.created_at,
+            text: raw.text,
+            entities: raw.entities,
+            sender_screen_name: raw.sender_screen_name,
+            sender_id: raw.sender_id,
+            sender: raw.sender,
+            recipient_screen_name: raw.recipient_screen_name,
+            recipient_id: raw.recipient_id,
+            recipient: raw.recipient,
+        })
+    }
+}
+
 ///Container for URL, hashtag, mention, and media information associated with a direct message.
 ///
 ///As far as entities are concerned, a DM can contain nearly everything a tweet can. The only thing
@@ -104,7 +141,7 @@ pub struct DirectMessage {
 ///
 ///For all other fields, if the message contains no hashtags, financial symbols ("cashtags"),
 ///links, or mentions, those corresponding fields will still be present, just empty.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct DMEntities {
     ///Collection of hashtags parsed from the DM.
     pub hashtags: Vec<entities::HashtagEntity>,
@@ -117,82 +154,6 @@ pub struct DMEntities {
     ///If the message contains any attached media, this contains a collection of media information
     ///from it.
     pub media: Option<Vec<entities::MediaEntity>>,
-}
-
-impl FromJson for DirectMessage {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("DirectMessage received json that wasn't an object",
-                                       Some(input.to_string())));
-        }
-
-        field_present!(input, id);
-        field_present!(input, created_at);
-        field_present!(input, text);
-        field_present!(input, entities);
-        field_present!(input, sender_screen_name);
-        field_present!(input, sender_id);
-        field_present!(input, sender);
-        field_present!(input, recipient_screen_name);
-        field_present!(input, recipient_id);
-        field_present!(input, recipient);
-
-        let text: String = try!(field(input, "text"));
-        let mut entities: DMEntities = try!(field(input, "entities"));
-
-        for entity in &mut entities.hashtags {
-            codepoints_to_bytes(&mut entity.range, &text);
-        }
-        for entity in &mut entities.symbols {
-            codepoints_to_bytes(&mut entity.range, &text);
-        }
-        for entity in &mut entities.urls {
-            codepoints_to_bytes(&mut entity.range, &text);
-        }
-        for entity in &mut entities.user_mentions {
-            codepoints_to_bytes(&mut entity.range, &text);
-        }
-        if let Some(ref mut media) = entities.media {
-            for entity in media.iter_mut() {
-                codepoints_to_bytes(&mut entity.range, &text);
-            }
-        }
-
-        Ok(DirectMessage {
-            id: try!(field(input, "id")),
-            created_at: try!(field(input, "created_at")),
-            text: text,
-            entities: entities,
-            sender_screen_name: try!(field(input, "sender_screen_name")),
-            sender_id: try!(field(input, "sender_id")),
-            sender: try!(field(input, "sender")),
-            recipient_screen_name: try!(field(input, "recipient_screen_name")),
-            recipient_id: try!(field(input, "recipient_id")),
-            recipient: try!(field(input, "recipient")),
-        })
-    }
-}
-
-impl FromJson for DMEntities {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("DMEntities received json that wasn't an object",
-                                       Some(input.to_string())));
-        }
-
-        field_present!(input, hashtags);
-        field_present!(input, symbols);
-        field_present!(input, urls);
-        field_present!(input, user_mentions);
-
-        Ok(DMEntities {
-            hashtags: try!(field(input, "hashtags")),
-            symbols: try!(field(input, "symbols")),
-            urls: try!(field(input, "urls")),
-            user_mentions: try!(field(input, "user_mentions")),
-            media: try!(field(input, "media")),
-        })
-    }
 }
 
 /// Helper struct to navigate collections of direct messages by requesting DMs older or newer than

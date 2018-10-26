@@ -14,10 +14,10 @@ use hyper::header::{Headers, ContentLength};
 use hyper_tls::HttpsConnector;
 use tokio_core::reactor::Handle;
 use futures::{Async, Future, Poll, Stream};
-use rustc_serialize::json;
-use super::{FromJson, field};
 use error::{self, TwitterErrors};
 use error::Error::*;
+use serde;
+use serde_json;
 
 header! { (XRateLimitLimit, "X-Rate-Limit-Limit") => [i32] }
 header! { (XRateLimitRemaining, "X-Rate-Limit-Remaining") => [i32] }
@@ -31,15 +31,19 @@ header! { (XRateLimitReset, "X-Rate-Limit-Reset") => [i32] }
 ///
 ///As this implements `Deref` and `DerefMut`, you can transparently use the contained `response`'s
 ///methods as if they were methods on this struct.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Response<T> {
     ///The rate limit ceiling for the given request.
+    #[serde(rename = "limit")]
     pub rate_limit: i32,
     ///The number of requests left for the 15-minute window.
+    #[serde(rename = "remaining")]
     pub rate_limit_remaining: i32,
     ///The UTC Unix timestamp at which the rate window resets.
+    #[serde(rename = "reset")]
     pub rate_limit_reset: i32,
     ///The decoded response from the request.
+    #[serde(default)]
     pub response: T,
 }
 
@@ -82,27 +86,6 @@ impl<T> Response<Vec<T>> {
             rate_limit_reset: self.rate_limit_reset,
             resp_iter: self.response.iter_mut(),
         }
-    }
-}
-
-//This impl is used for service::rate_limit_status, to represent the individual method statuses
-impl FromJson for Response<()> {
-    fn from_json(input: &json::Json) -> Result<Self, error::Error> {
-        if !input.is_object() {
-            return Err(InvalidResponse("Response<()> received json that wasn't an object",
-                                       Some(input.to_string())));
-        }
-
-        field_present!(input, limit);
-        field_present!(input, remaining);
-        field_present!(input, reset);
-
-        Ok(Response {
-            rate_limit: try!(field(input, "limit")),
-            rate_limit_remaining: try!(field(input, "remaining")),
-            rate_limit_reset: try!(field(input, "reset")),
-            response: (),
-        })
     }
 }
 
@@ -426,7 +409,7 @@ impl Future for RawFuture {
             Err(_) => Err(io::Error::new(io::ErrorKind::InvalidData,
                                          "stream did not contain valid UTF-8").into()),
             Ok(resp) => {
-                if let Ok(err) = json::decode::<TwitterErrors>(&resp) {
+                if let Ok(err) = serde_json::from_str::<TwitterErrors>(&resp) {
                     if err.errors.iter().any(|e| e.code == 88) &&
                         self.headers().has::<XRateLimitReset>()
                     {
@@ -503,11 +486,10 @@ impl<T> Future for TwitterFuture<T> {
 
 /// Shortcut `MakeResponse` method that attempts to parse the given type from the response and
 /// loads rate-limit information from the response headers.
-pub fn make_response<T: FromJson>(full_resp: String, headers: &Headers)
+pub fn make_response<T: for <'a> serde::Deserialize<'a>>(full_resp: String, headers: &Headers)
     -> Result<Response<T>, error::Error>
 {
-    let out = try!(T::from_str(&full_resp));
-
+    let out = serde_json::from_str(&full_resp)?;
     Ok(Response::map(rate_headers(headers), |_| out))
 }
 
@@ -523,7 +505,7 @@ pub fn make_future<T>(handle: &Handle,
 }
 
 /// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
-pub fn make_parsed_future<T: FromJson>(handle: &Handle, request: Request)
+pub fn make_parsed_future<T: for <'de> serde::Deserialize<'de>>(handle: &Handle, request: Request)
     -> TwitterFuture<Response<T>>
 {
     make_future(handle, request, make_response)

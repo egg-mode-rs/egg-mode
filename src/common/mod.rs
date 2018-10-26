@@ -59,6 +59,10 @@
 //! string. It's also an example of how function parameters are themselves patterns, because i
 //! destructure the pair right in the signature. `>_>`
 //!
+//! `deserialize_datetime` and `deserialize_mime` are glue functions to read these specific items
+//! out in a `Deserialize` implementation. Twitter always gives timestamps in the same format, so
+//! having that function here saves us from having to write the format out everywhere.
+//!
 //! `merge_by` and its companion type `MergeBy` is a copy of the iterator adapter of the same name
 //! from itertools, because i didn't want to add another dependency onto the great towering pile
 //! that is my dep tree. `>_>`
@@ -67,23 +71,6 @@
 //! `PartialOrd` and `Ord` at the time. Strictly speaking they're subtly different because
 //! `std::cmp::{min,max}` require `Ord` and `min_opt` won't reach for the None if it's there,
 //! unlike the derived `PartialOrd` which considers None to be less than Some.
-//!
-//! ## `FromJson`
-//!
-//! `FromJson` is factored into its own file, but its contents are spilled into this one and
-//! re-exported, so it's worth mentioning them here. `FromJson` itself is a lynchpin infrastructure
-//! trait that i lean on very heavily to convert the raw JSON responses from Twitter into the final
-//! structure that i hand to users. It has a bunch of standard implementations that are documented
-//! in that module.
-//!
-//! `field` is a function that loads up the given field from the given JSON, running it through a
-//! desired `FromJson` implementation.
-//!
-//! `field_present!()` is a macro that i use in `FromJson` implementations when i assume a value
-//! needs to be present at all times. It checks whether the given field is either absent or null,
-//! and returns `Error::MissingValue` if so. This could *probably* be extended to act like
-//! `try!()`, i.e. evaluate the whole macro to `field(input, field)` if it's actually there. I
-//! haven't done that yet.
 //!
 //! ## `Response`
 //!
@@ -119,7 +106,7 @@
 //! function pointer is handed in directly.
 //!
 //! `make_parsed_future` is the most common `TwitterFuture` constructor, which just uses
-//! `make_response` (which just calls `FromJson` and loads up the rate-limit headers - it's also
+//! `make_response` (which just calls `serde_json` and loads up the rate-limit headers - it's also
 //! exported) as the processor.
 //!
 //! `rate_headers` is an infra function that takes the `Headers` and returns an empty `Response`
@@ -134,12 +121,14 @@ use list;
 
 pub use tokio_core::reactor::Handle;
 pub use hyper::Headers;
+use chrono::{self, TimeZone};
+use mime;
+use serde::{Deserialize, Deserializer};
+use serde::de::Error;
 
-#[macro_use] mod from_json;
 mod response;
 
 pub use common::response::*;
-pub use common::from_json::*;
 
 ///Convenience type used to hold parameters to an API call.
 pub type ParamList<'a> = HashMap<Cow<'a, str>, Cow<'a, str>>;
@@ -304,9 +293,29 @@ pub fn min_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
     }
 }
 
+pub fn deserialize_datetime<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error> where D: Deserializer<'de> {
+    let s = String::deserialize(ser)?;
+    let date = (chrono::Utc).datetime_from_str(&s, "%a %b %d %T %z %Y").map_err(|e| D::Error::custom(e))?;
+    Ok(date)
+}
+
+pub fn deserialize_mime<'de, D>(ser: D) -> Result<mime::Mime, D::Error> where D: Deserializer<'de> {
+    let str = String::deserialize(ser)?;
+    str.parse().map_err(|e| D::Error::custom(e))
+}
+
 #[cfg(test)]
-mod tests {
+pub (crate) mod tests {
     use super::*;
+    use std::fs::File;
+    use std::io::Read;
+
+    pub(crate) fn load_file(path: &str) -> String {
+        let mut file = File::open(path).unwrap();
+        let mut content = String::new();
+        file.read_to_string(&mut content).unwrap();
+        content
+    }
 
     #[test]
     fn test_codepoints_to_bytes() {
