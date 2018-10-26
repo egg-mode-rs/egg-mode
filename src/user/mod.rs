@@ -60,6 +60,7 @@ use std::collections::HashMap;
 
 use futures::{Future, Stream, Poll, Async};
 use chrono;
+use serde::{Deserialize, Deserializer};
 
 use auth;
 use common::*;
@@ -69,6 +70,7 @@ use links;
 use tweet;
 
 mod fun;
+mod raw;
 
 pub use self::fun::*;
 
@@ -184,14 +186,12 @@ impl<'a> From<&'a UserID<'a>> for UserID<'a> {
 /// * `show_all_inline_media`
 /// * `time_zone`/`utc_offset`
 /// * `withheld_in_countries`/`withheld_scope`
-// TODO codepoints_to_bytes on entity ranges
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct TwitterUser {
     /// Indicates this user has an account with "contributor mode" enabled, allowing
     /// for Tweets issued by the user to be co-authored by another account. Rarely `true`.
     pub contributors_enabled: bool,
     /// The UTC timestamp for when this user account was created on Twitter.
-    #[serde(deserialize_with = "deserialize_datetime")]
     pub created_at: chrono::DateTime<chrono::Utc>,
     /// When true, indicates that this user has not altered the theme or background of
     /// their user profile.
@@ -203,7 +203,6 @@ pub struct TwitterUser {
     pub description: Option<String>,
     /// Link information that has been parsed out of the `url` or `description` fields given by the
     /// user.
-    #[serde(default)]
     pub entities: UserEntities,
     /// The number of tweets this user has favorited or liked in the account's lifetime.
     /// The term "favourites" and its British spelling are used for historical reasons.
@@ -211,9 +210,6 @@ pub struct TwitterUser {
     /// When true, indicates that the authenticating user has issued a follow request to
     /// this protected account.
     pub follow_request_sent: Option<bool>,
-    /// Indicates whether the authenticating user is following this account. Deprecated
-    /// (and thus hidden) due to increasing error conditions where this returns None.
-    following: Option<bool>,
     /// The number of followers this account has.
     ///
     /// In certain server-stress conditions, this may temporarily mistakenly return 0.
@@ -245,10 +241,6 @@ pub struct TwitterUser {
     pub location: Option<String>,
     /// The user-entered display name.
     pub name: String,
-    /// Indicates whether the authenticated user has chosen to received this user's tweets
-    /// via SMS. Deprecated (and thus hidden) due to bugs where this incorrectly returns
-    /// false.
-    notifications: Option<bool>,
     /// The hex color chosen by the user for their profile background.
     pub profile_background_color: String,
     /// A URL pointing to the background image chosen by the user for their profile. Uses
@@ -326,6 +318,67 @@ pub struct TwitterUser {
     pub withheld_in_countries: Option<Vec<String>>,
     /// When present, indicates whether the content being withheld is a "status" or "user".
     pub withheld_scope: Option<String>,
+}
+
+impl<'de> Deserialize<'de> for TwitterUser {
+    fn deserialize<D>(deser: D) -> Result<TwitterUser, D::Error> where D: Deserializer<'de> {
+        let mut raw = try!(raw::RawTwitterUser::deserialize(deser));
+
+        if let Some(ref description) = raw.description {
+            for entity in &mut raw.entities.description.urls {
+                codepoints_to_bytes(&mut entity.range, description);
+            }
+        }
+
+        if let (&mut Some(ref url), &mut Some(ref mut entities)) = (&mut raw.url, &mut raw.entities.url) {
+            for entity in &mut entities.urls {
+                codepoints_to_bytes(&mut entity.range, url);
+            }
+        }
+
+        Ok(TwitterUser {
+            contributors_enabled: raw.contributors_enabled,
+            created_at: raw.created_at,
+            default_profile: raw.default_profile,
+            default_profile_image: raw.default_profile_image,
+            description: raw.description,
+            entities: raw.entities,
+            favourites_count: raw.favourites_count,
+            follow_request_sent: raw.follow_request_sent,
+            followers_count: raw.followers_count,
+            friends_count: raw.friends_count,
+            geo_enabled: raw.geo_enabled,
+            id: raw.id,
+            is_translator: raw.is_translator,
+            lang: raw.lang,
+            listed_count: raw.listed_count,
+            location: raw.location,
+            name: raw.name,
+            profile_background_color: raw.profile_background_color,
+            profile_background_image_url: raw.profile_background_image_url,
+            profile_background_image_url_https: raw.profile_background_image_url_https,
+            profile_background_tile: raw.profile_background_tile,
+            profile_banner_url: raw.profile_banner_url,
+            profile_image_url: raw.profile_image_url,
+            profile_image_url_https: raw.profile_image_url_https,
+            profile_link_color: raw.profile_link_color,
+            profile_sidebar_border_color: raw.profile_sidebar_border_color,
+            profile_sidebar_fill_color: raw.profile_sidebar_fill_color,
+            profile_text_color: raw.profile_text_color,
+            profile_use_background_image: raw.profile_use_background_image,
+            protected: raw.protected,
+            screen_name: raw.screen_name,
+            show_all_inline_media: raw.show_all_inline_media,
+            status: raw.status,
+            statuses_count: raw.statuses_count,
+            time_zone: raw.time_zone,
+            url: raw.url,
+            utc_offset: raw.utc_offset,
+            verified: raw.verified,
+            withheld_in_countries: raw.withheld_in_countries,
+            withheld_scope: raw.withheld_scope,
+        })
+    }
 }
 
 /// Container for URL entity information that may be paired with a user's profile.
