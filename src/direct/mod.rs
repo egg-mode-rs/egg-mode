@@ -51,6 +51,7 @@ use chrono;
 use hyper::client::Request;
 use futures::{Async, Future, Poll};
 use futures::future::Join;
+use serde::{Deserialize, Deserializer};
 
 use auth;
 use user;
@@ -58,6 +59,7 @@ use entities;
 use error;
 
 mod fun;
+mod raw;
 
 pub use self::fun::*;
 
@@ -68,13 +70,11 @@ type DMFuture = TwitterFuture<Response<Vec<DirectMessage>>>;
 ///As a DM has far less metadata than a regular tweet, the structure consequently contains far
 ///fewer fields. The basic fields are `id`, `text`, `entities`, and `created_at`; everything else
 ///either refers to the sender or receiver in some manner.
-// TODO is it worth a custom deserialize to fize the codepoints?
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct DirectMessage {
     ///Numeric ID for this DM.
     pub id: u64,
     ///UTC timestamp from when this DM was created.
-    #[serde(deserialize_with = "deserialize_datetime")]
     pub created_at: chrono::DateTime<chrono::Utc>,
     ///The text of the DM.
     pub text: String,
@@ -92,6 +92,43 @@ pub struct DirectMessage {
     pub recipient_id: u64,
     ///Full information for the user who received the DM.
     pub recipient: Box<user::TwitterUser>,
+}
+
+impl<'de> Deserialize<'de> for DirectMessage {
+    fn deserialize<D>(deser: D) -> Result<DirectMessage, D::Error> where D: Deserializer<'de> {
+        let mut raw = try!(raw::RawDirectMessage::deserialize(deser));
+
+        for entity in &mut raw.entities.hashtags {
+            codepoints_to_bytes(&mut entity.range, &raw.text);
+        }
+        for entity in &mut raw.entities.symbols {
+            codepoints_to_bytes(&mut entity.range, &raw.text);
+        }
+        for entity in &mut raw.entities.urls {
+            codepoints_to_bytes(&mut entity.range, &raw.text);
+        }
+        for entity in &mut raw.entities.user_mentions {
+            codepoints_to_bytes(&mut entity.range, &raw.text);
+        }
+        if let Some(ref mut media) = raw.entities.media {
+            for entity in media.iter_mut() {
+                codepoints_to_bytes(&mut entity.range, &raw.text);
+            }
+        }
+
+        Ok(DirectMessage {
+            id: raw.id,
+            created_at: raw.created_at,
+            text: raw.text,
+            entities: raw.entities,
+            sender_screen_name: raw.sender_screen_name,
+            sender_id: raw.sender_id,
+            sender: raw.sender,
+            recipient_screen_name: raw.recipient_screen_name,
+            recipient_id: raw.recipient_id,
+            recipient: raw.recipient,
+        })
+    }
 }
 
 ///Container for URL, hashtag, mention, and media information associated with a direct message.
