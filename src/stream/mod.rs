@@ -10,8 +10,8 @@ use std::collections::HashMap;
 
 use chrono;
 use futures::{Future, Stream, Poll, Async};
-use hyper::Body;
-use hyper::client::{Request, FutureResponse};
+use hyper::{Request, Body};
+use hyper::client::ResponseFuture;
 use serde::{Deserialize, Deserializer};
 use serde::de::Error;
 use serde_json;
@@ -320,13 +320,13 @@ impl FromStr for StreamMessage {
 pub struct TwitterStream {
     buf: Vec<u8>,
     handle: Handle,
-    request: Option<Request>,
-    response: Option<FutureResponse>,
+    request: Option<Request<Body>>,
+    response: Option<ResponseFuture>,
     body: Option<Body>,
 }
 
 impl TwitterStream {
-    fn new(handle: &Handle, request: Request) -> TwitterStream {
+    fn new(handle: &Handle, request: Request<Body>) -> TwitterStream {
         TwitterStream {
             buf: vec![],
             handle: handle.clone(),
@@ -343,7 +343,7 @@ impl Stream for TwitterStream {
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         if let Some(req) = self.request.take() {
-            self.response = Some(try!(get_response(&self.handle, req)));
+            self.response = Some(try!(get_response(req)));
         }
 
         if let Some(mut resp) = self.response.take() {
@@ -360,7 +360,7 @@ impl Stream for TwitterStream {
                         return Err(error::Error::BadStatus(status));
                     }
 
-                    self.body = Some(resp.body());
+                    self.body = Some(resp.into_body());
                 },
             }
         }

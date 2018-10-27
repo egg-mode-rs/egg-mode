@@ -8,9 +8,9 @@
 use std::{slice, vec, io, mem};
 use std::iter::FromIterator;
 use std::ops::{Deref, DerefMut};
-use hyper::client::FutureResponse;
+use hyper::client::ResponseFuture;
 use hyper::{self, Body, StatusCode, Request};
-use hyper::header::{Headers, ContentLength};
+use hyper::header::CONTENT_LENGTH;
 use hyper_tls::HttpsConnector;
 use tokio_core::reactor::Handle;
 use futures::{Async, Future, Poll, Stream};
@@ -19,9 +19,36 @@ use error::Error::*;
 use serde;
 use serde_json;
 
-header! { (XRateLimitLimit, "X-Rate-Limit-Limit") => [i32] }
-header! { (XRateLimitRemaining, "X-Rate-Limit-Remaining") => [i32] }
-header! { (XRateLimitReset, "X-Rate-Limit-Reset") => [i32] }
+use super::Headers;
+
+const X_RATE_LIMIT_LIMIT: &'static str = "X-Rate-Limit-Limit";
+const X_RATE_LIMIT_REMAINING: &'static str = "X-Rate-Limit-Remaining";
+const X_RATE_LIMIT_RESET: &'static str = "X-Rate-Limit-Reset";
+
+fn rate_limit(headers: &Headers, header: &'static str) -> Result<Option<i32>, error::Error> {
+    let val = headers.get(header);
+
+    if let Some(val) = val {
+        let val = try!(val.to_str());
+        let val = try!(val.parse::<i32>());
+
+        Ok(Some(val))
+    } else {
+        Ok(None)
+    }
+}
+
+fn rate_limit_limit(headers: &Headers) -> Result<Option<i32>, error::Error> {
+    rate_limit(headers, X_RATE_LIMIT_LIMIT)
+}
+
+fn rate_limit_remaining(headers: &Headers) -> Result<Option<i32>, error::Error> {
+    rate_limit(headers, X_RATE_LIMIT_REMAINING)
+}
+
+fn rate_limit_reset(headers: &Headers) -> Result<Option<i32>, error::Error> {
+    rate_limit(headers, X_RATE_LIMIT_RESET)
+}
 
 ///A helper struct to wrap response data with accompanying rate limit information.
 ///
@@ -331,10 +358,10 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
     }
 }
 
-pub fn get_response(handle: &Handle, request: Request) -> Result<FutureResponse, error::Error> {
+pub fn get_response(request: Request<Body>) -> Result<ResponseFuture, error::Error> {
     // TODO: num-cpus?
-    let connector = try!(HttpsConnector::new(1, handle));
-    let client = hyper::Client::configure().connector(connector).build(handle);
+    let connector = try!(HttpsConnector::new(1));
+    let client = hyper::Client::builder().build(connector);
     Ok(client.request(request))
 }
 
@@ -345,8 +372,8 @@ pub fn get_response(handle: &Handle, request: Request) -> Result<FutureResponse,
 #[must_use = "futures do nothing unless polled"]
 pub struct RawFuture {
     handle: Handle,
-    request: Option<Request>,
-    response: Option<FutureResponse>,
+    request: Option<Request<Body>>,
+    response: Option<ResponseFuture>,
     resp_headers: Option<Headers>,
     resp_status: Option<StatusCode>,
     body_stream: Option<Body>,
@@ -366,7 +393,7 @@ impl Future for RawFuture {
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         if let Some(req) = self.request.take() {
             // needed to pull this section into the future so i could try!() on the connector
-            self.response = Some(try!(get_response(&self.handle, req)));
+            self.response = Some(try!(get_response(req)));
         }
 
         if let Some(mut resp) = self.response.take() {
@@ -379,10 +406,14 @@ impl Future for RawFuture {
                 Ok(Async::Ready(resp)) => {
                     self.resp_headers = Some(resp.headers().clone());
                     self.resp_status = Some(resp.status());
-                    if let Some(len) = resp.headers().get::<ContentLength>() {
-                        self.body.reserve(len.0 as usize);
+                    if let Some(len) = resp.headers().get(CONTENT_LENGTH) {
+                        if let Ok(len) = len.to_str() {
+                            if let Ok(len) = len.parse::<usize>() {
+                                self.body.reserve(len);
+                            }
+                        }
                     }
-                    self.body_stream = Some(resp.body());
+                    self.body_stream = Some(resp.into_body());
                 }
             }
         }
@@ -411,11 +442,11 @@ impl Future for RawFuture {
             Ok(resp) => {
                 if let Ok(err) = serde_json::from_str::<TwitterErrors>(&resp) {
                     if err.errors.iter().any(|e| e.code == 88) &&
-                        self.headers().has::<XRateLimitReset>()
+                        self.headers().contains_key(X_RATE_LIMIT_RESET)
                     {
                         return Err(
                             RateLimit(
-                                self.headers().get::<XRateLimitReset>().map(|h| h.0).unwrap()
+                                try!(rate_limit_reset(self.headers())).unwrap()
                             )
                         );
                     } else {
@@ -434,7 +465,7 @@ impl Future for RawFuture {
 
 /// Creates a new `RawFuture` starting with the given `Request`, to be run on the Core represented
 /// by the given `Handle`.
-pub fn make_raw_future(handle: &Handle, request: Request) -> RawFuture {
+pub fn make_raw_future(handle: &Handle, request: Request<Body>) -> RawFuture {
     RawFuture {
         handle: handle.clone(),
         request: Some(request),
@@ -490,11 +521,11 @@ pub fn make_response<T: for <'a> serde::Deserialize<'a>>(full_resp: String, head
     -> Result<Response<T>, error::Error>
 {
     let out = serde_json::from_str(&full_resp)?;
-    Ok(Response::map(rate_headers(headers), |_| out))
+    Ok(Response::map(try!(rate_headers(headers)), |_| out))
 }
 
 pub fn make_future<T>(handle: &Handle,
-                      request: Request,
+                      request: Request<Body>,
                       make_resp: fn(String, &Headers) -> Result<T, error::Error>)
     -> TwitterFuture<T>
 {
@@ -505,17 +536,17 @@ pub fn make_future<T>(handle: &Handle,
 }
 
 /// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
-pub fn make_parsed_future<T: for <'de> serde::Deserialize<'de>>(handle: &Handle, request: Request)
+pub fn make_parsed_future<T: for <'de> serde::Deserialize<'de>>(handle: &Handle, request: Request<Body>)
     -> TwitterFuture<Response<T>>
 {
     make_future(handle, request, make_response)
 }
 
-pub fn rate_headers(resp: &Headers) -> Response<()> {
-    Response {
-        rate_limit: resp.get::<XRateLimitLimit>().map_or(-1, |h| h.0),
-        rate_limit_remaining: resp.get::<XRateLimitRemaining>().map_or(-1, |h| h.0),
-        rate_limit_reset: resp.get::<XRateLimitReset>().map_or(-1, |h| h.0),
+pub fn rate_headers(resp: &Headers) -> Result<Response<()>, error::Error> {
+    Ok(Response {
+        rate_limit: try!(rate_limit_limit(resp)).unwrap_or(-1),
+        rate_limit_remaining: try!(rate_limit_remaining(resp)).unwrap_or(-1),
+        rate_limit_reset: try!(rate_limit_reset(resp)).unwrap_or(-1),
         response: (),
-    }
+    })
 }

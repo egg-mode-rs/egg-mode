@@ -59,7 +59,7 @@ use std::str::FromStr;
 
 use chrono;
 use regex::Regex;
-use hyper::client::Request;
+use hyper::{Request, Body};
 use futures::{Future, Poll, Async};
 use serde::{Deserialize, Deserializer};
 use serde::de::Error;
@@ -545,7 +545,7 @@ impl<'a> Timeline<'a> {
     }
 
     ///Helper function to construct a `Request` from the current state.
-    fn request(&self, since_id: Option<u64>, max_id: Option<u64>) -> Request {
+    fn request(&self, since_id: Option<u64>, max_id: Option<u64>) -> Request<Body> {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
         add_param(&mut params, "count", self.count.to_string());
         add_param(&mut params, "tweet_mode", "extended");

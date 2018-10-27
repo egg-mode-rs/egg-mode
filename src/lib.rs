@@ -153,7 +153,7 @@
 #![warn(unused_qualifications)]
 
 extern crate base64;
-#[macro_use] extern crate hyper;
+extern crate hyper;
 #[macro_use] extern crate lazy_static;
 extern crate futures;
 extern crate tokio_core;

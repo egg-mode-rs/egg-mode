@@ -19,7 +19,7 @@
 //! enough times that i just put them in here instead.
 //!
 //! * `tokio_core::reactor::Handle`
-//! * `hyper::Headers`
+//! * `hyper::headers::HeaderMap<hyper::headers::HeaderValue>` (re-exported as the alias `Headers`)
 //!
 //! ## `ParamList`
 //!
@@ -120,15 +120,17 @@ use user;
 use list;
 
 pub use tokio_core::reactor::Handle;
-pub use hyper::Headers;
 use chrono::{self, TimeZone};
 use mime;
 use serde::{Deserialize, Deserializer};
 use serde::de::Error;
+use hyper::header::{HeaderMap, HeaderValue};
 
 mod response;
 
 pub use common::response::*;
+
+pub type Headers = HeaderMap<HeaderValue>;
 
 ///Convenience type used to hold parameters to an API call.
 pub type ParamList<'a> = HashMap<Cow<'a, str>, Cow<'a, str>>;
