@@ -404,13 +404,14 @@ pub struct ExtendedTweetEntities {
 /// `start` to load the first page of results:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// let timeline = egg_mode::tweet::home_timeline(&token).with_page_size(10);
 ///
-/// let (timeline, feed) = core.run(timeline.start()).unwrap();
+/// let (timeline, feed) = block_on_all(timeline.start()).unwrap();
 /// for tweet in &feed {
 ///     println!("<@{}> {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
 /// }
@@ -421,13 +422,14 @@ pub struct ExtendedTweetEntities {
 /// tweet IDs it tracks:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// # let timeline = egg_mode::tweet::home_timeline(&token);
-/// # let (timeline, _) = core.run(timeline.start()).unwrap();
-/// let (timeline, feed) = core.run(timeline.older(None)).unwrap();
+/// # let (timeline, _) = block_on_all(timeline.start()).unwrap();
+/// let (timeline, feed) = block_on_all(timeline.older(None)).unwrap();
 /// for tweet in &feed {
 ///     println!("<@{}> {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
 /// }
@@ -442,25 +444,26 @@ pub struct ExtendedTweetEntities {
 /// hand, you can load only those tweets you need like this:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// let timeline = egg_mode::tweet::home_timeline(&token)
 ///                                .with_page_size(10);
 ///
-/// let (timeline, _feed) = core.run(timeline.start()).unwrap();
+/// let (timeline, _feed) = block_on_all(timeline.start()).unwrap();
 ///
 /// //keep the max_id for later
 /// let reload_id = timeline.max_id.unwrap();
 ///
 /// //simulate scrolling down a little bit
-/// let (timeline, _feed) = core.run(timeline.older(None)).unwrap();
-/// let (mut timeline, _feed) = core.run(timeline.older(None)).unwrap();
+/// let (timeline, _feed) = block_on_all(timeline.older(None)).unwrap();
+/// let (mut timeline, _feed) = block_on_all(timeline.older(None)).unwrap();
 ///
 /// //reload the timeline with only what's new
 /// timeline.reset();
-/// let (timeline, _new_posts) = core.run(timeline.older(Some(reload_id))).unwrap();
+/// let (timeline, _new_posts) = block_on_all(timeline.older(Some(reload_id))).unwrap();
 /// # }
 /// ```
 ///
@@ -632,13 +635,15 @@ impl<'timeline> Future for TimelineFuture<'timeline>
 /// As-is, the draft won't do anything until you call `send` to post it:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// # use egg_mode::tweet::DraftTweet;
 /// # let draft = DraftTweet::new("This is an example status!");
-/// core.run(draft.send(&token)).unwrap();
+///
+/// block_on_all(draft.send(&token)).unwrap();
 /// # }
 /// ```
 ///
@@ -647,22 +652,23 @@ impl<'timeline> Future for TimelineFuture<'timeline>
 /// create a reply-chain like this:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// use egg_mode::tweet::DraftTweet;
 ///
 /// let draft = DraftTweet::new("I'd like to start a thread here.");
-/// let tweet = core.run(draft.send(&token)).unwrap();
+/// let tweet = block_on_all(draft.send(&token)).unwrap();
 ///
 /// let draft = DraftTweet::new("You see, I have a lot of things to say.")
 ///                        .in_reply_to(tweet.id);
-/// let tweet = core.run(draft.send(&token)).unwrap();
+/// let tweet = block_on_all(draft.send(&token)).unwrap();
 ///
 /// let draft = DraftTweet::new("Thank you for your time.")
 ///                        .in_reply_to(tweet.id);
-/// let tweet = core.run(draft.send(&token)).unwrap();
+/// let tweet = block_on_all(draft.send(&token)).unwrap();
 /// # }
 /// ```
 #[derive(Debug, Clone)]

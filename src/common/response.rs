@@ -461,8 +461,7 @@ impl Future for RawFuture {
     }
 }
 
-/// Creates a new `RawFuture` starting with the given `Request`, to be run on the Core represented
-/// by the given `Handle`.
+/// Creates a new `RawFuture` starting with the given `Request`.
 pub fn make_raw_future(request: Request<Body>) -> RawFuture {
     RawFuture {
         request: Some(request),

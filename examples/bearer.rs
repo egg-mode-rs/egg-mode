@@ -6,7 +6,7 @@ extern crate egg_mode;
 
 mod common;
 
-use common::tokio_core::reactor;
+use common::tokio::runtime::current_thread::block_on_all;
 
 fn main() {
     let con_key = include_str!("common/consumer_key").trim();
@@ -14,15 +14,13 @@ fn main() {
 
     let con_token = egg_mode::KeyPair::new(con_key, con_secret);
 
-    let mut core = reactor::Core::new().unwrap();
-
     println!("Pulling up the bearer token...");
-    let token = core.run(egg_mode::bearer_token(&con_token)).unwrap();
+    let token = block_on_all(egg_mode::bearer_token(&con_token)).unwrap();
 
     println!("Pulling up a user timeline...");
     let timeline = egg_mode::tweet::user_timeline("rustlang", false, true, &token).with_page_size(5);
 
-    let (_timeline, feed) = core.run(timeline.start()).unwrap();
+    let (_timeline, feed) = block_on_all(timeline.start()).unwrap();
     for tweet in feed {
         println!("");
         common::print_tweet(&tweet);

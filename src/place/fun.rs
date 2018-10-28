@@ -20,11 +20,12 @@ use super::PlaceQuery;
 /// ## Examples
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
-/// let result = core.run(egg_mode::place::show("18810aa5b43e76c7", &token)).unwrap();
+/// # let token: Token = unimplemented!();
+/// let result = block_on_all(egg_mode::place::show("18810aa5b43e76c7", &token)).unwrap();
 ///
 /// assert!(result.full_name == "Dallas, TX");
 /// # }
@@ -42,14 +43,15 @@ pub fn show(id: &str, token: &auth::Token) -> FutureResponse<Place> {
 /// ## Examples
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// use egg_mode::place::{self, PlaceType};
-/// let result = core.run(place::reverse_geocode(51.507222, -0.1275)
-///                             .granularity(PlaceType::City)
-///                             .call(&token))
+/// let result = block_on_all(place::reverse_geocode(51.507222, -0.1275)
+///                                 .granularity(PlaceType::City)
+///                                 .call(&token))
 ///                  .unwrap();
 ///
 /// assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
@@ -107,14 +109,15 @@ pub fn reverse_geocode_url<'a>(url: &'a str, token: &auth::Token)
 /// ## Example
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// use egg_mode::place::{self, PlaceType};
-/// let result = core.run(place::search_point(51.507222, -0.1275)
-///                             .granularity(PlaceType::City)
-///                             .call(&token))
+/// let result = block_on_all(place::search_point(51.507222, -0.1275)
+///                                 .granularity(PlaceType::City)
+///                                 .call(&token))
 ///                  .unwrap();
 ///
 /// assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
@@ -129,14 +132,15 @@ pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder<'static> {
 /// ## Example
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// use egg_mode::place::{self, PlaceType};
-/// let result = core.run(place::search_query("columbia")
-///                             .granularity(PlaceType::Admin)
-///                             .call(&token))
+/// let result = block_on_all(place::search_query("columbia")
+///                                 .granularity(PlaceType::Admin)
+///                                 .call(&token))
 ///                  .unwrap();
 ///
 /// assert!(result.results.iter().any(|pl| pl.full_name == "British Columbia, Canada"));

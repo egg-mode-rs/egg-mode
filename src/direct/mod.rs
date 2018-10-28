@@ -166,14 +166,15 @@ pub struct DMEntities {
 /// `start` to load the first page of results:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// let mut timeline = egg_mode::direct::received(&token)
 ///                                     .with_page_size(10);
 ///
-/// for dm in &core.run(timeline.start()).unwrap() {
+/// for dm in &block_on_all(timeline.start()).unwrap() {
 ///     println!("<@{}> {}", dm.sender_screen_name, dm.text);
 /// }
 /// # }
@@ -183,13 +184,14 @@ pub struct DMEntities {
 /// IDs it tracks:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// # let mut timeline = egg_mode::direct::received(&token);
-/// # core.run(timeline.start()).unwrap();
-/// for dm in &core.run(timeline.older(None)).unwrap() {
+/// # block_on_all(timeline.start()).unwrap();
+/// for dm in &block_on_all(timeline.older(None)).unwrap() {
 ///     println!("<@{}> {}", dm.sender_screen_name, dm.text);
 /// }
 /// # }
@@ -203,25 +205,26 @@ pub struct DMEntities {
 /// load only those messages you need like this:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// let mut timeline = egg_mode::direct::received(&token)
 ///                                     .with_page_size(10);
 ///
-/// core.run(timeline.start()).unwrap();
+/// block_on_all(timeline.start()).unwrap();
 ///
 /// //keep the max_id for later
 /// let reload_id = timeline.max_id.unwrap();
 ///
 /// //simulate scrolling down a little bit
-/// core.run(timeline.older(None)).unwrap();
-/// core.run(timeline.older(None)).unwrap();
+/// block_on_all(timeline.older(None)).unwrap();
+/// block_on_all(timeline.older(None)).unwrap();
 ///
 /// //reload the timeline with only what's new
 /// timeline.reset();
-/// core.run(timeline.older(Some(reload_id))).unwrap();
+/// block_on_all(timeline.older(Some(reload_id))).unwrap();
 /// # }
 /// ```
 ///
@@ -444,18 +447,19 @@ fn merge(this: &mut DMConversations, conversations: DMConversations) {
 /// # Example
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// let mut conversations = egg_mode::direct::conversations(&token);
 ///
 /// // newest() and oldest() consume the Timeline and give it back on success, so assign it back
 /// // when it's done
-/// conversations = core.run(conversations.newest()).unwrap();
+/// conversations = block_on_all(conversations.newest()).unwrap();
 ///
 /// for (id, convo) in &conversations.conversations {
-///     let user = core.run(egg_mode::user::show(id, &token)).unwrap();
+///     let user = block_on_all(egg_mode::user::show(id, &token)).unwrap();
 ///     println!("Conversation with @{}", user.screen_name);
 ///     for msg in convo {
 ///         println!("<@{}> {}", msg.sender_screen_name, msg.text);

@@ -22,58 +22,62 @@ use super::*;
 /// ## Examples
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// let mut list: Vec<u64> = Vec::new();
 ///
 /// list.push(1234);
 /// list.push(2345);
 ///
-/// let users = core.run(egg_mode::user::lookup(&list, &token)).unwrap();
+/// let users = block_on_all(egg_mode::user::lookup(&list, &token)).unwrap();
 /// # }
 /// ```
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// let mut list: Vec<&str> = Vec::new();
 ///
 /// list.push("rustlang");
 /// list.push("ThisWeekInRust");
 ///
-/// let users = core.run(egg_mode::user::lookup(&list, &token)).unwrap();
+/// let users = block_on_all(egg_mode::user::lookup(&list, &token)).unwrap();
 /// # }
 /// ```
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// let mut list: Vec<String> = Vec::new();
 ///
 /// list.push("rustlang".to_string());
 /// list.push("ThisWeekInRust".to_string());
 ///
-/// let users = core.run(egg_mode::user::lookup(&list, &token)).unwrap();
+/// let users = block_on_all(egg_mode::user::lookup(&list, &token)).unwrap();
 /// # }
 /// ```
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// let mut list: Vec<egg_mode::user::UserID> = Vec::new();
 ///
 /// list.push(1234.into());
 /// list.push("rustlang".into());
 ///
-/// let users = core.run(egg_mode::user::lookup(&list, &token)).unwrap();
+/// let users = block_on_all(egg_mode::user::lookup(&list, &token)).unwrap();
 /// # }
 /// ```
 pub fn lookup<'a, T, I>(accts: I, token: &auth::Token)

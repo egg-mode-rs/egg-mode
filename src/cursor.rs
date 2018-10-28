@@ -142,13 +142,14 @@ impl Cursor for ListCursor {
 /// several can be immedately returned whenever a single network call completes.
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// use futures::Stream;
 ///
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
-/// core.run(egg_mode::user::followers_of("rustlang", &token).take(10).for_each(|resp| {
+/// # let token: Token = unimplemented!();
+/// block_on_all(egg_mode::user::followers_of("rustlang", &token).take(10).for_each(|resp| {
 ///     println!("{}", resp.screen_name);
 ///     Ok(())
 /// })).unwrap();
@@ -159,10 +160,11 @@ impl Cursor for ListCursor {
 /// entire search setup:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// use futures::Stream;
 /// use egg_mode::Response;
 /// use egg_mode::user::TwitterUser;
@@ -171,7 +173,7 @@ impl Cursor for ListCursor {
 /// // Because Streams don't have a FromIterator adaptor, we load all the responses first, then
 /// // collect them into the final Vec
 /// let names: Result<Response<Vec<TwitterUser>>, Error> =
-///     core.run(egg_mode::user::followers_of("rustlang", &token).take(10).collect())
+///     block_on_all(egg_mode::user::followers_of("rustlang", &token).take(10).collect())
 ///         .map(|resp| resp.into_iter().collect());
 /// # }
 /// ```
@@ -202,19 +204,20 @@ impl Cursor for ListCursor {
 /// page forward and backward as needed:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// let mut list = egg_mode::user::followers_of("rustlang", &token).with_page_size(20);
-/// let resp = core.run(list.call()).unwrap();
+/// let resp = block_on_all(list.call()).unwrap();
 ///
 /// for user in resp.response.users {
 ///     println!("{} (@{})", user.name, user.screen_name);
 /// }
 ///
 /// list.next_cursor = resp.response.next_cursor;
-/// let resp = core.run(list.call()).unwrap();
+/// let resp = block_on_all(list.call()).unwrap();
 ///
 /// for user in resp.response.users {
 ///     println!("{} (@{})", user.name, user.screen_name);

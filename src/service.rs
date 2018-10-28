@@ -162,11 +162,12 @@ pub struct Configuration {
 /// `tweet::home_timeline`, you could access it like this:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
-/// # let status = core.run(egg_mode::service::rate_limit_status(&token)).unwrap();
+/// # let token: Token = unimplemented!();
+/// # let status = block_on_all(egg_mode::service::rate_limit_status(&token)).unwrap();
 /// use egg_mode::service::TweetMethod;
 /// println!("home_timeline calls remaining: {}",
 ///          status.tweet[&TweetMethod::HomeTimeline].rate_limit_remaining);

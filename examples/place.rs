@@ -6,16 +6,14 @@ extern crate egg_mode;
 
 mod common;
 
-use common::tokio_core::reactor;
+use common::tokio::runtime::current_thread::block_on_all;
 
 use egg_mode::place::PlaceType;
 
 fn main() {
-    let mut core = reactor::Core::new().unwrap();
+    let config = common::Config::load();
 
-    let config = common::Config::load(&mut core);
-
-    let result = core.run(egg_mode::place::search_query("columbia")
+    let result = block_on_all(egg_mode::place::search_query("columbia")
                                           .granularity(PlaceType::Admin)
                                           .max_results(10)
                                           .call(&config.token)).unwrap();
@@ -27,7 +25,7 @@ fn main() {
     }
     println!("");
 
-    let result = core.run(egg_mode::place::reverse_geocode(51.507222, -0.1275)
+    let result = block_on_all(egg_mode::place::reverse_geocode(51.507222, -0.1275)
                                           .granularity(PlaceType::City)
                                           .call(&config.token)).unwrap();
 

@@ -228,13 +228,12 @@ impl KeyPair {
 /// For "PIN-Based Authorization":
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core;
-/// # use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let mut core: Core = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
 /// // "oob" is needed for PIN-based auth; see docs for `request_token` for more info
-/// let request_token = core.run(egg_mode::request_token(&con_token, "oob")).unwrap();
+/// let request_token = block_on_all(egg_mode::request_token(&con_token, "oob")).unwrap();
 /// let auth_url = egg_mode::authorize_url(&request_token);
 ///
 /// // give auth_url to the user, they can sign in to Twitter and accept your app's permissions.
@@ -244,7 +243,7 @@ impl KeyPair {
 ///
 /// // note this consumes con_token; if you want to sign in multiple accounts, clone it here
 /// let (token, user_id, screen_name) =
-///     core.run(egg_mode::access_token(con_token, &request_token, verifier)).unwrap();
+///     block_on_all(egg_mode::access_token(con_token, &request_token, verifier)).unwrap();
 ///
 /// // token can be given to any egg_mode method that asks for a token
 /// // user_id and screen_name refer to the user who signed in
@@ -297,12 +296,11 @@ impl KeyPair {
 /// ### Example (Bearer Token)
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core;
-/// # use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let mut core: Core = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
-/// let token = core.run(egg_mode::bearer_token(&con_token)).unwrap();
+/// let token = block_on_all(egg_mode::bearer_token(&con_token)).unwrap();
 ///
 /// // token can be given to *most* egg_mode methods that ask for a token
 /// // for restrictions, see docs for bearer_token
@@ -546,16 +544,15 @@ pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request<
 /// # Examples
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core;
-/// # use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let mut core: Core = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
 /// // for PIN-Based Auth
-/// let req_token = core.run(egg_mode::request_token(&con_token, "oob")).unwrap();
+/// let req_token = block_on_all(egg_mode::request_token(&con_token, "oob")).unwrap();
 /// // for Sign In With Twitter/3-Legged Auth
-/// let req_token = core.run(egg_mode::request_token(&con_token,
-///                                                  "https://myapp.io/auth")).unwrap();
+/// let req_token = block_on_all(egg_mode::request_token(&con_token,
+///                                                      "https://myapp.io/auth")).unwrap();
 /// # }
 /// ```
 pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S)

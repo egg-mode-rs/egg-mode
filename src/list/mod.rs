@@ -177,15 +177,16 @@ pub struct List {
 /// # Example
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::Core;
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// use egg_mode::list::{self, ListID};
 ///
 /// //remember, you can only update a list if you own it!
 /// let update = list::update(ListID::from_slug("Twitter", "support"));
-/// let list = core.run(update.name("Official Support").send(&token)).unwrap();
+/// let list = block_on_all(update.name("Official Support").send(&token)).unwrap();
 /// # }
 /// ```
 pub struct ListUpdate<'a> {

@@ -10,15 +10,16 @@
 //! page of results, hand your tokens to `call`.
 //!
 //! ```rust,no_run
-//! # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-//! # use egg_mode::Token; use tokio_core::reactor::Core;
+//! # extern crate egg_mode; extern crate tokio; extern crate futures;
+//! # use egg_mode::Token;
+//! use tokio::runtime::current_thread::block_on_all;
 //! # fn main() {
-//! # let (token, mut core): (Token, Core) = unimplemented!();
+//! # let token: Token = unimplemented!();
 //! use egg_mode::search::{self, ResultType};
 //!
-//! let search = core.run(search::search("rustlang")
-//!                              .result_type(ResultType::Recent)
-//!                              .call(&token))
+//! let search = block_on_all(search::search("rustlang")
+//!                                  .result_type(ResultType::Recent)
+//!                                  .call(&token))
 //!                  .unwrap();
 //!
 //! for tweet in &search.statuses {

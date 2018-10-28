@@ -16,18 +16,15 @@
 //!
 //! There are a couple prerequisites to using egg-mode, which its examples also assume:
 //!
-//! * All the network calls are tracked using a [tokio] `Core`, which is not supplied by this
-//!   library. This is introduced to each example "offscreen", to keep it from distracting from
-//!   the example at hand.
 //! * This library provides several types which implement the `Future` trait, but does not describe
-//!   how to interact with them. The examples use the `Core::run` method to show a synchronous
-//!   interaction, but more advanced scenarios are beyond the scope of this documentation. See the
-//!   [tokio] documentation for more information.
+//!   how to interact with them. The examples use the `block_on_all` method from [tokio]'s runtime
+//!   to show a synchronous interaction, but more advanced scenarios are beyond the scope of this
+//!   documentation. See the [tokio] documentation for more information.
 //! * Twitter tracks API use through "tokens" which are managed by Twitter and processed separately
 //!   for each "authenticated user" you wish to connect to your app. egg-mode's [Token]
 //!   documentation describes how you can obtain one of these, but each example outside of the
-//!   authentication documentation brings in a `Token` "offscreen", alongside the `Core`, to avoid
-//!   distracting from the rest of the example.
+//!   authentication documentation brings in a `Token` "offscreen", to avoid distracting from the
+//!   rest of the example.
 //!
 //! [Token]: enum.Token.html
 //! [tokio]: https://tokio.rs
@@ -35,11 +32,12 @@
 //! To load the profile information of a single user:
 //!
 //! ```rust,no_run
-//! # extern crate egg_mode; extern crate tokio_core;
-//! # use egg_mode::Token; use tokio_core::reactor::Core;
+//! # extern crate egg_mode; extern crate tokio;
+//! # use egg_mode::Token;
+//! use tokio::runtime::current_thread::block_on_all;
 //! # fn main() {
-//! # let (token, mut core): (Token, Core) = unimplemented!();
-//! let rustlang = core.run(egg_mode::user::show("rustlang", &token)).unwrap();
+//! # let token: Token = unimplemented!();
+//! let rustlang = block_on_all(egg_mode::user::show("rustlang", &token)).unwrap();
 //!
 //! println!("{} (@{})", rustlang.name, rustlang.screen_name);
 //! # }
@@ -48,13 +46,14 @@
 //! To post a new tweet:
 //!
 //! ```rust,no_run
-//! # extern crate egg_mode; extern crate tokio_core;
-//! # use egg_mode::Token; use tokio_core::reactor::Core;
+//! # extern crate egg_mode; extern crate tokio;
+//! # use egg_mode::Token;
+//! use tokio::runtime::current_thread::block_on_all;
 //! use egg_mode::tweet::DraftTweet;
 //! # fn main() {
-//! # let (token, mut core): (Token, Core) = unimplemented!();
+//! # let token: Token = unimplemented!();
 //!
-//! let post = core.run(DraftTweet::new("Hey Twitter!").send(&token)).unwrap();
+//! let post = block_on_all(DraftTweet::new("Hey Twitter!").send(&token)).unwrap();
 //! # }
 //! ```
 //!
@@ -155,7 +154,7 @@ extern crate base64;
 extern crate hyper;
 #[macro_use] extern crate lazy_static;
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio;
 extern crate hyper_tls;
 extern crate native_tls;
 extern crate url;

@@ -6,20 +6,18 @@ extern crate egg_mode;
 
 mod common;
 
-use common::tokio_core::reactor;
+use common::tokio::runtime::current_thread::block_on_all;
 
 use egg_mode::search::{self, ResultType};
 
 fn main() {
-    let mut core = reactor::Core::new().unwrap();
-
-    let config = common::Config::load(&mut core);
+    let config = common::Config::load();
 
     //rust tweets around dallas
-    let search = core.run(search::search("rustlang")
-                                 .result_type(ResultType::Recent)
-                                 .count(10)
-                                 .call(&config.token)).unwrap();
+    let search = block_on_all(search::search("rustlang")
+                                     .result_type(ResultType::Recent)
+                                     .count(10)
+                                     .call(&config.token)).unwrap();
 
     for tweet in &search.statuses {
         common::print_tweet(tweet);

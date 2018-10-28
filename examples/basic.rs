@@ -6,7 +6,7 @@ extern crate egg_mode;
 
 mod common;
 
-use common::tokio_core::reactor;
+use common::tokio::runtime::current_thread::block_on_all;
 use common::futures::Stream;
 
 use egg_mode::user;
@@ -14,9 +14,7 @@ use egg_mode::user;
 //IMPORTANT: see common.rs for instructions on making sure this properly authenticates with
 //Twitter.
 fn main() {
-    let mut core = reactor::Core::new().unwrap();
-
-    let config = common::Config::load(&mut core);
+    let config = common::Config::load();
 
     println!("");
     println!("Heterogeneous multi-user lookup:");
@@ -25,27 +23,27 @@ fn main() {
     users.push(config.user_id.into());
     users.push("SwiftOnSecurity".into());
 
-    for user in core.run(user::lookup(&users, &config.token)).unwrap().response.iter() {
+    for user in block_on_all(user::lookup(&users, &config.token)).unwrap().response.iter() {
         print_user(user)
     }
 
     println!("");
     println!("Searching based on a term: (here, it's 'rustlang')");
-    core.run(user::search("rustlang", &config.token).with_page_size(5).take(5).for_each(|resp| {
+    block_on_all(user::search("rustlang", &config.token).with_page_size(5).take(5).for_each(|resp| {
         print_user(&resp);
         Ok(())
     })).unwrap();
 
     println!("");
     println!("Who do you follow?");
-    core.run(user::friends_of(config.user_id, &config.token).with_page_size(5).take(5).for_each(|resp| {
+    block_on_all(user::friends_of(config.user_id, &config.token).with_page_size(5).take(5).for_each(|resp| {
         print_user(&resp);
         Ok(())
     })).unwrap();
 
     println!("");
     println!("Who follows you?");
-    core.run(user::followers_of(config.user_id, &config.token).with_page_size(5).take(5).for_each(|resp| {
+    block_on_all(user::followers_of(config.user_id, &config.token).with_page_size(5).take(5).for_each(|resp| {
         print_user(&resp);
         Ok(())
     })).unwrap();

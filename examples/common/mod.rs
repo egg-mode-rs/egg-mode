@@ -9,14 +9,14 @@
 //to prevent conflicts with examples, i'll import things here and let examples use it from here if
 //they need it
 pub extern crate chrono;
-pub extern crate tokio_core;
+pub extern crate tokio;
 pub extern crate futures;
 
 use std;
 use std::io::{Write, Read};
 use egg_mode;
 
-use self::tokio_core::reactor::Core;
+use self::tokio::runtime::current_thread::block_on_all;
 
 //This is not an example that can be built with cargo! This is some helper code for the other
 //examples so they can load access keys from the same place.
@@ -28,7 +28,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load(core: &mut Core) -> Self {
+    pub fn load() -> Self {
         //IMPORTANT: make an app for yourself at apps.twitter.com and get your
         //key/secret into these files; these examples won't work without them
         let consumer_key = include_str!("consumer_key").trim();
@@ -56,7 +56,7 @@ impl Config {
                 access: access_token,
             };
 
-            if let Err(err) = core.run(egg_mode::verify_tokens(&token)) {
+            if let Err(err) = block_on_all(egg_mode::verify_tokens(&token)) {
                 println!("We've hit an error using your old tokens: {:?}", err);
                 println!("We'll have to reauthenticate before continuing.");
                 std::fs::remove_file("twitter_settings").unwrap();
@@ -64,7 +64,7 @@ impl Config {
                 println!("Welcome back, {}!", username);
             }
         } else {
-            let request_token = core.run(egg_mode::request_token(&con_token, "oob")).unwrap();
+            let request_token = block_on_all(egg_mode::request_token(&con_token, "oob")).unwrap();
 
             println!("Go to the following URL, sign in, and give me the PIN that comes back:");
             println!("{}", egg_mode::authorize_url(&request_token));
@@ -73,7 +73,7 @@ impl Config {
             std::io::stdin().read_line(&mut pin).unwrap();
             println!("");
 
-            let tok_result = core.run(egg_mode::access_token(con_token, &request_token, pin)).unwrap();
+            let tok_result = block_on_all(egg_mode::access_token(con_token, &request_token, pin)).unwrap();
 
             token = tok_result.0;
             user_id = tok_result.1;
@@ -106,7 +106,7 @@ impl Config {
                 screen_name: username,
             }
         } else {
-            Self::load(core)
+            Self::load()
         }
     }
 }
