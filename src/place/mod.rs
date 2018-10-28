@@ -188,7 +188,7 @@ impl GeocodeBuilder {
     }
 
     ///Finalize the search parameters and return the results collection.
-    pub fn call(&self, token: &auth::Token, handle: &Handle)
+    pub fn call(&self, token: &auth::Token)
         -> FutureResponse<SearchResult>
     {
         let mut params = HashMap::new();
@@ -211,7 +211,7 @@ impl GeocodeBuilder {
 
         let req = auth::get(links::place::REVERSE_GEOCODE, token, Some(&params));
 
-        make_parsed_future(handle, req)
+        make_parsed_future(req)
     }
 }
 
@@ -316,7 +316,7 @@ impl<'a> SearchBuilder<'a> {
     }
 
     ///Finalize the search parameters and return the results collection.
-    pub fn call(&self, token: &auth::Token, handle: &Handle)
+    pub fn call(&self, token: &auth::Token)
         -> FutureResponse<SearchResult>
     {
         let mut params = HashMap::new();
@@ -358,7 +358,7 @@ impl<'a> SearchBuilder<'a> {
 
         let req = auth::get(links::place::SEARCH, token, Some(&params));
 
-        make_parsed_future(handle, req)
+        make_parsed_future(req)
     }
 }
 

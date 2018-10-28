@@ -17,20 +17,21 @@
 //! tweet:
 //!
 //! ```rust,no_run
-//! # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-//! # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+//! # extern crate egg_mode; extern crate tokio; extern crate futures;
+//! # use egg_mode::Token;
+//! use tokio::runtime::current_thread::block_on_all;
 //! # fn main() {
-//! # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+//! # let token: Token = unimplemented!();
 //! use egg_mode::media::{UploadBuilder, media_types};
 //! use egg_mode::tweet::DraftTweet;
 //!
 //! let image = vec![]; //pretend we loaded an image file into this
 //! let builder = UploadBuilder::new(image, media_types::image_png());
-//! let media_handle = core.run(builder.call(&token, &handle)).unwrap();
+//! let media_handle = block_on_all(builder.call(&token)).unwrap();
 //!
 //! let draft = DraftTweet::new("Hey, check out this cute cat!")
 //!                        .media_ids(&[media_handle.id]);
-//! let tweet = core.run(draft.send(&token, &handle)).unwrap();
+//! let tweet = block_on_all(draft.send(&token)).unwrap();
 //! # }
 //! ```
 //!
@@ -46,7 +47,7 @@ use base64;
 use futures::{Future, Async, Poll};
 use serde::{Deserialize, Deserializer};
 use serde::de::Error;
-use tokio_core::reactor::Timeout;
+use tokio::timer::Delay;
 
 use common::*;
 use error;
@@ -306,14 +307,13 @@ impl<'a> UploadBuilder<'a> {
     }
 
     /// Starts the upload process and returns a `Future` that represents it.
-    pub fn call(self, token: &auth::Token, handle: &Handle) -> UploadFuture<'a> {
+    pub fn call(self, token: &auth::Token) -> UploadFuture<'a> {
         UploadFuture {
             data: self.data,
             media_type: self.media_type,
             media_category: self.category,
             timeout: Instant::now(),
             token: token.clone(),
-            handle: handle.clone(),
             chunk_size: self.chunk_size.unwrap_or(1024 * 512), // 512 KiB default
             alt_text: self.alt_text,
             status: UploadInner::PreInit,
@@ -372,7 +372,6 @@ pub struct UploadFuture<'a> {
     media_category: MediaCategory,
     timeout: Instant,
     token: auth::Token,
-    handle: Handle,
     chunk_size: usize,
     alt_text: Option<Cow<'a, str>>,
     status: UploadInner,
@@ -393,7 +392,7 @@ enum UploadInner {
     /// The `UploadFuture` failed to finalize the upload session, and is waiting to retry.
     FailedFinalize(u64),
     /// The `UploadFuture` is waiting on Twitter to finish processing a video or gif.
-    PostProcessing(u64, Timeout),
+    PostProcessing(u64, Delay),
     /// The `UploadFuture` is waiting on Twitter to apply metadata to the uploaded image.
     Metadata(MediaHandle, FutureResponse<()>),
     /// The `UploadFuture` failed to update metadata on the media.
@@ -425,7 +424,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "media_category", self.media_category.to_string());
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future(&self.handle, req)
+        make_parsed_future(req)
     }
 
     fn append(&self, chunk_num: usize, media_id: u64) -> Option<FutureResponse<()>> {
@@ -453,13 +452,13 @@ impl<'a> UploadFuture<'a> {
 
             fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<()>, error::Error> {
                 if full_resp.is_empty() {
-                    Ok(rate_headers(headers))
+                    rate_headers(headers)
                 } else {
                     Err(InvalidResponse("Expected empty response", Some(full_resp)))
                 }
             }
 
-            Some(make_future(&self.handle, req, parse_resp))
+            Some(make_future(req, parse_resp))
         } else {
             None
         }
@@ -472,7 +471,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "media_id", media_id.to_string());
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future(&self.handle, req)
+        make_parsed_future(req)
     }
 
     fn status(&self, media_id: u64) -> FutureResponse<RawMedia> {
@@ -482,7 +481,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "media_id", media_id.to_string());
 
         let req = auth::get(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future(&self.handle, req)
+        make_parsed_future(req)
     }
 
     fn metadata(&self, media_id: u64, alt_text: &str) -> FutureResponse<()> {
@@ -502,13 +501,13 @@ impl<'a> UploadFuture<'a> {
 
         fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<()>, error::Error> {
             if full_resp.is_empty() {
-                Ok(rate_headers(headers))
+                rate_headers(headers)
             } else {
                 Err(InvalidResponse("Expected empty response", Some(full_resp)))
             }
         }
 
-        make_future(&self.handle, req, parse_resp)
+        make_future(req, parse_resp)
     }
 }
 
@@ -605,12 +604,10 @@ impl<'a> Future for UploadFuture<'a> {
                                 Some(ProgressInfo::InProgress(time)) =>
                             {
                                 self.timeout = Instant::now() + Duration::from_secs(media.expires_after);
-                                let timer = match Timeout::new(Duration::from_secs(time), &self.handle) {
-                                    Ok(timer) => timer,
-                                    //this error will occur if the Core has been dropped - there's
-                                    //no reason to set the state back at this point
-                                    Err(e) => return Err(UploadError::finalize(self.timeout, e.into())),
-                                };
+                                //TODO: oh hey we needed the handle for something - we need to use
+                                //new-tokio to fix this
+                                let wake = Instant::now() + Duration::from_secs(time);
+                                let timer = Delay::new(wake);
                                 self.status = UploadInner::PostProcessing(media.id, timer);
                                 self.poll()
                             },
@@ -649,8 +646,8 @@ impl<'a> Future for UploadFuture<'a> {
                         self.status = UploadInner::Finalizing(id, loader);
                         self.poll()
                     },
-                    //tokio's Timeout will literally never return an error, so don't bother
-                    //rerouting the state here
+                    // Delay will only return an error if the runtime has shut down, so don't
+                    // bother resetting the state
                     Err(e) => Err(UploadError::finalize(self.timeout, e.into())),
                 }
             },

@@ -13,13 +13,11 @@
 //! Since i split this into multiple files that are then "flattened" into the final module, it's
 //! worth giving an inventory of what's in here, since every file has a `use common::*;` in it.
 //!
-//! ## Reexports
+//! ## Type Aliases
 //!
-//! These types are shared by some very common infrastructure, and i caught myself loading them
-//! enough times that i just put them in here instead.
+//! These types are used commonly enough in the library that they're re-exported here for easy use.
 //!
-//! * `tokio_core::reactor::Handle`
-//! * `hyper::Headers`
+//! * `hyper::headers::HeaderMap<hyper::headers::HeaderValue>` (re-exported as the alias `Headers`)
 //!
 //! ## `ParamList`
 //!
@@ -119,16 +117,17 @@ use std::iter::Peekable;
 use user;
 use list;
 
-pub use tokio_core::reactor::Handle;
-pub use hyper::Headers;
 use chrono::{self, TimeZone};
 use mime;
 use serde::{Deserialize, Deserializer};
 use serde::de::Error;
+use hyper::header::{HeaderMap, HeaderValue};
 
 mod response;
 
 pub use common::response::*;
+
+pub type Headers = HeaderMap<HeaderValue>;
 
 ///Convenience type used to hold parameters to an API call.
 pub type ParamList<'a> = HashMap<Cow<'a, str>, Cow<'a, str>>;

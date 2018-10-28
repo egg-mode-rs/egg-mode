@@ -8,21 +8,18 @@
 //! Any relevant items for obtaining a Token are re-exported in the crate root. As such, the
 //! authentication overview is written on the Token type, rather than in this module docs.
 
-use std;
-use std::error::Error;
 use std::borrow::Cow;
+use std::fmt;
 use std::time::{UNIX_EPOCH, SystemTime};
 
 use base64;
 use futures::{Future, Poll, Async};
 use hmac::{Hmac, Mac};
-use hyper::header::{Authorization, Scheme, ContentType, Basic, Bearer, Headers};
-use hyper::{Method, Request};
-use mime::Mime;
+use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
+use hyper::{Method, Request, Body};
 use rand::{self, Rng};
 use serde_json;
 use sha_1::Sha1;
-use tokio_core::reactor::Handle;
 use url::percent_encoding::{EncodeSet, PercentEncode, utf8_percent_encode};
 
 use links;
@@ -64,55 +61,12 @@ struct TwitterOAuth {
     verifier: Option<String>,
 }
 
-impl std::str::FromStr for TwitterOAuth {
-    type Err = String;
+impl fmt::Display for TwitterOAuth {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // authorization scheme
+        try!(write!(f, "OAuth "));
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut consumer_key: Option<String> = None;
-        let mut nonce: Option<String> = None;
-        let mut signature: Option<String> = None;
-        let mut timestamp: Option<u64> = None;
-        let mut token: Option<String> = None;
-        let mut callback: Option<String> = None;
-        let mut verifier: Option<String> = None;
-
-        for substr in s.split(',') {
-            let mut parts = substr.trim().split('=');
-            match parts.next() {
-                Some("oauth_consumer_key") => consumer_key = parts.next().map(str::to_string),
-                Some("oauth_nonce") => nonce = parts.next().map(str::to_string),
-                Some("oauth_signature") => signature = parts.next().map(str::to_string),
-                Some("oauth_timestamp") => match parts.next().map(<u64 as std::str::FromStr>::from_str) {
-                    Some(Ok(n)) => timestamp = Some(n),
-                    Some(Err(e)) => return Err(e.description().to_string()),
-                    None => timestamp = None,
-                },
-                Some("oauth_token") => token = parts.next().map(str::to_string),
-                Some("oauth_callback") => callback = parts.next().map(str::to_string),
-                Some("oauth_verifier") => verifier = parts.next().map(str::to_string),
-                Some(_) => return Err("unexpected OAuth Authorization header field".to_string()),
-                None => return Err("unexpected header format".to_string()),
-            }
-        }
-
-        Ok(TwitterOAuth {
-            consumer_key: try!(consumer_key.ok_or("no oauth_consumer_key")),
-            nonce: try!(nonce.ok_or("no oauth_nonce")),
-            signature: signature,
-            timestamp: try!(timestamp.ok_or("no oauth_timestamp")),
-            token: token,
-            callback: callback,
-            verifier: verifier,
-        })
-    }
-}
-
-impl Scheme for TwitterOAuth {
-    fn scheme() -> Option<&'static str> {
-        Some("OAuth")
-    }
-
-    fn fmt_scheme(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        // authorization data
         try!(write!(f, "oauth_consumer_key=\"{}\"", percent_encode(&self.consumer_key)));
 
         try!(write!(f, ", oauth_nonce=\"{}\"", percent_encode(&self.nonce)));
@@ -141,6 +95,11 @@ impl Scheme for TwitterOAuth {
 
         Ok(())
     }
+}
+
+/// Formats an Authorization header as a Bearer scheme with the given token.
+fn bearer(token: &str) -> String {
+    format!("Bearer {}", token)
 }
 
 /// A key/secret pair representing an OAuth token.
@@ -269,13 +228,12 @@ impl KeyPair {
 /// For "PIN-Based Authorization":
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core;
-/// # use tokio_core::reactor::{Core, Handle};
+/// # extern crate egg_mode; extern crate tokio;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (mut core, handle): (Core, Handle) = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
 /// // "oob" is needed for PIN-based auth; see docs for `request_token` for more info
-/// let request_token = core.run(egg_mode::request_token(&con_token, "oob", &handle)).unwrap();
+/// let request_token = block_on_all(egg_mode::request_token(&con_token, "oob")).unwrap();
 /// let auth_url = egg_mode::authorize_url(&request_token);
 ///
 /// // give auth_url to the user, they can sign in to Twitter and accept your app's permissions.
@@ -285,7 +243,7 @@ impl KeyPair {
 ///
 /// // note this consumes con_token; if you want to sign in multiple accounts, clone it here
 /// let (token, user_id, screen_name) =
-///     core.run(egg_mode::access_token(con_token, &request_token, verifier, &handle)).unwrap();
+///     block_on_all(egg_mode::access_token(con_token, &request_token, verifier)).unwrap();
 ///
 /// // token can be given to any egg_mode method that asks for a token
 /// // user_id and screen_name refer to the user who signed in
@@ -338,12 +296,11 @@ impl KeyPair {
 /// ### Example (Bearer Token)
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core;
-/// # use tokio_core::reactor::{Core, Handle};
+/// # extern crate egg_mode; extern crate tokio;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (mut core, handle): (Core, Handle) = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
-/// let token = core.run(egg_mode::bearer_token(&con_token, &handle)).unwrap();
+/// let token = block_on_all(egg_mode::bearer_token(&con_token)).unwrap();
 ///
 /// // token can be given to *most* egg_mode methods that ask for a token
 /// // for restrictions, see docs for bearer_token
@@ -401,7 +358,7 @@ fn sign(header: TwitterOAuth,
     };
 
     let base_str = format!("{}&{}&{}",
-                           percent_encode(method.as_ref()),
+                           percent_encode(method.as_str()),
                            percent_encode(uri),
                            percent_encode(&query_string));
     let key = format!("{}&{}",
@@ -448,17 +405,15 @@ fn get_header(method: Method,
     sign(header, method, uri, params, con_token, access_token)
 }
 
-fn bearer_request(con_token: &KeyPair) -> Basic {
-    Basic {
-        username: percent_encode(&con_token.key).collect(),
-        password: Some(percent_encode(&con_token.secret).collect()),
-    }
+fn bearer_request(con_token: &KeyPair) -> String {
+    let text = format!("{}:{}", con_token.key, con_token.secret);
+    format!("Basic {}", base64::encode(&text))
 }
 
 /// Assemble a signed GET request to the given URL with the given parameters.
 pub fn get(uri: &str,
            token: &Token,
-           params: Option<&ParamList>) -> Request {
+           params: Option<&ParamList>) -> Request<Body> {
     let full_url = if let Some(p) = params {
         let query = p.iter()
                      .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
@@ -470,85 +425,83 @@ pub fn get(uri: &str,
         uri.to_string()
     };
 
-    let mut request: Request = Request::new(Method::Get, full_url.parse().unwrap());
+    let mut request = Request::get(full_url);
     match *token {
         Token::Access {
             consumer: ref con_token,
             access: ref access_token,
         } => {
-            let header = get_header(Method::Get, uri, con_token, Some(access_token),
+            let header = get_header(Method::GET, uri, con_token, Some(access_token),
                                     None, None, params);
-            request.headers_mut().set(Authorization(header));
+            request.header(AUTHORIZATION, header.to_string());
         },
         Token::Bearer(ref token) => {
-            request.headers_mut().set(Authorization(Bearer { token: token.clone() }));
+            request.header(AUTHORIZATION, bearer(token));
         },
     }
 
-    request
+    request.body(Body::empty()).unwrap()
 }
 
 /// Assemble a signed POST request to the given URL with the given parameters.
 pub fn post(uri: &str,
             token: &Token,
-            params: Option<&ParamList>) -> Request {
-    let content: Mime = "application/x-www-form-urlencoded".parse().unwrap();
+            params: Option<&ParamList>) -> Request<Body> {
+    let content = "application/x-www-form-urlencoded";
     let body = if let Some(p) = params {
-        p.iter()
-         .map(|(k, v)| format!("{}={}", k, percent_encode(v)))
-         .collect::<Vec<_>>()
-         .join("&")
+        Body::from(p.iter()
+                    .map(|(k, v)| format!("{}={}", k, percent_encode(v)))
+                    .collect::<Vec<_>>()
+                    .join("&"))
     } else {
-        "".to_string()
+        Body::empty()
     };
 
-    let mut request: Request = Request::new(Method::Post, uri.parse().unwrap());
-    request.set_body(body);
-    request.headers_mut().set(ContentType(content));
+    let mut request = Request::post(uri);
+    request.header(CONTENT_TYPE, content);
 
     match *token {
         Token::Access {
             consumer: ref con_token,
             access: ref access_token,
         } => {
-            let header = get_header(Method::Post, uri, con_token, Some(access_token),
+            let header = get_header(Method::POST, uri, con_token, Some(access_token),
                                     None, None, params);
 
-            request.headers_mut().set(Authorization(header));
+            request.header(AUTHORIZATION, header.to_string());
         },
         Token::Bearer(ref token) => {
-            request.headers_mut().set(Authorization(Bearer { token: token.clone() }));
+            request.header(AUTHORIZATION, bearer(token));
         },
     }
 
-    request
+    request.body(body).unwrap()
 }
 
 /// Assemble a signed POST request to the given URL with the given JSON body.
-pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request {
-    let content: Mime = "application/json; charset=UTF-8".parse().unwrap();
-    let body = body.to_string();
+pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request<Body> {
+    let content = "application/json; charset=UTF-8";
+    let body = Body::from(body.to_string());
 
-    let mut request: Request = Request::new(Method::Post, uri.parse().unwrap());
-    request.set_body(body);
-    request.headers_mut().set(ContentType(content));
+    let mut request = Request::post(uri);
+    request.header(CONTENT_TYPE, content);
 
     match *token {
         Token::Access {
             consumer: ref con_token,
             access: ref access_token,
         } => {
-            let header = get_header(Method::Post, uri, con_token, Some(access_token),
+            let header = get_header(Method::POST, uri, con_token, Some(access_token),
                                     None, None, None);
 
-            request.headers_mut().set(Authorization(header));
+            request.header(AUTHORIZATION, header.to_string());
         },
         Token::Bearer(ref token) => {
-            request.headers_mut().set(Authorization(Bearer { token: token.clone() }));
+            request.header(AUTHORIZATION, bearer(token));
         },
     }
 
-    request
+    request.body(body).unwrap()
 }
 
 /// With the given consumer KeyPair, ask Twitter for a request KeyPair that can be used to request
@@ -591,27 +544,25 @@ pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request 
 /// # Examples
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core;
-/// # use tokio_core::reactor::{Core, Handle};
+/// # extern crate egg_mode; extern crate tokio;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (mut core, handle): (Core, Handle) = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
 /// // for PIN-Based Auth
-/// let req_token = core.run(egg_mode::request_token(&con_token, "oob", &handle)).unwrap();
+/// let req_token = block_on_all(egg_mode::request_token(&con_token, "oob")).unwrap();
 /// // for Sign In With Twitter/3-Legged Auth
-/// let req_token = core.run(egg_mode::request_token(&con_token,
-///                                                  "https://myapp.io/auth",
-///                                                  &handle)).unwrap();
+/// let req_token = block_on_all(egg_mode::request_token(&con_token,
+///                                                      "https://myapp.io/auth")).unwrap();
 /// # }
 /// ```
-pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S, handle: &Handle)
+pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S)
     -> TwitterFuture<KeyPair>
 {
-    let header = get_header(Method::Post, links::auth::REQUEST_TOKEN,
+    let header = get_header(Method::POST, links::auth::REQUEST_TOKEN,
                             con_token, None, Some(callback.into()), None, None);
 
-    let mut request = Request::new(Method::Post, links::auth::REQUEST_TOKEN.parse().unwrap());
-    request.headers_mut().set(Authorization(header));
+    let mut request = Request::post(links::auth::REQUEST_TOKEN);
+    request.header(AUTHORIZATION, header.to_string());
 
     fn parse_tok(full_resp: String, _: &Headers) -> Result<KeyPair, error::Error> {
         let mut key: Option<String> = None;
@@ -636,7 +587,7 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S, handle: 
                         try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")))))
     }
 
-    make_future(handle, request, parse_tok)
+    make_future(request.body(Body::empty()).unwrap(), parse_tok)
 }
 
 /// With the given request KeyPair, return a URL that a user can access to accept or reject an
@@ -760,18 +711,17 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 /// user.
 pub fn access_token<S: Into<String>>(con_token: KeyPair,
                                      request_token: &KeyPair,
-                                     verifier: S,
-                                     handle: &Handle)
+                                     verifier: S)
     -> AuthFuture
 {
-    let header = get_header(Method::Post, links::auth::ACCESS_TOKEN,
+    let header = get_header(Method::POST, links::auth::ACCESS_TOKEN,
                             &con_token, Some(request_token), None, Some(verifier.into()), None);
-    let mut request = Request::new(Method::Post, links::auth::ACCESS_TOKEN.parse().unwrap());
-    request.headers_mut().set(Authorization(header));
+    let mut request = Request::post(links::auth::ACCESS_TOKEN);
+    request.header(AUTHORIZATION, header.to_string());
 
     AuthFuture {
         con_token: Some(con_token),
-        loader: make_raw_future(handle, request),
+        loader: make_raw_future(request.body(Body::empty()).unwrap()),
     }
 }
 
@@ -864,16 +814,16 @@ impl Future for AuthFuture {
 /// For more information, see the Twitter documentation on [Application-only authentication][auth].
 ///
 /// [auth]: https://dev.twitter.com/oauth/application-only
-pub fn bearer_token(con_token: &KeyPair, handle: &Handle)
+pub fn bearer_token(con_token: &KeyPair)
     -> TwitterFuture<Token>
 {
-    let content: Mime = "application/x-www-form-urlencoded;charset=UTF-8".parse().unwrap();
+    let content = "application/x-www-form-urlencoded;charset=UTF-8";
 
     let auth_header = bearer_request(con_token);
-    let mut request = Request::new(Method::Post, links::auth::BEARER_TOKEN.parse().unwrap());
-    request.headers_mut().set(Authorization(auth_header));
-    request.headers_mut().set(ContentType(content));
-    request.set_body("grant_type=client_credentials");
+    let mut request = Request::post(links::auth::BEARER_TOKEN);
+    request.header(AUTHORIZATION, auth_header);
+    request.header(CONTENT_TYPE, content);
+    let request = request.body(Body::from("grant_type=client_credentials")).unwrap();
 
     fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
         let decoded: serde_json::Value = try!(serde_json::from_str(&full_resp));
@@ -884,7 +834,7 @@ pub fn bearer_token(con_token: &KeyPair, handle: &Handle)
         Ok(Token::Bearer(result.to_owned()))
     }
 
-    make_future(handle, request, parse_tok)
+    make_future(request, parse_tok)
 }
 
 /// Invalidate the given Bearer token using the given consumer KeyPair. Upon success, the future
@@ -893,7 +843,7 @@ pub fn bearer_token(con_token: &KeyPair, handle: &Handle)
 /// # Panics
 ///
 /// If this function is handed a `Token` that is not a Bearer token, this function will panic.
-pub fn invalidate_bearer(handle: &Handle, con_token: &KeyPair, token: &Token)
+pub fn invalidate_bearer(con_token: &KeyPair, token: &Token)
     -> TwitterFuture<Token>
 {
     let token = if let Token::Bearer(ref token) = *token {
@@ -902,13 +852,14 @@ pub fn invalidate_bearer(handle: &Handle, con_token: &KeyPair, token: &Token)
         panic!("non-bearer token passed to invalidate_bearer");
     };
 
-    let content: Mime = "application/x-www-form-urlencoded;charset=UTF-8".parse().unwrap();
+    let content = "application/x-www-form-urlencoded;charset=UTF-8";
 
     let auth_header = bearer_request(con_token);
-    let mut request = Request::new(Method::Post, links::auth::INVALIDATE_BEARER.parse().unwrap());
-    request.headers_mut().set(Authorization(auth_header));
-    request.headers_mut().set(ContentType(content));
-    request.set_body(format!("access_token={}", token));
+    let mut request = Request::post(links::auth::INVALIDATE_BEARER);
+    request.header(AUTHORIZATION, auth_header);
+    request.header(CONTENT_TYPE, content);
+    let body = Body::from(format!("access_token={}", token));
+    let request = request.body(body).unwrap();
 
     fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
         let decoded: serde_json::Value = try!(serde_json::from_str(&full_resp));
@@ -919,7 +870,7 @@ pub fn invalidate_bearer(handle: &Handle, con_token: &KeyPair, token: &Token)
         Ok(Token::Bearer(result.to_owned()))
     }
 
-    make_future(handle, request, parse_tok)
+    make_future(request, parse_tok)
 }
 
 /// If the given tokens are valid, return the user information for the authenticated user.
@@ -927,18 +878,17 @@ pub fn invalidate_bearer(handle: &Handle, con_token: &KeyPair, token: &Token)
 /// If you have cached access tokens, using this method is a convenient way to make sure they're
 /// still valid. If the user has revoked access from your app, this function will return an error
 /// from Twitter indicating that you don't have access to the user.
-pub fn verify_tokens(token: &Token, handle: &Handle)
+pub fn verify_tokens(token: &Token)
     -> FutureResponse<::user::TwitterUser>
 {
     let req = get(links::auth::VERIFY_CREDENTIALS, token, None);
 
-    make_parsed_future(handle, req)
+    make_parsed_future(req)
 }
 
 #[cfg(test)]
 mod tests {
     use super::bearer_request;
-    use hyper::header::Authorization;
 
     #[test]
     fn bearer_header() {
@@ -946,9 +896,7 @@ mod tests {
         let con_secret = "L8qq9PZyRg6ieKGEKhZolGC0vJWLw8iEJ88DRdyOg";
         let con_token = super::KeyPair::new(con_key, con_secret);
 
-        let header = Authorization(bearer_request(&con_token));
-
-        let output = header.to_string();
+        let output = bearer_request(&con_token);
 
         assert_eq!(output, "Basic eHZ6MWV2RlM0d0VFUFRHRUZQSEJvZzpMOHFxOVBaeVJnNmllS0dFS2hab2xHQzB2SldMdzhpRUo4OERSZHlPZw==");
     }

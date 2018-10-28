@@ -15,11 +15,11 @@ travis-ci = { repository = "QuietMisdreavus/twitter-rs" }
 appveyor = { repository = "QuietMisdreavus/twitter-rs" }
 
 [dependencies]
-hyper = "0.11.2"
-hyper-tls = "0.1.2"
-native-tls = "0.1.4"
+hyper = "0.12.13"
+hyper-tls = "0.3.1"
+native-tls = "0.2.2"
 futures = "0.1.14"
-tokio-core = "0.1.6"
+tokio = "0.1.11"
 url = "1.5.1"
 rand = "0.3.16"
 hmac = "0.4.2"

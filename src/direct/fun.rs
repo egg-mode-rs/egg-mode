@@ -12,7 +12,7 @@ use user::UserID;
 use super::*;
 
 ///Lookup a single DM by its numeric ID.
-pub fn show(id: u64, token: &auth::Token, handle: &Handle)
+pub fn show(id: u64, token: &auth::Token)
     -> FutureResponse<DirectMessage>
 {
     let mut params = HashMap::new();
@@ -20,17 +20,17 @@ pub fn show(id: u64, token: &auth::Token, handle: &Handle)
 
     let req = auth::get(links::direct::SHOW, token, Some(&params));
 
-    make_parsed_future(handle, req)
+    make_parsed_future(req)
 }
 
 ///Create a `Timeline` struct to navigate the direct messages received by the authenticated user.
-pub fn received(token: &auth::Token, handle: &Handle) -> Timeline {
-    Timeline::new(links::direct::RECEIVED, None, token, handle)
+pub fn received(token: &auth::Token) -> Timeline {
+    Timeline::new(links::direct::RECEIVED, None, token)
 }
 
 ///Create a `Timeline` struct to navigate the direct messages sent by the authenticated user.
-pub fn sent(token: &auth::Token, handle: &Handle) -> Timeline {
-    Timeline::new(links::direct::SENT, None, token, handle)
+pub fn sent(token: &auth::Token) -> Timeline {
+    Timeline::new(links::direct::SENT, None, token)
 }
 
 ///Send a new direct message to the given user.
@@ -42,7 +42,7 @@ pub fn sent(token: &auth::Token, handle: &Handle) -> Timeline {
 ///DM beforehand.
 ///
 ///Upon successfully sending the DM, the message will be returned.
-pub fn send<'id, T: Into<UserID<'id>>>(to: T, text: &str, token: &auth::Token, handle: &Handle)
+pub fn send<'id, T: Into<UserID<'id>>>(to: T, text: &str, token: &auth::Token)
     -> FutureResponse<DirectMessage>
 {
     let mut params = HashMap::new();
@@ -52,7 +52,7 @@ pub fn send<'id, T: Into<UserID<'id>>>(to: T, text: &str, token: &auth::Token, h
 
     let req = auth::post(links::direct::SEND, token, Some(&params));
 
-    make_parsed_future(handle, req)
+    make_parsed_future(req)
 }
 
 ///Delete the direct message with the given ID.
@@ -61,7 +61,7 @@ pub fn send<'id, T: Into<UserID<'id>>>(to: T, text: &str, token: &auth::Token, h
 ///
 ///On a successful deletion, the future returned by this function yields the freshly-deleted
 ///message.
-pub fn delete(id: u64, token: &auth::Token, handle: &Handle)
+pub fn delete(id: u64, token: &auth::Token)
     -> FutureResponse<DirectMessage>
 {
     let mut params = HashMap::new();
@@ -69,7 +69,7 @@ pub fn delete(id: u64, token: &auth::Token, handle: &Handle)
 
     let req = auth::post(links::direct::DELETE, token, Some(&params));
 
-    make_parsed_future(handle, req)
+    make_parsed_future(req)
 }
 
 ///Create a `ConversationTimeline` loader that can load direct messages as a collection of
@@ -79,6 +79,6 @@ pub fn delete(id: u64, token: &auth::Token, handle: &Handle)
 ///[`ConversationTimeline`] for details.
 ///
 ///[`ConversationTimeline`]: struct.ConversationTimeline.html
-pub fn conversations(token: &auth::Token, handle: &Handle) -> ConversationTimeline {
-    ConversationTimeline::new(token, handle)
+pub fn conversations(token: &auth::Token) -> ConversationTimeline {
+    ConversationTimeline::new(token)
 }

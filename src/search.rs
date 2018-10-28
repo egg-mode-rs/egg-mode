@@ -10,15 +10,16 @@
 //! page of results, hand your tokens to `call`.
 //!
 //! ```rust,no_run
-//! # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-//! # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+//! # extern crate egg_mode; extern crate tokio; extern crate futures;
+//! # use egg_mode::Token;
+//! use tokio::runtime::current_thread::block_on_all;
 //! # fn main() {
-//! # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+//! # let token: Token = unimplemented!();
 //! use egg_mode::search::{self, ResultType};
 //!
-//! let search = core.run(search::search("rustlang")
-//!                              .result_type(ResultType::Recent)
-//!                              .call(&token, &handle))
+//! let search = block_on_all(search::search("rustlang")
+//!                                  .result_type(ResultType::Recent)
+//!                                  .call(&token))
 //!                  .unwrap();
 //!
 //! for tweet in &search.statuses {
@@ -184,7 +185,7 @@ impl<'a> SearchBuilder<'a> {
     }
 
     ///Finalize the search terms and return the first page of responses.
-    pub fn call(self, token: &auth::Token, handle: &Handle) -> SearchFuture<'a> {
+    pub fn call(self, token: &auth::Token) -> SearchFuture<'a> {
         let mut params = HashMap::new();
 
         add_param(&mut params, "q", self.query);
@@ -223,7 +224,7 @@ impl<'a> SearchBuilder<'a> {
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
         SearchFuture {
-            loader: make_parsed_future(handle, req),
+            loader: make_parsed_future(req),
             params: Some(params),
         }
     }
@@ -303,7 +304,7 @@ pub struct SearchResult<'a> {
 
 impl<'a> SearchResult<'a> {
     ///Load the next page of search results for the same query.
-    pub fn older(&self, token: &auth::Token, handle: &Handle) -> SearchFuture<'a> {
+    pub fn older(&self, token: &auth::Token) -> SearchFuture<'a> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("since_id");
 
@@ -316,13 +317,13 @@ impl<'a> SearchResult<'a> {
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
         SearchFuture {
-            loader: make_parsed_future(handle, req),
+            loader: make_parsed_future(req),
             params: Some(params),
         }
     }
 
     ///Load the previous page of search results for the same query.
-    pub fn newer(&self, token: &auth::Token, handle: &Handle) -> SearchFuture<'a> {
+    pub fn newer(&self, token: &auth::Token) -> SearchFuture<'a> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("max_id");
 
@@ -335,7 +336,7 @@ impl<'a> SearchResult<'a> {
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
         SearchFuture {
-            loader: make_parsed_future(handle, req),
+            loader: make_parsed_future(req),
             params: Some(params),
         }
     }

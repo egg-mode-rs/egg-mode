@@ -413,13 +413,14 @@ pub struct UserEntityDetail {
 /// [`search`]: fn.search.html
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// use futures::Stream;
 ///
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// core.run(egg_mode::user::search("rustlang", &token, &handle).take(10).for_each(|resp| {
+/// # let token: Token = unimplemented!();
+/// block_on_all(egg_mode::user::search("rustlang", &token).take(10).for_each(|resp| {
 ///     println!("{}", resp.screen_name);
 ///     Ok(())
 /// })).unwrap();
@@ -430,10 +431,11 @@ pub struct UserEntityDetail {
 /// entire search setup:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// # let token: Token = unimplemented!();
 /// use futures::Stream;
 /// use egg_mode::Response;
 /// use egg_mode::user::TwitterUser;
@@ -442,7 +444,7 @@ pub struct UserEntityDetail {
 /// // Because Streams don't have a FromIterator adaptor, we load all the responses first, then
 /// // collect them into the final Vec
 /// let names: Result<Response<Vec<TwitterUser>>, Error> =
-///     core.run(egg_mode::user::search("rustlang", &token, &handle).take(10).collect())
+///     block_on_all(egg_mode::user::search("rustlang", &token).take(10).collect())
 ///         .map(|resp| resp.into_iter().collect());
 /// # }
 /// ```
@@ -470,19 +472,20 @@ pub struct UserEntityDetail {
 /// forward and backward as needed:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # extern crate egg_mode; extern crate tokio;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// let mut search = egg_mode::user::search("rustlang", &token, &handle).with_page_size(20);
-/// let resp = core.run(search.call()).unwrap();
+/// # let token: Token = unimplemented!();
+/// let mut search = egg_mode::user::search("rustlang", &token).with_page_size(20);
+/// let resp = block_on_all(search.call()).unwrap();
 ///
 /// for user in resp.response {
 ///    println!("{} (@{})", user.name, user.screen_name);
 /// }
 ///
 /// search.page_num += 1;
-/// let resp = core.run(search.call()).unwrap();
+/// let resp = block_on_all(search.call()).unwrap();
 ///
 /// for user in resp.response {
 ///    println!("{} (@{})", user.name, user.screen_name);
@@ -492,7 +495,6 @@ pub struct UserEntityDetail {
 #[must_use = "search iterators are lazy and do nothing unless consumed"]
 pub struct UserSearch<'a> {
     token: auth::Token,
-    handle: Handle,
     query: Cow<'a, str>,
     /// The current page of results being returned, starting at 1.
     pub page_num: i32,
@@ -542,16 +544,15 @@ impl<'a> UserSearch<'a> {
 
         let req = auth::get(links::users::SEARCH, &self.token, Some(&params));
 
-        make_parsed_future(&self.handle, req)
+        make_parsed_future(req)
     }
 
     /// Returns a new UserSearch with the given query and tokens, with the default page size of 10.
-    fn new<S: Into<Cow<'a, str>>>(query: S, token: &auth::Token, handle: &Handle)
+    fn new<S: Into<Cow<'a, str>>>(query: S, token: &auth::Token)
         -> UserSearch<'a>
     {
         UserSearch {
             token: token.clone(),
-            handle: handle.clone(),
             query: query.into(),
             page_num: 1,
             page_size: 10,

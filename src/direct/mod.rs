@@ -48,7 +48,7 @@ use std::collections::HashMap;
 use std::mem;
 
 use chrono;
-use hyper::client::Request;
+use hyper::{Request, Body};
 use futures::{Async, Future, Poll};
 use futures::future::Join;
 use serde::{Deserialize, Deserializer};
@@ -166,14 +166,15 @@ pub struct DMEntities {
 /// `start` to load the first page of results:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// let mut timeline = egg_mode::direct::received(&token, &handle)
+/// # let token: Token = unimplemented!();
+/// let mut timeline = egg_mode::direct::received(&token)
 ///                                     .with_page_size(10);
 ///
-/// for dm in &core.run(timeline.start()).unwrap() {
+/// for dm in &block_on_all(timeline.start()).unwrap() {
 ///     println!("<@{}> {}", dm.sender_screen_name, dm.text);
 /// }
 /// # }
@@ -183,13 +184,14 @@ pub struct DMEntities {
 /// IDs it tracks:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// # let mut timeline = egg_mode::direct::received(&token, &handle);
-/// # core.run(timeline.start()).unwrap();
-/// for dm in &core.run(timeline.older(None)).unwrap() {
+/// # let token: Token = unimplemented!();
+/// # let mut timeline = egg_mode::direct::received(&token);
+/// # block_on_all(timeline.start()).unwrap();
+/// for dm in &block_on_all(timeline.older(None)).unwrap() {
 ///     println!("<@{}> {}", dm.sender_screen_name, dm.text);
 /// }
 /// # }
@@ -203,25 +205,26 @@ pub struct DMEntities {
 /// load only those messages you need like this:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// let mut timeline = egg_mode::direct::received(&token, &handle)
+/// # let token: Token = unimplemented!();
+/// let mut timeline = egg_mode::direct::received(&token)
 ///                                     .with_page_size(10);
 ///
-/// core.run(timeline.start()).unwrap();
+/// block_on_all(timeline.start()).unwrap();
 ///
 /// //keep the max_id for later
 /// let reload_id = timeline.max_id.unwrap();
 ///
 /// //simulate scrolling down a little bit
-/// core.run(timeline.older(None)).unwrap();
-/// core.run(timeline.older(None)).unwrap();
+/// block_on_all(timeline.older(None)).unwrap();
+/// block_on_all(timeline.older(None)).unwrap();
 ///
 /// //reload the timeline with only what's new
 /// timeline.reset();
-/// core.run(timeline.older(Some(reload_id))).unwrap();
+/// block_on_all(timeline.older(Some(reload_id))).unwrap();
 /// # }
 /// ```
 ///
@@ -241,8 +244,6 @@ pub struct Timeline {
     link: &'static str,
     ///The token used to authenticate requests with.
     token: auth::Token,
-    ///A Handle that represents the event loop to run requests on.
-    handle: Handle,
     ///Optional set of params to include prior to adding timeline navigation parameters.
     params_base: Option<ParamList<'static>>,
     ///The maximum number of messages to return in a single call. Twitter doesn't guarantee
@@ -273,7 +274,7 @@ impl Timeline {
     ///bound with.
     pub fn older<'s>(&'s mut self, since_id: Option<u64>) -> TimelineFuture<'s> {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
-        let loader = make_parsed_future(&self.handle, req);
+        let loader = make_parsed_future(req);
 
         TimelineFuture {
             timeline: self,
@@ -285,7 +286,7 @@ impl Timeline {
     ///bound with.
     pub fn newer<'s>(&'s mut self, max_id: Option<u64>) -> TimelineFuture<'s> {
         let req = self.request(self.max_id, max_id);
-        let loader = make_parsed_future(&self.handle, req);
+        let loader = make_parsed_future(req);
 
         TimelineFuture {
             timeline: self,
@@ -303,7 +304,7 @@ impl Timeline {
     pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>)
         -> FutureResponse<Vec<DirectMessage>>
     {
-        make_parsed_future(&self.handle, self.request(since_id, max_id))
+        make_parsed_future(self.request(since_id, max_id))
     }
 
     ///Helper builder function to set the page size.
@@ -315,7 +316,7 @@ impl Timeline {
     }
 
     ///Helper function to construct a `Request` from the current state.
-    fn request(&self, since_id: Option<u64>, max_id: Option<u64>) -> Request {
+    fn request(&self, since_id: Option<u64>, max_id: Option<u64>) -> Request<Body> {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
         add_param(&mut params, "count", self.count.to_string());
 
@@ -339,14 +340,12 @@ impl Timeline {
     ///Create an instance of `Timeline` with the given link and tokens.
     fn new(link: &'static str,
            params_base: Option<ParamList<'static>>,
-           token: &auth::Token,
-           handle: &Handle)
+           token: &auth::Token)
         -> Self
     {
         Timeline {
             link: link,
             token: token.clone(),
-            handle: handle.clone(),
             params_base: params_base,
             count: 20,
             max_id: None,
@@ -448,18 +447,19 @@ fn merge(this: &mut DMConversations, conversations: DMConversations) {
 /// # Example
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # extern crate egg_mode; extern crate tokio; extern crate futures;
+/// # use egg_mode::Token;
+/// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// let mut conversations = egg_mode::direct::conversations(&token, &handle);
+/// # let token: Token = unimplemented!();
+/// let mut conversations = egg_mode::direct::conversations(&token);
 ///
 /// // newest() and oldest() consume the Timeline and give it back on success, so assign it back
 /// // when it's done
-/// conversations = core.run(conversations.newest()).unwrap();
+/// conversations = block_on_all(conversations.newest()).unwrap();
 ///
 /// for (id, convo) in &conversations.conversations {
-///     let user = core.run(egg_mode::user::show(id, &token, &handle)).unwrap();
+///     let user = block_on_all(egg_mode::user::show(id, &token)).unwrap();
 ///     println!("Conversation with @{}", user.screen_name);
 ///     for msg in convo {
 ///         println!("<@{}> {}", msg.sender_screen_name, msg.text);
@@ -485,10 +485,10 @@ pub struct ConversationTimeline {
 }
 
 impl ConversationTimeline {
-    fn new(token: &auth::Token, handle: &Handle) -> ConversationTimeline {
+    fn new(token: &auth::Token) -> ConversationTimeline {
         ConversationTimeline {
-            sent: sent(token, handle),
-            received: received(token, handle),
+            sent: sent(token),
+            received: received(token),
             last_sent: None,
             last_received: None,
             first_sent: None,

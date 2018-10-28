@@ -20,6 +20,7 @@ use hyper;
 use native_tls;
 use chrono;
 use serde_json;
+use tokio;
 
 ///Represents a collection of errors returned from a Twitter API call.
 ///
@@ -126,6 +127,21 @@ pub enum Error {
     ///An error occurred when parsing a timestamp from Twitter. The enclosed error was returned
     ///from chrono.
     TimestampParseError(chrono::ParseError),
+    ///The tokio `Timer` instance was shut down while waiting on a timer, for example while waiting
+    ///for media to be processed by Twitter. The enclosed error was returned from `tokio`.
+    TimerShutdownError(tokio::timer::Error),
+    ///An error occurred when reading the value from a response header. The enclused error was
+    ///returned from hyper.
+    ///
+    ///This error should be considerably rare, but is included to ensure that egg-mode doesn't
+    ///panic if it receives malformed headers or the like.
+    HeaderParseError(hyper::header::ToStrError),
+    ///An error occurred when converting a rate-limit header to an integer. The enclosed error was
+    ///returned from the standard library.
+    ///
+    ///This error should be considerably rare, but is included to ensure that egg-mode doesn't
+    ///panic if it receives malformed headers or the like.
+    HeaderConvertError(std::num::ParseIntError),
 }
 
 impl std::fmt::Display for Error {
@@ -144,6 +160,9 @@ impl std::fmt::Display for Error {
             Error::IOError(ref err) => write!(f, "IO error: {}", err),
             Error::DeserializeError(ref err) => write!(f, "JSON deserialize error: {}", err),
             Error::TimestampParseError(ref err) => write!(f, "Error parsing timestamp: {}", err),
+            Error::TimerShutdownError(ref err) => write!(f, "Timer runtime shutdown: {}", err),
+            Error::HeaderParseError(ref err) => write!(f, "Error decoding header: {}", err),
+            Error::HeaderConvertError(ref err) => write!(f, "Error converting header: {}", err),
         }
     }
 }
@@ -164,6 +183,9 @@ impl std::error::Error for Error {
             Error::IOError(ref err) => err.description(),
             Error::DeserializeError(ref err) => err.description(),
             Error::TimestampParseError(ref err) => err.description(),
+            Error::TimerShutdownError(ref err) => err.description(),
+            Error::HeaderParseError(ref err) => err.description(),
+            Error::HeaderConvertError(ref err) => err.description(),
         }
     }
 
@@ -174,6 +196,9 @@ impl std::error::Error for Error {
             Error::IOError(ref err) => Some(err),
             Error::TimestampParseError(ref err) => Some(err),
             Error::DeserializeError(ref err) => Some(err),
+            Error::TimerShutdownError(ref err) => Some(err),
+            Error::HeaderParseError(ref err) => Some(err),
+            Error::HeaderConvertError(ref err) => Some(err),
             _ => None,
         }
     }
@@ -206,5 +231,23 @@ impl From<serde_json::Error> for Error {
 impl From<chrono::ParseError> for Error {
     fn from(err: chrono::ParseError) -> Error {
         Error::TimestampParseError(err)
+    }
+}
+
+impl From<tokio::timer::Error> for Error {
+    fn from(err: tokio::timer::Error) -> Error {
+        Error::TimerShutdownError(err)
+    }
+}
+
+impl From<hyper::header::ToStrError> for Error {
+    fn from(err: hyper::header::ToStrError) -> Error {
+        Error::HeaderParseError(err)
+    }
+}
+
+impl From<std::num::ParseIntError> for Error {
+    fn from(err: std::num::ParseIntError) -> Error {
+        Error::HeaderConvertError(err)
     }
 }

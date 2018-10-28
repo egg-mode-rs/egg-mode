@@ -10,8 +10,8 @@ use std::collections::HashMap;
 
 use chrono;
 use futures::{Future, Stream, Poll, Async};
-use hyper::Body;
-use hyper::client::{Request, FutureResponse};
+use hyper::{Request, Body};
+use hyper::client::ResponseFuture;
 use serde::{Deserialize, Deserializer};
 use serde::de::Error;
 use serde_json;
@@ -319,17 +319,15 @@ impl FromStr for StreamMessage {
 #[must_use = "Streams are lazy and do nothing unless polled"]
 pub struct TwitterStream {
     buf: Vec<u8>,
-    handle: Handle,
-    request: Option<Request>,
-    response: Option<FutureResponse>,
+    request: Option<Request<Body>>,
+    response: Option<ResponseFuture>,
     body: Option<Body>,
 }
 
 impl TwitterStream {
-    fn new(handle: &Handle, request: Request) -> TwitterStream {
+    fn new(request: Request<Body>) -> TwitterStream {
         TwitterStream {
             buf: vec![],
-            handle: handle.clone(),
             request: Some(request),
             response: None,
             body: None,
@@ -343,7 +341,7 @@ impl Stream for TwitterStream {
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         if let Some(req) = self.request.take() {
-            self.response = Some(try!(get_response(&self.handle, req)));
+            self.response = Some(try!(get_response(req)));
         }
 
         if let Some(mut resp) = self.response.take() {
@@ -360,7 +358,7 @@ impl Stream for TwitterStream {
                         return Err(error::Error::BadStatus(status));
                     }
 
-                    self.body = Some(resp.body());
+                    self.body = Some(resp.into_body());
                 },
             }
         }
@@ -494,7 +492,7 @@ impl StreamBuilder {
     }
 
     /// Finalizes the stream parameters and returns the resulting `TwitterStream`.
-    pub fn start(self, handle: &Handle, token: &Token) -> TwitterStream {
+    pub fn start(self, token: &Token) -> TwitterStream {
         let mut params = HashMap::new();
 
         if let Some(with_follows) = self.with_follows {
@@ -519,7 +517,7 @@ impl StreamBuilder {
             auth::post(self.url, token, Some(&params))
         };
 
-        TwitterStream::new(handle, req)
+        TwitterStream::new(req)
     }
 }
 
@@ -542,10 +540,10 @@ pub fn filter() -> StreamBuilder {
 ///
 /// [`StreamBuilder`]: struct.StreamBuilder.html
 /// [`filter`]: fn.filter.html
-pub fn sample(handle: &Handle, token: &Token) -> TwitterStream {
+pub fn sample(token: &Token) -> TwitterStream {
     let req = auth::get(links::stream::SAMPLE, token, None);
 
-    TwitterStream::new(handle, req)
+    TwitterStream::new(req)
 }
 
 #[cfg(test)]
