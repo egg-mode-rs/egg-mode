@@ -1,6 +1,16 @@
 # Changelog for egg-mode
 
 ## Pending
+### Changed
+- Replaced `rustc-serialize` with `serde`, and now all the API types implement `Deserialize` based
+  on the JSON responses from Twitter.
+  - Thanks to @adwhit for the implementation!
+- Upgraded `native-tls` to 0.2, which should link against newer OpenSSL on Linux.
+- Upgraded `hyper` to 0.12, and switched from `tokio-core` to `tokio`.
+  - **Monumentally breaking change**: No more `Handle`s! Now all the network calls happen on the
+    `tokio` runtime via `hyper`'s use of it.
+
+## Also pending, but likely to be scrapped before release because user streams were removed
 ### Added
 - `stream` module and its contents, for accessing the streaming API
   - `filter`, `sample`, and `user`, entry points to access streams
