@@ -17,7 +17,6 @@ fn main() {
     let mut core = reactor::Core::new().unwrap();
 
     let config = common::Config::load(&mut core);
-    let handle = core.handle();
 
     println!("");
     println!("Heterogeneous multi-user lookup:");
@@ -26,27 +25,27 @@ fn main() {
     users.push(config.user_id.into());
     users.push("SwiftOnSecurity".into());
 
-    for user in core.run(user::lookup(&users, &config.token, &handle)).unwrap().response.iter() {
+    for user in core.run(user::lookup(&users, &config.token)).unwrap().response.iter() {
         print_user(user)
     }
 
     println!("");
     println!("Searching based on a term: (here, it's 'rustlang')");
-    core.run(user::search("rustlang", &config.token, &handle).with_page_size(5).take(5).for_each(|resp| {
+    core.run(user::search("rustlang", &config.token).with_page_size(5).take(5).for_each(|resp| {
         print_user(&resp);
         Ok(())
     })).unwrap();
 
     println!("");
     println!("Who do you follow?");
-    core.run(user::friends_of(config.user_id, &config.token, &handle).with_page_size(5).take(5).for_each(|resp| {
+    core.run(user::friends_of(config.user_id, &config.token).with_page_size(5).take(5).for_each(|resp| {
         print_user(&resp);
         Ok(())
     })).unwrap();
 
     println!("");
     println!("Who follows you?");
-    core.run(user::followers_of(config.user_id, &config.token, &handle).with_page_size(5).take(5).for_each(|resp| {
+    core.run(user::followers_of(config.user_id, &config.token).with_page_size(5).take(5).for_each(|resp| {
         print_user(&resp);
         Ok(())
     })).unwrap();

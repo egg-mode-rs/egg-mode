@@ -14,13 +14,12 @@ fn main() {
     let mut core = reactor::Core::new().unwrap();
 
     let config = common::Config::load(&mut core);
-    let handle = core.handle();
 
     //rust tweets around dallas
     let search = core.run(search::search("rustlang")
                                  .result_type(ResultType::Recent)
                                  .count(10)
-                                 .call(&config.token, &handle)).unwrap();
+                                 .call(&config.token)).unwrap();
 
     for tweet in &search.statuses {
         common::print_tweet(tweet);

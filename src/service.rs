@@ -34,7 +34,7 @@ use common::*;
 ///
 ///While the official home of Twitter's TOS is <https://twitter.com/tos>, this allows you to obtain a
 ///plain-text copy of it to display in your application.
-pub fn terms(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
+pub fn terms(token: &auth::Token) -> FutureResponse<String> {
     let req = auth::get(links::service::TERMS, token, None);
 
     fn parse_terms(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
@@ -48,14 +48,14 @@ pub fn terms(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
         Ok(Response::map(ret, |_| tos))
     }
 
-    make_future(handle, req, parse_terms)
+    make_future(req, parse_terms)
 }
 
 ///Returns a future that resolves to the current Twitter Privacy Policy as plain text.
 ///
 ///While the official home of Twitter's Privacy Policy is <https://twitter.com/privacy>, this allows
 ///you to obtain a plain-text copy of it to display in your application.
-pub fn privacy(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
+pub fn privacy(token: &auth::Token) -> FutureResponse<String> {
     let req = auth::get(links::service::PRIVACY, token, None);
 
     fn parse_policy(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
@@ -69,7 +69,7 @@ pub fn privacy(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
         Ok(Response::map(ret, |_| privacy))
     }
 
-    make_future(handle, req, parse_policy)
+    make_future(req, parse_policy)
 }
 
 ///Returns a future that resolves to the current configuration from Twitter, including the maximum
@@ -82,10 +82,10 @@ pub fn privacy(token: &auth::Token, handle: &Handle) -> FutureResponse<String> {
 ///fields returned by this function mean.
 ///
 ///[`Configuration`]: struct.Configuration.html
-pub fn config(token: &auth::Token, handle: &Handle) -> FutureResponse<Configuration> {
+pub fn config(token: &auth::Token) -> FutureResponse<Configuration> {
     let req = auth::get(links::service::CONFIG, token, None);
 
-    make_parsed_future(handle, req)
+    make_parsed_future(req)
 }
 
 ///Return the current rate-limit status for all available methods from the authenticated user.
@@ -95,24 +95,24 @@ pub fn config(token: &auth::Token, handle: &Handle) -> FutureResponse<Configurat
 ///documentation for [`RateLimitStatus`][] and its associated enums for more information.
 ///
 ///[`RateLimitStatus`]: struct.RateLimitStatus.html
-pub fn rate_limit_status(token: &auth::Token, handle: &Handle)
+pub fn rate_limit_status(token: &auth::Token)
     -> FutureResponse<RateLimitStatus>
 {
     let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
 
-    make_parsed_future(handle, req)
+    make_parsed_future(req)
 }
 
 ///Like `rate_limit_status`, but returns the raw JSON without processing it. Only intended to
 ///return the full structure so that new methods can be added to `RateLimitStatus` and its
 ///associated enums.
 #[doc(hidden)]
-pub fn rate_limit_status_raw(token: &auth::Token, handle: &Handle)
+pub fn rate_limit_status_raw(token: &auth::Token)
     -> FutureResponse<serde_json::Value>
 {
     let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
 
-    make_parsed_future(handle, req)
+    make_parsed_future(req)
 }
 
 ///Represents a service configuration from Twitter.
@@ -163,10 +163,10 @@ pub struct Configuration {
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// # let status = core.run(egg_mode::service::rate_limit_status(&token, &handle)).unwrap();
+/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let status = core.run(egg_mode::service::rate_limit_status(&token)).unwrap();
 /// use egg_mode::service::TweetMethod;
 /// println!("home_timeline calls remaining: {}",
 ///          status.tweet[&TweetMethod::HomeTimeline].rate_limit_remaining);

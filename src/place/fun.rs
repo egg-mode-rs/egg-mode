@@ -21,20 +21,20 @@ use super::PlaceQuery;
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// let result = core.run(egg_mode::place::show("18810aa5b43e76c7", &token, &handle)).unwrap();
+/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// let result = core.run(egg_mode::place::show("18810aa5b43e76c7", &token)).unwrap();
 ///
 /// assert!(result.full_name == "Dallas, TX");
 /// # }
 /// ```
-pub fn show(id: &str, token: &auth::Token, handle: &Handle) -> FutureResponse<Place> {
+pub fn show(id: &str, token: &auth::Token) -> FutureResponse<Place> {
     let url = format!("{}/{}.json", links::place::SHOW_STEM, id);
 
     let req = auth::get(&url, token, None);
 
-    make_parsed_future(handle, req)
+    make_parsed_future(req)
 }
 
 /// Begins building a reverse-geocode search with the given coordinate.
@@ -43,13 +43,13 @@ pub fn show(id: &str, token: &auth::Token, handle: &Handle) -> FutureResponse<Pl
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// # let (token, mut core): (Token, Core) = unimplemented!();
 /// use egg_mode::place::{self, PlaceType};
 /// let result = core.run(place::reverse_geocode(51.507222, -0.1275)
 ///                             .granularity(PlaceType::City)
-///                             .call(&token, &handle))
+///                             .call(&token))
 ///                  .unwrap();
 ///
 /// assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
@@ -95,11 +95,11 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `reverse_geocode` query URL.
-pub fn reverse_geocode_url<'a>(url: &'a str, token: &auth::Token, handle: &Handle)
+pub fn reverse_geocode_url<'a>(url: &'a str, token: &auth::Token)
     -> CachedSearchFuture<'a>
 {
     let params = parse_url(links::place::REVERSE_GEOCODE, url);
-    CachedSearchFuture::new(links::place::REVERSE_GEOCODE, token, handle, params)
+    CachedSearchFuture::new(links::place::REVERSE_GEOCODE, token, params)
 }
 
 /// Begins building a location search via latitude/longitude.
@@ -108,13 +108,13 @@ pub fn reverse_geocode_url<'a>(url: &'a str, token: &auth::Token, handle: &Handl
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// # let (token, mut core): (Token, Core) = unimplemented!();
 /// use egg_mode::place::{self, PlaceType};
 /// let result = core.run(place::search_point(51.507222, -0.1275)
 ///                             .granularity(PlaceType::City)
-///                             .call(&token, &handle))
+///                             .call(&token))
 ///                  .unwrap();
 ///
 /// assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
@@ -130,13 +130,13 @@ pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder<'static> {
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// # let (token, mut core): (Token, Core) = unimplemented!();
 /// use egg_mode::place::{self, PlaceType};
 /// let result = core.run(place::search_query("columbia")
 ///                             .granularity(PlaceType::Admin)
-///                             .call(&token, &handle))
+///                             .call(&token))
 ///                  .unwrap();
 ///
 /// assert!(result.results.iter().any(|pl| pl.full_name == "British Columbia, Canada"));
@@ -157,11 +157,11 @@ pub fn search_ip<'a>(query: &'a str) -> SearchBuilder<'a> {
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `search` query URL.
-pub fn search_url<'a>(url: &'a str, token: &auth::Token, handle: &Handle)
+pub fn search_url<'a>(url: &'a str, token: &auth::Token)
     -> CachedSearchFuture<'a>
 {
     let params = parse_url(links::place::SEARCH, url);
-    CachedSearchFuture::new(links::place::SEARCH, token, handle, params)
+    CachedSearchFuture::new(links::place::SEARCH, token, params)
 }
 
 /// A `TwitterFuture` that needs to parse a provided URL before making a request.
@@ -177,14 +177,12 @@ pub struct CachedSearchFuture<'a> {
     stem: &'static str,
     params: Option<Result<ParamList<'a>, error::Error>>,
     token: auth::Token,
-    handle: Handle,
     future: Option<FutureResponse<SearchResult>>,
 }
 
 impl<'a> CachedSearchFuture<'a> {
     fn new(stem: &'static str,
            token: &auth::Token,
-           handle: &Handle,
            params: Result<ParamList<'a>, error::Error>)
         -> CachedSearchFuture<'a>
     {
@@ -192,7 +190,6 @@ impl<'a> CachedSearchFuture<'a> {
             stem: stem,
             params: Some(params),
             token: token.clone(),
-            handle: handle.clone(),
             future: None,
         }
     }
@@ -207,7 +204,7 @@ impl<'a> Future for CachedSearchFuture<'a> {
             Some(Ok(params)) => {
                 let req = auth::get(self.stem, &self.token, Some(&params));
 
-                self.future = Some(make_parsed_future(&self.handle, req));
+                self.future = Some(make_parsed_future(req));
             }
             Some(Err(e)) => {
                 return Err(e);

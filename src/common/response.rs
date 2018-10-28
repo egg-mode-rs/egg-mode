@@ -12,7 +12,6 @@ use hyper::client::ResponseFuture;
 use hyper::{self, Body, StatusCode, Request};
 use hyper::header::CONTENT_LENGTH;
 use hyper_tls::HttpsConnector;
-use tokio_core::reactor::Handle;
 use futures::{Async, Future, Poll, Stream};
 use error::{self, TwitterErrors};
 use error::Error::*;
@@ -371,7 +370,6 @@ pub fn get_response(request: Request<Body>) -> Result<ResponseFuture, error::Err
 /// before returning the String.
 #[must_use = "futures do nothing unless polled"]
 pub struct RawFuture {
-    handle: Handle,
     request: Option<Request<Body>>,
     response: Option<ResponseFuture>,
     resp_headers: Option<Headers>,
@@ -465,9 +463,8 @@ impl Future for RawFuture {
 
 /// Creates a new `RawFuture` starting with the given `Request`, to be run on the Core represented
 /// by the given `Handle`.
-pub fn make_raw_future(handle: &Handle, request: Request<Body>) -> RawFuture {
+pub fn make_raw_future(request: Request<Body>) -> RawFuture {
     RawFuture {
-        handle: handle.clone(),
         request: Some(request),
         response: None,
         resp_headers: None,
@@ -524,22 +521,21 @@ pub fn make_response<T: for <'a> serde::Deserialize<'a>>(full_resp: String, head
     Ok(Response::map(try!(rate_headers(headers)), |_| out))
 }
 
-pub fn make_future<T>(handle: &Handle,
-                      request: Request<Body>,
+pub fn make_future<T>(request: Request<Body>,
                       make_resp: fn(String, &Headers) -> Result<T, error::Error>)
     -> TwitterFuture<T>
 {
     TwitterFuture {
-        request: make_raw_future(handle, request),
+        request: make_raw_future(request),
         make_resp: make_resp,
     }
 }
 
 /// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
-pub fn make_parsed_future<T: for <'de> serde::Deserialize<'de>>(handle: &Handle, request: Request<Body>)
+pub fn make_parsed_future<T: for <'de> serde::Deserialize<'de>>(request: Request<Body>)
     -> TwitterFuture<Response<T>>
 {
-    make_future(handle, request, make_response)
+    make_future(request, make_response)
 }
 
 pub fn rate_headers(resp: &Headers) -> Result<Response<()>, error::Error> {

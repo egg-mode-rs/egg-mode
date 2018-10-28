@@ -319,17 +319,15 @@ impl FromStr for StreamMessage {
 #[must_use = "Streams are lazy and do nothing unless polled"]
 pub struct TwitterStream {
     buf: Vec<u8>,
-    handle: Handle,
     request: Option<Request<Body>>,
     response: Option<ResponseFuture>,
     body: Option<Body>,
 }
 
 impl TwitterStream {
-    fn new(handle: &Handle, request: Request<Body>) -> TwitterStream {
+    fn new(request: Request<Body>) -> TwitterStream {
         TwitterStream {
             buf: vec![],
-            handle: handle.clone(),
             request: Some(request),
             response: None,
             body: None,
@@ -494,7 +492,7 @@ impl StreamBuilder {
     }
 
     /// Finalizes the stream parameters and returns the resulting `TwitterStream`.
-    pub fn start(self, handle: &Handle, token: &Token) -> TwitterStream {
+    pub fn start(self, token: &Token) -> TwitterStream {
         let mut params = HashMap::new();
 
         if let Some(with_follows) = self.with_follows {
@@ -519,7 +517,7 @@ impl StreamBuilder {
             auth::post(self.url, token, Some(&params))
         };
 
-        TwitterStream::new(handle, req)
+        TwitterStream::new(req)
     }
 }
 
@@ -542,10 +540,10 @@ pub fn filter() -> StreamBuilder {
 ///
 /// [`StreamBuilder`]: struct.StreamBuilder.html
 /// [`filter`]: fn.filter.html
-pub fn sample(handle: &Handle, token: &Token) -> TwitterStream {
+pub fn sample(token: &Token) -> TwitterStream {
     let req = auth::get(links::stream::SAMPLE, token, None);
 
-    TwitterStream::new(handle, req)
+    TwitterStream::new(req)
 }
 
 #[cfg(test)]

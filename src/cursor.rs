@@ -143,12 +143,12 @@ impl Cursor for ListCursor {
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// use futures::Stream;
 ///
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// core.run(egg_mode::user::followers_of("rustlang", &token, &handle).take(10).for_each(|resp| {
+/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// core.run(egg_mode::user::followers_of("rustlang", &token).take(10).for_each(|resp| {
 ///     println!("{}", resp.screen_name);
 ///     Ok(())
 /// })).unwrap();
@@ -160,9 +160,9 @@ impl Cursor for ListCursor {
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// # let (token, mut core): (Token, Core) = unimplemented!();
 /// use futures::Stream;
 /// use egg_mode::Response;
 /// use egg_mode::user::TwitterUser;
@@ -171,7 +171,7 @@ impl Cursor for ListCursor {
 /// // Because Streams don't have a FromIterator adaptor, we load all the responses first, then
 /// // collect them into the final Vec
 /// let names: Result<Response<Vec<TwitterUser>>, Error> =
-///     core.run(egg_mode::user::followers_of("rustlang", &token, &handle).take(10).collect())
+///     core.run(egg_mode::user::followers_of("rustlang", &token).take(10).collect())
 ///         .map(|resp| resp.into_iter().collect());
 /// # }
 /// ```
@@ -203,10 +203,10 @@ impl Cursor for ListCursor {
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// let mut list = egg_mode::user::followers_of("rustlang", &token, &handle).with_page_size(20);
+/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// let mut list = egg_mode::user::followers_of("rustlang", &token).with_page_size(20);
 /// let resp = core.run(list.call()).unwrap();
 ///
 /// for user in resp.response.users {
@@ -227,7 +227,6 @@ pub struct CursorIter<'a, T>
 {
     link: &'static str,
     token: auth::Token,
-    handle: Handle,
     params_base: Option<ParamList<'a>>,
     ///The number of results returned in one network call.
     ///
@@ -293,7 +292,7 @@ impl<'a, T> CursorIter<'a, T>
 
         let req = auth::get(self.link, &self.token, Some(&params));
 
-        make_parsed_future(&self.handle, req)
+        make_parsed_future(req)
     }
 
     ///Creates a new instance of CursorIter, with the given parameters and empty initial results.
@@ -301,12 +300,11 @@ impl<'a, T> CursorIter<'a, T>
     ///This is essentially an internal infrastructure function, not meant to be used from consumer
     ///code.
     #[doc(hidden)]
-    pub fn new(link: &'static str, token: &auth::Token, handle: &Handle,
+    pub fn new(link: &'static str, token: &auth::Token,
                params_base: Option<ParamList<'a>>, page_size: Option<i32>) -> CursorIter<'a, T> {
         CursorIter {
             link: link,
             token: token.clone(),
-            handle: handle.clone(),
             params_base: params_base,
             page_size: page_size,
             previous_cursor: -1,

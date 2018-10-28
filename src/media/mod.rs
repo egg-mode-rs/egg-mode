@@ -18,19 +18,19 @@
 //!
 //! ```rust,no_run
 //! # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-//! # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+//! # use egg_mode::Token; use tokio_core::reactor::Core;
 //! # fn main() {
-//! # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+//! # let (token, mut core): (Token, Core) = unimplemented!();
 //! use egg_mode::media::{UploadBuilder, media_types};
 //! use egg_mode::tweet::DraftTweet;
 //!
 //! let image = vec![]; //pretend we loaded an image file into this
 //! let builder = UploadBuilder::new(image, media_types::image_png());
-//! let media_handle = core.run(builder.call(&token, &handle)).unwrap();
+//! let media_handle = core.run(builder.call(&token)).unwrap();
 //!
 //! let draft = DraftTweet::new("Hey, check out this cute cat!")
 //!                        .media_ids(&[media_handle.id]);
-//! let tweet = core.run(draft.send(&token, &handle)).unwrap();
+//! let tweet = core.run(draft.send(&token)).unwrap();
 //! # }
 //! ```
 //!
@@ -306,14 +306,13 @@ impl<'a> UploadBuilder<'a> {
     }
 
     /// Starts the upload process and returns a `Future` that represents it.
-    pub fn call(self, token: &auth::Token, handle: &Handle) -> UploadFuture<'a> {
+    pub fn call(self, token: &auth::Token) -> UploadFuture<'a> {
         UploadFuture {
             data: self.data,
             media_type: self.media_type,
             media_category: self.category,
             timeout: Instant::now(),
             token: token.clone(),
-            handle: handle.clone(),
             chunk_size: self.chunk_size.unwrap_or(1024 * 512), // 512 KiB default
             alt_text: self.alt_text,
             status: UploadInner::PreInit,
@@ -372,7 +371,6 @@ pub struct UploadFuture<'a> {
     media_category: MediaCategory,
     timeout: Instant,
     token: auth::Token,
-    handle: Handle,
     chunk_size: usize,
     alt_text: Option<Cow<'a, str>>,
     status: UploadInner,
@@ -425,7 +423,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "media_category", self.media_category.to_string());
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future(&self.handle, req)
+        make_parsed_future(req)
     }
 
     fn append(&self, chunk_num: usize, media_id: u64) -> Option<FutureResponse<()>> {
@@ -459,7 +457,7 @@ impl<'a> UploadFuture<'a> {
                 }
             }
 
-            Some(make_future(&self.handle, req, parse_resp))
+            Some(make_future(req, parse_resp))
         } else {
             None
         }
@@ -472,7 +470,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "media_id", media_id.to_string());
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future(&self.handle, req)
+        make_parsed_future(req)
     }
 
     fn status(&self, media_id: u64) -> FutureResponse<RawMedia> {
@@ -482,7 +480,7 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "media_id", media_id.to_string());
 
         let req = auth::get(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future(&self.handle, req)
+        make_parsed_future(req)
     }
 
     fn metadata(&self, media_id: u64, alt_text: &str) -> FutureResponse<()> {
@@ -508,7 +506,7 @@ impl<'a> UploadFuture<'a> {
             }
         }
 
-        make_future(&self.handle, req, parse_resp)
+        make_future(req, parse_resp)
     }
 }
 
@@ -605,7 +603,9 @@ impl<'a> Future for UploadFuture<'a> {
                                 Some(ProgressInfo::InProgress(time)) =>
                             {
                                 self.timeout = Instant::now() + Duration::from_secs(media.expires_after);
-                                let timer = match Timeout::new(Duration::from_secs(time), &self.handle) {
+                                //TODO: oh hey we needed the handle for something - we need to use
+                                //new-tokio to fix this
+                                let timer = match Timeout::new(Duration::from_secs(time), unimplemented!()) {
                                     Ok(timer) => timer,
                                     //this error will occur if the Core has been dropped - there's
                                     //no reason to set the state back at this point

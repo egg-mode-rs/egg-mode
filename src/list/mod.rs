@@ -178,14 +178,14 @@ pub struct List {
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// # let (token, mut core): (Token, Core) = unimplemented!();
 /// use egg_mode::list::{self, ListID};
 ///
 /// //remember, you can only update a list if you own it!
 /// let update = list::update(ListID::from_slug("Twitter", "support"));
-/// let list = core.run(update.name("Official Support").send(&token, &handle)).unwrap();
+/// let list = core.run(update.name("Official Support").send(&token)).unwrap();
 /// # }
 /// ```
 pub struct ListUpdate<'a> {
@@ -221,7 +221,7 @@ impl<'a> ListUpdate<'a> {
     }
 
     ///Sends the update request to Twitter.
-    pub fn send(self, token: &auth::Token, handle: &Handle) -> FutureResponse<List> {
+    pub fn send(self, token: &auth::Token) -> FutureResponse<List> {
         let mut params = HashMap::new();
         add_list_param(&mut params, &self.list);
 
@@ -243,6 +243,6 @@ impl<'a> ListUpdate<'a> {
 
         let req = auth::post(links::lists::UPDATE, token, Some(&params));
 
-        make_parsed_future(handle, req)
+        make_parsed_future(req)
     }
 }

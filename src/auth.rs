@@ -20,7 +20,6 @@ use hyper::{Method, Request, Body};
 use rand::{self, Rng};
 use serde_json;
 use sha_1::Sha1;
-use tokio_core::reactor::Handle;
 use url::percent_encoding::{EncodeSet, PercentEncode, utf8_percent_encode};
 
 use links;
@@ -230,12 +229,12 @@ impl KeyPair {
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core;
-/// # use tokio_core::reactor::{Core, Handle};
+/// # use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (mut core, handle): (Core, Handle) = unimplemented!();
+/// # let mut core: Core = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
 /// // "oob" is needed for PIN-based auth; see docs for `request_token` for more info
-/// let request_token = core.run(egg_mode::request_token(&con_token, "oob", &handle)).unwrap();
+/// let request_token = core.run(egg_mode::request_token(&con_token, "oob")).unwrap();
 /// let auth_url = egg_mode::authorize_url(&request_token);
 ///
 /// // give auth_url to the user, they can sign in to Twitter and accept your app's permissions.
@@ -245,7 +244,7 @@ impl KeyPair {
 ///
 /// // note this consumes con_token; if you want to sign in multiple accounts, clone it here
 /// let (token, user_id, screen_name) =
-///     core.run(egg_mode::access_token(con_token, &request_token, verifier, &handle)).unwrap();
+///     core.run(egg_mode::access_token(con_token, &request_token, verifier)).unwrap();
 ///
 /// // token can be given to any egg_mode method that asks for a token
 /// // user_id and screen_name refer to the user who signed in
@@ -299,11 +298,11 @@ impl KeyPair {
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core;
-/// # use tokio_core::reactor::{Core, Handle};
+/// # use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (mut core, handle): (Core, Handle) = unimplemented!();
+/// # let mut core: Core = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
-/// let token = core.run(egg_mode::bearer_token(&con_token, &handle)).unwrap();
+/// let token = core.run(egg_mode::bearer_token(&con_token)).unwrap();
 ///
 /// // token can be given to *most* egg_mode methods that ask for a token
 /// // for restrictions, see docs for bearer_token
@@ -548,19 +547,18 @@ pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request<
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core;
-/// # use tokio_core::reactor::{Core, Handle};
+/// # use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (mut core, handle): (Core, Handle) = unimplemented!();
+/// # let mut core: Core = unimplemented!();
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
 /// // for PIN-Based Auth
-/// let req_token = core.run(egg_mode::request_token(&con_token, "oob", &handle)).unwrap();
+/// let req_token = core.run(egg_mode::request_token(&con_token, "oob")).unwrap();
 /// // for Sign In With Twitter/3-Legged Auth
 /// let req_token = core.run(egg_mode::request_token(&con_token,
-///                                                  "https://myapp.io/auth",
-///                                                  &handle)).unwrap();
+///                                                  "https://myapp.io/auth")).unwrap();
 /// # }
 /// ```
-pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S, handle: &Handle)
+pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S)
     -> TwitterFuture<KeyPair>
 {
     let header = get_header(Method::POST, links::auth::REQUEST_TOKEN,
@@ -592,7 +590,7 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S, handle: 
                         try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")))))
     }
 
-    make_future(handle, request.body(Body::empty()).unwrap(), parse_tok)
+    make_future(request.body(Body::empty()).unwrap(), parse_tok)
 }
 
 /// With the given request KeyPair, return a URL that a user can access to accept or reject an
@@ -716,8 +714,7 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 /// user.
 pub fn access_token<S: Into<String>>(con_token: KeyPair,
                                      request_token: &KeyPair,
-                                     verifier: S,
-                                     handle: &Handle)
+                                     verifier: S)
     -> AuthFuture
 {
     let header = get_header(Method::POST, links::auth::ACCESS_TOKEN,
@@ -727,7 +724,7 @@ pub fn access_token<S: Into<String>>(con_token: KeyPair,
 
     AuthFuture {
         con_token: Some(con_token),
-        loader: make_raw_future(handle, request.body(Body::empty()).unwrap()),
+        loader: make_raw_future(request.body(Body::empty()).unwrap()),
     }
 }
 
@@ -820,7 +817,7 @@ impl Future for AuthFuture {
 /// For more information, see the Twitter documentation on [Application-only authentication][auth].
 ///
 /// [auth]: https://dev.twitter.com/oauth/application-only
-pub fn bearer_token(con_token: &KeyPair, handle: &Handle)
+pub fn bearer_token(con_token: &KeyPair)
     -> TwitterFuture<Token>
 {
     let content = "application/x-www-form-urlencoded;charset=UTF-8";
@@ -840,7 +837,7 @@ pub fn bearer_token(con_token: &KeyPair, handle: &Handle)
         Ok(Token::Bearer(result.to_owned()))
     }
 
-    make_future(handle, request, parse_tok)
+    make_future(request, parse_tok)
 }
 
 /// Invalidate the given Bearer token using the given consumer KeyPair. Upon success, the future
@@ -849,7 +846,7 @@ pub fn bearer_token(con_token: &KeyPair, handle: &Handle)
 /// # Panics
 ///
 /// If this function is handed a `Token` that is not a Bearer token, this function will panic.
-pub fn invalidate_bearer(handle: &Handle, con_token: &KeyPair, token: &Token)
+pub fn invalidate_bearer(con_token: &KeyPair, token: &Token)
     -> TwitterFuture<Token>
 {
     let token = if let Token::Bearer(ref token) = *token {
@@ -876,7 +873,7 @@ pub fn invalidate_bearer(handle: &Handle, con_token: &KeyPair, token: &Token)
         Ok(Token::Bearer(result.to_owned()))
     }
 
-    make_future(handle, request, parse_tok)
+    make_future(request, parse_tok)
 }
 
 /// If the given tokens are valid, return the user information for the authenticated user.
@@ -884,12 +881,12 @@ pub fn invalidate_bearer(handle: &Handle, con_token: &KeyPair, token: &Token)
 /// If you have cached access tokens, using this method is a convenient way to make sure they're
 /// still valid. If the user has revoked access from your app, this function will return an error
 /// from Twitter indicating that you don't have access to the user.
-pub fn verify_tokens(token: &Token, handle: &Handle)
+pub fn verify_tokens(token: &Token)
     -> FutureResponse<::user::TwitterUser>
 {
     let req = get(links::auth::VERIFY_CREDENTIALS, token, None);
 
-    make_parsed_future(handle, req)
+    make_parsed_future(req)
 }
 
 #[cfg(test)]

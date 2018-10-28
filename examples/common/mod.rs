@@ -33,7 +33,6 @@ impl Config {
         //key/secret into these files; these examples won't work without them
         let consumer_key = include_str!("consumer_key").trim();
         let consumer_secret = include_str!("consumer_secret").trim();
-        let handle = core.handle();
 
         let con_token = egg_mode::KeyPair::new(consumer_key, consumer_secret);
 
@@ -57,7 +56,7 @@ impl Config {
                 access: access_token,
             };
 
-            if let Err(err) = core.run(egg_mode::verify_tokens(&token, &handle)) {
+            if let Err(err) = core.run(egg_mode::verify_tokens(&token)) {
                 println!("We've hit an error using your old tokens: {:?}", err);
                 println!("We'll have to reauthenticate before continuing.");
                 std::fs::remove_file("twitter_settings").unwrap();
@@ -65,7 +64,7 @@ impl Config {
                 println!("Welcome back, {}!", username);
             }
         } else {
-            let request_token = core.run(egg_mode::request_token(&con_token, "oob", &handle)).unwrap();
+            let request_token = core.run(egg_mode::request_token(&con_token, "oob")).unwrap();
 
             println!("Go to the following URL, sign in, and give me the PIN that comes back:");
             println!("{}", egg_mode::authorize_url(&request_token));
@@ -74,7 +73,7 @@ impl Config {
             std::io::stdin().read_line(&mut pin).unwrap();
             println!("");
 
-            let tok_result = core.run(egg_mode::access_token(con_token, &request_token, pin, &handle)).unwrap();
+            let tok_result = core.run(egg_mode::access_token(con_token, &request_token, pin)).unwrap();
 
             token = tok_result.0;
             user_id = tok_result.1;

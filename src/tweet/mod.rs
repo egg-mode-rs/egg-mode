@@ -405,11 +405,10 @@ pub struct ExtendedTweetEntities {
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// let timeline = egg_mode::tweet::home_timeline(&token, &handle)
-///                                .with_page_size(10);
+/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// let timeline = egg_mode::tweet::home_timeline(&token).with_page_size(10);
 ///
 /// let (timeline, feed) = core.run(timeline.start()).unwrap();
 /// for tweet in &feed {
@@ -423,10 +422,10 @@ pub struct ExtendedTweetEntities {
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// # let timeline = egg_mode::tweet::home_timeline(&token, &handle);
+/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// # let timeline = egg_mode::tweet::home_timeline(&token);
 /// # let (timeline, _) = core.run(timeline.start()).unwrap();
 /// let (timeline, feed) = core.run(timeline.older(None)).unwrap();
 /// for tweet in &feed {
@@ -444,10 +443,10 @@ pub struct ExtendedTweetEntities {
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
-/// let timeline = egg_mode::tweet::home_timeline(&token, &handle)
+/// # let (token, mut core): (Token, Core) = unimplemented!();
+/// let timeline = egg_mode::tweet::home_timeline(&token)
 ///                                .with_page_size(10);
 ///
 /// let (timeline, _feed) = core.run(timeline.start()).unwrap();
@@ -481,8 +480,6 @@ pub struct Timeline<'a> {
     link: &'static str,
     ///The token to authorize requests with.
     token: auth::Token,
-    ///A handle that represents the event loop to run requests on.
-    handle: Handle,
     ///Optional set of params to include prior to adding timeline navigation parameters.
     params_base: Option<ParamList<'a>>,
     ///The maximum number of tweets to return in a single call. Twitter doesn't guarantee returning
@@ -513,7 +510,7 @@ impl<'a> Timeline<'a> {
     ///ID to bound with.
     pub fn older(self, since_id: Option<u64>) -> TimelineFuture<'a> {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
-        let loader = make_parsed_future(&self.handle, req);
+        let loader = make_parsed_future(req);
 
         TimelineFuture {
             timeline: Some(self),
@@ -525,7 +522,7 @@ impl<'a> Timeline<'a> {
     ///ID to bound with.
     pub fn newer(self, max_id: Option<u64>) -> TimelineFuture<'a> {
         let req = self.request(self.max_id, max_id);
-        let loader = make_parsed_future(&self.handle, req);
+        let loader = make_parsed_future(req);
 
         TimelineFuture {
             timeline: Some(self),
@@ -541,7 +538,7 @@ impl<'a> Timeline<'a> {
     ///If the range of tweets given by the IDs would return more than `self.count`, the newest set
     ///of tweets will be returned.
     pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>) -> FutureResponse<Vec<Tweet>> {
-        make_parsed_future(&self.handle, self.request(since_id, max_id))
+        make_parsed_future(self.request(since_id, max_id))
     }
 
     ///Helper function to construct a `Request` from the current state.
@@ -578,11 +575,10 @@ impl<'a> Timeline<'a> {
     ///Create an instance of `Timeline` with the given link and tokens.
     #[doc(hidden)]
     pub fn new(link: &'static str, params_base: Option<ParamList<'a>>,
-               token: &auth::Token, handle: &Handle) -> Self {
+               token: &auth::Token) -> Self {
         Timeline {
             link: link,
             token: token.clone(),
-            handle: handle.clone(),
             params_base: params_base,
             count: 20,
             max_id: None,
@@ -637,12 +633,12 @@ impl<'timeline> Future for TimelineFuture<'timeline>
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// # let (token, mut core): (Token, Core) = unimplemented!();
 /// # use egg_mode::tweet::DraftTweet;
 /// # let draft = DraftTweet::new("This is an example status!");
-/// core.run(draft.send(&token, &handle)).unwrap();
+/// core.run(draft.send(&token)).unwrap();
 /// # }
 /// ```
 ///
@@ -652,21 +648,21 @@ impl<'timeline> Future for TimelineFuture<'timeline>
 ///
 /// ```rust,no_run
 /// # extern crate egg_mode; extern crate tokio_core; extern crate futures;
-/// # use egg_mode::Token; use tokio_core::reactor::{Core, Handle};
+/// # use egg_mode::Token; use tokio_core::reactor::Core;
 /// # fn main() {
-/// # let (token, mut core, handle): (Token, Core, Handle) = unimplemented!();
+/// # let (token, mut core): (Token, Core) = unimplemented!();
 /// use egg_mode::tweet::DraftTweet;
 ///
 /// let draft = DraftTweet::new("I'd like to start a thread here.");
-/// let tweet = core.run(draft.send(&token, &handle)).unwrap();
+/// let tweet = core.run(draft.send(&token)).unwrap();
 ///
 /// let draft = DraftTweet::new("You see, I have a lot of things to say.")
 ///                        .in_reply_to(tweet.id);
-/// let tweet = core.run(draft.send(&token, &handle)).unwrap();
+/// let tweet = core.run(draft.send(&token)).unwrap();
 ///
 /// let draft = DraftTweet::new("Thank you for your time.")
 ///                        .in_reply_to(tweet.id);
-/// let tweet = core.run(draft.send(&token, &handle)).unwrap();
+/// let tweet = core.run(draft.send(&token)).unwrap();
 /// # }
 /// ```
 #[derive(Debug, Clone)]
@@ -836,7 +832,7 @@ impl<'a> DraftTweet<'a> {
     }
 
     ///Send the assembled tweet as the authenticated user.
-    pub fn send(&self, token: &auth::Token, handle: &Handle) -> FutureResponse<Tweet> {
+    pub fn send(&self, token: &auth::Token) -> FutureResponse<Tweet> {
         let mut params = HashMap::new();
         add_param(&mut params, "status", self.text.clone());
 
@@ -885,7 +881,7 @@ impl<'a> DraftTweet<'a> {
         }
 
         let req = auth::post(links::statuses::UPDATE, token, Some(&params));
-        make_parsed_future(handle, req)
+        make_parsed_future(req)
     }
 }
 

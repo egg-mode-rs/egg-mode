@@ -18,16 +18,15 @@ fn main() {
     let mut core = reactor::Core::new().unwrap();
 
     let config = common::Config::load(&mut core);
-    let handle = core.handle();
 
     println!("");
     let mut friends = HashSet::new();
-    core.run(user::friends_ids(config.user_id, &config.token, &handle)
+    core.run(user::friends_ids(config.user_id, &config.token)
                   .map(|r| r.response)
                   .for_each(|id| { friends.insert(id); Ok(()) })).unwrap();
 
     let mut followers = HashSet::new();
-    core.run(user::followers_ids(config.user_id, &config.token, &handle)
+    core.run(user::followers_ids(config.user_id, &config.token)
                   .map(|r| r.response)
                   .for_each(|id| { followers.insert(id); Ok(()) })).unwrap();
 
@@ -36,7 +35,7 @@ fn main() {
     println!("{} accounts that you follow follow you back.", reciprocals_ct);
 
     if reciprocals_ct > 0 {
-        for user in core.run(user::lookup(&reciprocals, &config.token, &handle)).unwrap() {
+        for user in core.run(user::lookup(&reciprocals, &config.token)).unwrap() {
             println!("{} (@{})", user.name, user.screen_name);
         }
     }

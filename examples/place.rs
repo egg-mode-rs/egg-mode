@@ -14,12 +14,11 @@ fn main() {
     let mut core = reactor::Core::new().unwrap();
 
     let config = common::Config::load(&mut core);
-    let handle = core.handle();
 
     let result = core.run(egg_mode::place::search_query("columbia")
                                           .granularity(PlaceType::Admin)
                                           .max_results(10)
-                                          .call(&config.token, &handle)).unwrap();
+                                          .call(&config.token)).unwrap();
 
     println!("{} results for \"columbia\", administrative regions or larger:", result.results.len());
 
@@ -30,7 +29,7 @@ fn main() {
 
     let result = core.run(egg_mode::place::reverse_geocode(51.507222, -0.1275)
                                           .granularity(PlaceType::City)
-                                          .call(&config.token, &handle)).unwrap();
+                                          .call(&config.token)).unwrap();
 
     println!("{} results for reverse-geocoding {}, {}:", result.results.len(),
                                                          51.507222, -0.1275);
