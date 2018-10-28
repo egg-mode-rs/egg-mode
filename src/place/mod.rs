@@ -12,7 +12,7 @@
 //!
 //! On the other hand, if you're intending to let a user select from a list of locations, you can
 //! use the `search_*` methods instead. These have much of the same available parameters, but will
-//! "potentially re-order [results] with regards to the user who is authenticated." In addition,
+//! "potentially re-order \[results\] with regards to the user who is authenticated." In addition,
 //! the results may potentially pull in "nearby" results to allow for a more broad selection or to
 //! account for inaccurate location reporting.
 //!
