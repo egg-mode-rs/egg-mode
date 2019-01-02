@@ -106,6 +106,9 @@ pub struct MediaEntity {
     ///For media entities corresponding to videos, this contains extra information about the linked
     ///video.
     pub video_info: Option<VideoInfo>,
+    ///Alt text for accessibility. If alt text isn't available for a given image, this will be
+    ///`None`.
+    pub ext_alt_text: Option<String>,
 }
 
 ///Represents the types of media that can be attached to a tweet.
