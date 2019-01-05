@@ -106,8 +106,7 @@ pub struct MediaEntity {
     ///For media entities corresponding to videos, this contains extra information about the linked
     ///video.
     pub video_info: Option<VideoInfo>,
-    ///Alt text for accessibility. If alt text isn't available for a given image, this will be
-    ///`None`.
+    ///Media alt text, if present.
     pub ext_alt_text: Option<String>,
 }
 
