@@ -549,6 +549,7 @@ impl<'a> Timeline<'a> {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
         add_param(&mut params, "count", self.count.to_string());
         add_param(&mut params, "tweet_mode", "extended");
+        add_param(&mut params, "include_ext_alt_text", "true");
 
         if let Some(id) = since_id {
             add_param(&mut params, "since_id", id.to_string());
