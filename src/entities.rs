@@ -191,7 +191,7 @@ pub struct UrlEntity {
     ///The URL that the t.co URL resolves to.
     ///
     ///Meant to be used as hover-text when a user mouses over a link.
-    #[serde(default)]
+    #[serde(deserialize_with = "nullable_str")]  // Very rarely, this field is null
     pub expanded_url: String,
     ///The byte offsets in the companion text where the URL was extracted from.
     #[serde(rename = "indices")]
