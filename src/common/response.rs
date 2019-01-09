@@ -11,7 +11,10 @@ use std::ops::{Deref, DerefMut};
 use hyper::client::ResponseFuture;
 use hyper::{self, Body, StatusCode, Request};
 use hyper::header::CONTENT_LENGTH;
+#[cfg(feature = "native-tls")]
 use hyper_tls::HttpsConnector;
+#[cfg(feature = "hyper-rustls")]
+use hyper_rustls::HttpsConnector;
 use futures::{Async, Future, Poll, Stream};
 use error::{self, TwitterErrors};
 use error::Error::*;
@@ -359,7 +362,10 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
 
 pub fn get_response(request: Request<Body>) -> Result<ResponseFuture, error::Error> {
     // TODO: num-cpus?
+    #[cfg(feature = "native-tls")]
     let connector = try!(HttpsConnector::new(1));
+    #[cfg(feature = "hyper-rustls")]
+    let connector = HttpsConnector::new(1);
     let client = hyper::Client::builder().build(connector);
     Ok(client.request(request))
 }

@@ -155,8 +155,12 @@ extern crate hyper;
 #[macro_use] extern crate lazy_static;
 extern crate futures;
 extern crate tokio;
+#[cfg(feature = "native-tls")]
 extern crate hyper_tls;
+#[cfg(feature = "native-tls")]
 extern crate native_tls;
+#[cfg(feature = "hyper-rustls")]
+extern crate hyper_rustls;
 extern crate url;
 extern crate rand;
 extern crate hmac;
