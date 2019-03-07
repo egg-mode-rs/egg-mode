@@ -165,6 +165,7 @@ pub struct List {
     ///to create a link to the list.
     pub uri: String,
     ///UTC timestamp of when the list was created.
+    #[serde(deserialize_with = "deserialize_datetime")]
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
