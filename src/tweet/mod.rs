@@ -188,7 +188,7 @@ pub struct Tweet {
     pub in_reply_to_status_id: Option<u64>,
     ///Can contain a language ID indicating the machine-detected language of the text, or "und" if
     ///no language could be detected.
-    pub lang: String,
+    pub lang: Option<String>,
     ///When present, the `Place` that this tweet is associated with (but not necessarily where it
     ///originated from).
     pub place: Option<place::Place>,
