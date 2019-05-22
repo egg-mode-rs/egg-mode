@@ -58,7 +58,7 @@ pub struct RawTwitterUser {
     /// interface language, not necessarily the content of their Tweets.
     ///
     /// [BCP 47]: https://tools.ietf.org/html/bcp47
-    pub lang: String,
+    pub lang: Option<String>,
     /// The number of public lists the user is a member of.
     pub listed_count: i32,
     /// The user-entered location field from their profile. Not necessarily parseable
