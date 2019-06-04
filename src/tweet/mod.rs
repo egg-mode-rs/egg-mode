@@ -923,7 +923,7 @@ mod tests {
         assert_eq!(sample.created_at.second(), 30);
         assert_eq!(sample.favorite_count, 20);
         assert_eq!(sample.retweet_count, 0);
-        assert_eq!(sample.lang, "en");
+        assert_eq!(sample.lang, Some("en".into()));
         assert_eq!(sample.coordinates, None);
         assert!(sample.place.is_none());
 
