@@ -266,11 +266,13 @@ struct RawSearch<'a> {
 #[derive(Debug, Deserialize)]
 struct RawSearchMetaData<'a> {
     completed_in: f64,
-    count: u64,
     max_id: u64,
-    next_results: &'a str,
+    /// absent if no more results to retrieve
+    next_results: Option<&'a str>,
     query: &'a str,
-    refresh_url: &'a str,
+    /// absent if no results
+    refresh_url: Option<&'a str>,
+    count: u64,
     since_id: u64,
 }
 
