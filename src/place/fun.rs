@@ -79,8 +79,8 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
         for item in list.split('&') {
             let mut kv_iter = item.split('=');
 
-            let k = try!(kv_iter.next().ok_or(BadUrl));
-            let v = try!(kv_iter.next().ok_or(BadUrl));
+            let k = kv_iter.next().ok_or(BadUrl)?;
+            let v = kv_iter.next().ok_or(BadUrl)?;
 
             add_param(&mut p, k, v);
         }

@@ -113,20 +113,20 @@ pub fn lookup_map<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token)
     fn parse_map(full_resp: String, headers: &Headers)
         -> Result<Response<HashMap<u64, Option<Tweet>>>, error::Error>
     {
-        let parsed: Response<serde_json::Value> = try!(make_response(full_resp, headers));
+        let parsed: Response<serde_json::Value> = make_response(full_resp, headers)?;
         let mut map = HashMap::new();
 
-        for (key, val) in try!(parsed.response
+        for (key, val) in parsed.response
                                      .get("id")
                                      .and_then(|v| v.as_object())
                                      .ok_or_else(|| InvalidResponse("unexpected response for lookup_map",
-                                                                    Some(parsed.response.to_string())))) {
-            let id = try!(key.parse::<u64>().or(Err(InvalidResponse("could not parse id as integer",
-                                                                    Some(key.to_string())))));
+                                                                    Some(parsed.response.to_string())))? {
+            let id = key.parse::<u64>().or(Err(InvalidResponse("could not parse id as integer",
+                                                                    Some(key.to_string()))))?;
             if val.is_null() {
                 map.insert(id, None);
             } else {
-                let tweet = try!(Tweet::deserialize(val));
+                let tweet = Tweet::deserialize(val)?;
                 map.insert(id, Some(tweet));
             }
         }

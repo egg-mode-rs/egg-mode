@@ -322,7 +322,7 @@ pub struct TwitterUser {
 
 impl<'de> Deserialize<'de> for TwitterUser {
     fn deserialize<D>(deser: D) -> Result<TwitterUser, D::Error> where D: Deserializer<'de> {
-        let mut raw = try!(raw::RawTwitterUser::deserialize(deser));
+        let mut raw = raw::RawTwitterUser::deserialize(deser)?;
 
         if let Some(ref description) = raw.description {
             for entity in &mut raw.entities.description.urls {

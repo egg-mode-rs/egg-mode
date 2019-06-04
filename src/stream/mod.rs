@@ -341,7 +341,7 @@ impl Stream for TwitterStream {
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         if let Some(req) = self.request.take() {
-            self.response = Some(try!(get_response(req)));
+            self.response = Some(get_response(req)?);
         }
 
         if let Some(mut resp) = self.response.take() {
@@ -392,7 +392,7 @@ impl Stream for TwitterStream {
                             };
 
                             self.buf.drain(..pos);
-                            return Ok(Async::Ready(Some(try!(resp))));
+                            return Ok(Async::Ready(Some(resp?)));
                         }
                     },
                 }
