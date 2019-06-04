@@ -167,7 +167,7 @@ extern crate native_tls;
 extern crate rand;
 extern crate regex;
 extern crate serde;
-extern crate sha_1;
+extern crate sha1;
 extern crate tokio;
 extern crate url;
 #[macro_use]
