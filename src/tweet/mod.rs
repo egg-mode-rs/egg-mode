@@ -549,6 +549,7 @@ impl<'a> Timeline<'a> {
         let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
         add_param(&mut params, "count", self.count.to_string());
         add_param(&mut params, "tweet_mode", "extended");
+        add_param(&mut params, "include_ext_alt_text", "true");
 
         if let Some(id) = since_id {
             add_param(&mut params, "since_id", id.to_string());
@@ -982,6 +983,14 @@ mod tests {
         assert!(sample.retweeted_status.is_some());
         assert_eq!(sample.retweeted_status.unwrap().text,
                    "it's working: follow @andrewhuangbot for a random lyric of mine every hour. we'll call this version 0.1.0. wanna get line breaks in there");
+    }
+
+    #[test]
+    fn parse_image_alt_text() {
+        let sample = load_tweet("sample_payloads/sample-image-alt-text.json");
+        let extended_entities = sample.extended_entities.unwrap();
+
+        assert_eq!(extended_entities.media[0].ext_alt_text, Some("test alt text for the image".to_string()));
     }
 
 }

@@ -21,6 +21,7 @@ pub fn show(id: u64, token: &auth::Token)
     add_param(&mut params, "id", id.to_string());
     add_param(&mut params, "include_my_retweet", "true");
     add_param(&mut params, "tweet_mode", "extended");
+    add_param(&mut params, "include_ext_alt_text", "true");
 
     let req = auth::get(links::statuses::SHOW, token, Some(&params));
 
@@ -79,6 +80,7 @@ pub fn lookup<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token)
     });
     add_param(&mut params, "id", id_param);
     add_param(&mut params, "tweet_mode", "extended");
+    add_param(&mut params, "include_ext_alt_text", "true");
 
     let req = auth::post(links::statuses::LOOKUP, token, Some(&params));
 
@@ -104,6 +106,7 @@ pub fn lookup_map<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token)
     add_param(&mut params, "id", id_param);
     add_param(&mut params, "map", "true");
     add_param(&mut params, "tweet_mode", "extended");
+    add_param(&mut params, "include_ext_alt_text", "true");
 
     let req = auth::post(links::statuses::LOOKUP, token, Some(&params));
 
