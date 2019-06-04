@@ -19,7 +19,7 @@ use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
 use hyper::{Body, Method, Request};
 use rand::{self, Rng};
 use serde_json;
-use sha_1::Sha1;
+use sha1::Sha1;
 use url::percent_encoding::{utf8_percent_encode, EncodeSet, PercentEncode};
 
 use common::*;
@@ -388,17 +388,11 @@ fn sign(
         percent_encode(&access_token.unwrap_or(&KeyPair::new("", "")).secret)
     );
 
-    let mut digest = Hmac::<Sha1>::new(key.as_bytes());
+    // TODO check if key is correct length? Can this fail?
+    let mut digest = Hmac::<Sha1>::new_varkey(key.as_bytes()).expect("Wrong key length");
     digest.input(base_str.as_bytes());
 
-    let config = base64::Config::new(
-        base64::CharacterSet::Standard,
-        true,
-        true,
-        base64::LineWrap::NoWrap,
-    );
-
-    let signature = Some(base64::encode_config(digest.result().code(), config));
+    let signature = Some(base64::encode(&digest.result().code()));
 
     TwitterOAuth {
         signature,
@@ -421,12 +415,14 @@ fn get_header(
         Err(err) => err.duration(),
     }
     .as_secs();
+    let mut rng = rand::thread_rng();
+    let nonce = ::std::iter::repeat(())
+        .map(|()| rng.sample(rand::distributions::Alphanumeric))
+        .take(32)
+        .collect::<String>();
     let header = TwitterOAuth {
         consumer_key: con_token.key.to_string(),
-        nonce: rand::thread_rng()
-            .gen_ascii_chars()
-            .take(32)
-            .collect::<String>(),
+        nonce,
         signature: None,
         timestamp: now_s,
         token: access_token.map(|tok| tok.key.to_string()),

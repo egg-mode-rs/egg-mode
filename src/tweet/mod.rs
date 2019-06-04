@@ -342,7 +342,9 @@ impl FromStr for TweetSource {
         }
 
         let url = if let Some(cap) = RE_URL.captures(full) {
-            cap.expand("$1")
+            let mut buf = String::new();
+            cap.expand("$1", &mut buf);
+            buf
         } else {
             return Err(InvalidResponse(
                 "TweetSource had no link href",
@@ -351,7 +353,9 @@ impl FromStr for TweetSource {
         };
 
         let name = if let Some(cap) = RE_NAME.captures(full) {
-            cap.expand("$1")
+            let mut buf = String::new();
+            cap.expand("$1", &mut buf);
+            buf
         } else {
             return Err(InvalidResponse(
                 "TweetSource had no link text",
