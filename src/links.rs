@@ -9,7 +9,8 @@ pub mod auth {
     pub const INVALIDATE_BEARER: &'static str = "https://api.twitter.com/oauth2/invalidate_token";
     pub const AUTHORIZE: &'static str = "https://api.twitter.com/oauth/authorize";
     pub const AUTHENTICATE: &'static str = "https://api.twitter.com/oauth/authenticate";
-    pub const VERIFY_CREDENTIALS: &'static str = "https://api.twitter.com/1.1/account/verify_credentials.json";
+    pub const VERIFY_CREDENTIALS: &'static str =
+        "https://api.twitter.com/1.1/account/verify_credentials.json";
 }
 
 pub mod users {
@@ -26,12 +27,17 @@ pub mod users {
     pub const MUTES_IDS: &'static str = "https://api.twitter.com/1.1/mutes/users/ids.json";
     pub const FOLLOW: &'static str = "https://api.twitter.com/1.1/friendships/create.json";
     pub const UNFOLLOW: &'static str = "https://api.twitter.com/1.1/friendships/destroy.json";
-    pub const FRIENDSHIPS_INCOMING: &'static str = "https://api.twitter.com/1.1/friendships/incoming.json";
-    pub const FRIENDSHIPS_OUTGOING: &'static str = "https://api.twitter.com/1.1/friendships/outgoing.json";
+    pub const FRIENDSHIPS_INCOMING: &'static str =
+        "https://api.twitter.com/1.1/friendships/incoming.json";
+    pub const FRIENDSHIPS_OUTGOING: &'static str =
+        "https://api.twitter.com/1.1/friendships/outgoing.json";
     pub const FRIENDSHIP_SHOW: &'static str = "https://api.twitter.com/1.1/friendships/show.json";
-    pub const FRIENDSHIP_UPDATE: &'static str = "https://api.twitter.com/1.1/friendships/update.json";
-    pub const FRIENDS_NO_RETWEETS: &'static str = "https://api.twitter.com/1.1/friendships/no_retweets/ids.json";
-    pub const FRIENDSHIP_LOOKUP: &'static str = "https://api.twitter.com/1.1/friendships/lookup.json";
+    pub const FRIENDSHIP_UPDATE: &'static str =
+        "https://api.twitter.com/1.1/friendships/update.json";
+    pub const FRIENDS_NO_RETWEETS: &'static str =
+        "https://api.twitter.com/1.1/friendships/no_retweets/ids.json";
+    pub const FRIENDSHIP_LOOKUP: &'static str =
+        "https://api.twitter.com/1.1/friendships/lookup.json";
     pub const BLOCK: &'static str = "https://api.twitter.com/1.1/blocks/create.json";
     pub const UNBLOCK: &'static str = "https://api.twitter.com/1.1/blocks/destroy.json";
     pub const REPORT_SPAM: &'static str = "https://api.twitter.com/1.1/users/report_spam.json";
@@ -43,11 +49,16 @@ pub mod statuses {
     pub const SHOW: &'static str = "https://api.twitter.com/1.1/statuses/show.json";
     pub const RETWEETS_OF_STEM: &'static str = "https://api.twitter.com/1.1/statuses/retweets";
     pub const LOOKUP: &'static str = "https://api.twitter.com/1.1/statuses/lookup.json";
-    pub const HOME_TIMELINE: &'static str = "https://api.twitter.com/1.1/statuses/home_timeline.json";
-    pub const MENTIONS_TIMELINE: &'static str = "https://api.twitter.com/1.1/statuses/mentions_timeline.json";
-    pub const USER_TIMELINE: &'static str = "https://api.twitter.com/1.1/statuses/user_timeline.json";
-    pub const RETWEETS_OF_ME: &'static str = "https://api.twitter.com/1.1/statuses/retweets_of_me.json";
-    pub const RETWEETERS_OF: &'static str = "https://api.twitter.com/1.1/statuses/retweeters/ids.json";
+    pub const HOME_TIMELINE: &'static str =
+        "https://api.twitter.com/1.1/statuses/home_timeline.json";
+    pub const MENTIONS_TIMELINE: &'static str =
+        "https://api.twitter.com/1.1/statuses/mentions_timeline.json";
+    pub const USER_TIMELINE: &'static str =
+        "https://api.twitter.com/1.1/statuses/user_timeline.json";
+    pub const RETWEETS_OF_ME: &'static str =
+        "https://api.twitter.com/1.1/statuses/retweets_of_me.json";
+    pub const RETWEETERS_OF: &'static str =
+        "https://api.twitter.com/1.1/statuses/retweeters/ids.json";
     pub const LIKES_OF: &'static str = "https://api.twitter.com/1.1/favorites/list.json";
     pub const SEARCH: &'static str = "https://api.twitter.com/1.1/search/tweets.json";
     pub const RETWEET_STEM: &'static str = "https://api.twitter.com/1.1/statuses/retweet";
@@ -72,22 +83,27 @@ pub mod lists {
     pub const OWNERSHIPS: &'static str = "https://api.twitter.com/1.1/lists/ownerships.json";
     pub const SHOW: &'static str = "https://api.twitter.com/1.1/lists/show.json";
     pub const SUBSCRIBERS: &'static str = "https://api.twitter.com/1.1/lists/subscribers.json";
-    pub const IS_SUBSCRIBER: &'static str = "https://api.twitter.com/1.1/lists/subscribers/show.json";
+    pub const IS_SUBSCRIBER: &'static str =
+        "https://api.twitter.com/1.1/lists/subscribers/show.json";
     pub const SUBSCRIPTIONS: &'static str = "https://api.twitter.com/1.1/lists/subscriptions.json";
     pub const ADD: &'static str = "https://api.twitter.com/1.1/lists/members/create.json";
-    pub const REMOVE_MEMBER: &'static str = "https://api.twitter.com/1.1/lists/members/destroy.json";
+    pub const REMOVE_MEMBER: &'static str =
+        "https://api.twitter.com/1.1/lists/members/destroy.json";
     pub const CREATE: &'static str = "https://api.twitter.com/1.1/lists/create.json";
     pub const DELETE: &'static str = "https://api.twitter.com/1.1/lists/destroy.json";
     pub const SUBSCRIBE: &'static str = "https://api.twitter.com/1.1/lists/subscribers/create.json";
-    pub const UNSUBSCRIBE: &'static str = "https://api.twitter.com/1.1/lists/subscribers/destroy.json";
+    pub const UNSUBSCRIBE: &'static str =
+        "https://api.twitter.com/1.1/lists/subscribers/destroy.json";
     pub const ADD_LIST: &'static str = "https://api.twitter.com/1.1/lists/members/create_all.json";
-    pub const REMOVE_LIST: &'static str = "https://api.twitter.com/1.1/lists/members/destroy_all.json";
+    pub const REMOVE_LIST: &'static str =
+        "https://api.twitter.com/1.1/lists/members/destroy_all.json";
     pub const UPDATE: &'static str = "https://api.twitter.com/1.1/lists/update.json";
 }
 
 pub mod place {
     pub const SHOW_STEM: &'static str = "https://api.twitter.com/1.1/geo/id";
-    pub const REVERSE_GEOCODE: &'static str = "https://api.twitter.com/1.1/geo/reverse_geocode.json";
+    pub const REVERSE_GEOCODE: &'static str =
+        "https://api.twitter.com/1.1/geo/reverse_geocode.json";
     pub const SEARCH: &'static str = "https://api.twitter.com/1.1/geo/search.json";
 }
 
@@ -103,7 +119,8 @@ pub mod service {
     pub const TERMS: &'static str = "https://api.twitter.com/1.1/help/tos.json";
     pub const PRIVACY: &'static str = "https://api.twitter.com/1.1/help/privacy.json";
     pub const CONFIG: &'static str = "https://api.twitter.com/1.1/help/configuration.json";
-    pub const RATE_LIMIT_STATUS: &'static str = "https://api.twitter.com/1.1/application/rate_limit_status.json";
+    pub const RATE_LIMIT_STATUS: &'static str =
+        "https://api.twitter.com/1.1/application/rate_limit_status.json";
 }
 
 pub mod stream {

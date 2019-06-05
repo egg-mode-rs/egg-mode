@@ -58,21 +58,21 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use chrono;
+use futures::{Async, Future, Poll};
+use hyper::{Body, Request};
 use regex::Regex;
-use hyper::{Request, Body};
-use futures::{Future, Poll, Async};
-use serde::{Deserialize, Deserializer};
 use serde::de::Error;
+use serde::{Deserialize, Deserializer};
 
 use auth;
-use links;
-use user;
+use common::*;
+use entities;
 use error;
 use error::Error::InvalidResponse;
-use entities;
+use links;
 use place;
 use stream::FilterLevel;
-use common::*;
+use user;
 
 mod fun;
 mod raw;
@@ -238,9 +238,13 @@ pub struct Tweet {
 }
 
 impl<'de> Deserialize<'de> for Tweet {
-    fn deserialize<D>(deser: D) -> Result<Tweet, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deser: D) -> Result<Tweet, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         let mut raw = raw::RawTweet::deserialize(deser)?;
-        let text = raw.full_text
+        let text = raw
+            .full_text
             .or(raw.extended_tweet.map(|xt| xt.full_text))
             .or(raw.text)
             .ok_or_else(|| D::Error::custom("Tweet missing text field"))?;
@@ -299,7 +303,8 @@ impl<'de> Deserialize<'de> for Tweet {
             withheld_copyright: raw.withheld_copyright,
             withheld_in_countries: raw.withheld_in_countries,
             withheld_scope: raw.withheld_scope,
-            text, current_user_retweet
+            text,
+            current_user_retweet,
         })
     }
 }
@@ -339,13 +344,19 @@ impl FromStr for TweetSource {
         let url = if let Some(cap) = RE_URL.captures(full) {
             cap.expand("$1")
         } else {
-            return Err(InvalidResponse("TweetSource had no link href", Some(full.to_string())));
+            return Err(InvalidResponse(
+                "TweetSource had no link href",
+                Some(full.to_string()),
+            ));
         };
 
         let name = if let Some(cap) = RE_NAME.captures(full) {
             cap.expand("$1")
         } else {
-            return Err(InvalidResponse("TweetSource had no link text", Some(full.to_string())));
+            return Err(InvalidResponse(
+                "TweetSource had no link text",
+                Some(full.to_string()),
+            ));
         };
 
         Ok(TweetSource {
@@ -355,7 +366,10 @@ impl FromStr for TweetSource {
     }
 }
 
-fn deserialize_tweet_source<'de, D>(ser: D) -> Result<TweetSource, D::Error> where D: Deserializer<'de> {
+fn deserialize_tweet_source<'de, D>(ser: D) -> Result<TweetSource, D::Error>
+where
+    D: Deserializer<'de>,
+{
     let s = String::deserialize(ser)?;
     Ok(TweetSource::from_str(&s).map_err(|e| D::Error::custom(e))?)
 }
@@ -578,8 +592,11 @@ impl<'a> Timeline<'a> {
 
     ///Create an instance of `Timeline` with the given link and tokens.
     #[doc(hidden)]
-    pub fn new(link: &'static str, params_base: Option<ParamList<'a>>,
-               token: &auth::Token) -> Self {
+    pub fn new(
+        link: &'static str,
+        params_base: Option<ParamList<'a>>,
+        token: &auth::Token,
+    ) -> Self {
         Timeline {
             link: link,
             token: token.clone(),
@@ -597,14 +614,12 @@ impl<'a> Timeline<'a> {
 /// updated the IDs in the parent `Timeline`) or the error encountered when loading or parsing the
 /// response.
 #[must_use = "futures do nothing unless polled"]
-pub struct TimelineFuture<'timeline>
-{
+pub struct TimelineFuture<'timeline> {
     timeline: Option<Timeline<'timeline>>,
     loader: FutureResponse<Vec<Tweet>>,
 }
 
-impl<'timeline> Future for TimelineFuture<'timeline>
-{
+impl<'timeline> Future for TimelineFuture<'timeline> {
     type Item = (Timeline<'timeline>, Response<Vec<Tweet>>);
     type Error = error::Error;
 
@@ -612,11 +627,13 @@ impl<'timeline> Future for TimelineFuture<'timeline>
         match self.loader.poll() {
             Err(e) => Err(e),
             Ok(Async::NotReady) => Ok(Async::NotReady),
-            Ok(Async::Ready(resp)) => if let Some(mut timeline) = self.timeline.take() {
-                timeline.map_ids(&resp.response);
-                Ok(Async::Ready((timeline, resp)))
-            } else {
-                Err(error::Error::FutureAlreadyCompleted)
+            Ok(Async::Ready(resp)) => {
+                if let Some(mut timeline) = self.timeline.take() {
+                    timeline.map_ids(&resp.response);
+                    Ok(Async::Ready((timeline, resp)))
+                } else {
+                    Err(error::Error::FutureAlreadyCompleted)
+                }
             }
         }
     }
@@ -848,11 +865,19 @@ impl<'a> DraftTweet<'a> {
         }
 
         if let Some(auto_populate) = self.auto_populate_reply_metadata {
-            add_param(&mut params, "auto_populate_reply_metadata", auto_populate.to_string());
+            add_param(
+                &mut params,
+                "auto_populate_reply_metadata",
+                auto_populate.to_string(),
+            );
         }
 
         if let Some(ref exclude) = self.exclude_reply_user_ids {
-            let list = exclude.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
+            let list = exclude
+                .iter()
+                .map(|id| id.to_string())
+                .collect::<Vec<_>>()
+                .join(",");
             add_param(&mut params, "exclude_reply_user_ids", list);
         }
 
@@ -873,12 +898,13 @@ impl<'a> DraftTweet<'a> {
             add_param(&mut params, "place_id", place_id.clone());
         }
 
-        let media = self.media_ids
-                        .iter()
-                        .filter(|&&id| id != 0)
-                        .map(|id| id.to_string())
-                        .collect::<Vec<String>>()
-                        .join(",");
+        let media = self
+            .media_ids
+            .iter()
+            .filter(|&&id| id != 0)
+            .map(|id| id.to_string())
+            .collect::<Vec<String>>()
+            .join(",");
         if !media.is_empty() {
             add_param(&mut params, "media_ids", media);
         }
@@ -897,7 +923,7 @@ mod tests {
     use super::Tweet;
     use common::tests::load_file;
 
-    use chrono::{Weekday, Datelike, Timelike};
+    use chrono::{Datelike, Timelike, Weekday};
 
     fn load_tweet(path: &str) -> Tweet {
         let sample = load_file(path);
@@ -932,7 +958,11 @@ mod tests {
         assert_eq!(sample.retweeted, Some(false));
         assert!(sample.current_user_retweet.is_none());
 
-        assert!(sample.entities.user_mentions.iter().any(|m| m.screen_name == "Serrayak"));
+        assert!(sample
+            .entities
+            .user_mentions
+            .iter()
+            .any(|m| m.screen_name == "Serrayak"));
         assert!(sample.extended_entities.is_some());
         assert_eq!(sample.extended_entities.unwrap().media.len(), 1);
 
@@ -961,7 +991,10 @@ mod tests {
     fn parse_reply() {
         let sample = load_tweet("sample_payloads/sample-reply.json");
 
-        assert_eq!(sample.in_reply_to_screen_name, Some("QuietMisdreavus".to_string()));
+        assert_eq!(
+            sample.in_reply_to_screen_name,
+            Some("QuietMisdreavus".to_string())
+        );
         assert_eq!(sample.in_reply_to_user_id, Some(2977334326));
         assert_eq!(sample.in_reply_to_status_id, Some(782643731665080322));
     }
@@ -990,7 +1023,10 @@ mod tests {
         let sample = load_tweet("sample_payloads/sample-image-alt-text.json");
         let extended_entities = sample.extended_entities.unwrap();
 
-        assert_eq!(extended_entities.media[0].ext_alt_text, Some("test alt text for the image".to_string()));
+        assert_eq!(
+            extended_entities.media[0].ext_alt_text,
+            Some("test alt text for the image".to_string())
+        );
     }
 
 }

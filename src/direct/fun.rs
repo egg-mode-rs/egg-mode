@@ -5,16 +5,14 @@
 use std::collections::HashMap;
 
 use auth;
-use links;
 use common::*;
+use links;
 use user::UserID;
 
 use super::*;
 
 ///Lookup a single DM by its numeric ID.
-pub fn show(id: u64, token: &auth::Token)
-    -> FutureResponse<DirectMessage>
-{
+pub fn show(id: u64, token: &auth::Token) -> FutureResponse<DirectMessage> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
 
@@ -42,9 +40,11 @@ pub fn sent(token: &auth::Token) -> Timeline {
 ///DM beforehand.
 ///
 ///Upon successfully sending the DM, the message will be returned.
-pub fn send<'id, T: Into<UserID<'id>>>(to: T, text: &str, token: &auth::Token)
-    -> FutureResponse<DirectMessage>
-{
+pub fn send<'id, T: Into<UserID<'id>>>(
+    to: T,
+    text: &str,
+    token: &auth::Token,
+) -> FutureResponse<DirectMessage> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &to.into());
 
@@ -61,9 +61,7 @@ pub fn send<'id, T: Into<UserID<'id>>>(to: T, text: &str, token: &auth::Token)
 ///
 ///On a successful deletion, the future returned by this function yields the freshly-deleted
 ///message.
-pub fn delete(id: u64, token: &auth::Token)
-    -> FutureResponse<DirectMessage>
-{
+pub fn delete(id: u64, token: &auth::Token) -> FutureResponse<DirectMessage> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
 

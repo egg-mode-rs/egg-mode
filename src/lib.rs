@@ -152,44 +152,49 @@
 
 extern crate base64;
 extern crate hyper;
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
+extern crate chrono;
 extern crate futures;
-extern crate tokio;
-#[cfg(feature = "native-tls")]
-extern crate hyper_tls;
-#[cfg(feature = "native-tls")]
-extern crate native_tls;
+extern crate hmac;
 #[cfg(feature = "hyper-rustls")]
 extern crate hyper_rustls;
-extern crate url;
-extern crate rand;
-extern crate hmac;
-extern crate sha_1;
+#[cfg(feature = "native-tls")]
+extern crate hyper_tls;
 extern crate mime;
-extern crate chrono;
+#[cfg(feature = "native-tls")]
+extern crate native_tls;
+extern crate rand;
 extern crate regex;
 extern crate serde;
+extern crate sha_1;
+extern crate tokio;
+extern crate url;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
 
-#[macro_use] mod common;
+#[macro_use]
+mod common;
 mod auth;
-pub mod error;
-pub mod user;
-pub mod entities;
 pub mod cursor;
-pub mod tweet;
-pub mod media;
-pub mod search;
-pub mod place;
 pub mod direct;
-pub mod service;
-pub mod list;
-pub mod stream;
+pub mod entities;
+pub mod error;
 mod links;
+pub mod list;
+pub mod media;
+pub mod place;
+pub mod search;
+pub mod service;
+pub mod stream;
+pub mod tweet;
+pub mod user;
 
-pub use auth::{KeyPair, Token, AuthFuture, request_token, authorize_url, authenticate_url,
-               access_token, verify_tokens, bearer_token, invalidate_bearer};
-pub use common::{Response, ResponseIter, ResponseIterRef,
-                 ResponseIterMut, FutureResponse, TwitterFuture};
+pub use auth::{
+    access_token, authenticate_url, authorize_url, bearer_token, invalidate_bearer, request_token,
+    verify_tokens, AuthFuture, KeyPair, Token,
+};
+pub use common::{
+    FutureResponse, Response, ResponseIter, ResponseIterMut, ResponseIterRef, TwitterFuture,
+};

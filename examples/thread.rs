@@ -8,8 +8,8 @@ mod common;
 
 use common::tokio::runtime::current_thread::block_on_all;
 
-use std::collections::{VecDeque, HashSet};
 use egg_mode::tweet;
+use std::collections::{HashSet, VecDeque};
 
 fn main() {
     let c = common::Config::load();
@@ -62,7 +62,11 @@ fn main() {
 
     let replies = tweet::user_timeline(thread_user, true, false, &c.token);
 
-    for tweet in block_on_all(replies.call(Some(start_id), None)).unwrap().into_iter().rev() {
+    for tweet in block_on_all(replies.call(Some(start_id), None))
+        .unwrap()
+        .into_iter()
+        .rev()
+    {
         if let Some(reply_id) = tweet.in_reply_to_status_id {
             if thread_ids.contains(&reply_id) {
                 thread_ids.insert(tweet.id);

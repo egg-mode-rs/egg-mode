@@ -4,16 +4,16 @@
 
 //! Access to the Streaming API.
 
-use std::{self, io};
-use std::str::FromStr;
 use std::collections::HashMap;
+use std::str::FromStr;
+use std::{self, io};
 
 use chrono;
-use futures::{Future, Stream, Poll, Async};
-use hyper::{Request, Body};
+use futures::{Async, Future, Poll, Stream};
 use hyper::client::ResponseFuture;
-use serde::{Deserialize, Deserializer};
+use hyper::{Body, Request};
 use serde::de::Error;
+use serde::{Deserialize, Deserializer};
 use serde_json;
 
 use auth::{self, Token};
@@ -45,11 +45,7 @@ pub enum StreamMessage {
     ///
     /// Note that this message can be sent for both "other user liked the authenticated user's
     /// tweet" and "authenticated user liked someone else's tweet".
-    Like (
-        chrono::DateTime<chrono::Utc>,
-        TwitterUser,
-        Tweet
-    ),
+    Like(chrono::DateTime<chrono::Utc>, TwitterUser, Tweet),
     /// Notification that the given user has cleared their like of the given tweet.
     ///
     /// As with `StreamMessage::Like`, this can be sent for actions taken either by the
@@ -108,7 +104,7 @@ pub enum StreamMessage {
         /// The status that was deleted.
         status_id: u64,
         /// The user that deleted the status.
-        user_id: u64
+        user_id: u64,
     },
     /// Notice given when a user removes geolocation information from their profile.
     ///
@@ -163,102 +159,77 @@ pub enum StreamMessage {
 }
 
 impl<'de> Deserialize<'de> for StreamMessage {
-    fn deserialize<D>(deser: D) -> Result<StreamMessage, D::Error> where D: Deserializer<'de> {
-
+    fn deserialize<D>(deser: D) -> Result<StreamMessage, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         macro_rules! fetch {
-            ($input: ident, $key: expr) => (
+            ($input: ident, $key: expr) => {
                 $input
                     .get($key)
                     .and_then(|val| serde_json::from_value(val.clone()).ok())
                     .ok_or_else(|| D::Error::custom("Failed"))
-            )
+            };
         }
 
         let input = serde_json::Value::deserialize(deser)?;
         let msg = if let Some(event) = input.get("event").and_then(|ev| ev.as_str()) {
             //TODO: if i ever support site streams, add "access_revoked" here
             match event {
-                "favorite" => {
-                    StreamMessage::Like(
-                        fetch!(input, "created_at")?,
-                        fetch!(input, "source")?,
-                        fetch!(input, "target_object")?,
-                    )
-                }
-                "unfavorite" => {
-                    StreamMessage::Unlike(
-                        fetch!(input, "created_at")?,
-                        fetch!(input, "source")?,
-                        fetch!(input, "target_object")?
-                    )
-                }
+                "favorite" => StreamMessage::Like(
+                    fetch!(input, "created_at")?,
+                    fetch!(input, "source")?,
+                    fetch!(input, "target_object")?,
+                ),
+                "unfavorite" => StreamMessage::Unlike(
+                    fetch!(input, "created_at")?,
+                    fetch!(input, "source")?,
+                    fetch!(input, "target_object")?,
+                ),
                 "block" => {
-                    StreamMessage::Block(
-                        fetch!(input, "created_at")?,
-                        fetch!(input, "target")?
-                    )
+                    StreamMessage::Block(fetch!(input, "created_at")?, fetch!(input, "target")?)
                 }
                 "unblock" => {
-                    StreamMessage::Unblock(
-                        fetch!(input, "created_at")?,
-                        fetch!(input, "target")?
-                    )
+                    StreamMessage::Unblock(fetch!(input, "created_at")?, fetch!(input, "target")?)
                 }
-                "follow" => {
-                    StreamMessage::Follow {
-                        at: fetch!(input, "created_at")?,
-                        source: fetch!(input, "source")?,
-                        target: fetch!(input, "target")?
-                    }
-                }
+                "follow" => StreamMessage::Follow {
+                    at: fetch!(input, "created_at")?,
+                    source: fetch!(input, "source")?,
+                    target: fetch!(input, "target")?,
+                },
                 "unfollow" => {
-                    StreamMessage::Unfollow(
-                        fetch!(input, "created_at")?,
-                        fetch!(input, "target")?
-                    )
+                    StreamMessage::Unfollow(fetch!(input, "created_at")?, fetch!(input, "target")?)
                 }
-                "quoted_tweet" => {
-                    StreamMessage::Quoted(
-                        fetch!(input, "created_at")?,
-                        fetch!(input, "target")?,
-                        fetch!(input, "target_object")?
-                    )
-                }
-                "user_update" => {
-                    StreamMessage::ProfileUpdate(
-                        fetch!(input, "created_at")?,
-                        fetch!(input, "source")?,
-                    )
-                }
-                "list_member_added" => {
-                    StreamMessage::AddListMember(
-                        fetch!(input, "created_at")?,
-                        fetch!(input, "target")?,
-                        fetch!(input, "target_object")?
-                    )
-                }
-                "list_member_removed" => {
-                    StreamMessage::RemoveListMember(
-                        fetch!(input, "created_at")?,
-                        fetch!(input, "target")?,
-                        fetch!(input, "target_object")?
-                    )
-                }
-                "list_user_subscribed" => {
-                    StreamMessage::ListSubscribe(
-                        fetch!(input, "created_at")?,
-                        fetch!(input, "target")?,
-                        fetch!(input, "target_object")?
-                    )
-                }
-                "list_user_unsubscribed" => {
-                    StreamMessage::ListUnsubscribe(
-                        fetch!(input, "created_at")?,
-                        fetch!(input, "target")?,
-                        fetch!(input, "target_object")?
-                    )
-                }
-                _ => StreamMessage::Unknown(input.clone())
+                "quoted_tweet" => StreamMessage::Quoted(
+                    fetch!(input, "created_at")?,
+                    fetch!(input, "target")?,
+                    fetch!(input, "target_object")?,
+                ),
+                "user_update" => StreamMessage::ProfileUpdate(
+                    fetch!(input, "created_at")?,
+                    fetch!(input, "source")?,
+                ),
+                "list_member_added" => StreamMessage::AddListMember(
+                    fetch!(input, "created_at")?,
+                    fetch!(input, "target")?,
+                    fetch!(input, "target_object")?,
+                ),
+                "list_member_removed" => StreamMessage::RemoveListMember(
+                    fetch!(input, "created_at")?,
+                    fetch!(input, "target")?,
+                    fetch!(input, "target_object")?,
+                ),
+                "list_user_subscribed" => StreamMessage::ListSubscribe(
+                    fetch!(input, "created_at")?,
+                    fetch!(input, "target")?,
+                    fetch!(input, "target_object")?,
+                ),
+                "list_user_unsubscribed" => StreamMessage::ListUnsubscribe(
+                    fetch!(input, "created_at")?,
+                    fetch!(input, "target")?,
+                    fetch!(input, "target_object")?,
+                ),
+                _ => StreamMessage::Unknown(input.clone()),
             }
         } else if let Some(del) = input.get("delete").and_then(|d| d.get("status")) {
             StreamMessage::Delete {
@@ -268,7 +239,7 @@ impl<'de> Deserialize<'de> for StreamMessage {
         } else if let Some(scrub) = input.get("scrub_geo") {
             StreamMessage::ScrubGeo {
                 user_id: fetch!(scrub, "user_id")?,
-                up_to_status_id: fetch!(scrub, "up_to_status_id")?
+                up_to_status_id: fetch!(scrub, "up_to_status_id")?,
             }
         } else if let Some(tweet) = input.get("status_withheld") {
             StreamMessage::StatusWithheld {
@@ -285,13 +256,13 @@ impl<'de> Deserialize<'de> for StreamMessage {
             StreamMessage::Disconnect(fetch!(err, "code")?, fetch!(err, "reason")?)
         } else if let Some(friends) = input.get("friends") {
             StreamMessage::FriendList(
-                serde_json::from_value(friends.clone()).map_err(
-                    |e| D::Error::custom(format!("{}", e)))?
+                serde_json::from_value(friends.clone())
+                    .map_err(|e| D::Error::custom(format!("{}", e)))?,
             )
         } else if let Some(dm) = input.get("direct_message") {
             StreamMessage::DirectMessage(
-                serde_json::from_value(dm.clone()).map_err(
-                    |e| D::Error::custom(format!("{}", e)))?
+                serde_json::from_value(dm.clone())
+                    .map_err(|e| D::Error::custom(format!("{}", e)))?,
             )
         // TODO remove clone?
         } else if let Ok(tweet) = serde_json::from_value::<Tweet>(input.clone()) {
@@ -350,7 +321,7 @@ impl Stream for TwitterStream {
                 Ok(Async::NotReady) => {
                     self.response = Some(resp);
                     return Ok(Async::NotReady);
-                },
+                }
                 Ok(Async::Ready(resp)) => {
                     let status = resp.status();
                     if !status.is_success() {
@@ -359,7 +330,7 @@ impl Stream for TwitterStream {
                     }
 
                     self.body = Some(resp.into_body());
-                },
+                }
             }
         }
 
@@ -369,15 +340,15 @@ impl Stream for TwitterStream {
                     Err(e) => {
                         self.body = Some(body);
                         return Err(e.into());
-                    },
+                    }
                     Ok(Async::NotReady) => {
                         self.body = Some(body);
                         return Ok(Async::NotReady);
-                    },
+                    }
                     Ok(Async::Ready(None)) => {
                         //TODO: introduce a new error for this?
                         return Err(error::Error::FutureAlreadyCompleted);
-                    },
+                    }
                     Ok(Async::Ready(Some(chunk))) => {
                         self.buf.extend(&*chunk);
 
@@ -387,14 +358,17 @@ impl Stream for TwitterStream {
                             let resp = if let Ok(msg_str) = std::str::from_utf8(&self.buf[..pos]) {
                                 StreamMessage::from_str(msg_str)
                             } else {
-                                Err(io::Error::new(io::ErrorKind::InvalidData,
-                                                   "stream did not contain valid UTF-8").into())
+                                Err(io::Error::new(
+                                    io::ErrorKind::InvalidData,
+                                    "stream did not contain valid UTF-8",
+                                )
+                                .into())
                             };
 
                             self.buf.drain(..pos);
                             return Ok(Async::Ready(Some(resp?)));
                         }
-                    },
+                    }
                 }
             }
         } else {
@@ -576,4 +550,3 @@ mod tests {
         }
     }
 }
-

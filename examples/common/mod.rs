@@ -9,12 +9,12 @@
 //to prevent conflicts with examples, i'll import things here and let examples use it from here if
 //they need it
 pub extern crate chrono;
-pub extern crate tokio;
 pub extern crate futures;
+pub extern crate tokio;
 
-use std;
-use std::io::{Write, Read};
 use egg_mode;
+use std;
+use std::io::{Read, Write};
 
 use self::tokio::runtime::current_thread::block_on_all;
 
@@ -49,8 +49,10 @@ impl Config {
 
             username = iter.next().unwrap().to_string();
             user_id = u64::from_str_radix(&iter.next().unwrap(), 10).unwrap();
-            let access_token = egg_mode::KeyPair::new(iter.next().unwrap().to_string(),
-                                                      iter.next().unwrap().to_string());
+            let access_token = egg_mode::KeyPair::new(
+                iter.next().unwrap().to_string(),
+                iter.next().unwrap().to_string(),
+            );
             token = egg_mode::Token::Access {
                 consumer: con_token,
                 access: access_token,
@@ -73,14 +75,18 @@ impl Config {
             std::io::stdin().read_line(&mut pin).unwrap();
             println!("");
 
-            let tok_result = block_on_all(egg_mode::access_token(con_token, &request_token, pin)).unwrap();
+            let tok_result =
+                block_on_all(egg_mode::access_token(con_token, &request_token, pin)).unwrap();
 
             token = tok_result.0;
             user_id = tok_result.1;
             username = tok_result.2;
 
             match token {
-                egg_mode::Token::Access { access: ref access_token, .. } => {
+                egg_mode::Token::Access {
+                    access: ref access_token,
+                    ..
+                } => {
                     config.push_str(&username);
                     config.push('\n');
                     config.push_str(&format!("{}", user_id));
@@ -88,7 +94,7 @@ impl Config {
                     config.push_str(&access_token.key);
                     config.push('\n');
                     config.push_str(&access_token.secret);
-                },
+                }
                 _ => unreachable!(),
             }
 
@@ -113,7 +119,12 @@ impl Config {
 
 pub fn print_tweet(tweet: &egg_mode::tweet::Tweet) {
     if let Some(ref user) = tweet.user {
-        println!("{} (@{}) posted at {}", user.name, user.screen_name, tweet.created_at.with_timezone(&chrono::Local));
+        println!(
+            "{} (@{}) posted at {}",
+            user.name,
+            user.screen_name,
+            tweet.created_at.with_timezone(&chrono::Local)
+        );
     }
 
     if let Some(ref screen_name) = tweet.in_reply_to_screen_name {

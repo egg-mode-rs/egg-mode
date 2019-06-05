@@ -9,11 +9,11 @@
 //! module. The rest of it is available to make sure consumers of the API can understand precisely
 //! what types come out of functions that return `CursorIter`.
 
-use futures::{Future, Stream, Poll, Async};
+use futures::{Async, Future, Poll, Stream};
 use serde::Deserialize;
 
-use common::*;
 use auth;
+use common::*;
 use error;
 use list;
 use user;
@@ -226,7 +226,8 @@ impl Cursor for ListCursor {
 /// ```
 #[must_use = "cursor iterators are lazy and do nothing unless consumed"]
 pub struct CursorIter<'a, T>
-    where T: Cursor + for<'de> Deserialize<'de> + 'a
+where
+    T: Cursor + for<'de> Deserialize<'de> + 'a,
 {
     link: &'static str,
     token: auth::Token,
@@ -256,7 +257,8 @@ pub struct CursorIter<'a, T>
 }
 
 impl<'a, T> CursorIter<'a, T>
-    where T: Cursor + for<'de> Deserialize<'de> + 'a
+where
+    T: Cursor + for<'de> Deserialize<'de> + 'a,
 {
     ///Sets the number of results returned in a single network call.
     ///
@@ -303,8 +305,12 @@ impl<'a, T> CursorIter<'a, T>
     ///This is essentially an internal infrastructure function, not meant to be used from consumer
     ///code.
     #[doc(hidden)]
-    pub fn new(link: &'static str, token: &auth::Token,
-               params_base: Option<ParamList<'a>>, page_size: Option<i32>) -> CursorIter<'a, T> {
+    pub fn new(
+        link: &'static str,
+        token: &auth::Token,
+        params_base: Option<ParamList<'a>>,
+        page_size: Option<i32>,
+    ) -> CursorIter<'a, T> {
         CursorIter {
             link: link,
             token: token.clone(),
@@ -319,7 +325,8 @@ impl<'a, T> CursorIter<'a, T>
 }
 
 impl<'a, T> Stream for CursorIter<'a, T>
-    where T: Cursor + for<'de> Deserialize<'de> + 'a
+where
+    T: Cursor + for<'de> Deserialize<'de> + 'a,
 {
     type Item = Response<T::Item>;
     type Error = error::Error;
@@ -353,8 +360,7 @@ impl<'a, T> Stream for CursorIter<'a, T>
         if let Some(ref mut results) = self.iter {
             if let Some(item) = results.next() {
                 return Ok(Async::Ready(Some(item)));
-            }
-            else if self.next_cursor == 0 {
+            } else if self.next_cursor == 0 {
                 return Ok(Async::Ready(None));
             }
         }

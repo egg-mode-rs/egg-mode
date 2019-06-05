@@ -45,8 +45,8 @@ fn main() {
 
     println!("");
     println!("Loading the user's timeline:");
-    let user = egg_mode::tweet::user_timeline(config.user_id, true, true,
-                                              &config.token).with_page_size(5);
+    let user =
+        egg_mode::tweet::user_timeline(config.user_id, true, true, &config.token).with_page_size(5);
     let (_user, feed) = block_on_all(user.start()).unwrap();
     for status in feed {
         common::print_tweet(&status);

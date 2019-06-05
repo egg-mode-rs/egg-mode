@@ -48,15 +48,15 @@ use std::collections::HashMap;
 use std::mem;
 
 use chrono;
-use hyper::{Request, Body};
-use futures::{Async, Future, Poll};
 use futures::future::Join;
+use futures::{Async, Future, Poll};
+use hyper::{Body, Request};
 use serde::{Deserialize, Deserializer};
 
 use auth;
-use user;
 use entities;
 use error;
+use user;
 
 mod fun;
 mod raw;
@@ -95,7 +95,10 @@ pub struct DirectMessage {
 }
 
 impl<'de> Deserialize<'de> for DirectMessage {
-    fn deserialize<D>(deser: D) -> Result<DirectMessage, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deser: D) -> Result<DirectMessage, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         let mut raw = raw::RawDirectMessage::deserialize(deser)?;
 
         for entity in &mut raw.entities.hashtags {
@@ -301,9 +304,11 @@ impl Timeline {
     ///
     ///If the range of DMs given by the IDs would return more than `self.count`, the newest set
     ///of messages will be returned.
-    pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>)
-        -> FutureResponse<Vec<DirectMessage>>
-    {
+    pub fn call(
+        &self,
+        since_id: Option<u64>,
+        max_id: Option<u64>,
+    ) -> FutureResponse<Vec<DirectMessage>> {
         make_parsed_future(self.request(since_id, max_id))
     }
 
@@ -338,11 +343,11 @@ impl Timeline {
     }
 
     ///Create an instance of `Timeline` with the given link and tokens.
-    fn new(link: &'static str,
-           params_base: Option<ParamList<'static>>,
-           token: &auth::Token)
-        -> Self
-    {
+    fn new(
+        link: &'static str,
+        params_base: Option<ParamList<'static>>,
+        token: &auth::Token,
+    ) -> Self {
         Timeline {
             link: link,
             token: token.clone(),
@@ -360,14 +365,12 @@ impl Timeline {
 /// having updated the IDs in the parent `Timeline`) or the error encountered when loading or
 /// parsing the response.
 #[must_use = "futures do nothing unless polled"]
-pub struct TimelineFuture<'timeline>
-{
+pub struct TimelineFuture<'timeline> {
     timeline: &'timeline mut Timeline,
     loader: FutureResponse<Vec<DirectMessage>>,
 }
 
-impl<'timeline> Future for TimelineFuture<'timeline>
-{
+impl<'timeline> Future for TimelineFuture<'timeline> {
     type Item = Response<Vec<DirectMessage>>;
     type Error = error::Error;
 
@@ -399,9 +402,7 @@ fn merge(this: &mut DMConversations, conversations: DMConversations) {
         let old_convo = mem::replace(messages, Vec::with_capacity(cap));
 
         //ASSUMPTION: these conversation threads are disjoint
-        if old_convo.first().map(|m| m.id).unwrap_or(0) >
-            convo.first().map(|m| m.id).unwrap_or(0)
-        {
+        if old_convo.first().map(|m| m.id).unwrap_or(0) > convo.first().map(|m| m.id).unwrap_or(0) {
             messages.extend(old_convo);
             messages.extend(convo);
         } else {
@@ -553,9 +554,7 @@ impl ConversationTimeline {
         self.make_future(sent, received)
     }
 
-    fn make_future(self, sent: DMFuture, received: DMFuture)
-        -> ConversationFuture
-    {
+    fn make_future(self, sent: DMFuture, received: DMFuture) -> ConversationFuture {
         ConversationFuture {
             loader: Some(self),
             future: sent.join(received),

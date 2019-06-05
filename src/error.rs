@@ -15,12 +15,12 @@
 //! [`TwitterErrorCode`]: struct.TwitterErrorCode.html
 //! [`TwitterErrors`]: struct.TwitterErrors.html
 
-use std::{self, fmt};
+use chrono;
 use hyper;
 #[cfg(feature = "native-tls")]
 use native_tls;
-use chrono;
 use serde_json;
+use std::{self, fmt};
 use tokio;
 
 ///Represents a collection of errors returned from a Twitter API call.
@@ -38,8 +38,11 @@ impl fmt::Display for TwitterErrors {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut first = true;
         for e in &self.errors {
-            if first { first = false; }
-            else { writeln!(f, ",")?; }
+            if first {
+                first = false;
+            } else {
+                writeln!(f, ",")?;
+            }
 
             write!(f, "{}", e)?;
         }
@@ -150,7 +153,9 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             Error::BadUrl => write!(f, "URL given did not match API method"),
-            Error::InvalidResponse(err, ref ext) => write!(f, "Invalid response received: {} ({:?})", err, ext),
+            Error::InvalidResponse(err, ref ext) => {
+                write!(f, "Invalid response received: {} ({:?})", err, ext)
+            }
             Error::MissingValue(val) => write!(f, "Value missing from response: {}", val),
             Error::FutureAlreadyCompleted => write!(f, "Future has already been completed"),
             Error::TwitterError(ref err) => write!(f, "Error(s) returned from Twitter: {}", err),
