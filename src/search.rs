@@ -53,14 +53,14 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 
-use futures::{Future, Poll, Async};
+use futures::{Async, Future, Poll};
 use serde::{Deserialize, Deserializer};
 
 use auth;
+use common::*;
 use error;
 use links;
 use tweet::Tweet;
-use common::*;
 
 ///Begin setting up a tweet search with the given query.
 pub fn search<'a, S: Into<Cow<'a, str>>>(query: S) -> SearchBuilder<'a> {
@@ -208,8 +208,16 @@ impl<'a> SearchBuilder<'a> {
 
         if let Some((lat, lon, radius)) = self.geocode {
             match radius {
-                Distance::Miles(r) => add_param(&mut params, "geocode", format!("{:.6},{:.6},{}mi", lat, lon, r)),
-                Distance::Kilometers(r) => add_param(&mut params, "geocode", format!("{:.6},{:.6},{}km", lat, lon, r)),
+                Distance::Miles(r) => add_param(
+                    &mut params,
+                    "geocode",
+                    format!("{:.6},{:.6},{}mi", lat, lon, r),
+                ),
+                Distance::Kilometers(r) => add_param(
+                    &mut params,
+                    "geocode",
+                    format!("{:.6},{:.6},{}km", lat, lon, r),
+                ),
             };
         }
 
@@ -260,7 +268,7 @@ impl<'a> Future for SearchFuture<'a> {
 struct RawSearch<'a> {
     #[serde(borrow)]
     search_metadata: RawSearchMetaData<'a>,
-    statuses: Vec<Tweet>
+    statuses: Vec<Tweet>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -277,14 +285,17 @@ struct RawSearchMetaData<'a> {
 }
 
 impl<'de> Deserialize<'de> for SearchResult<'static> {
-    fn deserialize<D>(deser: D) -> Result<SearchResult<'static>, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deser: D) -> Result<SearchResult<'static>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         let raw = RawSearch::deserialize(deser)?;
         Ok(SearchResult {
             statuses: raw.statuses,
             query: raw.search_metadata.query.into(),
             max_id: raw.search_metadata.max_id,
             since_id: raw.search_metadata.since_id,
-            params: None
+            params: None,
         })
     }
 }

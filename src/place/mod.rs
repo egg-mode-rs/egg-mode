@@ -29,8 +29,8 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use serde::{Deserialize, Deserializer};
 use serde::de::Error;
+use serde::{Deserialize, Deserializer};
 use serde_json;
 
 use auth;
@@ -108,19 +108,22 @@ pub struct SearchResult {
 }
 
 impl<'de> Deserialize<'de> for SearchResult {
-    fn deserialize<D>(deser: D) -> Result<SearchResult, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deser: D) -> Result<SearchResult, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         let raw: serde_json::Value = serde_json::Value::deserialize(deser)?;
-        let url = raw.get("query")
+        let url = raw
+            .get("query")
             .and_then(|obj| obj.get("url"))
             .ok_or_else(|| D::Error::custom("Malformed search result"))?
             .to_string();
-        let results = raw.get("result")
+        let results = raw
+            .get("result")
             .and_then(|obj| obj.get("places"))
             .and_then(|arr| <Vec<Place>>::deserialize(arr).ok())
             .ok_or_else(|| D::Error::custom("Malformed search result"))?;
-        Ok(SearchResult {
-            url, results
-        })
+        Ok(SearchResult { url, results })
     }
 }
 
@@ -188,9 +191,7 @@ impl GeocodeBuilder {
     }
 
     ///Finalize the search parameters and return the results collection.
-    pub fn call(&self, token: &auth::Token)
-        -> FutureResponse<SearchResult>
-    {
+    pub fn call(&self, token: &auth::Token) -> FutureResponse<SearchResult> {
         let mut params = HashMap::new();
 
         add_param(&mut params, "lat", self.coordinate.0.to_string());
@@ -316,22 +317,20 @@ impl<'a> SearchBuilder<'a> {
     }
 
     ///Finalize the search parameters and return the results collection.
-    pub fn call(&self, token: &auth::Token)
-        -> FutureResponse<SearchResult>
-    {
+    pub fn call(&self, token: &auth::Token) -> FutureResponse<SearchResult> {
         let mut params = HashMap::new();
 
         match self.query {
             PlaceQuery::LatLon(lat, long) => {
                 add_param(&mut params, "lat", lat.to_string());
                 add_param(&mut params, "long", long.to_string());
-            },
+            }
             PlaceQuery::Query(text) => {
                 add_param(&mut params, "query", text);
-            },
+            }
             PlaceQuery::IPAddress(text) => {
                 add_param(&mut params, "ip", text);
-            },
+            }
         }
 
         if let Some(ref acc) = self.accuracy {
@@ -383,12 +382,15 @@ impl fmt::Display for Accuracy {
     }
 }
 
-fn deserialize_bounding_box<'de, D>(ser: D) -> Result<Vec<(f64, f64)>, D::Error> where D: Deserializer<'de> {
+fn deserialize_bounding_box<'de, D>(ser: D) -> Result<Vec<(f64, f64)>, D::Error>
+where
+    D: Deserializer<'de>,
+{
     let s = serde_json::Value::deserialize(ser)?;
     s.get("coordinates")
         .and_then(|arr| arr.get(0).cloned())
         .ok_or_else(|| D::Error::custom("Malformed 'bounding_box' attribute"))
-        .and_then(|inner_arr| serde_json::from_value::<Vec<(f64, f64)>>(inner_arr)
-                .map_err(|e| D::Error::custom(e))
-        )
+        .and_then(|inner_arr| {
+            serde_json::from_value::<Vec<(f64, f64)>>(inner_arr).map_err(|e| D::Error::custom(e))
+        })
 }

@@ -10,21 +10,21 @@
 
 use std::borrow::Cow;
 use std::fmt;
-use std::time::{UNIX_EPOCH, SystemTime};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use base64;
-use futures::{Future, Poll, Async};
+use futures::{Async, Future, Poll};
 use hmac::{Hmac, Mac};
 use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
-use hyper::{Method, Request, Body};
+use hyper::{Body, Method, Request};
 use rand::{self, Rng};
 use serde_json;
 use sha_1::Sha1;
-use url::percent_encoding::{EncodeSet, PercentEncode, utf8_percent_encode};
+use url::percent_encoding::{utf8_percent_encode, EncodeSet, PercentEncode};
 
-use links;
-use error;
 use common::*;
+use error;
+use links;
 
 //the encode sets in the url crate don't quite match what twitter wants, so i'll make up my own
 #[derive(Copy, Clone)]
@@ -33,9 +33,8 @@ struct TwitterEncodeSet;
 impl EncodeSet for TwitterEncodeSet {
     fn contains(&self, byte: u8) -> bool {
         match byte {
-            b'a' ... b'z' | b'A' ... b'Z' | b'0' ... b'9'
-                | b'-' | b'.' | b'_' | b'~' => false,
-            _ => true
+            b'a'...b'z' | b'A'...b'Z' | b'0'...b'9' | b'-' | b'.' | b'_' | b'~' => false,
+            _ => true,
         }
     }
 }
@@ -67,7 +66,11 @@ impl fmt::Display for TwitterOAuth {
         write!(f, "OAuth ")?;
 
         // authorization data
-        write!(f, "oauth_consumer_key=\"{}\"", percent_encode(&self.consumer_key))?;
+        write!(
+            f,
+            "oauth_consumer_key=\"{}\"",
+            percent_encode(&self.consumer_key)
+        )?;
 
         write!(f, ", oauth_nonce=\"{}\"", percent_encode(&self.nonce))?;
 
@@ -75,7 +78,11 @@ impl fmt::Display for TwitterOAuth {
             write!(f, ", oauth_signature=\"{}\"", percent_encode(signature))?;
         }
 
-        write!(f, ", oauth_signature_method=\"{}\"", percent_encode("HMAC-SHA1"))?;
+        write!(
+            f,
+            ", oauth_signature_method=\"{}\"",
+            percent_encode("HMAC-SHA1")
+        )?;
 
         write!(f, ", oauth_timestamp=\"{}\"", self.timestamp)?;
 
@@ -130,8 +137,9 @@ impl KeyPair {
     ///This can be called with either `&'static str` (a string literal) or `String` for either
     ///parameter.
     pub fn new<K, S>(key: K, secret: S) -> KeyPair
-        where K: Into<Cow<'static, str>>,
-              S: Into<Cow<'static, str>>
+    where
+        K: Into<Cow<'static, str>>,
+        S: Into<Cow<'static, str>>,
     {
         KeyPair {
             key: key.into(),
@@ -322,19 +330,29 @@ pub enum Token {
 
 ///With the given OAuth header and method parameters, create an OAuth signature and return the
 ///header with the signature inline.
-fn sign(header: TwitterOAuth,
-        method: Method,
-        uri: &str,
-        params: Option<&ParamList>,
-        con_token: &KeyPair,
-        access_token: Option<&KeyPair>) -> TwitterOAuth {
+fn sign(
+    header: TwitterOAuth,
+    method: Method,
+    uri: &str,
+    params: Option<&ParamList>,
+    con_token: &KeyPair,
+    access_token: Option<&KeyPair>,
+) -> TwitterOAuth {
     let query_string = {
         let mut sig_params = params.cloned().unwrap_or_default();
 
-        add_param(&mut sig_params, "oauth_consumer_key", header.consumer_key.as_str());
+        add_param(
+            &mut sig_params,
+            "oauth_consumer_key",
+            header.consumer_key.as_str(),
+        );
         add_param(&mut sig_params, "oauth_nonce", header.nonce.as_str());
         add_param(&mut sig_params, "oauth_signature_method", "HMAC-SHA1");
-        add_param(&mut sig_params, "oauth_timestamp", format!("{}", header.timestamp));
+        add_param(
+            &mut sig_params,
+            "oauth_timestamp",
+            format!("{}", header.timestamp),
+        );
         add_param(&mut sig_params, "oauth_version", "1.0");
 
         if let Some(ref token) = header.token {
@@ -349,21 +367,26 @@ fn sign(header: TwitterOAuth,
             add_param(&mut sig_params, "oauth_verifier", verifier.as_str());
         }
 
-        let mut query = sig_params.iter()
-                                  .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
-                                  .collect::<Vec<_>>();
+        let mut query = sig_params
+            .iter()
+            .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
+            .collect::<Vec<_>>();
         query.sort();
 
         query.join("&")
     };
 
-    let base_str = format!("{}&{}&{}",
-                           percent_encode(method.as_str()),
-                           percent_encode(uri),
-                           percent_encode(&query_string));
-    let key = format!("{}&{}",
-                      percent_encode(&con_token.secret),
-                      percent_encode(&access_token.unwrap_or(&KeyPair::new("", "")).secret));
+    let base_str = format!(
+        "{}&{}&{}",
+        percent_encode(method.as_str()),
+        percent_encode(uri),
+        percent_encode(&query_string)
+    );
+    let key = format!(
+        "{}&{}",
+        percent_encode(&con_token.secret),
+        percent_encode(&access_token.unwrap_or(&KeyPair::new("", "")).secret)
+    );
 
     let mut digest = Hmac::<Sha1>::new(key.as_bytes());
     digest.input(base_str.as_bytes());
@@ -372,29 +395,38 @@ fn sign(header: TwitterOAuth,
         base64::CharacterSet::Standard,
         true,
         true,
-        base64::LineWrap::NoWrap
+        base64::LineWrap::NoWrap,
     );
 
     let signature = Some(base64::encode_config(digest.result().code(), config));
 
-    TwitterOAuth {signature, ..header}
+    TwitterOAuth {
+        signature,
+        ..header
+    }
 }
 
 ///With the given method parameters, return a signed OAuth header.
-fn get_header(method: Method,
-              uri: &str,
-              con_token: &KeyPair,
-              access_token: Option<&KeyPair>,
-              callback: Option<String>,
-              verifier: Option<String>,
-              params: Option<&ParamList>) -> TwitterOAuth {
+fn get_header(
+    method: Method,
+    uri: &str,
+    con_token: &KeyPair,
+    access_token: Option<&KeyPair>,
+    callback: Option<String>,
+    verifier: Option<String>,
+    params: Option<&ParamList>,
+) -> TwitterOAuth {
     let now_s = match SystemTime::now().duration_since(UNIX_EPOCH) {
         Ok(dur) => dur,
         Err(err) => err.duration(),
-    }.as_secs();
+    }
+    .as_secs();
     let header = TwitterOAuth {
         consumer_key: con_token.key.to_string(),
-        nonce: rand::thread_rng().gen_ascii_chars().take(32).collect::<String>(),
+        nonce: rand::thread_rng()
+            .gen_ascii_chars()
+            .take(32)
+            .collect::<String>(),
         signature: None,
         timestamp: now_s,
         token: access_token.map(|tok| tok.key.to_string()),
@@ -411,14 +443,13 @@ fn bearer_request(con_token: &KeyPair) -> String {
 }
 
 /// Assemble a signed GET request to the given URL with the given parameters.
-pub fn get(uri: &str,
-           token: &Token,
-           params: Option<&ParamList>) -> Request<Body> {
+pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
     let full_url = if let Some(p) = params {
-        let query = p.iter()
-                     .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
-                     .collect::<Vec<_>>()
-                     .join("&");
+        let query = p
+            .iter()
+            .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
+            .collect::<Vec<_>>()
+            .join("&");
 
         format!("{}?{}", uri, query)
     } else {
@@ -431,28 +462,35 @@ pub fn get(uri: &str,
             consumer: ref con_token,
             access: ref access_token,
         } => {
-            let header = get_header(Method::GET, uri, con_token, Some(access_token),
-                                    None, None, params);
+            let header = get_header(
+                Method::GET,
+                uri,
+                con_token,
+                Some(access_token),
+                None,
+                None,
+                params,
+            );
             request.header(AUTHORIZATION, header.to_string());
-        },
+        }
         Token::Bearer(ref token) => {
             request.header(AUTHORIZATION, bearer(token));
-        },
+        }
     }
 
     request.body(Body::empty()).unwrap()
 }
 
 /// Assemble a signed POST request to the given URL with the given parameters.
-pub fn post(uri: &str,
-            token: &Token,
-            params: Option<&ParamList>) -> Request<Body> {
+pub fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
     let content = "application/x-www-form-urlencoded";
     let body = if let Some(p) = params {
-        Body::from(p.iter()
-                    .map(|(k, v)| format!("{}={}", k, percent_encode(v)))
-                    .collect::<Vec<_>>()
-                    .join("&"))
+        Body::from(
+            p.iter()
+                .map(|(k, v)| format!("{}={}", k, percent_encode(v)))
+                .collect::<Vec<_>>()
+                .join("&"),
+        )
     } else {
         Body::empty()
     };
@@ -465,14 +503,21 @@ pub fn post(uri: &str,
             consumer: ref con_token,
             access: ref access_token,
         } => {
-            let header = get_header(Method::POST, uri, con_token, Some(access_token),
-                                    None, None, params);
+            let header = get_header(
+                Method::POST,
+                uri,
+                con_token,
+                Some(access_token),
+                None,
+                None,
+                params,
+            );
 
             request.header(AUTHORIZATION, header.to_string());
-        },
+        }
         Token::Bearer(ref token) => {
             request.header(AUTHORIZATION, bearer(token));
-        },
+        }
     }
 
     request.body(body).unwrap()
@@ -491,14 +536,21 @@ pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request<
             consumer: ref con_token,
             access: ref access_token,
         } => {
-            let header = get_header(Method::POST, uri, con_token, Some(access_token),
-                                    None, None, None);
+            let header = get_header(
+                Method::POST,
+                uri,
+                con_token,
+                Some(access_token),
+                None,
+                None,
+                None,
+            );
 
             request.header(AUTHORIZATION, header.to_string());
-        },
+        }
         Token::Bearer(ref token) => {
             request.header(AUTHORIZATION, bearer(token));
-        },
+        }
     }
 
     request.body(body).unwrap()
@@ -555,11 +607,16 @@ pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request<
 ///                                                      "https://myapp.io/auth")).unwrap();
 /// # }
 /// ```
-pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S)
-    -> TwitterFuture<KeyPair>
-{
-    let header = get_header(Method::POST, links::auth::REQUEST_TOKEN,
-                            con_token, None, Some(callback.into()), None, None);
+pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> TwitterFuture<KeyPair> {
+    let header = get_header(
+        Method::POST,
+        links::auth::REQUEST_TOKEN,
+        con_token,
+        None,
+        Some(callback.into()),
+        None,
+        None,
+    );
 
     let mut request = Request::post(links::auth::REQUEST_TOKEN);
     request.header(AUTHORIZATION, header.to_string());
@@ -574,17 +631,19 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S)
                 Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
                 Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
                 Some(_) => (),
-                None =>
-                    return Err(
-                        error::Error::InvalidResponse(
-                            "unexpected end of request_token response", None
-                        )
-                    ),
+                None => {
+                    return Err(error::Error::InvalidResponse(
+                        "unexpected end of request_token response",
+                        None,
+                    ))
+                }
             }
         }
 
-        Ok(KeyPair::new(key.ok_or(error::Error::MissingValue("oauth_token"))?,
-                        secret.ok_or(error::Error::MissingValue("oauth_token_secret"))?))
+        Ok(KeyPair::new(
+            key.ok_or(error::Error::MissingValue("oauth_token"))?,
+            secret.ok_or(error::Error::MissingValue("oauth_token_secret"))?,
+        ))
     }
 
     make_future(request.body(Body::empty()).unwrap(), parse_tok)
@@ -634,7 +693,11 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S)
 ///
 /// [Pin-Based authorization]: https://dev.twitter.com/oauth/pin-based
 pub fn authorize_url(request_token: &KeyPair) -> String {
-    format!("{}?oauth_token={}", links::auth::AUTHORIZE, request_token.key)
+    format!(
+        "{}?oauth_token={}",
+        links::auth::AUTHORIZE,
+        request_token.key
+    )
 }
 
 /// With the given request KeyPair, return a URL to redirect a user to so they can accept or reject
@@ -671,7 +734,11 @@ pub fn authorize_url(request_token: &KeyPair) -> String {
 /// `oauth_verifier`, which contains a verifier string that can be used to create the final [access
 /// token].
 pub fn authenticate_url(request_token: &KeyPair) -> String {
-    format!("{}?oauth_token={}", links::auth::AUTHENTICATE, request_token.key)
+    format!(
+        "{}?oauth_token={}",
+        links::auth::AUTHENTICATE,
+        request_token.key
+    )
 }
 
 /// With the given OAuth tokens and verifier, ask Twitter for an access KeyPair that can be used to
@@ -709,13 +776,20 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 /// The `AuthFuture` returned by this function, on success, yields a tuple of three items: The
 /// final access token, the ID of the authenticated user, and the screen name of the authenticated
 /// user.
-pub fn access_token<S: Into<String>>(con_token: KeyPair,
-                                     request_token: &KeyPair,
-                                     verifier: S)
-    -> AuthFuture
-{
-    let header = get_header(Method::POST, links::auth::ACCESS_TOKEN,
-                            &con_token, Some(request_token), None, Some(verifier.into()), None);
+pub fn access_token<S: Into<String>>(
+    con_token: KeyPair,
+    request_token: &KeyPair,
+    verifier: S,
+) -> AuthFuture {
+    let header = get_header(
+        Method::POST,
+        links::auth::ACCESS_TOKEN,
+        &con_token,
+        Some(request_token),
+        None,
+        Some(verifier.into()),
+        None,
+    );
     let mut request = Request::post(links::auth::ACCESS_TOKEN);
     request.header(AUTHORIZATION, header.to_string());
 
@@ -764,22 +838,26 @@ impl Future for AuthFuture {
                     Some("user_id") => id = kv.next().and_then(|s| u64::from_str_radix(s, 10).ok()),
                     Some("screen_name") => username = kv.next().map(|s| s.to_string()),
                     Some(_) => (),
-                    None => return Err(
-                        error::Error::InvalidResponse(
-                            "unexpected end of response in access_token", None)
-                    ),
+                    None => {
+                        return Err(error::Error::InvalidResponse(
+                            "unexpected end of response in access_token",
+                            None,
+                        ))
+                    }
                 }
             }
 
             let access_key = key.ok_or(error::Error::MissingValue("oauth_token"))?;
             let access_secret = secret.ok_or(error::Error::MissingValue("oauth_token_secret"))?;
 
-            Ok(Async::Ready((Token::Access {
+            Ok(Async::Ready((
+                Token::Access {
                     consumer: con_token,
                     access: KeyPair::new(access_key, access_secret),
                 },
                 id.ok_or(error::Error::MissingValue("user_id"))?,
-                username.ok_or(error::Error::MissingValue("screen_name"))?)))
+                username.ok_or(error::Error::MissingValue("screen_name"))?,
+            )))
         } else {
             Err(error::Error::FutureAlreadyCompleted)
         }
@@ -814,22 +892,23 @@ impl Future for AuthFuture {
 /// For more information, see the Twitter documentation on [Application-only authentication][auth].
 ///
 /// [auth]: https://dev.twitter.com/oauth/application-only
-pub fn bearer_token(con_token: &KeyPair)
-    -> TwitterFuture<Token>
-{
+pub fn bearer_token(con_token: &KeyPair) -> TwitterFuture<Token> {
     let content = "application/x-www-form-urlencoded;charset=UTF-8";
 
     let auth_header = bearer_request(con_token);
     let mut request = Request::post(links::auth::BEARER_TOKEN);
     request.header(AUTHORIZATION, auth_header);
     request.header(CONTENT_TYPE, content);
-    let request = request.body(Body::from("grant_type=client_credentials")).unwrap();
+    let request = request
+        .body(Body::from("grant_type=client_credentials"))
+        .unwrap();
 
     fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
         let decoded: serde_json::Value = serde_json::from_str(&full_resp)?;
-        let result = decoded.get("access_token")
-                                 .and_then(|s| s.as_str())
-                                 .ok_or(error::Error::MissingValue("access_token"))?;
+        let result = decoded
+            .get("access_token")
+            .and_then(|s| s.as_str())
+            .ok_or(error::Error::MissingValue("access_token"))?;
 
         Ok(Token::Bearer(result.to_owned()))
     }
@@ -843,9 +922,7 @@ pub fn bearer_token(con_token: &KeyPair)
 /// # Panics
 ///
 /// If this function is handed a `Token` that is not a Bearer token, this function will panic.
-pub fn invalidate_bearer(con_token: &KeyPair, token: &Token)
-    -> TwitterFuture<Token>
-{
+pub fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> TwitterFuture<Token> {
     let token = if let Token::Bearer(ref token) = *token {
         token
     } else {
@@ -863,9 +940,10 @@ pub fn invalidate_bearer(con_token: &KeyPair, token: &Token)
 
     fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
         let decoded: serde_json::Value = serde_json::from_str(&full_resp)?;
-        let result = decoded.get("access_token")
-                                 .and_then(|s| s.as_str())
-                                 .ok_or(error::Error::MissingValue("access_token"))?;
+        let result = decoded
+            .get("access_token")
+            .and_then(|s| s.as_str())
+            .ok_or(error::Error::MissingValue("access_token"))?;
 
         Ok(Token::Bearer(result.to_owned()))
     }
@@ -878,9 +956,7 @@ pub fn invalidate_bearer(con_token: &KeyPair, token: &Token)
 /// If you have cached access tokens, using this method is a convenient way to make sure they're
 /// still valid. If the user has revoked access from your app, this function will return an error
 /// from Twitter indicating that you don't have access to the user.
-pub fn verify_tokens(token: &Token)
-    -> FutureResponse<::user::TwitterUser>
-{
+pub fn verify_tokens(token: &Token) -> FutureResponse<::user::TwitterUser> {
     let req = get(links::auth::VERIFY_CREDENTIALS, token, None);
 
     make_parsed_future(req)

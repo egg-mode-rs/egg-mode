@@ -3,8 +3,8 @@ use place;
 use user;
 
 use super::{
-    TweetEntities, ExtendedTweetEntities, TweetSource, FilterLevel,
-    Tweet, deserialize_tweet_source, deserialize_datetime
+    deserialize_datetime, deserialize_tweet_source, ExtendedTweetEntities, FilterLevel, Tweet,
+    TweetEntities, TweetSource,
 };
 
 #[derive(Debug, Clone, Deserialize)]
@@ -49,14 +49,14 @@ pub(crate) struct RawExtendedTweet {
     pub full_text: String,
     pub display_text_range: Option<(usize, usize)>,
     pub entities: TweetEntities,
-    pub extended_entities: Option<ExtendedTweetEntities>
+    pub extended_entities: Option<ExtendedTweetEntities>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct RawCoordinates {
     #[serde(rename = "type")]
     pub kind: String,
-    pub coordinates: (f64, f64)
+    pub coordinates: (f64, f64),
 }
 
 #[derive(Debug, Clone, Deserialize)]

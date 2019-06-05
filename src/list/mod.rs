@@ -74,9 +74,9 @@ use common::*;
 use chrono;
 
 use auth;
+use error;
 use links;
 use user;
-use error;
 
 mod fun;
 pub use self::fun::*;
@@ -109,7 +109,7 @@ pub enum ListID<'a> {
     ///Referring via the list's owner and its "slug" or name.
     Slug(user::UserID<'a>, &'a str),
     ///Referring via the list's numeric ID.
-    ID(u64)
+    ID(u64),
 }
 
 impl<'a> ListID<'a> {

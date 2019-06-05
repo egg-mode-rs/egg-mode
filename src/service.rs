@@ -16,19 +16,19 @@
 //! [rate-limit status]: fn.rate_limit_status.html
 //! [config]: fn.config.html
 
-use std::str::FromStr;
 use std::collections::HashMap;
+use std::str::FromStr;
 
-use serde::{Deserialize, Deserializer};
 use serde::de::Error;
+use serde::{Deserialize, Deserializer};
 use serde_json;
 
 use auth;
+use common::*;
 use entities;
 use error;
 use error::Error::{InvalidResponse, MissingValue};
 use links;
-use common::*;
 
 ///Returns a future that resolves to the current Twitter Terms of Service as plain text.
 ///
@@ -40,7 +40,8 @@ pub fn terms(token: &auth::Token) -> FutureResponse<String> {
     fn parse_terms(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
         let ret: Response<serde_json::Value> = make_response(full_resp, headers)?;
 
-        let tos = ret.response
+        let tos = ret
+            .response
             .get("tos")
             .and_then(|tos| tos.as_str())
             .map(String::from)
@@ -58,10 +59,14 @@ pub fn terms(token: &auth::Token) -> FutureResponse<String> {
 pub fn privacy(token: &auth::Token) -> FutureResponse<String> {
     let req = auth::get(links::service::PRIVACY, token, None);
 
-    fn parse_policy(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
+    fn parse_policy(
+        full_resp: String,
+        headers: &Headers,
+    ) -> Result<Response<String>, error::Error> {
         let ret: Response<serde_json::Value> = make_response(full_resp, headers)?;
 
-        let privacy = ret.response
+        let privacy = ret
+            .response
             .get("privacy")
             .and_then(|tos| tos.as_str())
             .map(String::from)
@@ -95,9 +100,7 @@ pub fn config(token: &auth::Token) -> FutureResponse<Configuration> {
 ///documentation for [`RateLimitStatus`][] and its associated enums for more information.
 ///
 ///[`RateLimitStatus`]: struct.RateLimitStatus.html
-pub fn rate_limit_status(token: &auth::Token)
-    -> FutureResponse<RateLimitStatus>
-{
+pub fn rate_limit_status(token: &auth::Token) -> FutureResponse<RateLimitStatus> {
     let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
 
     make_parsed_future(req)
@@ -107,9 +110,7 @@ pub fn rate_limit_status(token: &auth::Token)
 ///return the full structure so that new methods can be added to `RateLimitStatus` and its
 ///associated enums.
 #[doc(hidden)]
-pub fn rate_limit_status_raw(token: &auth::Token)
-    -> FutureResponse<serde_json::Value>
-{
+pub fn rate_limit_status_raw(token: &auth::Token) -> FutureResponse<serde_json::Value> {
     let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
 
     make_parsed_future(req)
@@ -200,7 +201,9 @@ pub struct RateLimitStatus {
 
 impl<'de> Deserialize<'de> for RateLimitStatus {
     fn deserialize<D>(ser: D) -> Result<Self, D::Error>
-    where D: Deserializer<'de> {
+    where
+        D: Deserializer<'de>,
+    {
         use serde_json::from_value;
 
         let input = serde_json::Value::deserialize(ser)?;
@@ -213,25 +216,47 @@ impl<'de> Deserialize<'de> for RateLimitStatus {
         let mut user = HashMap::new();
         let mut list = HashMap::new();
 
-        let map = input.get("resources").ok_or_else(|| D::Error::custom(MissingValue("resources")))?;
+        let map = input
+            .get("resources")
+            .ok_or_else(|| D::Error::custom(MissingValue("resources")))?;
 
         if let Some(map) = map.as_object() {
-            for (k, v) in map.values().filter_map(|v| v.as_object()).flat_map(|v| v.iter()) {
+            for (k, v) in map
+                .values()
+                .filter_map(|v| v.as_object())
+                .flat_map(|v| v.iter())
+            {
                 if let Ok(method) = k.parse::<Method>() {
                     match method {
-                        Method::Direct(m) => direct.insert(m, from_value(v.clone()).map_err(D::Error::custom)?),
-                        Method::Place(p) => place.insert(p, from_value(v.clone()).map_err(D::Error::custom)?),
-                        Method::Search(s) => search.insert(s, from_value(v.clone()).map_err(D::Error::custom)?),
-                        Method::Service(s) => service.insert(s, from_value(v.clone()).map_err(D::Error::custom)?),
-                        Method::Tweet(t) => tweet.insert(t, from_value(v.clone()).map_err(D::Error::custom)?),
-                        Method::User(u) => user.insert(u, from_value(v.clone()).map_err(D::Error::custom)?),
-                        Method::List(l) => list.insert(l, from_value(v.clone()).map_err(D::Error::custom)?),
+                        Method::Direct(m) => {
+                            direct.insert(m, from_value(v.clone()).map_err(D::Error::custom)?)
+                        }
+                        Method::Place(p) => {
+                            place.insert(p, from_value(v.clone()).map_err(D::Error::custom)?)
+                        }
+                        Method::Search(s) => {
+                            search.insert(s, from_value(v.clone()).map_err(D::Error::custom)?)
+                        }
+                        Method::Service(s) => {
+                            service.insert(s, from_value(v.clone()).map_err(D::Error::custom)?)
+                        }
+                        Method::Tweet(t) => {
+                            tweet.insert(t, from_value(v.clone()).map_err(D::Error::custom)?)
+                        }
+                        Method::User(u) => {
+                            user.insert(u, from_value(v.clone()).map_err(D::Error::custom)?)
+                        }
+                        Method::List(l) => {
+                            list.insert(l, from_value(v.clone()).map_err(D::Error::custom)?)
+                        }
                     };
                 }
             }
         } else {
-            return Err(D::Error::custom(InvalidResponse("RateLimitStatus field 'resources' wasn't an object",
-                                       Some(input.to_string()))));
+            return Err(D::Error::custom(InvalidResponse(
+                "RateLimitStatus field 'resources' wasn't an object",
+                Some(input.to_string()),
+            )));
         }
 
         Ok(RateLimitStatus {

@@ -5,21 +5,21 @@
 //! Infrastructure types related to packaging rate-limit information alongside responses from
 //! Twitter.
 
-use std::{slice, vec, io, mem};
-use std::iter::FromIterator;
-use std::ops::{Deref, DerefMut};
+use error::Error::*;
+use error::{self, TwitterErrors};
+use futures::{Async, Future, Poll, Stream};
 use hyper::client::ResponseFuture;
-use hyper::{self, Body, StatusCode, Request};
 use hyper::header::CONTENT_LENGTH;
-#[cfg(feature = "native-tls")]
-use hyper_tls::HttpsConnector;
+use hyper::{self, Body, Request, StatusCode};
 #[cfg(feature = "hyper-rustls")]
 use hyper_rustls::HttpsConnector;
-use futures::{Async, Future, Poll, Stream};
-use error::{self, TwitterErrors};
-use error::Error::*;
+#[cfg(feature = "native-tls")]
+use hyper_tls::HttpsConnector;
 use serde;
 use serde_json;
+use std::iter::FromIterator;
+use std::ops::{Deref, DerefMut};
+use std::{io, mem, slice, vec};
 
 use super::Headers;
 
@@ -81,13 +81,14 @@ impl<T> Response<T> {
     ///Note that this is not a member function, so as to not conflict with potential methods on the
     ///contained `T`.
     pub fn map<F, U>(src: Response<T>, fun: F) -> Response<U>
-        where F: FnOnce(T) -> U
+    where
+        F: FnOnce(T) -> U,
     {
         Response {
             rate_limit: src.rate_limit,
             rate_limit_remaining: src.rate_limit_remaining,
             rate_limit_reset: src.rate_limit_reset,
-            response: fun(src.response)
+            response: fun(src.response),
         }
     }
 }
@@ -134,14 +135,20 @@ impl<T> DerefMut for Response<T> {
 ///
 ///This provides a convenient method to iterate over a response that returned a collection, while
 ///copying rate-limit information across the entire iteration.
-pub struct ResponseIterRef<'a, T> where T: 'a {
+pub struct ResponseIterRef<'a, T>
+where
+    T: 'a,
+{
     rate_limit: i32,
     rate_limit_remaining: i32,
     rate_limit_reset: i32,
     resp_iter: slice::Iter<'a, T>,
 }
 
-impl<'a, T> Iterator for ResponseIterRef<'a, T> where T: 'a {
+impl<'a, T> Iterator for ResponseIterRef<'a, T>
+where
+    T: 'a,
+{
     type Item = Response<&'a T>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -162,7 +169,10 @@ impl<'a, T> Iterator for ResponseIterRef<'a, T> where T: 'a {
     }
 }
 
-impl<'a, T> DoubleEndedIterator for ResponseIterRef<'a, T> where T: 'a {
+impl<'a, T> DoubleEndedIterator for ResponseIterRef<'a, T>
+where
+    T: 'a,
+{
     fn next_back(&mut self) -> Option<Self::Item> {
         if let Some(resp) = self.resp_iter.next_back() {
             Some(Response {
@@ -177,14 +187,20 @@ impl<'a, T> DoubleEndedIterator for ResponseIterRef<'a, T> where T: 'a {
     }
 }
 
-impl<'a, T> ExactSizeIterator for ResponseIterRef<'a, T> where T: 'a {
+impl<'a, T> ExactSizeIterator for ResponseIterRef<'a, T>
+where
+    T: 'a,
+{
     fn len(&self) -> usize {
         self.resp_iter.len()
     }
 }
 
 ///Iteration over a response that returned a collection, while leaving the response in place.
-impl<'a, T> IntoIterator for &'a Response<Vec<T>> where T: 'a {
+impl<'a, T> IntoIterator for &'a Response<Vec<T>>
+where
+    T: 'a,
+{
     type Item = Response<&'a T>;
     type IntoIter = ResponseIterRef<'a, T>;
 
@@ -197,14 +213,20 @@ impl<'a, T> IntoIterator for &'a Response<Vec<T>> where T: 'a {
 ///
 ///This provides a convenient method to iterate over a response that returned a collection, while
 ///copying rate-limit information across the entire iteration.
-pub struct ResponseIterMut<'a, T> where T: 'a {
+pub struct ResponseIterMut<'a, T>
+where
+    T: 'a,
+{
     rate_limit: i32,
     rate_limit_remaining: i32,
     rate_limit_reset: i32,
     resp_iter: slice::IterMut<'a, T>,
 }
 
-impl<'a, T> Iterator for ResponseIterMut<'a, T> where T: 'a {
+impl<'a, T> Iterator for ResponseIterMut<'a, T>
+where
+    T: 'a,
+{
     type Item = Response<&'a mut T>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -225,7 +247,10 @@ impl<'a, T> Iterator for ResponseIterMut<'a, T> where T: 'a {
     }
 }
 
-impl<'a, T> DoubleEndedIterator for ResponseIterMut<'a, T> where T: 'a {
+impl<'a, T> DoubleEndedIterator for ResponseIterMut<'a, T>
+where
+    T: 'a,
+{
     fn next_back(&mut self) -> Option<Self::Item> {
         if let Some(resp) = self.resp_iter.next_back() {
             Some(Response {
@@ -240,7 +265,10 @@ impl<'a, T> DoubleEndedIterator for ResponseIterMut<'a, T> where T: 'a {
     }
 }
 
-impl<'a, T> ExactSizeIterator for ResponseIterMut<'a, T> where T: 'a {
+impl<'a, T> ExactSizeIterator for ResponseIterMut<'a, T>
+where
+    T: 'a,
+{
     fn len(&self) -> usize {
         self.resp_iter.len()
     }
@@ -248,7 +276,10 @@ impl<'a, T> ExactSizeIterator for ResponseIterMut<'a, T> where T: 'a {
 
 ///Mutable iteration over a response that returned a collection, while leaving the response in
 ///place.
-impl<'a, T> IntoIterator for &'a mut Response<Vec<T>> where T: 'a {
+impl<'a, T> IntoIterator for &'a mut Response<Vec<T>>
+where
+    T: 'a,
+{
     type Item = Response<&'a mut T>;
     type IntoIter = ResponseIterMut<'a, T>;
 
@@ -331,7 +362,8 @@ impl<T> IntoIterator for Response<Vec<T>> {
 ///rate limit information.
 impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
     fn from_iter<I>(iter: I) -> Self
-        where I: IntoIterator<Item=Response<T>>
+    where
+        I: IntoIterator<Item = Response<T>>,
     {
         let mut resp = Response {
             rate_limit: -1,
@@ -345,8 +377,9 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
                 resp.rate_limit = item.rate_limit;
                 resp.rate_limit_remaining = item.rate_limit_remaining;
                 resp.rate_limit_reset = item.rate_limit_reset;
-            } else if (item.rate_limit_reset == resp.rate_limit_reset) &&
-                    (item.rate_limit_remaining < resp.rate_limit_remaining) {
+            } else if (item.rate_limit_reset == resp.rate_limit_reset)
+                && (item.rate_limit_remaining < resp.rate_limit_remaining)
+            {
                 resp.rate_limit = item.rate_limit;
                 resp.rate_limit_remaining = item.rate_limit_remaining;
                 resp.rate_limit_reset = item.rate_limit_reset;
@@ -439,18 +472,17 @@ impl Future for RawFuture {
         };
 
         match String::from_utf8(mem::replace(&mut self.body, Vec::new())) {
-            Err(_) => Err(io::Error::new(io::ErrorKind::InvalidData,
-                                         "stream did not contain valid UTF-8").into()),
+            Err(_) => Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "stream did not contain valid UTF-8",
+            )
+            .into()),
             Ok(resp) => {
                 if let Ok(err) = serde_json::from_str::<TwitterErrors>(&resp) {
-                    if err.errors.iter().any(|e| e.code == 88) &&
-                        self.headers().contains_key(X_RATE_LIMIT_RESET)
+                    if err.errors.iter().any(|e| e.code == 88)
+                        && self.headers().contains_key(X_RATE_LIMIT_RESET)
                     {
-                        return Err(
-                            RateLimit(
-                                rate_limit_reset(self.headers())?.unwrap()
-                            )
-                        );
+                        return Err(RateLimit(rate_limit_reset(self.headers())?.unwrap()));
                     } else {
                         return Err(TwitterError(err));
                     }
@@ -476,7 +508,6 @@ pub fn make_raw_future(request: Request<Body>) -> RawFuture {
         body: Vec::new(),
     }
 }
-
 
 /// A `Future` that will resolve to a complete Twitter response.
 ///
@@ -504,30 +535,34 @@ impl<T> Future for TwitterFuture<T> {
     type Item = T;
     type Error = error::Error;
 
-     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-         let full_resp = match self.request.poll() {
-             Err(e) => return Err(e),
-             Ok(Async::NotReady) => return Ok(Async::NotReady),
-             Ok(Async::Ready(r)) => r,
-         };
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        let full_resp = match self.request.poll() {
+            Err(e) => return Err(e),
+            Ok(Async::NotReady) => return Ok(Async::NotReady),
+            Ok(Async::Ready(r)) => r,
+        };
 
-         Ok(Async::Ready((self.make_resp)(full_resp, self.request.headers())?))
-     }
+        Ok(Async::Ready((self.make_resp)(
+            full_resp,
+            self.request.headers(),
+        )?))
+    }
 }
 
 /// Shortcut `MakeResponse` method that attempts to parse the given type from the response and
 /// loads rate-limit information from the response headers.
-pub fn make_response<T: for <'a> serde::Deserialize<'a>>(full_resp: String, headers: &Headers)
-    -> Result<Response<T>, error::Error>
-{
+pub fn make_response<T: for<'a> serde::Deserialize<'a>>(
+    full_resp: String,
+    headers: &Headers,
+) -> Result<Response<T>, error::Error> {
     let out = serde_json::from_str(&full_resp)?;
     Ok(Response::map(rate_headers(headers)?, |_| out))
 }
 
-pub fn make_future<T>(request: Request<Body>,
-                      make_resp: fn(String, &Headers) -> Result<T, error::Error>)
-    -> TwitterFuture<T>
-{
+pub fn make_future<T>(
+    request: Request<Body>,
+    make_resp: fn(String, &Headers) -> Result<T, error::Error>,
+) -> TwitterFuture<T> {
     TwitterFuture {
         request: make_raw_future(request),
         make_resp: make_resp,
@@ -535,9 +570,9 @@ pub fn make_future<T>(request: Request<Body>,
 }
 
 /// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
-pub fn make_parsed_future<T: for <'de> serde::Deserialize<'de>>(request: Request<Body>)
-    -> TwitterFuture<Response<T>>
-{
+pub fn make_parsed_future<T: for<'de> serde::Deserialize<'de>>(
+    request: Request<Body>,
+) -> TwitterFuture<Response<T>> {
     make_future(request, make_response)
 }
 

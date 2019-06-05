@@ -2,21 +2,19 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::collections::HashMap;
-use serde_json;
 use auth;
+use common::*;
 use cursor;
-use user::UserID;
 use error::Error::InvalidResponse;
 use links;
-use common::*;
+use serde_json;
+use std::collections::HashMap;
+use user::UserID;
 
 use super::*;
 
 ///Lookup a single tweet by numeric ID.
-pub fn show(id: u64, token: &auth::Token)
-    -> FutureResponse<Tweet>
-{
+pub fn show(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
     add_param(&mut params, "include_my_retweet", "true");
@@ -32,9 +30,7 @@ pub fn show(id: u64, token: &auth::Token)
 ///
 ///Use the `count` parameter to indicate how many retweets you would like to retrieve. If `count`
 ///is 0 or greater than 100, it will be defaulted to 100 before making the call.
-pub fn retweets_of(id: u64, count: u32, token: &auth::Token)
-    -> FutureResponse<Vec<Tweet>>
-{
+pub fn retweets_of(id: u64, count: u32, token: &auth::Token) -> FutureResponse<Vec<Tweet>> {
     let mut params = HashMap::new();
     add_param(&mut params, "tweet_mode", "extended");
 
@@ -57,9 +53,10 @@ pub fn retweets_of(id: u64, count: u32, token: &auth::Token)
 ///set the page size. Calling `with_page_size` on the iterator returned by this function will not
 ///change the page size used by the network call. Setting `page_size` manually may result in an
 ///error from Twitter.
-pub fn retweeters_of(id: u64, token: &auth::Token)
-    -> cursor::CursorIter<'static, cursor::IDCursor>
-{
+pub fn retweeters_of(
+    id: u64,
+    token: &auth::Token,
+) -> cursor::CursorIter<'static, cursor::IDCursor> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
     cursor::CursorIter::new(links::statuses::RETWEETERS_OF, token, Some(params), None)
@@ -69,12 +66,15 @@ pub fn retweeters_of(id: u64, token: &auth::Token)
 ///
 ///This function differs from `lookup_map` in how it handles protected or nonexistent tweets.
 ///`lookup` gives a Vec of just the tweets it could load, leaving out any that it couldn't find.
-pub fn lookup<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token)
-    -> FutureResponse<Vec<Tweet>>
-{
+pub fn lookup<I: IntoIterator<Item = u64>>(
+    ids: I,
+    token: &auth::Token,
+) -> FutureResponse<Vec<Tweet>> {
     let mut params = HashMap::new();
     let id_param = ids.into_iter().fold(String::new(), |mut acc, x| {
-        if !acc.is_empty() { acc.push(','); }
+        if !acc.is_empty() {
+            acc.push(',');
+        }
         acc.push_str(&x.to_string());
         acc
     });
@@ -94,12 +94,15 @@ pub fn lookup<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token)
 ///`lookup_map` gives a map containing every ID in the input slice; tweets that don't exist or
 ///can't be read by the authenticated user store `None` in the map, whereas tweets that could be
 ///loaded store `Some` and the requested status.
-pub fn lookup_map<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token)
-    -> FutureResponse<HashMap<u64, Option<Tweet>>>
-{
+pub fn lookup_map<I: IntoIterator<Item = u64>>(
+    ids: I,
+    token: &auth::Token,
+) -> FutureResponse<HashMap<u64, Option<Tweet>>> {
     let mut params = HashMap::new();
     let id_param = ids.into_iter().fold(String::new(), |mut acc, x| {
-        if !acc.is_empty() { acc.push(','); }
+        if !acc.is_empty() {
+            acc.push(',');
+        }
         acc.push_str(&x.to_string());
         acc
     });
@@ -110,19 +113,28 @@ pub fn lookup_map<I: IntoIterator<Item=u64>>(ids: I, token: &auth::Token)
 
     let req = auth::post(links::statuses::LOOKUP, token, Some(&params));
 
-    fn parse_map(full_resp: String, headers: &Headers)
-        -> Result<Response<HashMap<u64, Option<Tweet>>>, error::Error>
-    {
+    fn parse_map(
+        full_resp: String,
+        headers: &Headers,
+    ) -> Result<Response<HashMap<u64, Option<Tweet>>>, error::Error> {
         let parsed: Response<serde_json::Value> = make_response(full_resp, headers)?;
         let mut map = HashMap::new();
 
-        for (key, val) in parsed.response
-                                     .get("id")
-                                     .and_then(|v| v.as_object())
-                                     .ok_or_else(|| InvalidResponse("unexpected response for lookup_map",
-                                                                    Some(parsed.response.to_string())))? {
-            let id = key.parse::<u64>().or(Err(InvalidResponse("could not parse id as integer",
-                                                                    Some(key.to_string()))))?;
+        for (key, val) in parsed
+            .response
+            .get("id")
+            .and_then(|v| v.as_object())
+            .ok_or_else(|| {
+                InvalidResponse(
+                    "unexpected response for lookup_map",
+                    Some(parsed.response.to_string()),
+                )
+            })?
+        {
+            let id = key.parse::<u64>().or(Err(InvalidResponse(
+                "could not parse id as integer",
+                Some(key.to_string()),
+            )))?;
             if val.is_null() {
                 map.insert(id, None);
             } else {
@@ -169,10 +181,12 @@ pub fn mentions_timeline(token: &auth::Token) -> Timeline<'static> {
 ///retweets.
 ///
 ///Twitter will only load the most recent 3,200 tweets with this method.
-pub fn user_timeline<'a, T: Into<UserID<'a>>>(acct: T, with_replies: bool, with_rts: bool,
-                                              token: &auth::Token)
-    -> Timeline<'a>
-{
+pub fn user_timeline<'a, T: Into<UserID<'a>>>(
+    acct: T,
+    with_replies: bool,
+    with_rts: bool,
+    token: &auth::Token,
+) -> Timeline<'a> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
     add_param(&mut params, "exclude_replies", (!with_replies).to_string());
@@ -192,9 +206,7 @@ pub fn retweets_of_me(token: &auth::Token) -> Timeline<'static> {
 ///Make a `Timeline` struct for navigating the collection of tweets liked by the given user.
 ///
 ///This method has a default page size of 20 tweets, with a maximum of 200.
-pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> Timeline<'a>
-{
+pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> Timeline<'a> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
     Timeline::new(links::statuses::LIKES_OF, Some(params), token)

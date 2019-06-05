@@ -18,7 +18,8 @@ fn main() {
     let token = block_on_all(egg_mode::bearer_token(&con_token)).unwrap();
 
     println!("Pulling up a user timeline...");
-    let timeline = egg_mode::tweet::user_timeline("rustlang", false, true, &token).with_page_size(5);
+    let timeline =
+        egg_mode::tweet::user_timeline("rustlang", false, true, &token).with_page_size(5);
 
     let (_timeline, feed) = block_on_all(timeline.start()).unwrap();
     for tweet in feed {

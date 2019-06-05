@@ -206,7 +206,7 @@ pub struct UrlEntity {
 #[derive(Debug, Clone, Deserialize)]
 pub struct MentionEntity {
     ///Numeric ID of the mentioned user.
-    #[serde(deserialize_with = "nullable_id")]  // Very rarely this field is null
+    #[serde(deserialize_with = "nullable_id")] // Very rarely this field is null
     pub id: u64,
     ///The byte offsets where the user mention is located in the original text. The first index is
     ///the location of the @ symbol; the second is the location of the first character following
@@ -214,18 +214,24 @@ pub struct MentionEntity {
     #[serde(rename = "indices")]
     pub range: (usize, usize),
     ///Display name of the mentioned user.
-    #[serde(deserialize_with = "nullable_str")]  // Very rarely, this field is null
+    #[serde(deserialize_with = "nullable_str")] // Very rarely, this field is null
     pub name: String,
     ///Screen name of the mentioned user, without the leading @ symbol.
     pub screen_name: String,
 }
 
-fn nullable_id<'de, D>(deserializer: D) -> Result<u64, D::Error> where D: Deserializer<'de> {
+fn nullable_id<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: Deserializer<'de>,
+{
     let opt = Option::deserialize(deserializer)?;
     Ok(opt.unwrap_or_default())
 }
 
-fn nullable_str<'de, D>(deserializer: D) -> Result<String, D::Error> where D: Deserializer<'de> {
+fn nullable_str<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
     let opt = Option::deserialize(deserializer)?;
     Ok(opt.unwrap_or_default())
 }

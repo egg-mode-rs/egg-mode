@@ -58,8 +58,8 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use futures::{Future, Stream, Poll, Async};
 use chrono;
+use futures::{Async, Future, Poll, Stream};
 use serde::{Deserialize, Deserializer};
 
 use auth;
@@ -321,7 +321,10 @@ pub struct TwitterUser {
 }
 
 impl<'de> Deserialize<'de> for TwitterUser {
-    fn deserialize<D>(deser: D) -> Result<TwitterUser, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deser: D) -> Result<TwitterUser, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         let mut raw = raw::RawTwitterUser::deserialize(deser)?;
 
         if let Some(ref description) = raw.description {
@@ -330,7 +333,9 @@ impl<'de> Deserialize<'de> for TwitterUser {
             }
         }
 
-        if let (&mut Some(ref url), &mut Some(ref mut entities)) = (&mut raw.url, &mut raw.entities.url) {
+        if let (&mut Some(ref url), &mut Some(ref mut entities)) =
+            (&mut raw.url, &mut raw.entities.url)
+        {
             for entity in &mut entities.urls {
                 codepoints_to_bytes(&mut entity.range, url);
             }
@@ -548,9 +553,7 @@ impl<'a> UserSearch<'a> {
     }
 
     /// Returns a new UserSearch with the given query and tokens, with the default page size of 10.
-    fn new<S: Into<Cow<'a, str>>>(query: S, token: &auth::Token)
-        -> UserSearch<'a>
-    {
+    fn new<S: Into<Cow<'a, str>>>(query: S, token: &auth::Token) -> UserSearch<'a> {
         UserSearch {
             token: token.clone(),
             query: query.into(),

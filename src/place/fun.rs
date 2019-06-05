@@ -4,16 +4,16 @@
 
 use std::collections::HashMap;
 
-use futures::{Future, Async, Poll};
+use futures::{Async, Future, Poll};
 
 use auth;
+use common::*;
 use error;
 use error::Error::BadUrl;
 use links;
-use common::*;
 
-use super::*;
 use super::PlaceQuery;
+use super::*;
 
 /// Load the place with the given ID.
 ///
@@ -57,8 +57,7 @@ pub fn show(id: &str, token: &auth::Token) -> FutureResponse<Place> {
 /// assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
 /// # }
 /// ```
-pub fn reverse_geocode(latitude: f64, longitude: f64) -> GeocodeBuilder
-{
+pub fn reverse_geocode(latitude: f64, longitude: f64) -> GeocodeBuilder {
     GeocodeBuilder::new(latitude, longitude)
 }
 
@@ -97,9 +96,7 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `reverse_geocode` query URL.
-pub fn reverse_geocode_url<'a>(url: &'a str, token: &auth::Token)
-    -> CachedSearchFuture<'a>
-{
+pub fn reverse_geocode_url<'a>(url: &'a str, token: &auth::Token) -> CachedSearchFuture<'a> {
     let params = parse_url(links::place::REVERSE_GEOCODE, url);
     CachedSearchFuture::new(links::place::REVERSE_GEOCODE, token, params)
 }
@@ -161,9 +158,7 @@ pub fn search_ip<'a>(query: &'a str) -> SearchBuilder<'a> {
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `search` query URL.
-pub fn search_url<'a>(url: &'a str, token: &auth::Token)
-    -> CachedSearchFuture<'a>
-{
+pub fn search_url<'a>(url: &'a str, token: &auth::Token) -> CachedSearchFuture<'a> {
     let params = parse_url(links::place::SEARCH, url);
     CachedSearchFuture::new(links::place::SEARCH, token, params)
 }
@@ -185,11 +180,11 @@ pub struct CachedSearchFuture<'a> {
 }
 
 impl<'a> CachedSearchFuture<'a> {
-    fn new(stem: &'static str,
-           token: &auth::Token,
-           params: Result<ParamList<'a>, error::Error>)
-        -> CachedSearchFuture<'a>
-    {
+    fn new(
+        stem: &'static str,
+        token: &auth::Token,
+        params: Result<ParamList<'a>, error::Error>,
+    ) -> CachedSearchFuture<'a> {
         CachedSearchFuture {
             stem: stem,
             params: Some(params),
@@ -213,7 +208,7 @@ impl<'a> Future for CachedSearchFuture<'a> {
             Some(Err(e)) => {
                 return Err(e);
             }
-            None => { }
+            None => {}
         }
 
         if let Some(mut fut) = self.future.take() {

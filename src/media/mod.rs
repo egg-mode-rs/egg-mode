@@ -41,19 +41,19 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::error::Error as StdError;
 use std::fmt;
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 use base64;
-use futures::{Future, Async, Poll};
-use serde::{Deserialize, Deserializer};
+use futures::{Async, Future, Poll};
 use serde::de::Error;
+use serde::{Deserialize, Deserializer};
 use tokio::timer::Delay;
 
+use auth;
 use common::*;
 use error;
 use error::Error::InvalidResponse;
 use links;
-use auth;
 
 use mime;
 
@@ -107,7 +107,7 @@ enum ProgressInfo {
     ///Video's processing failed. Contains reason.
     Failed(error::MediaError),
     ///Video's processing is finished. RawMedia can be used in other API calls.
-    Success
+    Success,
 }
 
 #[derive(Debug, Deserialize)]
@@ -119,7 +119,7 @@ enum RawProgressInfoTag {
     #[serde(rename = "failed")]
     Failed,
     #[serde(rename = "succeeded")]
-    Success
+    Success,
 }
 
 #[derive(Debug, Deserialize)]
@@ -127,21 +127,27 @@ struct RawProgressInfo {
     state: RawProgressInfoTag,
     progress_percent: Option<f64>,
     check_after_secs: Option<u64>,
-    error: Option<error::MediaError>
+    error: Option<error::MediaError>,
 }
 
-
 impl<'de> Deserialize<'de> for ProgressInfo {
-    fn deserialize<D>(deser: D) -> Result<ProgressInfo, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deser: D) -> Result<ProgressInfo, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         use self::RawProgressInfoTag::*;
         let raw = RawProgressInfo::deserialize(deser)?;
-        let check_after = raw.check_after_secs.ok_or_else(|| D::Error::custom("Missing field: check_after_secs"));
+        let check_after = raw
+            .check_after_secs
+            .ok_or_else(|| D::Error::custom("Missing field: check_after_secs"));
         Ok(match raw.state {
             Pending => ProgressInfo::Pending(check_after?),
             InProgress => ProgressInfo::InProgress(check_after?),
             Success => ProgressInfo::Success,
             Failed => {
-                let err = raw.error.ok_or_else(|| D::Error::custom("Missing field: error"))?;
+                let err = raw
+                    .error
+                    .ok_or_else(|| D::Error::custom("Missing field: error"))?;
                 ProgressInfo::Failed(err)
             }
         })
@@ -186,7 +192,7 @@ struct RawMedia {
     pub expires_after: u64,
     ///Progress information. If present determines whether RawMedia can be used.
     #[serde(rename = "processing_info")]
-    pub progress: Option<ProgressInfo>
+    pub progress: Option<ProgressInfo>,
 }
 
 impl RawMedia {
@@ -421,7 +427,11 @@ impl<'a> UploadFuture<'a> {
         add_param(&mut params, "command", "INIT");
         add_param(&mut params, "total_bytes", self.data.len().to_string());
         add_param(&mut params, "media_type", self.media_type.to_string());
-        add_param(&mut params, "media_category", self.media_category.to_string());
+        add_param(
+            &mut params,
+            "media_category",
+            self.media_category.to_string(),
+        );
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
         make_parsed_future(req)
@@ -440,17 +450,24 @@ impl<'a> UploadFuture<'a> {
                 base64::CharacterSet::Standard,
                 true,
                 true,
-                base64::LineWrap::NoWrap
+                base64::LineWrap::NoWrap,
             );
 
             add_param(&mut params, "command", "APPEND");
             add_param(&mut params, "media_id", media_id.to_string());
-            add_param(&mut params, "media_data", base64::encode_config(chunk, config));
+            add_param(
+                &mut params,
+                "media_data",
+                base64::encode_config(chunk, config),
+            );
             add_param(&mut params, "segment_index", chunk_num.to_string());
 
             let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
 
-            fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<()>, error::Error> {
+            fn parse_resp(
+                full_resp: String,
+                headers: &Headers,
+            ) -> Result<Response<()>, error::Error> {
                 if full_resp.is_empty() {
                     rate_headers(headers)
                 } else {
@@ -522,13 +539,13 @@ impl<'a> Future for UploadFuture<'a> {
             UploadInner::PreInit => {
                 self.status = UploadInner::WaitingForInit(self.init());
                 self.poll()
-            },
+            }
             UploadInner::WaitingForInit(mut init) => {
                 match init.poll() {
                     Ok(Async::NotReady) => {
                         self.status = UploadInner::WaitingForInit(init);
                         Ok(Async::NotReady)
-                    },
+                    }
                     Ok(Async::Ready(media)) => {
                         self.timeout = Instant::now() + Duration::from_secs(media.expires_after);
                         let id = media.id;
@@ -536,34 +553,32 @@ impl<'a> Future for UploadFuture<'a> {
                         let loader = self.append(0, id).unwrap();
                         self.status = UploadInner::UploadingChunk(id, 0, loader);
                         self.poll()
-                    },
+                    }
                     Err(e) => {
                         self.status = UploadInner::PreInit;
                         Err(UploadError::initialize(e))
-                    },
+                    }
                 }
-            },
-            UploadInner::UploadingChunk(id, chunk_idx, mut upload) => {
-                match upload.poll() {
-                    Ok(Async::NotReady) => {
+            }
+            UploadInner::UploadingChunk(id, chunk_idx, mut upload) => match upload.poll() {
+                Ok(Async::NotReady) => {
+                    self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
+                    Ok(Async::NotReady)
+                }
+                Ok(Async::Ready(_)) => {
+                    let chunk_idx = chunk_idx + 1;
+                    if let Some(upload) = self.append(chunk_idx, id) {
                         self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
-                        Ok(Async::NotReady)
-                    },
-                    Ok(Async::Ready(_)) => {
-                        let chunk_idx = chunk_idx + 1;
-                        if let Some(upload) = self.append(chunk_idx, id) {
-                            self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
-                        } else {
-                            let loader = self.finalize(id);
-                            self.status = UploadInner::Finalizing(id, loader);
-                        }
+                    } else {
+                        let loader = self.finalize(id);
+                        self.status = UploadInner::Finalizing(id, loader);
+                    }
 
-                        self.poll()
-                    },
-                    Err(e) => {
-                        self.status = UploadInner::FailedChunk(id, chunk_idx);
-                        Err(UploadError::chunk(self.timeout, e))
-                    },
+                    self.poll()
+                }
+                Err(e) => {
+                    self.status = UploadInner::FailedChunk(id, chunk_idx);
+                    Err(UploadError::chunk(self.timeout, e))
                 }
             },
             UploadInner::FailedChunk(id, chunk_idx) => {
@@ -579,15 +594,16 @@ impl<'a> Future for UploadFuture<'a> {
                     //id/index should have yielded a chunk before.
                     unreachable!()
                 }
-            },
+            }
             UploadInner::Finalizing(id, mut finalize) => {
                 match finalize.poll() {
                     Ok(Async::NotReady) => {
                         self.status = UploadInner::Finalizing(id, finalize);
                         Ok(Async::NotReady)
-                    },
+                    }
                     Ok(Async::Ready(media)) => {
-                        if media.progress.is_none() || media.progress == Some(ProgressInfo::Success) {
+                        if media.progress.is_none() || media.progress == Some(ProgressInfo::Success)
+                        {
                             let media = media.response.into_handle();
                             self.timeout = media.valid_until;
                             let loader = self.alt_text.as_ref().map(|txt| self.metadata(id, txt));
@@ -600,31 +616,33 @@ impl<'a> Future for UploadFuture<'a> {
                         }
 
                         match media.response.progress {
-                            Some(ProgressInfo::Pending(time)) |
-                                Some(ProgressInfo::InProgress(time)) =>
-                            {
-                                self.timeout = Instant::now() + Duration::from_secs(media.expires_after);
+                            Some(ProgressInfo::Pending(time))
+                            | Some(ProgressInfo::InProgress(time)) => {
+                                self.timeout =
+                                    Instant::now() + Duration::from_secs(media.expires_after);
                                 //TODO: oh hey we needed the handle for something - we need to use
                                 //new-tokio to fix this
                                 let wake = Instant::now() + Duration::from_secs(time);
                                 let timer = Delay::new(wake);
                                 self.status = UploadInner::PostProcessing(media.id, timer);
                                 self.poll()
-                            },
+                            }
                             Some(ProgressInfo::Failed(err)) => {
                                 self.status = UploadInner::FailedFinalize(id);
-                                Err(UploadError::finalize(self.timeout,
-                                                          error::Error::MediaError(err)))
-                            },
+                                Err(UploadError::finalize(
+                                    self.timeout,
+                                    error::Error::MediaError(err),
+                                ))
+                            }
                             None | Some(ProgressInfo::Success) => unreachable!(),
                         }
-                    },
+                    }
                     Err(e) => {
                         self.status = UploadInner::FailedFinalize(id);
                         Err(UploadError::finalize(self.timeout, e))
-                    },
+                    }
                 }
-            },
+            }
             UploadInner::FailedFinalize(id) => {
                 if Instant::now() >= self.timeout {
                     //we've timed out, restart the upload
@@ -634,36 +652,32 @@ impl<'a> Future for UploadFuture<'a> {
                     self.status = UploadInner::Finalizing(id, finalize);
                 }
                 self.poll()
-            },
+            }
             UploadInner::PostProcessing(id, mut timer) => {
                 match timer.poll() {
                     Ok(Async::NotReady) => {
                         self.status = UploadInner::PostProcessing(id, timer);
                         Ok(Async::NotReady)
-                    },
+                    }
                     Ok(Async::Ready(())) => {
                         let loader = self.status(id);
                         self.status = UploadInner::Finalizing(id, loader);
                         self.poll()
-                    },
+                    }
                     // Delay will only return an error if the runtime has shut down, so don't
                     // bother resetting the state
                     Err(e) => Err(UploadError::finalize(self.timeout, e.into())),
                 }
-            },
-            UploadInner::Metadata(media, mut loader) => {
-                match loader.poll() {
-                    Ok(Async::NotReady) => {
-                        self.status = UploadInner::Metadata(media, loader);
-                        Ok(Async::NotReady)
-                    },
-                    Ok(Async::Ready(_)) => {
-                        Ok(Async::Ready(media))
-                    },
-                    Err(e) => {
-                        self.status = UploadInner::FailedMetadata(media);
-                        Err(UploadError::metadata(self.timeout, e))
-                    },
+            }
+            UploadInner::Metadata(media, mut loader) => match loader.poll() {
+                Ok(Async::NotReady) => {
+                    self.status = UploadInner::Metadata(media, loader);
+                    Ok(Async::NotReady)
+                }
+                Ok(Async::Ready(_)) => Ok(Async::Ready(media)),
+                Err(e) => {
+                    self.status = UploadInner::FailedMetadata(media);
+                    Err(UploadError::metadata(self.timeout, e))
                 }
             },
             UploadInner::FailedMetadata(media) => {
@@ -679,7 +693,7 @@ impl<'a> Future for UploadFuture<'a> {
                 }
 
                 self.poll()
-            },
+            }
             UploadInner::Invalid => Err(UploadError::complete()),
         }
     }
@@ -778,7 +792,11 @@ pub enum UploadState {
 
 impl fmt::Display for UploadError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Upload error during {:?}: \"{}\"", self.state, self.error)
+        write!(
+            f,
+            "Upload error during {:?}: \"{}\"",
+            self.state, self.error
+        )
     }
 }
 
@@ -820,7 +838,7 @@ mod tests {
 
         match media.progress {
             Some(super::ProgressInfo::Pending(5)) => (),
-            other => assert!(false, format!("Unexpected value of progress={:?}", other))
+            other => assert!(false, format!("Unexpected value of progress={:?}", other)),
         }
     }
 
@@ -834,7 +852,7 @@ mod tests {
 
         match media.progress {
             Some(super::ProgressInfo::InProgress(10)) => (),
-            other => assert!(false, format!("Unexpected value of progress={:?}", other))
+            other => assert!(false, format!("Unexpected value of progress={:?}", other)),
         }
     }
 
@@ -847,13 +865,15 @@ mod tests {
         assert!(media.progress.is_some());
 
         match media.progress {
-            Some(super::ProgressInfo::Failed(error)) =>
-                assert_eq!(error, ::error::MediaError {
+            Some(super::ProgressInfo::Failed(error)) => assert_eq!(
+                error,
+                ::error::MediaError {
                     code: 1,
                     name: "InvalidMedia".to_string(),
                     message: "Unsupported video format".to_string(),
-                }),
-            other => assert!(false, format!("Unexpected value of progress={:?}", other))
+                }
+            ),
+            other => assert!(false, format!("Unexpected value of progress={:?}", other)),
         }
     }
 }

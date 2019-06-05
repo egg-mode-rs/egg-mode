@@ -2,12 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use auth;
+use common::*;
+use cursor;
+use links;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use common::*;
-use auth;
-use links;
-use cursor;
 
 use super::*;
 
@@ -80,9 +80,10 @@ use super::*;
 /// let users = block_on_all(egg_mode::user::lookup(&list, &token)).unwrap();
 /// # }
 /// ```
-pub fn lookup<'a, T, I>(accts: I, token: &auth::Token)
-    -> FutureResponse<Vec<TwitterUser>>
-    where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
+pub fn lookup<'a, T, I>(accts: I, token: &auth::Token) -> FutureResponse<Vec<TwitterUser>>
+where
+    T: Into<UserID<'a>>,
+    I: IntoIterator<Item = T>,
 {
     let mut params = HashMap::new();
     let (id_param, name_param) = multiple_names_param(accts);
@@ -96,9 +97,7 @@ pub fn lookup<'a, T, I>(accts: I, token: &auth::Token)
 }
 
 /// Lookup user information for a single user.
-pub fn show<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> FutureResponse<TwitterUser>
-{
+pub fn show<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> FutureResponse<TwitterUser> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 
@@ -110,19 +109,17 @@ pub fn show<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
 /// Lookup the user IDs that the authenticating user has disabled retweets from.
 ///
 /// Use `update_follow` to enable/disable viewing retweets from a specific user.
-pub fn friends_no_retweets(token: &auth::Token)
-    -> FutureResponse<Vec<u64>>
-{
+pub fn friends_no_retweets(token: &auth::Token) -> FutureResponse<Vec<u64>> {
     let req = auth::get(links::users::FRIENDS_NO_RETWEETS, token, None);
 
     make_parsed_future(req)
 }
 
 /// Lookup relationship settings between two arbitrary users.
-pub fn relation<'a, F, T>(from: F, to: T, token: &auth::Token)
-    -> FutureResponse<Relationship>
-    where F: Into<UserID<'a>>,
-          T: Into<UserID<'a>>
+pub fn relation<'a, F, T>(from: F, to: T, token: &auth::Token) -> FutureResponse<Relationship>
+where
+    F: Into<UserID<'a>>,
+    T: Into<UserID<'a>>,
 {
     let mut params = HashMap::new();
     match from.into() {
@@ -140,9 +137,13 @@ pub fn relation<'a, F, T>(from: F, to: T, token: &auth::Token)
 }
 
 /// Lookup the relations between the authenticated user and the given accounts.
-pub fn relation_lookup<'a, T, I>(accts: I, token: &auth::Token)
-    -> FutureResponse<Vec<RelationLookup>>
-    where T: Into<UserID<'a>>, I: IntoIterator<Item=T>
+pub fn relation_lookup<'a, T, I>(
+    accts: I,
+    token: &auth::Token,
+) -> FutureResponse<Vec<RelationLookup>>
+where
+    T: Into<UserID<'a>>,
+    I: IntoIterator<Item = T>,
 {
     let mut params = HashMap::new();
     let (id_param, name_param) = multiple_names_param(accts);
@@ -165,9 +166,7 @@ pub fn relation_lookup<'a, T, I>(accts: I, token: &auth::Token)
 /// page for details.
 ///
 /// [`UserSearch`]: struct.UserSearch.html
-pub fn search<'a, S: Into<Cow<'a, str>>>(query: S, token: &auth::Token)
-    -> UserSearch<'a>
-{
+pub fn search<'a, S: Into<Cow<'a, str>>>(query: S, token: &auth::Token) -> UserSearch<'a> {
     UserSearch::new(query, token)
 }
 
@@ -175,9 +174,10 @@ pub fn search<'a, S: Into<Cow<'a, str>>>(query: S, token: &auth::Token)
 ///
 /// This function returns a stream over the `TwitterUser` objects returned by Twitter. This
 /// method defaults to returning 20 users in a single network call; the maximum is 200.
-pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> cursor::CursorIter<'a, cursor::UserCursor>
-{
+pub fn friends_of<'a, T: Into<UserID<'a>>>(
+    acct: T,
+    token: &auth::Token,
+) -> cursor::CursorIter<'a, cursor::UserCursor> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
     cursor::CursorIter::new(links::users::FRIENDS_LIST, token, Some(params), Some(20))
@@ -192,9 +192,10 @@ pub fn friends_of<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
 /// Choosing only to load the user IDs instead of the full user information results in a call that
 /// can return more accounts per-page, which can be useful if you anticipate having to page through
 /// several results and don't need all the user information.
-pub fn friends_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> cursor::CursorIter<'a, cursor::IDCursor>
-{
+pub fn friends_ids<'a, T: Into<UserID<'a>>>(
+    acct: T,
+    token: &auth::Token,
+) -> cursor::CursorIter<'a, cursor::IDCursor> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
     cursor::CursorIter::new(links::users::FRIENDS_IDS, token, Some(params), Some(500))
@@ -204,9 +205,10 @@ pub fn friends_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
 ///
 /// This function returns a stream over the `TwitterUser` objects returned by Twitter. This
 /// method defaults to returning 20 users in a single network call; the maximum is 200.
-pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> cursor::CursorIter<'a, cursor::UserCursor>
-{
+pub fn followers_of<'a, T: Into<UserID<'a>>>(
+    acct: T,
+    token: &auth::Token,
+) -> cursor::CursorIter<'a, cursor::UserCursor> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
     cursor::CursorIter::new(links::users::FOLLOWERS_LIST, token, Some(params), Some(20))
@@ -220,9 +222,10 @@ pub fn followers_of<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
 /// Choosing only to load the user IDs instead of the full user information results in a call that
 /// can return more accounts per-page, which can be useful if you anticipate having to page through
 /// several results and don't need all the user information.
-pub fn followers_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> cursor::CursorIter<'a, cursor::IDCursor>
-{
+pub fn followers_ids<'a, T: Into<UserID<'a>>>(
+    acct: T,
+    token: &auth::Token,
+) -> cursor::CursorIter<'a, cursor::IDCursor> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
     cursor::CursorIter::new(links::users::FOLLOWERS_IDS, token, Some(params), Some(500))
@@ -234,9 +237,7 @@ pub fn followers_ids<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
 /// the page size. Calling `with_page_size` on a stream returned by this function will not
 /// change the page size used by the network call. Setting `page_size` manually may result in an
 /// error from Twitter.
-pub fn blocks(token: &auth::Token)
-    -> cursor::CursorIter<'static, cursor::UserCursor>
-{
+pub fn blocks(token: &auth::Token) -> cursor::CursorIter<'static, cursor::UserCursor> {
     cursor::CursorIter::new(links::users::BLOCKS_LIST, token, None, None)
 }
 
@@ -251,9 +252,7 @@ pub fn blocks(token: &auth::Token)
 /// the page size. Calling `with_page_size` on a stream returned by this function will not
 /// change the page size used by the network call. Setting `page_size` manually may result in an
 /// error from Twitter.
-pub fn blocks_ids(token: &auth::Token)
-    -> cursor::CursorIter<'static, cursor::IDCursor>
-{
+pub fn blocks_ids(token: &auth::Token) -> cursor::CursorIter<'static, cursor::IDCursor> {
     cursor::CursorIter::new(links::users::BLOCKS_IDS, token, None, None)
 }
 
@@ -263,9 +262,7 @@ pub fn blocks_ids(token: &auth::Token)
 /// the page size. Calling `with_page_size` on a stream returned by this function will not
 /// change the page size used by the network call. Setting `page_size` manually may result in an
 /// error from Twitter.
-pub fn mutes(token: &auth::Token)
-    -> cursor::CursorIter<'static, cursor::UserCursor>
-{
+pub fn mutes(token: &auth::Token) -> cursor::CursorIter<'static, cursor::UserCursor> {
     cursor::CursorIter::new(links::users::MUTES_LIST, token, None, None)
 }
 
@@ -279,25 +276,19 @@ pub fn mutes(token: &auth::Token)
 /// the page size. Calling `with_page_size` on a stream returned by this function will not
 /// change the page size used by the network call. Setting `page_size` manually may result in an
 /// error from Twitter.
-pub fn mutes_ids(token: &auth::Token)
-    -> cursor::CursorIter<'static, cursor::IDCursor>
-{
+pub fn mutes_ids(token: &auth::Token) -> cursor::CursorIter<'static, cursor::IDCursor> {
     cursor::CursorIter::new(links::users::MUTES_IDS, token, None, None)
 }
 
 /// Lookup the user IDs who have pending requests to follow the authenticated protected user.
 ///
 /// If the authenticated user is not a protected account, this will return an empty collection.
-pub fn incoming_requests(token: &auth::Token)
-    -> cursor::CursorIter<'static, cursor::IDCursor>
-{
+pub fn incoming_requests(token: &auth::Token) -> cursor::CursorIter<'static, cursor::IDCursor> {
     cursor::CursorIter::new(links::users::FRIENDSHIPS_INCOMING, token, None, None)
 }
 
 /// Lookup the user IDs with which the authenticating user has a pending follow request.
-pub fn outgoing_requests(token: &auth::Token)
-    -> cursor::CursorIter<'static, cursor::IDCursor>
-{
+pub fn outgoing_requests(token: &auth::Token) -> cursor::CursorIter<'static, cursor::IDCursor> {
     cursor::CursorIter::new(links::users::FRIENDSHIPS_OUTGOING, token, None, None)
 }
 
@@ -312,9 +303,11 @@ pub fn outgoing_requests(token: &auth::Token)
 ///
 /// Calling this with an account the user already follows may return an error, or ("for performance
 /// reasons") may return success without changing any account settings.
-pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool, token: &auth::Token)
-    -> FutureResponse<TwitterUser>
-{
+pub fn follow<'a, T: Into<UserID<'a>>>(
+    acct: T,
+    notifications: bool,
+    token: &auth::Token,
+) -> FutureResponse<TwitterUser> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
     add_param(&mut params, "follow", notifications.to_string());
@@ -330,9 +323,10 @@ pub fn follow<'a, T: Into<UserID<'a>>>(acct: T, notifications: bool, token: &aut
 ///
 /// Calling this with an account the user doesn't follow will return success, even though it doesn't
 /// change any settings.
-pub fn unfollow<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> FutureResponse<TwitterUser>
-{
+pub fn unfollow<'a, T: Into<UserID<'a>>>(
+    acct: T,
+    token: &auth::Token,
+) -> FutureResponse<TwitterUser> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 
@@ -347,10 +341,14 @@ pub fn unfollow<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
 /// to follow that user. It will return an error if you pass `Some(true)` for `notifications` or
 /// `Some(false)` for `retweets`. Any other combination of arguments will return a `Relationship` as
 /// if you had called `relation` between the authenticated user and the given user.
-pub fn update_follow<'a, T>(acct: T, notifications: Option<bool>, retweets: Option<bool>,
-                            token: &auth::Token)
-    -> FutureResponse<Relationship>
-    where T: Into<UserID<'a>>
+pub fn update_follow<'a, T>(
+    acct: T,
+    notifications: Option<bool>,
+    retweets: Option<bool>,
+    token: &auth::Token,
+) -> FutureResponse<Relationship>
+where
+    T: Into<UserID<'a>>,
 {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
@@ -369,9 +367,7 @@ pub fn update_follow<'a, T>(acct: T, notifications: Option<bool>, retweets: Opti
 /// Block the given account with the authenticated user.
 ///
 /// Upon success, the future returned by this function yields the given user.
-pub fn block<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> FutureResponse<TwitterUser>
-{
+pub fn block<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> FutureResponse<TwitterUser> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 
@@ -383,9 +379,10 @@ pub fn block<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
 /// Block the given account and report it for spam, with the authenticated user.
 ///
 /// Upon success, the future returned by this function yields the given user.
-pub fn report_spam<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> FutureResponse<TwitterUser>
-{
+pub fn report_spam<'a, T: Into<UserID<'a>>>(
+    acct: T,
+    token: &auth::Token,
+) -> FutureResponse<TwitterUser> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 
@@ -397,9 +394,10 @@ pub fn report_spam<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
 /// Unblock the given user with the authenticated user.
 ///
 /// Upon success, the future returned by this function yields the given user.
-pub fn unblock<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> FutureResponse<TwitterUser>
-{
+pub fn unblock<'a, T: Into<UserID<'a>>>(
+    acct: T,
+    token: &auth::Token,
+) -> FutureResponse<TwitterUser> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 
@@ -411,9 +409,7 @@ pub fn unblock<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
 /// Mute the given user with the authenticated user.
 ///
 /// Upon success, the future returned by this function yields the given user.
-pub fn mute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> FutureResponse<TwitterUser>
-{
+pub fn mute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> FutureResponse<TwitterUser> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 
@@ -425,9 +421,10 @@ pub fn mute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
 /// Unmute the given user with the authenticated user.
 ///
 /// Upon success, the future returned by this function yields the given user.
-pub fn unmute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token)
-    -> FutureResponse<TwitterUser>
-{
+pub fn unmute<'a, T: Into<UserID<'a>>>(
+    acct: T,
+    token: &auth::Token,
+) -> FutureResponse<TwitterUser> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &acct.into());
 

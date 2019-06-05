@@ -14,10 +14,13 @@ fn main() {
     let config = common::Config::load();
 
     //rust tweets around dallas
-    let search = block_on_all(search::search("rustlang")
-                                     .result_type(ResultType::Recent)
-                                     .count(10)
-                                     .call(&config.token)).unwrap();
+    let search = block_on_all(
+        search::search("rustlang")
+            .result_type(ResultType::Recent)
+            .count(10)
+            .call(&config.token),
+    )
+    .unwrap();
 
     for tweet in &search.statuses {
         common::print_tweet(tweet);

@@ -111,17 +111,17 @@
 //! with the rate-limit info parsed out. It's only exported for a couple functions in `list` which
 //! need to get that info even on an error.
 
+use list;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::iter::Peekable;
 use user;
-use list;
 
 use chrono::{self, TimeZone};
-use mime;
-use serde::{Deserialize, Deserializer};
-use serde::de::Error;
 use hyper::header::{HeaderMap, HeaderValue};
+use mime;
+use serde::de::Error;
+use serde::{Deserialize, Deserializer};
 
 mod response;
 
@@ -134,8 +134,9 @@ pub type ParamList<'a> = HashMap<Cow<'a, str>, Cow<'a, str>>;
 
 ///Convenience function to add a key/value parameter to a `ParamList`.
 pub fn add_param<'a, K, V>(list: &mut ParamList<'a>, key: K, value: V) -> Option<Cow<'a, str>>
-    where K: Into<Cow<'a, str>>,
-          V: Into<Cow<'a, str>>
+where
+    K: Into<Cow<'a, str>>,
+    V: Into<Cow<'a, str>>,
 {
     list.insert(key.into(), value.into())
 }
@@ -153,13 +154,13 @@ pub fn add_list_param<'a>(params: &mut ParamList<'a>, list: &list::ListID<'a>) {
             match *owner {
                 user::UserID::ID(id) => {
                     add_param(params, "owner_id", id.to_string());
-                },
+                }
                 user::UserID::ScreenName(name) => {
                     add_param(params, "owner_screen_name", name);
-                },
+                }
             }
             add_param(params, "slug", name);
-        },
+        }
         list::ListID::ID(id) => {
             add_param(params, "list_id", id.to_string());
         }
@@ -167,7 +168,9 @@ pub fn add_list_param<'a>(params: &mut ParamList<'a>, list: &list::ListID<'a>) {
 }
 
 pub fn multiple_names_param<'a, T, I>(accts: I) -> (String, String)
-    where T: Into<user::UserID<'a>>, I: IntoIterator<Item=T>
+where
+    T: Into<user::UserID<'a>>,
+    I: IntoIterator<Item = T>,
 {
     let mut ids = Vec::new();
     let mut names = Vec::new();
@@ -213,7 +216,8 @@ pub fn codepoints_to_bytes(&mut (ref mut start, ref mut end): &mut (usize, usize
 
 ///A clone of MergeBy from Itertools.
 pub struct MergeBy<Iter, Fun>
-    where Iter: Iterator
+where
+    Iter: Iterator,
 {
     left: Peekable<Iter>,
     right: Peekable<Iter>,
@@ -222,8 +226,9 @@ pub struct MergeBy<Iter, Fun>
 }
 
 impl<Iter, Fun> Iterator for MergeBy<Iter, Fun>
-    where Iter: Iterator,
-          Fun: FnMut(&Iter::Item, &Iter::Item) -> bool
+where
+    Iter: Iterator,
+    Fun: FnMut(&Iter::Item, &Iter::Item) -> bool,
 {
     type Item = Iter::Item;
 
@@ -235,11 +240,11 @@ impl<Iter, Fun> Iterator for MergeBy<Iter, Fun>
                 (Some(_), None) => {
                     self.fused = Some(true);
                     true
-                },
+                }
                 (None, Some(_)) => {
                     self.fused = Some(false);
                     false
-                },
+                }
                 (None, None) => return None,
             },
         };
@@ -253,8 +258,9 @@ impl<Iter, Fun> Iterator for MergeBy<Iter, Fun>
 }
 
 pub fn merge_by<Iter, Fun>(left: Iter, right: Iter, comp: Fun) -> MergeBy<Iter::IntoIter, Fun>
-    where Iter: IntoIterator,
-          Fun: FnMut(&Iter::Item, &Iter::Item) -> bool
+where
+    Iter: IntoIterator,
+    Fun: FnMut(&Iter::Item, &Iter::Item) -> bool,
 {
     MergeBy {
         left: left.into_iter().peekable(),
@@ -272,7 +278,7 @@ pub fn max_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
             } else {
                 Some(right)
             }
-        },
+        }
         (left, None) => left,
         (None, right) => right,
     }
@@ -286,25 +292,33 @@ pub fn min_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
             } else {
                 Some(right)
             }
-        },
+        }
         (left, None) => left,
         (None, right) => right,
     }
 }
 
-pub fn deserialize_datetime<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error> where D: Deserializer<'de> {
+pub fn deserialize_datetime<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error>
+where
+    D: Deserializer<'de>,
+{
     let s = String::deserialize(ser)?;
-    let date = (chrono::Utc).datetime_from_str(&s, "%a %b %d %T %z %Y").map_err(|e| D::Error::custom(e))?;
+    let date = (chrono::Utc)
+        .datetime_from_str(&s, "%a %b %d %T %z %Y")
+        .map_err(|e| D::Error::custom(e))?;
     Ok(date)
 }
 
-pub fn deserialize_mime<'de, D>(ser: D) -> Result<mime::Mime, D::Error> where D: Deserializer<'de> {
+pub fn deserialize_mime<'de, D>(ser: D) -> Result<mime::Mime, D::Error>
+where
+    D: Deserializer<'de>,
+{
     let str = String::deserialize(ser)?;
     str.parse().map_err(|e| D::Error::custom(e))
 }
 
 #[cfg(test)]
-pub (crate) mod tests {
+pub(crate) mod tests {
     use super::*;
     use std::fs::File;
     use std::io::Read;
@@ -327,6 +341,9 @@ pub (crate) mod tests {
 
         let mut range = (6, 30);
         codepoints_to_bytes(&mut range, unicode);
-        assert_eq!(&unicode[range.0..range.1], "Iñtërnâtiônàližætiøn ënd");
+        assert_eq!(
+            &unicode[range.0..range.1],
+            "Iñtërnâtiônàližætiøn ënd"
+        );
     }
 }
