@@ -17,7 +17,8 @@ appveyor = { repository = "QuietMisdreavus/twitter-rs" }
 [dependencies]
 hyper = "0.12.13"
 hyper-tls = "0.3.1"
-native-tls = "0.2.2"
+hyper-rustls = { version = "0.15.0", optional = true }
+native-tls = { version = "0.2.2", optional = true }
 futures = "0.1.14"
 tokio = "0.1.11"
 url = "1.5.1"
@@ -32,3 +33,6 @@ serde = "1.0.27"
 serde_json = "1.0.9"
 serde_derive = "1.0.27"
 base64 = "0.9.0"
+
+[features]
+default = ["native-tls"]
