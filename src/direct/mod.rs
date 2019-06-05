@@ -96,7 +96,7 @@ pub struct DirectMessage {
 
 impl<'de> Deserialize<'de> for DirectMessage {
     fn deserialize<D>(deser: D) -> Result<DirectMessage, D::Error> where D: Deserializer<'de> {
-        let mut raw = try!(raw::RawDirectMessage::deserialize(deser));
+        let mut raw = raw::RawDirectMessage::deserialize(deser)?;
 
         for entity in &mut raw.entities.hashtags {
             codepoints_to_bytes(&mut entity.range, &raw.text);

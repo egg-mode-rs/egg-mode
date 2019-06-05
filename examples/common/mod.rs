@@ -158,7 +158,9 @@ pub fn print_tweet(tweet: &egg_mode::tweet::Tweet) {
     if !tweet.entities.urls.is_empty() {
         println!("URLs contained in the tweet:");
         for url in &tweet.entities.urls {
-            println!("{}", url.expanded_url);
+            if let Some(expanded_url) = &url.expanded_url {
+                println!("{}", expanded_url);
+            }
         }
     }
 

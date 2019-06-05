@@ -233,7 +233,7 @@ pub struct TwitterUser {
     /// interface language, not necessarily the content of their Tweets.
     ///
     /// [BCP 47]: https://tools.ietf.org/html/bcp47
-    pub lang: String,
+    pub lang: Option<String>,
     /// The number of public lists the user is a member of.
     pub listed_count: i32,
     /// The user-entered location field from their profile. Not necessarily parseable
@@ -322,7 +322,7 @@ pub struct TwitterUser {
 
 impl<'de> Deserialize<'de> for TwitterUser {
     fn deserialize<D>(deser: D) -> Result<TwitterUser, D::Error> where D: Deserializer<'de> {
-        let mut raw = try!(raw::RawTwitterUser::deserialize(deser));
+        let mut raw = raw::RawTwitterUser::deserialize(deser)?;
 
         if let Some(ref description) = raw.description {
             for entity in &mut raw.entities.description.urls {

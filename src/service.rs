@@ -38,7 +38,7 @@ pub fn terms(token: &auth::Token) -> FutureResponse<String> {
     let req = auth::get(links::service::TERMS, token, None);
 
     fn parse_terms(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
-        let ret: Response<serde_json::Value> = try!(make_response(full_resp, headers));
+        let ret: Response<serde_json::Value> = make_response(full_resp, headers)?;
 
         let tos = ret.response
             .get("tos")
@@ -59,7 +59,7 @@ pub fn privacy(token: &auth::Token) -> FutureResponse<String> {
     let req = auth::get(links::service::PRIVACY, token, None);
 
     fn parse_policy(full_resp: String, headers: &Headers) -> Result<Response<String>, error::Error> {
-        let ret: Response<serde_json::Value> = try!(make_response(full_resp, headers));
+        let ret: Response<serde_json::Value> = make_response(full_resp, headers)?;
 
         let privacy = ret.response
             .get("privacy")

@@ -24,7 +24,7 @@ pub(crate) struct RawTweet {
     pub in_reply_to_user_id: Option<u64>,
     pub in_reply_to_screen_name: Option<String>,
     pub in_reply_to_status_id: Option<u64>,
-    pub lang: String,
+    pub lang: Option<String>,
     pub place: Option<place::Place>,
     pub possibly_sensitive: Option<bool>,
     pub quoted_status_id: Option<u64>,

@@ -31,9 +31,7 @@ fn rate_limit(headers: &Headers, header: &'static str) -> Result<Option<i32>, er
     let val = headers.get(header);
 
     if let Some(val) = val {
-        let val = try!(val.to_str());
-        let val = try!(val.parse::<i32>());
-
+        let val = val.to_str()?.parse::<i32>()?;
         Ok(Some(val))
     } else {
         Ok(None)
@@ -363,7 +361,7 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
 pub fn get_response(request: Request<Body>) -> Result<ResponseFuture, error::Error> {
     // TODO: num-cpus?
     #[cfg(feature = "native-tls")]
-    let connector = try!(HttpsConnector::new(1));
+    let connector = HttpsConnector::new(1)?;
     #[cfg(feature = "hyper-rustls")]
     let connector = HttpsConnector::new(1);
     let client = hyper::Client::builder().build(connector);
@@ -397,7 +395,7 @@ impl Future for RawFuture {
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         if let Some(req) = self.request.take() {
             // needed to pull this section into the future so i could try!() on the connector
-            self.response = Some(try!(get_response(req)));
+            self.response = Some(get_response(req)?);
         }
 
         if let Some(mut resp) = self.response.take() {
@@ -450,7 +448,7 @@ impl Future for RawFuture {
                     {
                         return Err(
                             RateLimit(
-                                try!(rate_limit_reset(self.headers())).unwrap()
+                                rate_limit_reset(self.headers())?.unwrap()
                             )
                         );
                     } else {
@@ -513,7 +511,7 @@ impl<T> Future for TwitterFuture<T> {
              Ok(Async::Ready(r)) => r,
          };
 
-         Ok(Async::Ready(try!((self.make_resp)(full_resp, self.request.headers()))))
+         Ok(Async::Ready((self.make_resp)(full_resp, self.request.headers())?))
      }
 }
 
@@ -523,7 +521,7 @@ pub fn make_response<T: for <'a> serde::Deserialize<'a>>(full_resp: String, head
     -> Result<Response<T>, error::Error>
 {
     let out = serde_json::from_str(&full_resp)?;
-    Ok(Response::map(try!(rate_headers(headers)), |_| out))
+    Ok(Response::map(rate_headers(headers)?, |_| out))
 }
 
 pub fn make_future<T>(request: Request<Body>,
@@ -545,9 +543,9 @@ pub fn make_parsed_future<T: for <'de> serde::Deserialize<'de>>(request: Request
 
 pub fn rate_headers(resp: &Headers) -> Result<Response<()>, error::Error> {
     Ok(Response {
-        rate_limit: try!(rate_limit_limit(resp)).unwrap_or(-1),
-        rate_limit_remaining: try!(rate_limit_remaining(resp)).unwrap_or(-1),
-        rate_limit_reset: try!(rate_limit_reset(resp)).unwrap_or(-1),
+        rate_limit: rate_limit_limit(resp)?.unwrap_or(-1),
+        rate_limit_remaining: rate_limit_remaining(resp)?.unwrap_or(-1),
+        rate_limit_reset: rate_limit_reset(resp)?.unwrap_or(-1),
         response: (),
     })
 }

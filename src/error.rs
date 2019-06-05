@@ -39,9 +39,9 @@ impl fmt::Display for TwitterErrors {
         let mut first = true;
         for e in &self.errors {
             if first { first = false; }
-            else { try!(writeln!(f, ",")); }
+            else { writeln!(f, ",")?; }
 
-            try!(write!(f, "{}", e));
+            write!(f, "{}", e)?;
         }
 
         Ok(())

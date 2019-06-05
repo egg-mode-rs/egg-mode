@@ -106,6 +106,8 @@ pub struct MediaEntity {
     ///For media entities corresponding to videos, this contains extra information about the linked
     ///video.
     pub video_info: Option<VideoInfo>,
+    ///Media alt text, if present.
+    pub ext_alt_text: Option<String>,
 }
 
 ///Represents the types of media that can be attached to a tweet.
@@ -192,7 +194,7 @@ pub struct UrlEntity {
     ///
     ///Meant to be used as hover-text when a user mouses over a link.
     #[serde(default)]
-    pub expanded_url: String,
+    pub expanded_url: Option<String>,
     ///The byte offsets in the companion text where the URL was extracted from.
     #[serde(rename = "indices")]
     pub range: (usize, usize),

@@ -64,33 +64,33 @@ struct TwitterOAuth {
 impl fmt::Display for TwitterOAuth {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // authorization scheme
-        try!(write!(f, "OAuth "));
+        write!(f, "OAuth ")?;
 
         // authorization data
-        try!(write!(f, "oauth_consumer_key=\"{}\"", percent_encode(&self.consumer_key)));
+        write!(f, "oauth_consumer_key=\"{}\"", percent_encode(&self.consumer_key))?;
 
-        try!(write!(f, ", oauth_nonce=\"{}\"", percent_encode(&self.nonce)));
+        write!(f, ", oauth_nonce=\"{}\"", percent_encode(&self.nonce))?;
 
         if let Some(ref signature) = self.signature {
-            try!(write!(f, ", oauth_signature=\"{}\"", percent_encode(signature)));
+            write!(f, ", oauth_signature=\"{}\"", percent_encode(signature))?;
         }
 
-        try!(write!(f, ", oauth_signature_method=\"{}\"", percent_encode("HMAC-SHA1")));
+        write!(f, ", oauth_signature_method=\"{}\"", percent_encode("HMAC-SHA1"))?;
 
-        try!(write!(f, ", oauth_timestamp=\"{}\"", self.timestamp));
+        write!(f, ", oauth_timestamp=\"{}\"", self.timestamp)?;
 
         if let Some(ref token) = self.token {
-            try!(write!(f, ", oauth_token=\"{}\"", percent_encode(token)));
+            write!(f, ", oauth_token=\"{}\"", percent_encode(token))?;
         }
 
-        try!(write!(f, ", oauth_version=\"{}\"", "1.0"));
+        write!(f, ", oauth_version=\"{}\"", "1.0")?;
 
         if let Some(ref callback) = self.callback {
-            try!(write!(f, ", oauth_callback=\"{}\"", percent_encode(callback)));
+            write!(f, ", oauth_callback=\"{}\"", percent_encode(callback))?;
         }
 
         if let Some(ref verifier) = self.verifier {
-            try!(write!(f, ", oauth_verifier=\"{}\"", percent_encode(verifier)));
+            write!(f, ", oauth_verifier=\"{}\"", percent_encode(verifier))?;
         }
 
         Ok(())
@@ -583,8 +583,8 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S)
             }
         }
 
-        Ok(KeyPair::new(try!(key.ok_or(error::Error::MissingValue("oauth_token"))),
-                        try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")))))
+        Ok(KeyPair::new(key.ok_or(error::Error::MissingValue("oauth_token"))?,
+                        secret.ok_or(error::Error::MissingValue("oauth_token_secret"))?))
     }
 
     make_future(request.body(Body::empty()).unwrap(), parse_tok)
@@ -771,15 +771,15 @@ impl Future for AuthFuture {
                 }
             }
 
-            let access_key = try!(key.ok_or(error::Error::MissingValue("oauth_token")));
-            let access_secret = try!(secret.ok_or(error::Error::MissingValue("oauth_token_secret")));
+            let access_key = key.ok_or(error::Error::MissingValue("oauth_token"))?;
+            let access_secret = secret.ok_or(error::Error::MissingValue("oauth_token_secret"))?;
 
             Ok(Async::Ready((Token::Access {
                     consumer: con_token,
                     access: KeyPair::new(access_key, access_secret),
                 },
-                try!(id.ok_or(error::Error::MissingValue("user_id"))),
-                try!(username.ok_or(error::Error::MissingValue("screen_name"))))))
+                id.ok_or(error::Error::MissingValue("user_id"))?,
+                username.ok_or(error::Error::MissingValue("screen_name"))?)))
         } else {
             Err(error::Error::FutureAlreadyCompleted)
         }
@@ -826,10 +826,10 @@ pub fn bearer_token(con_token: &KeyPair)
     let request = request.body(Body::from("grant_type=client_credentials")).unwrap();
 
     fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
-        let decoded: serde_json::Value = try!(serde_json::from_str(&full_resp));
-        let result = try!(decoded.get("access_token")
+        let decoded: serde_json::Value = serde_json::from_str(&full_resp)?;
+        let result = decoded.get("access_token")
                                  .and_then(|s| s.as_str())
-                                 .ok_or(error::Error::MissingValue("access_token")));
+                                 .ok_or(error::Error::MissingValue("access_token"))?;
 
         Ok(Token::Bearer(result.to_owned()))
     }
@@ -862,10 +862,10 @@ pub fn invalidate_bearer(con_token: &KeyPair, token: &Token)
     let request = request.body(body).unwrap();
 
     fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
-        let decoded: serde_json::Value = try!(serde_json::from_str(&full_resp));
-        let result = try!(decoded.get("access_token")
+        let decoded: serde_json::Value = serde_json::from_str(&full_resp)?;
+        let result = decoded.get("access_token")
                                  .and_then(|s| s.as_str())
-                                 .ok_or(error::Error::MissingValue("access_token")));
+                                 .ok_or(error::Error::MissingValue("access_token"))?;
 
         Ok(Token::Bearer(result.to_owned()))
     }

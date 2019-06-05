@@ -22,7 +22,7 @@ counting and mention/hashtag/url extraction. That has since been extracted into 
 
 [egg-mode-text]: https://github.com/QuietMisdreavus/twitter-text-rs
 
-Compatibility note: egg-mode is tested to run on Rust 1.26.0 and later. On Windows, both the -msvc
+Compatibility note: egg-mode is tested to run on Rust 1.27.0 and later. On Windows, both the -msvc
 and -gnu environments are tested.
 
 To start using this library, put the following into your Cargo.toml:
