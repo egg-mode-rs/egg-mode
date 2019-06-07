@@ -120,7 +120,7 @@ impl Config {
 pub fn print_tweet(tweet: &egg_mode::tweet::Tweet) {
     if let Some(ref user) = tweet.user {
         println!(
-            "{} (@{}) posted at {}",
+            ">> {} (@{}) posted at {}",
             user.name,
             user.screen_name,
             tweet.created_at.with_timezone(&chrono::Local)
@@ -128,12 +128,12 @@ pub fn print_tweet(tweet: &egg_mode::tweet::Tweet) {
     }
 
     if let Some(ref screen_name) = tweet.in_reply_to_screen_name {
-        println!("--> in reply to @{}", screen_name);
+        println!(">> in reply to @{}", screen_name);
     }
 
     if let Some(ref status) = tweet.retweeted_status {
         if let Some(ref user) = status.user {
-            println!("Retweeted from {}:", user.name);
+            println!(">> Retweeted from {}:", user.name);
         }
         print_tweet(status);
         return;
@@ -141,33 +141,33 @@ pub fn print_tweet(tweet: &egg_mode::tweet::Tweet) {
         println!("{}", tweet.text);
     }
 
-    println!("--via {} ({})", tweet.source.name, tweet.source.url);
+    println!(">> via {} ({})", tweet.source.name, tweet.source.url);
 
     if let Some(ref place) = tweet.place {
         println!("--from {}", place.full_name);
     }
 
     if let Some(ref status) = tweet.quoted_status {
-        println!("--Quoting the following status:");
+        println!(">> Quoting the following status:");
         print_tweet(status);
     }
 
     if !tweet.entities.hashtags.is_empty() {
-        println!("Hashtags contained in the tweet:");
+        println!(">> Hashtags contained in the tweet:");
         for tag in &tweet.entities.hashtags {
             println!("{}", tag.text);
         }
     }
 
     if !tweet.entities.symbols.is_empty() {
-        println!("Symbols contained in the tweet:");
+        println!(">> Symbols contained in the tweet:");
         for tag in &tweet.entities.symbols {
             println!("{}", tag.text);
         }
     }
 
     if !tweet.entities.urls.is_empty() {
-        println!("URLs contained in the tweet:");
+        println!(">> URLs contained in the tweet:");
         for url in &tweet.entities.urls {
             if let Some(expanded_url) = &url.expanded_url {
                 println!("{}", expanded_url);
@@ -176,14 +176,14 @@ pub fn print_tweet(tweet: &egg_mode::tweet::Tweet) {
     }
 
     if !tweet.entities.user_mentions.is_empty() {
-        println!("Users mentioned in the tweet:");
+        println!(">> Users mentioned in the tweet:");
         for user in &tweet.entities.user_mentions {
             println!("{}", user.screen_name);
         }
     }
 
     if let Some(ref media) = tweet.extended_entities {
-        println!("Media attached to the tweet:");
+        println!(">> Media attached to the tweet:");
         for info in &media.media {
             println!("A {:?}", info.media_type);
         }

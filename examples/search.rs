@@ -24,5 +24,6 @@ fn main() {
 
     for tweet in &search.statuses {
         common::print_tweet(tweet);
+        println!()
     }
 }

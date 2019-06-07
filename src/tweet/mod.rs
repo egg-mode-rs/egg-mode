@@ -341,15 +341,23 @@ impl FromStr for TweetSource {
             static ref RE_NAME: Regex = Regex::new(">(.*)</a>").unwrap();
         }
 
-        let url = RE_URL.captures(full)
+        let url = RE_URL
+            .captures(full)
             .and_then(|cap| cap.get(1))
             .map(|m| m.as_str().to_string())
-            .ok_or(InvalidResponse("TweetSource had no link href", Some(full.to_string())))?;
+            .ok_or(InvalidResponse(
+                "TweetSource had no link href",
+                Some(full.to_string()),
+            ))?;
 
-        let name = RE_NAME.captures(full)
+        let name = RE_NAME
+            .captures(full)
             .and_then(|cap| cap.get(1))
             .map(|m| m.as_str().to_string())
-            .ok_or(InvalidResponse("TweetSource had no link text", Some(full.to_string())))?;
+            .ok_or(InvalidResponse(
+                "TweetSource had no link text",
+                Some(full.to_string()),
+            ))?;
 
         Ok(TweetSource {
             name: name,
