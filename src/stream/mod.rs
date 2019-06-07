@@ -26,6 +26,7 @@ use user::TwitterUser;
 
 use common::*;
 
+// https://developer.twitter.com/en/docs/tweets/filter-realtime/guides/streaming-message-types
 /// Represents the kinds of messages that can be sent over Twitter's Streaming API.
 #[derive(Debug)]
 pub enum StreamMessage {
@@ -39,62 +40,6 @@ pub enum StreamMessage {
     /// Note that the `entities` inside the `user` field will be empty for tweets received via the
     /// Streaming API.
     Tweet(Tweet),
-    /// A direct message.
-    DirectMessage(DirectMessage),
-    /// Notification that the given user has liked the given tweet.
-    ///
-    /// Note that this message can be sent for both "other user liked the authenticated user's
-    /// tweet" and "authenticated user liked someone else's tweet".
-    Like(chrono::DateTime<chrono::Utc>, TwitterUser, Tweet),
-    /// Notification that the given user has cleared their like of the given tweet.
-    ///
-    /// As with `StreamMessage::Like`, this can be sent for actions taken either by the
-    /// authenticated user or upon one of the authenticated user's tweets.
-    Unlike(chrono::DateTime<chrono::Utc>, TwitterUser, Tweet),
-    /// The authenticated user has blocked the given account.
-    Block(chrono::DateTime<chrono::Utc>, TwitterUser),
-    /// The authenticated user has unblocked the given account.
-    Unblock(chrono::DateTime<chrono::Utc>, TwitterUser),
-    /// The `source` user has followed the `target` user.
-    ///
-    /// This is sent both when the authenticated user follows an account, and when another account
-    /// follows the authenticated user.
-    Follow {
-        /// The timestamp when the event occurred.
-        at: chrono::DateTime<chrono::Utc>,
-        /// The user who initiated the follow.
-        source: TwitterUser,
-        /// The user who was followed.
-        target: TwitterUser,
-    },
-    /// The authenticated user has unfollowed the given account.
-    Unfollow(chrono::DateTime<chrono::Utc>, TwitterUser),
-    /// The given user has quote-tweeted one of the authenticated user's statuses.
-    Quoted(chrono::DateTime<chrono::Utc>, TwitterUser, Tweet),
-    /// The authenticated user has updated their profile information.
-    ProfileUpdate(chrono::DateTime<chrono::Utc>, TwitterUser),
-    /// The given user was added to the given list.
-    ///
-    /// Note that this is sent both for the authenticated user adding members to their own lists,
-    /// and other accounts adding the authenticated user to their own lists.
-    AddListMember(chrono::DateTime<chrono::Utc>, TwitterUser, List),
-    /// The given user was removed from the given list.
-    ///
-    /// As with `AddListMember`, this is sent both when the authenticated user removes an account
-    /// from their own list, or when another account has removed the authenticated user from their
-    /// own list.
-    RemoveListMember(chrono::DateTime<chrono::Utc>, TwitterUser, List),
-    /// The given user has subscried to the given list.
-    ///
-    /// This is sent for both the authenticated user subscribing to someone else's list, and for
-    /// another user subscribing to one of the authenticated user's lists.
-    ListSubscribe(chrono::DateTime<chrono::Utc>, TwitterUser, List),
-    /// The given user has unsubscribed from the given list.
-    ///
-    /// As with `ListSubscribe`, this is sent both when the authenticated user unsubscribes from
-    /// someone else's list, and when another user subscribes to one of the authenticated user's
-    /// lists.
-    ListUnsubscribe(chrono::DateTime<chrono::Utc>, TwitterUser, List),
     /// Notice given when a user deletes a post.
     ///
     /// Clients are expected to comply with these notices by removing the status "from memory and
@@ -173,65 +118,7 @@ impl<'de> Deserialize<'de> for StreamMessage {
         }
 
         let input = serde_json::Value::deserialize(deser)?;
-        let msg = if let Some(event) = input.get("event").and_then(|ev| ev.as_str()) {
-            //TODO: if i ever support site streams, add "access_revoked" here
-            match event {
-                "favorite" => StreamMessage::Like(
-                    fetch!(input, "created_at")?,
-                    fetch!(input, "source")?,
-                    fetch!(input, "target_object")?,
-                ),
-                "unfavorite" => StreamMessage::Unlike(
-                    fetch!(input, "created_at")?,
-                    fetch!(input, "source")?,
-                    fetch!(input, "target_object")?,
-                ),
-                "block" => {
-                    StreamMessage::Block(fetch!(input, "created_at")?, fetch!(input, "target")?)
-                }
-                "unblock" => {
-                    StreamMessage::Unblock(fetch!(input, "created_at")?, fetch!(input, "target")?)
-                }
-                "follow" => StreamMessage::Follow {
-                    at: fetch!(input, "created_at")?,
-                    source: fetch!(input, "source")?,
-                    target: fetch!(input, "target")?,
-                },
-                "unfollow" => {
-                    StreamMessage::Unfollow(fetch!(input, "created_at")?, fetch!(input, "target")?)
-                }
-                "quoted_tweet" => StreamMessage::Quoted(
-                    fetch!(input, "created_at")?,
-                    fetch!(input, "target")?,
-                    fetch!(input, "target_object")?,
-                ),
-                "user_update" => StreamMessage::ProfileUpdate(
-                    fetch!(input, "created_at")?,
-                    fetch!(input, "source")?,
-                ),
-                "list_member_added" => StreamMessage::AddListMember(
-                    fetch!(input, "created_at")?,
-                    fetch!(input, "target")?,
-                    fetch!(input, "target_object")?,
-                ),
-                "list_member_removed" => StreamMessage::RemoveListMember(
-                    fetch!(input, "created_at")?,
-                    fetch!(input, "target")?,
-                    fetch!(input, "target_object")?,
-                ),
-                "list_user_subscribed" => StreamMessage::ListSubscribe(
-                    fetch!(input, "created_at")?,
-                    fetch!(input, "target")?,
-                    fetch!(input, "target_object")?,
-                ),
-                "list_user_unsubscribed" => StreamMessage::ListUnsubscribe(
-                    fetch!(input, "created_at")?,
-                    fetch!(input, "target")?,
-                    fetch!(input, "target_object")?,
-                ),
-                _ => StreamMessage::Unknown(input.clone()),
-            }
-        } else if let Some(del) = input.get("delete").and_then(|d| d.get("status")) {
+        let msg = if let Some(del) = input.get("delete").and_then(|d| d.get("status")) {
             StreamMessage::Delete {
                 status_id: fetch!(del, "id")?,
                 user_id: fetch!(del, "user_id")?,
@@ -257,11 +144,6 @@ impl<'de> Deserialize<'de> for StreamMessage {
         } else if let Some(friends) = input.get("friends") {
             StreamMessage::FriendList(
                 serde_json::from_value(friends.clone())
-                    .map_err(|e| D::Error::custom(format!("{}", e)))?,
-            )
-        } else if let Some(dm) = input.get("direct_message") {
-            StreamMessage::DirectMessage(
-                serde_json::from_value(dm.clone())
                     .map_err(|e| D::Error::custom(format!("{}", e)))?,
             )
         // TODO remove clone?
