@@ -9,15 +9,17 @@ use egg_mode::stream::StreamMessage;
 
 fn main() {
     let config = common::Config::load();
-    println!("Printing messages from the 'sample' stream\nCtrl-C to quit\n");
+    println!("Streaming tweets from the Twitter 'sample' feed");
+    println!("Ctrl-C to quit\n");
+
     let stream = egg_mode::stream::sample(&config.token).for_each(|m| {
         use StreamMessage::*;
         match m {
             Tweet(tweet) => {
                 common::print_tweet(&tweet);
                 println!();
-            },
-            other => println!("{:?}", other)
+            }
+            other => println!("{:?}", other),
         }
         futures::future::ok(())
     });
