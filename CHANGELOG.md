@@ -1,6 +1,10 @@
 # Changelog for egg-mode
 
 ## Pending
+### Added
+- `rustls` is supported (`native-tls` is still the default).
+  To use it, modify your `Cargo.toml` entry: `egg-mode = { version = "0.13", features = [ "hyper-rustls"], default-features = false`
+  
 ### Changed
 - Replaced `rustc-serialize` with `serde`, and now all the API types implement `Deserialize` based
   on the JSON responses from Twitter.
@@ -9,6 +13,7 @@
 - Upgraded `hyper` to 0.12, and switched from `tokio-core` to `tokio`.
   - **Monumentally breaking change**: No more `Handle`s! Now all the network calls happen on the
     `tokio` runtime via `hyper`'s use of it.
+- Minor API fixes, usually due to fields becoming optional in Twitter JSON payloads
 
 ## Also pending, but likely to be scrapped before release because user streams were removed
 ### Added
