@@ -4,7 +4,7 @@
 
 //! Access to the Streaming API.
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::str::FromStr;
 use std::{self, io};
 
@@ -289,15 +289,33 @@ impl ::std::fmt::Display for FilterLevel {
 /// Represents a `TwitterStream` before it is started.
 pub struct StreamBuilder {
     url: &'static str,
+    follow: BTreeSet<u64>,
+    track: BTreeSet<String>,
     filter_level: Option<FilterLevel>,
 }
 
 impl StreamBuilder {
-    fn new(url: &'static str) -> StreamBuilder {
+    fn new(url: &'static str) -> Self {
         StreamBuilder {
             url: url,
+            follow: BTreeSet::new(),
+            track: BTreeSet::new(),
             filter_level: None,
         }
+    }
+
+    /// List of user IDs indicating the users whose Tweets should be delivered on the stream
+    pub fn follow(mut self, to_follow: &[u64]) -> Self {
+        self.follow.extend(to_follow.iter());
+        self
+    }
+
+    /// List of phrases which will be used to determine what Tweets will be delivered on the stream.
+    /// A phrase may be one or more terms separated by spaces, and a phrase will match if all
+    /// of the terms in the phrase are present in the Tweet, regardless of order and ignoring case.
+    pub fn track(mut self, to_track: &[&str]) -> Self {
+        self.track.extend(to_track.iter().map(|s| s.to_string()));
+        self
     }
 
     /// Applies the given `FilterLevel` to the stream. Tweets with a `filter_level` below the given
@@ -319,6 +337,26 @@ impl StreamBuilder {
 
         if let Some(filter_level) = self.filter_level {
             add_param(&mut params, "filter_level", filter_level.to_string());
+        }
+
+        if !self.follow.is_empty() {
+            let to_follow = self
+                .follow
+                .iter()
+                .map(|id| id.to_string())
+                .collect::<Vec<String>>()
+                .join(",");
+            add_param(&mut params, "follow", to_follow);
+        }
+
+        if !self.track.is_empty() {
+            let to_track = self
+                .track
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<&str>>()
+                .join(",");
+            add_param(&mut params, "track", to_track);
         }
 
         let req = auth::post(self.url, token, Some(&params));
@@ -343,7 +381,6 @@ pub fn filter() -> StreamBuilder {
 /// [`filter`]: fn.filter.html
 pub fn sample(token: &Token) -> TwitterStream {
     let req = auth::get(links::stream::SAMPLE, token, None);
-
     TwitterStream::new(req)
 }
 
