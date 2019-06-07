@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::{self, io};
 
-use chrono;
 use futures::{Async, Future, Poll, Stream};
 use hyper::client::ResponseFuture;
 use hyper::{Body, Request};
@@ -17,12 +16,9 @@ use serde::{Deserialize, Deserializer};
 use serde_json;
 
 use auth::{self, Token};
-use direct::DirectMessage;
 use error;
 use links;
-use list::List;
 use tweet::Tweet;
-use user::TwitterUser;
 
 use common::*;
 
@@ -293,8 +289,6 @@ impl ::std::fmt::Display for FilterLevel {
 /// Represents a `TwitterStream` before it is started.
 pub struct StreamBuilder {
     url: &'static str,
-    with_follows: Option<bool>,
-    all_replies: bool,
     filter_level: Option<FilterLevel>,
 }
 
@@ -302,35 +296,7 @@ impl StreamBuilder {
     fn new(url: &'static str) -> StreamBuilder {
         StreamBuilder {
             url: url,
-            with_follows: None,
-            all_replies: false,
             filter_level: None,
-        }
-    }
-
-    /// For User Streams, sets whether to include posts from just the authenticated user or from
-    /// the accounts they follow as well.
-    ///
-    /// By default, this is set to `true`, meaning the stream will include posts from the accounts
-    /// the user follows. This makes the stream act like the user's timeline.
-    pub fn with_follows(self, with_follows: bool) -> StreamBuilder {
-        StreamBuilder {
-            with_follows: Some(with_follows),
-            ..self
-        }
-    }
-
-    /// For User Streams, sets whether to return all @replies by followed users, or just those
-    /// which are also to accounts the authenticated user follows.
-    ///
-    /// By default, user streams will only emit @replies if the authenticated user follows both the
-    /// account that posted it *and the account they are replying to*. This mirrors the user's home
-    /// timeline. By setting this to `true`, you can see all posts by the followed accounts,
-    /// regardless of whether they're replying to someone the authenticated user is not following.
-    pub fn all_replies(self, all_replies: bool) -> StreamBuilder {
-        StreamBuilder {
-            all_replies: all_replies,
-            ..self
         }
     }
 
@@ -350,18 +316,6 @@ impl StreamBuilder {
     /// Finalizes the stream parameters and returns the resulting `TwitterStream`.
     pub fn start(self, token: &Token) -> TwitterStream {
         let mut params = HashMap::new();
-
-        if let Some(with_follows) = self.with_follows {
-            if with_follows {
-                add_param(&mut params, "with", "followings");
-            } else {
-                add_param(&mut params, "with", "user");
-            }
-        }
-
-        if self.all_replies {
-            add_param(&mut params, "replies", "all");
-        }
 
         if let Some(filter_level) = self.filter_level {
             add_param(&mut params, "filter_level", filter_level.to_string());
