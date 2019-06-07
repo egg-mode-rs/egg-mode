@@ -485,19 +485,10 @@ impl StreamBuilder {
             add_param(&mut params, "filter_level", filter_level.to_string());
         }
 
-        let req = if self.url == links::stream::USER {
-            auth::get(self.url, token, Some(&params))
-        } else {
-            auth::post(self.url, token, Some(&params))
-        };
+        let req = auth::post(self.url, token, Some(&params));
 
         TwitterStream::new(req)
     }
-}
-
-/// Begins building a request to the authenticated user's home stream.
-pub fn user() -> StreamBuilder {
-    StreamBuilder::new(links::stream::USER)
 }
 
 /// Begins building a request to a filtered public stream.
@@ -507,7 +498,7 @@ pub fn filter() -> StreamBuilder {
 
 /// Opens a `TwitterStream` returning "a small random sample of all public statuses".
 ///
-/// As sample streams don't have the same configuration options as user streams or filter streams,
+/// As sample streams don't have the same configuration options as filter streams,
 /// this directly returns a `TwitterStream`, rather than going through a [`StreamBuilder`]. To apply
 /// filter options on the public stream, start with [`filter`] and add parameters to the
 /// [`StreamBuilder`] returned there.
