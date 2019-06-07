@@ -16,9 +16,8 @@ fn main() {
         .track(&["rustlang", "python", "java", "javascript"])
         .start(&config.token)
         .for_each(|m| {
-            use StreamMessage::*;
             match m {
-                Tweet(tweet) => {
+                StreamMessage::Tweet(tweet) => {
                     common::print_tweet(&tweet);
                     println!();
                 }
