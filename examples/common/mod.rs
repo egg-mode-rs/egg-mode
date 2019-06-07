@@ -63,7 +63,7 @@ impl Config {
                 println!("We'll have to reauthenticate before continuing.");
                 std::fs::remove_file("twitter_settings").unwrap();
             } else {
-                println!("Welcome back, {}!", username);
+                println!("Welcome back, {}!\n", username);
             }
         } else {
             let request_token = block_on_all(egg_mode::request_token(&con_token, "oob")).unwrap();
