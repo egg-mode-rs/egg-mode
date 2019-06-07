@@ -9,7 +9,7 @@ use egg_mode::stream::StreamMessage;
 
 fn main() {
     let config = common::Config::load();
-    println!("Printing messages from the 'sample' stream\n");
+    println!("Printing messages from the 'sample' stream\nCtrl-C to quit\n");
     let stream = egg_mode::stream::sample(&config.token).for_each(|m| {
         use StreamMessage::*;
         match m {
