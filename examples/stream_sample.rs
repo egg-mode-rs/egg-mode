@@ -13,9 +13,8 @@ fn main() {
     println!("Ctrl-C to quit\n");
 
     let stream = egg_mode::stream::sample(&config.token).for_each(|m| {
-        use StreamMessage::*;
         match m {
-            Tweet(tweet) => {
+            StreamMessage::Tweet(tweet) => {
                 common::print_tweet(&tweet);
                 println!();
             }

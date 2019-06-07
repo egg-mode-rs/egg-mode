@@ -1,10 +1,18 @@
 # Changelog for egg-mode
 
 ## Pending
+
 ### Added
-- `rustls` is supported (`native-tls` is still the default).
-  To use it, modify your `Cargo.toml` entry: `egg-mode = { version = "0.13", features = [ "hyper-rustls"], default-features = false`
-  
+- `stream` module and its contents, for accessing the streaming API
+  - `filter` and `sample` entry points to access streams
+  - `StreamBuilder`, to configure stream (`follow`/`track`/`filter_level`)
+  - `FilterLevel`, part of `StreamBuilder`'s parameters
+  - `TwitterStream`, the `Stream` type itself, and `StreamMessage`, its Item type
+- `rustls` is supported (`native-tls` is still the default). To use it, modify your `Cargo.toml` entry:
+  ```
+  egg-mode = { version = "0.13", features = [ "hyper-rustls"], default-features = false }`
+  ```
+
 ### Changed
 - Replaced `rustc-serialize` with `serde`, and now all the API types implement `Deserialize` based
   on the JSON responses from Twitter.
@@ -13,26 +21,17 @@
 - Upgraded `hyper` to 0.12, and switched from `tokio-core` to `tokio`.
   - **Monumentally breaking change**: No more `Handle`s! Now all the network calls happen on the
     `tokio` runtime via `hyper`'s use of it.
-- Minor API fixes, usually due to fields becoming optional in Twitter JSON payloads
-
-## Also pending, but likely to be scrapped before release because user streams were removed
-### Added
-- `stream` module and its contents, for accessing the streaming API
-  - `filter`, `sample`, and `user`, entry points to access streams
-  - `StreamBuilder`, to assemble filter/inclusion parameters to streams
-  - `FilterLevel`, part of `StreamBuilder`'s parameters
-  - `TwitterStream`, the `Stream` type itself, and `StreamMessage`, its Item type
-
-### Changed
 - `Tweet` now has a `filter_level` field, given to tweets obtained through streams
+- Minor API fixes due to Twitter API changes
 
 ### TODO before release
-- Remaining parameters in `StreamBuilder`
-- User stream in an example
-  - Bonus points if i can also add something like "Press Enter to start composing a tweet"
-- Docs pass
-  - Basic use
-  - Notes about retry logic and connection churn from "Connecting to a streaming endpoint" page
+- Use log crate to add a bit of helpful debug logging
+- Streams:
+  - Remaining parameters in `StreamBuilder`
+  - Docs pass
+    - Basic use
+    - Combine examples
+    - Notes about retry logic and connection churn from "Connecting to a streaming endpoint" page
 
 ## [0.12.0] - 2017-12-08
 ### Added
