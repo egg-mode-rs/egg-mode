@@ -291,6 +291,7 @@ pub struct StreamBuilder {
     url: &'static str,
     follow: Vec<u64>,
     track: Vec<String>,
+    language: Vec<String>,
     filter_level: Option<FilterLevel>,
 }
 
@@ -300,22 +301,39 @@ impl StreamBuilder {
             url: url,
             follow: Vec::new(),
             track: Vec::new(),
+            language: Vec::new(),
             filter_level: None,
         }
     }
 
-    /// List of user IDs indicating the users whose Tweets should be delivered on the stream
+    /// Filter stream to only return Tweets from given user IDs.
     pub fn follow(mut self, to_follow: &[u64]) -> Self {
         self.follow.extend(to_follow.into_iter());
         self
     }
 
-    /// List of phrases which will be used to determine what Tweets will be delivered on the stream.
+    /// Filter stream to only return Tweets containing given phrases.
+    ///
     /// A phrase may be one or more terms separated by spaces, and a phrase will match if all
     /// of the terms in the phrase are present in the Tweet, regardless of order and ignoring case.
     pub fn track<I: IntoIterator<Item = S>, S: AsRef<str>>(mut self, to_track: I) -> Self {
         self.track
             .extend(to_track.into_iter().map(|s| s.as_ref().to_string()));
+        self
+    }
+
+    /// Filter stream to only return Tweets that have been detected as being written
+    /// in the specified languages.
+    ///
+    /// Languages are specified as an list of
+    /// [BCP 47](http://tools.ietf.org/html/bcp47) language identifiers
+    /// corresponding to any of the languages listed on Twitter’s
+    /// [advanced search](https://twitter.com/search-advancedpage) page.
+    ///
+    /// *Note* This library does not validate the language codes
+    pub fn language<I: IntoIterator<Item = S>, S: AsRef<str>>(mut self, languages: I) -> Self {
+        self.language
+            .extend(languages.into_iter().map(|s| s.as_ref().to_string()));
         self
     }
 
@@ -333,6 +351,9 @@ impl StreamBuilder {
     }
 
     /// Finalizes the stream parameters and returns the resulting `TwitterStream`.
+    ///
+    /// *Note*: Stream will fail at point of connection if neither a `track` nor a `follow`
+    /// filter has been specified
     pub fn start(self, token: &Token) -> TwitterStream {
         let mut params = HashMap::new();
 
@@ -353,6 +374,11 @@ impl StreamBuilder {
         if !self.track.is_empty() {
             let to_track = self.track.join(",");
             add_param(&mut params, "track", to_track);
+        }
+
+        if !self.language.is_empty() {
+            let langs = self.language.join(",");
+            add_param(&mut params, "language", langs);
         }
 
         let req = auth::post(self.url, token, Some(&params));
