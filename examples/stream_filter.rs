@@ -14,6 +14,7 @@ fn main() {
 
     let stream = egg_mode::stream::filter()
         .track(&["rustlang", "python", "java", "javascript"])
+        .language(&["en"])
         .start(&config.token)
         .for_each(|m| {
             if let StreamMessage::Tweet(tweet) = m {
