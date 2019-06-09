@@ -30,7 +30,6 @@
   - Remaining parameters in `StreamBuilder`
   - Docs pass
     - Basic use
-    - Combine examples
     - Notes about retry logic and connection churn from "Connecting to a streaming endpoint" page
 
 ## [0.12.0] - 2017-12-08
