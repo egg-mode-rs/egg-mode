@@ -19,7 +19,7 @@ fn main() {
         .for_each(|m| {
             if let StreamMessage::Tweet(tweet) = m {
                 common::print_tweet(&tweet);
-                println!();
+                println!("──────────────────────────────────────");
             } else {
                 println!("{:?}", m);
             }

@@ -331,13 +331,13 @@ impl ::std::fmt::Display for FilterLevel {
 /// Represents a `TwitterStream` before it is started. Use the various methods to build
 /// up the filters on your stream.
 ///
-/// The `track`, `follow` and `locations` filters are `OR`ed rather than `AND`ed together.
-/// E.g. if you specify a user id to follow and a phrase to track, you will receive
+/// Bear in mind that the `track`, `follow` and `locations` filters are `OR`ed rather than `AND`ed
+/// together. E.g. if you specify a user id to follow and a phrase to track, you will receive
 /// all tweets that match (user id OR phrase), NOT (user id AND phrase).
 /// For more details see the [official docs](https://developer.twitter.com/en/docs/tweets/filter-realtime/guides/basic-stream-parameters)
 ///
-/// __Note__: Stream will __fail at point of connection__ if none of a `track`, a `follow`
-/// or a `locations` filter is specified.
+/// __Note__: The user __must__ specify at least one `track`, `follow` or `locations` filter or else
+/// the stream will __fail__ at point of connection.
 pub struct StreamBuilder {
     url: &'static str,
     follow: Vec<u64>,

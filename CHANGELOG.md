@@ -24,14 +24,6 @@
 - `Tweet` now has a `filter_level` field, given to tweets obtained through streams
 - Minor API fixes due to Twitter API changes
 
-### TODO before release
-- Use log crate to add a bit of helpful debug logging
-- Streams:
-  - Remaining parameters in `StreamBuilder`
-  - Docs pass
-    - Basic use
-    - Notes about retry logic and connection churn from "Connecting to a streaming endpoint" page
-
 ## [0.12.0] - 2017-12-08
 ### Added
 - `media` module and all its contents, for uploading pictures/video/gifs to Twitter
