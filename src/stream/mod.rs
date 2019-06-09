@@ -286,7 +286,15 @@ impl ::std::fmt::Display for FilterLevel {
     }
 }
 
-/// Represents a `TwitterStream` before it is started.
+/// Represents a `TwitterStream` before it is started. Use the various methods to build
+/// up the filters on your stream.
+///
+/// The `track` and `follow` filters are `OR`ed rather than `AND`ed together.
+/// That is, if you specify a user id to follow and a phrase to track, you will receive
+/// all tweets that match (user id OR phrase), NOT (user id AND phrase).
+///
+/// __Note__: Stream will __fail at point of connection__ if neither a `track` nor a
+/// `follow` filter is specified
 pub struct StreamBuilder {
     url: &'static str,
     follow: Vec<u64>,
@@ -306,7 +314,7 @@ impl StreamBuilder {
         }
     }
 
-    /// Filter stream to only return Tweets from given user IDs.
+    /// Filter stream to only return Tweets relating to given user IDs.
     pub fn follow(mut self, to_follow: &[u64]) -> Self {
         self.follow.extend(to_follow.into_iter());
         self
@@ -325,12 +333,12 @@ impl StreamBuilder {
     /// Filter stream to only return Tweets that have been detected as being written
     /// in the specified languages.
     ///
-    /// Languages are specified as an list of
+    /// Languages are specified as a list of
     /// [BCP 47](http://tools.ietf.org/html/bcp47) language identifiers
     /// corresponding to any of the languages listed on Twitter’s
     /// [advanced search](https://twitter.com/search-advancedpage) page.
     ///
-    /// *Note* This library does not validate the language codes
+    /// __Note__ This library does __not__ validate the language codes.
     pub fn language<I: IntoIterator<Item = S>, S: AsRef<str>>(mut self, languages: I) -> Self {
         self.language
             .extend(languages.into_iter().map(|s| s.as_ref().to_string()));
@@ -340,9 +348,9 @@ impl StreamBuilder {
     /// Applies the given `FilterLevel` to the stream. Tweets with a `filter_level` below the given
     /// value will not be shown in the stream.
     ///
-    /// According to Twitter's documentation, "When displaying a stream of Tweets to end users
+    /// When displaying a stream of Tweets to end users
     /// (dashboards or live feeds at a presentation or conference, for example) it is suggested
-    /// that you set this value to medium."
+    /// that you set this value to medium.
     pub fn filter_level(self, filter_level: FilterLevel) -> StreamBuilder {
         StreamBuilder {
             filter_level: Some(filter_level),
@@ -351,10 +359,13 @@ impl StreamBuilder {
     }
 
     /// Finalizes the stream parameters and returns the resulting `TwitterStream`.
-    ///
-    /// *Note*: Stream will fail at point of connection if neither a `track` nor a `follow`
-    /// filter has been specified
     pub fn start(self, token: &Token) -> TwitterStream {
+
+        // Re connection failure, arguably this library should check that either 'track' or
+        // 'follow' exist and return an error if not. However, in such a case the request is not
+        // 'invalid' from POV of twitter api, rather it is invalid at the application level.
+        // So I think the current behaviour make sense.
+
         let mut params = HashMap::new();
 
         if let Some(filter_level) = self.filter_level {
