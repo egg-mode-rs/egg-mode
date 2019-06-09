@@ -300,6 +300,7 @@ pub struct StreamBuilder {
     follow: Vec<u64>,
     track: Vec<String>,
     language: Vec<String>,
+    locations: Vec<BoundingBox>,
     filter_level: Option<FilterLevel>,
 }
 
@@ -310,6 +311,7 @@ impl StreamBuilder {
             follow: Vec::new(),
             track: Vec::new(),
             language: Vec::new(),
+            locations: Vec::new(),
             filter_level: None,
         }
     }
@@ -345,6 +347,25 @@ impl StreamBuilder {
         self
     }
 
+    /// A list of bounding boxes by which to filter Tweets
+    ///
+    /// ### Example
+    /// ```rust,no_run
+    /// # extern crate egg_mode;
+    /// # fn main() {
+    /// # let token: egg_mode::Token = unimplemented!();
+    /// use egg_mode::stream::{filter, BoundingBox};
+    /// let stream = filter()
+    ///     // Only show tweets sent from New York
+    ///     .locations(&[BoundingBox::new((-74.0,40.0),(-73.0,41.0)).unwrap()])
+    ///     .start(&token);
+    /// # }
+    /// ```
+    pub fn locations(mut self, locations: &[BoundingBox]) -> Self {
+        self.locations.extend(locations.into_iter());
+        self
+    }
+
     /// Applies the given `FilterLevel` to the stream. Tweets with a `filter_level` below the given
     /// value will not be shown in the stream.
     ///
@@ -360,7 +381,6 @@ impl StreamBuilder {
 
     /// Finalizes the stream parameters and returns the resulting `TwitterStream`.
     pub fn start(self, token: &Token) -> TwitterStream {
-
         // Re connection failure, arguably this library should check that either 'track' or
         // 'follow' exist and return an error if not. However, in such a case the request is not
         // 'invalid' from POV of twitter api, rather it is invalid at the application level.
@@ -392,6 +412,16 @@ impl StreamBuilder {
             add_param(&mut params, "language", langs);
         }
 
+        if !self.locations.is_empty() {
+            let locs = self
+                .locations
+                .iter()
+                .map(|bb| bb.to_string())
+                .collect::<Vec<String>>()
+                .join(",");
+            add_param(&mut params, "locations", locs);
+        }
+
         let req = auth::post(self.url, token, Some(&params));
 
         TwitterStream::new(req)
@@ -415,6 +445,50 @@ pub fn filter() -> StreamBuilder {
 pub fn sample(token: &Token) -> TwitterStream {
     let req = auth::get(links::stream::SAMPLE, token, None);
     TwitterStream::new(req)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+/// Represents a bounding box of (longitude, latitude) pairs.
+///
+/// Guaranteed to be in-bounds.
+pub struct BoundingBox {
+    southwest: (f64, f64),
+    northeast: (f64, f64),
+}
+
+impl ::std::fmt::Display for BoundingBox {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        write!(
+            f,
+            "{},{},{},{}",
+            self.southwest.0, self.southwest.1, self.northeast.0, self.northeast.1
+        )
+    }
+}
+
+impl BoundingBox {
+    /// New BoundingBox. Expects (logitude, latitude pairs) describing the southwest and
+    /// northeast points of the bounding box. Checks the values are in-bounds.
+    pub fn new(southwest: (f64, f64), northeast: (f64, f64)) -> Option<BoundingBox> {
+        if
+        // check longitude
+        (southwest.0 < -180. || southwest.0 > 180.)
+            || (northeast.0 < -180. || northeast.0 > 180.)
+
+        // check latitude
+            || (southwest.1 < -90. || southwest.1 > 90.)
+            || (northeast.1 < -90. || northeast.1 > 90.)
+
+        // check consistancy
+            || (southwest.1 > northeast.1)
+        {
+            return None;
+        }
+        Some(BoundingBox {
+            southwest,
+            northeast,
+        })
+    }
 }
 
 #[cfg(test)]
