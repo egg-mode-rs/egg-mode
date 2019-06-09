@@ -5,7 +5,7 @@ mod common;
 use common::futures::Stream;
 use common::tokio::runtime::current_thread::block_on_all;
 
-use egg_mode::stream::{BoundingBox, StreamMessage};
+use egg_mode::stream::StreamMessage;
 
 fn main() {
     let config = common::Config::load();
