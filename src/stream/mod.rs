@@ -289,12 +289,13 @@ impl ::std::fmt::Display for FilterLevel {
 /// Represents a `TwitterStream` before it is started. Use the various methods to build
 /// up the filters on your stream.
 ///
-/// The `track` and `follow` filters are `OR`ed rather than `AND`ed together.
-/// That is, if you specify a user id to follow and a phrase to track, you will receive
+/// The `track`, `follow` and `locations` filters are `OR`ed rather than `AND`ed together.
+/// E.g. if you specify a user id to follow and a phrase to track, you will receive
 /// all tweets that match (user id OR phrase), NOT (user id AND phrase).
+/// For more details see the [official docs](https://developer.twitter.com/en/docs/tweets/filter-realtime/guides/basic-stream-parameters)
 ///
-/// __Note__: Stream will __fail at point of connection__ if neither a `track` nor a
-/// `follow` filter is specified
+/// __Note__: Stream will __fail at point of connection__ if none of a `track`, a `follow`
+/// or a `locations` filter is specified.
 pub struct StreamBuilder {
     url: &'static str,
     follow: Vec<u64>,
@@ -317,6 +318,18 @@ impl StreamBuilder {
     }
 
     /// Filter stream to only return Tweets relating to given user IDs.
+    /// ### Example
+    /// ```rust,no_run
+    /// # extern crate egg_mode;
+    /// # fn main() {
+    /// # let token: egg_mode::Token = unimplemented!();
+    /// use egg_mode::stream::{filter, BoundingBox};
+    /// let stream = filter()
+    ///     // View tweets related to BBC news, the Guardian and the New York Times
+    ///     .follow(&[612473, 87818409, 807095])
+    ///     .start(&token);
+    /// # }
+    /// ```
     pub fn follow(mut self, to_follow: &[u64]) -> Self {
         self.follow.extend(to_follow.into_iter());
         self
