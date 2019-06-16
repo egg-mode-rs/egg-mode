@@ -169,7 +169,6 @@ pub struct DMEntities {
 /// `start` to load the first page of results:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -187,7 +186,6 @@ pub struct DMEntities {
 /// IDs it tracks:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -208,7 +206,6 @@ pub struct DMEntities {
 /// load only those messages you need like this:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -448,7 +445,6 @@ fn merge(this: &mut DMConversations, conversations: DMConversations) {
 /// # Example
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {

@@ -22,7 +22,6 @@ use super::*;
 /// ## Examples
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -37,7 +36,6 @@ use super::*;
 /// ```
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -52,7 +50,6 @@ use super::*;
 /// ```
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -67,7 +64,6 @@ use super::*;
 /// ```
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {

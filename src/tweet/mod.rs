@@ -419,7 +419,6 @@ pub struct ExtendedTweetEntities {
 /// `start` to load the first page of results:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -437,7 +436,6 @@ pub struct ExtendedTweetEntities {
 /// tweet IDs it tracks:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -459,7 +457,6 @@ pub struct ExtendedTweetEntities {
 /// hand, you can load only those tweets you need like this:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -654,7 +651,6 @@ impl<'timeline> Future for TimelineFuture<'timeline> {
 /// As-is, the draft won't do anything until you call `send` to post it:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -671,7 +667,6 @@ impl<'timeline> Future for TimelineFuture<'timeline> {
 /// create a reply-chain like this:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {

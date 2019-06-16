@@ -236,7 +236,6 @@ impl KeyPair {
 /// For "PIN-Based Authorization":
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
@@ -304,7 +303,6 @@ impl KeyPair {
 /// ### Example (Bearer Token)
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
@@ -592,7 +590,6 @@ pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request<
 /// # Examples
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
