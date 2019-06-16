@@ -559,7 +559,7 @@ mod tests {
 
     #[test]
     fn parse_tweet_stream() {
-        let msg = load_stream("src/stream/sample.json");
+        let msg = load_stream("sample_payloads/sample-stream.json");
         if let StreamMessage::Tweet(_tweet) = msg {
             // OK
         } else {
