@@ -2,8 +2,8 @@ extern crate egg_mode;
 extern crate futures;
 
 mod common;
-use crate::common::futures::Stream;
-use crate::common::tokio::runtime::current_thread::block_on_all;
+use futures::Stream;
+use tokio::runtime::current_thread::block_on_all;
 
 use egg_mode::stream::StreamMessage;
 

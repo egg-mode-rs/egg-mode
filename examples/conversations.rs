@@ -2,12 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-extern crate chrono;
-extern crate egg_mode;
-
 mod common;
 
-use crate::common::tokio::runtime::current_thread::block_on_all;
+use tokio::runtime::current_thread::block_on_all;
 
 fn main() {
     let c = common::Config::load();
