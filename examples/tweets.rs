@@ -6,7 +6,7 @@ extern crate egg_mode;
 
 mod common;
 
-use common::tokio::runtime::current_thread::block_on_all;
+use crate::common::tokio::runtime::current_thread::block_on_all;
 
 fn main() {
     let config = common::Config::load();

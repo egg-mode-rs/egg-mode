@@ -42,7 +42,7 @@
 //! * `send`
 //! * `delete`
 
-use common::*;
+use crate::common::*;
 
 use std::collections::HashMap;
 use std::mem;
@@ -53,10 +53,10 @@ use futures::{Async, Future, Poll};
 use hyper::{Body, Request};
 use serde::{Deserialize, Deserializer};
 
-use auth;
-use entities;
-use error;
-use user;
+use crate::auth;
+use crate::entities;
+use crate::error;
+use crate::user;
 
 mod fun;
 mod raw;

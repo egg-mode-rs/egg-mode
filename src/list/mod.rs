@@ -69,14 +69,14 @@
 
 use std::collections::HashMap;
 
-use common::*;
+use crate::common::*;
 
 use chrono;
 
-use auth;
-use error;
-use links;
-use user;
+use crate::auth;
+use crate::error;
+use crate::links;
+use crate::user;
 
 mod fun;
 pub use self::fun::*;
@@ -252,7 +252,7 @@ impl<'a> ListUpdate<'a> {
 #[cfg(test)]
 mod tests {
     use super::List;
-    use common::tests::load_file;
+    use crate::common::tests::load_file;
 
     #[test]
     fn parse_list_sample() {

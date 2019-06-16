@@ -150,29 +150,8 @@
 #![warn(unused_extern_crates)]
 #![warn(unused_qualifications)]
 
-extern crate base64;
-extern crate hyper;
-#[macro_use]
-extern crate lazy_static;
-extern crate chrono;
-extern crate futures;
-extern crate hmac;
-#[cfg(feature = "hyper-rustls")]
-extern crate hyper_rustls;
-#[cfg(feature = "native-tls")]
-extern crate hyper_tls;
-extern crate mime;
-#[cfg(feature = "native-tls")]
-extern crate native_tls;
-extern crate rand;
-extern crate regex;
-extern crate serde;
-extern crate sha1;
-extern crate tokio;
-extern crate url;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
 
 #[macro_use]
 mod common;
@@ -191,10 +170,10 @@ pub mod stream;
 pub mod tweet;
 pub mod user;
 
-pub use auth::{
+pub use crate::auth::{
     access_token, authenticate_url, authorize_url, bearer_token, invalidate_bearer, request_token,
     verify_tokens, AuthFuture, KeyPair, Token,
 };
-pub use common::{
+pub use crate::common::{
     FutureResponse, Response, ResponseIter, ResponseIterMut, ResponseIterRef, TwitterFuture,
 };

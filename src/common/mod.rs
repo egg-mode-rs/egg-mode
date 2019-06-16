@@ -111,11 +111,11 @@
 //! with the rate-limit info parsed out. It's only exported for a couple functions in `list` which
 //! need to get that info even on an error.
 
-use list;
+use crate::list;
+use crate::user;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::iter::Peekable;
-use user;
 
 use chrono::{self, TimeZone};
 use hyper::header::{HeaderMap, HeaderValue};
@@ -125,7 +125,7 @@ use serde::{Deserialize, Deserializer};
 
 mod response;
 
-pub use common::response::*;
+pub use crate::common::response::*;
 
 pub type Headers = HeaderMap<HeaderValue>;
 
@@ -186,7 +186,7 @@ where
 }
 
 ///Type alias for responses from Twitter.
-pub type WebResponse<T> = Result<Response<T>, ::error::Error>;
+pub type WebResponse<T> = Result<Response<T>, crate::error::Error>;
 
 ///Type alias for futures that resolve to responses from Twitter.
 ///

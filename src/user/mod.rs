@@ -62,12 +62,12 @@ use chrono;
 use futures::{Async, Future, Poll, Stream};
 use serde::{Deserialize, Deserializer};
 
-use auth;
-use common::*;
-use entities;
-use error;
-use links;
-use tweet;
+use crate::auth;
+use crate::common::*;
+use crate::entities;
+use crate::error;
+use crate::links;
+use crate::tweet;
 
 mod fun;
 mod raw;

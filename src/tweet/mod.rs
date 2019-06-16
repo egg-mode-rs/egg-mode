@@ -64,15 +64,15 @@ use regex::Regex;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 
-use auth;
-use common::*;
-use entities;
-use error;
-use error::Error::InvalidResponse;
-use links;
-use place;
-use stream::FilterLevel;
-use user;
+use crate::auth;
+use crate::common::*;
+use crate::entities;
+use crate::error;
+use crate::error::Error::InvalidResponse;
+use crate::links;
+use crate::place;
+use crate::stream::FilterLevel;
+use crate::user;
 
 mod fun;
 mod raw;
@@ -329,16 +329,17 @@ impl FromStr for TweetSource {
     type Err = error::Error;
 
     fn from_str(full: &str) -> Result<TweetSource, error::Error> {
+        use lazy_static::lazy_static;
+        lazy_static! {
+            static ref RE_URL: Regex = Regex::new("href=\"(.*?)\"").unwrap();
+            static ref RE_NAME: Regex = Regex::new(">(.*)</a>").unwrap();
+        }
+
         if full == "web" {
             return Ok(TweetSource {
                 name: "Twitter Web Client".to_string(),
                 url: "https://twitter.com".to_string(),
             });
-        }
-
-        lazy_static! {
-            static ref RE_URL: Regex = Regex::new("href=\"(.*?)\"").unwrap();
-            static ref RE_NAME: Regex = Regex::new(">(.*)</a>").unwrap();
         }
 
         let url = RE_URL
@@ -921,7 +922,7 @@ impl<'a> DraftTweet<'a> {
 #[cfg(test)]
 mod tests {
     use super::Tweet;
-    use common::tests::load_file;
+    use crate::common::tests::load_file;
 
     use chrono::{Datelike, Timelike, Weekday};
 

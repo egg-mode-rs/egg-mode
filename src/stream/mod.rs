@@ -57,12 +57,12 @@ use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use serde_json;
 
-use auth::{self, Token};
-use error;
-use links;
-use tweet::Tweet;
+use crate::auth::{self, Token};
+use crate::error;
+use crate::links;
+use crate::tweet::Tweet;
 
-use common::*;
+use crate::common::*;
 
 // https://developer.twitter.com/en/docs/tweets/filter-realtime/guides/streaming-message-types
 /// Represents the kinds of messages that can be sent over Twitter's Streaming API.
@@ -537,7 +537,7 @@ impl BoundingBox {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use common::tests::load_file;
+    use crate::common::tests::load_file;
 
     fn load_stream(path: &str) -> StreamMessage {
         let sample = load_file(path);

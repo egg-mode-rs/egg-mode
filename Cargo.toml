@@ -9,6 +9,7 @@ keywords = ["twitter"]
 categories = ["api-bindings"]
 license = "MPL-2.0"
 readme = "README.md"
+edition = "2018"
 
 [badges]
 travis-ci = { repository = "QuietMisdreavus/twitter-rs" }

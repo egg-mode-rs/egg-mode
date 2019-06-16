@@ -1,6 +1,6 @@
+use crate::place;
+use crate::user;
 use chrono;
-use place;
-use user;
 
 use super::{
     deserialize_datetime, deserialize_tweet_source, ExtendedTweetEntities, FilterLevel, Tweet,

@@ -23,12 +23,12 @@ use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use serde_json;
 
-use auth;
-use common::*;
-use entities;
-use error;
-use error::Error::{InvalidResponse, MissingValue};
-use links;
+use crate::auth;
+use crate::common::*;
+use crate::entities;
+use crate::error;
+use crate::error::Error::{InvalidResponse, MissingValue};
+use crate::links;
 
 ///Returns a future that resolves to the current Twitter Terms of Service as plain text.
 ///
@@ -489,7 +489,7 @@ pub enum ListMethod {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use common::tests::load_file;
+    use crate::common::tests::load_file;
 
     #[test]
     fn parse_rate_limit() {

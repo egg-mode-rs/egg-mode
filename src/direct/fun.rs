@@ -4,10 +4,10 @@
 
 use std::collections::HashMap;
 
-use auth;
-use common::*;
-use links;
-use user::UserID;
+use crate::auth;
+use crate::common::*;
+use crate::links;
+use crate::user::UserID;
 
 use super::*;
 
