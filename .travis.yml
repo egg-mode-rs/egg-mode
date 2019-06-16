@@ -8,6 +8,7 @@ rust:
 script:
   - touch examples/common/consumer_key examples/common/consumer_secret
   - cargo build --verbose
+  - cargo build --no-default-features --features="hyper-rustls"
   - cargo test --verbose
 matrix:
   allow_failures:
