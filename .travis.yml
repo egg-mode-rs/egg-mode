@@ -6,9 +6,10 @@ rust:
   - beta
   - nightly
 script:
+  - echo $TRAVIS_RUST_VERSION
   - touch examples/common/consumer_key examples/common/consumer_secret
   - cargo build --verbose
-  - cargo build --no-default-features --features="hyper-rustls"
+  - 'if [ "$TRAVIS_RUST_VERSION" != 1.27.0 ]; then cargo build --verbose --no-default-features --features="hyper-rustls" --verbose; fi'
   - cargo test --verbose
 matrix:
   allow_failures:
