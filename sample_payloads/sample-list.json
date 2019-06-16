@@ -1,0 +1,70 @@
+{
+    "created_at": "Sun Apr 28 01:16:22 +0000 2019",
+    "description": "The second 5,000 people in Spatial Computing (AR/VR)",
+    "following": false,
+    "full_name": "@Scobleizer/all-people-in-spatial-2",
+    "id": 1122308540973010944,
+    "id_str": "1122308540973010944",
+    "member_count": 265,
+    "mode": "public",
+    "name": "All People in Spatial 2",
+    "slug": "all-people-in-spatial-2",
+    "subscriber_count": 6,
+    "uri": "/Scobleizer/lists/all-people-in-spatial-2",
+    "user": {
+        "contributors_enabled": false,
+        "created_at": "Mon Nov 20 23:43:44 +0000 2006",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "I help entrepreneurs. Especially if they are building something using #spatialcomputing #VR #AR #AI Chief Strategy Officer of @InfiniteRetina.",
+        "entities": {
+            "description": {
+                "urls": []
+            },
+            "url": {
+                "urls": [{
+                    "display_url": "scobleizer.blog",
+                    "expanded_url": "https://scobleizer.blog/",
+                    "indices": [0, 23],
+                    "url": "https://t.co/CdGRaYWOGN"
+                }]
+            }
+        },
+        "favourites_count": 101549,
+        "follow_request_sent": false,
+        "followers_count": 410612,
+        "following": false,
+        "friends_count": 55372,
+        "geo_enabled": true,
+        "has_extended_profile": true,
+        "id": 13348,
+        "id_str": "13348",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 24403,
+        "location": "Campbell, CA",
+        "name": "Robert Scoble",
+        "notifications": false,
+        "profile_background_color": "131516",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme2/bg.gif",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme2/bg.gif",
+        "profile_background_tile": true,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/13348/1553496367",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1110044384265830402/7cBj_ikb_normal.png",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1110044384265830402/7cBj_ikb_normal.png",
+        "profile_link_color": "1B95E0",
+        "profile_sidebar_border_color": "C6E2EE",
+        "profile_sidebar_fill_color": "DAECF4",
+        "profile_text_color": "663B12",
+        "profile_use_background_image": true,
+        "protected": false,
+        "screen_name": "Scobleizer",
+        "statuses_count": 74387,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": "https://t.co/CdGRaYWOGN",
+        "utc_offset": null,
+        "verified": true
+    }
+}

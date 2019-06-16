@@ -248,3 +248,17 @@ impl<'a> ListUpdate<'a> {
         make_parsed_future(req)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::List;
+    use common::tests::load_file;
+
+    #[test]
+    fn parse_list_sample() {
+        let content = load_file("sample_payloads/sample-list.json");
+        let list = ::serde_json::from_str::<List>(&content).unwrap();
+        assert_eq!(list.full_name, "@Scobleizer/all-people-in-spatial-2");
+        assert_eq!(list.user.screen_name, "Scobleizer")
+    }
+}
