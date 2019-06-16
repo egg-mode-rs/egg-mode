@@ -215,11 +215,11 @@ pub struct Tweet {
     ///The application used to post the tweet.
     pub source: TweetSource,
     ///The text of the tweet. For "extended" tweets, opening reply mentions and/or attached media
-    ///or quoted tweet links do not count against character count, so this could be longer than 140
+    ///or quoted tweet links do not count against character count, so this could be longer than 280
     ///characters in those situations.
     pub text: String,
     ///Indicates whether this tweet is a truncated "compatibility" form of an extended tweet whose
-    ///full text is longer than 140 characters.
+    ///full text is longer than 280 characters.
     pub truncated: bool,
     ///The user who posted this tweet. This field will be absent on tweets included as part of a
     ///`TwitterUser`.
@@ -789,7 +789,7 @@ impl<'a> DraftTweet<'a> {
     }
 
     ///Attaches the given tweet URL or [DM deep link][] to the tweet draft, which lets it be used
-    ///outside the 140 character text limit.
+    ///outside the 280 character text limit.
     ///
     ///Note that if this link is not a tweet URL or a DM deep link, then Twitter will return an
     ///error when this draft is sent.

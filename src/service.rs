@@ -122,7 +122,7 @@ pub fn rate_limit_status_raw(token: &auth::Token) -> FutureResponse<serde_json::
 ///change often, have the opportunity to change over time and affect things like character counting
 ///or whether to route a twitter.com URL to a user lookup or a browser.
 ///
-///While tweets themselves still have a fixed 140-character limit, direct messages have had their
+///While tweets themselves still have a fixed 280-character limit, direct messages have had their
 ///text limit expanded to 10,000 characters, and that length is communicated here, in
 ///`dm_text_character_limit`.
 ///
