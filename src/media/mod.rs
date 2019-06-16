@@ -794,7 +794,7 @@ impl StdError for UploadError {
         "error occurred while uploading media"
     }
 
-    fn cause(&self) -> Option<&StdError> {
+    fn cause(&self) -> Option<&dyn StdError> {
         Some(&self.error)
     }
 }

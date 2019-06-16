@@ -33,7 +33,7 @@ struct TwitterEncodeSet;
 impl EncodeSet for TwitterEncodeSet {
     fn contains(&self, byte: u8) -> bool {
         match byte {
-            b'a'...b'z' | b'A'...b'Z' | b'0'...b'9' | b'-' | b'.' | b'_' | b'~' => false,
+            b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' => false,
             _ => true,
         }
     }
