@@ -22,9 +22,9 @@ use serde_json;
 use sha1::Sha1;
 use url::percent_encoding::{utf8_percent_encode, EncodeSet, PercentEncode};
 
-use common::*;
-use error;
-use links;
+use crate::common::*;
+use crate::error;
+use crate::links;
 
 //the encode sets in the url crate don't quite match what twitter wants, so i'll make up my own
 #[derive(Copy, Clone)]
@@ -952,7 +952,7 @@ pub fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> TwitterFuture<To
 /// If you have cached access tokens, using this method is a convenient way to make sure they're
 /// still valid. If the user has revoked access from your app, this function will return an error
 /// from Twitter indicating that you don't have access to the user.
-pub fn verify_tokens(token: &Token) -> FutureResponse<::user::TwitterUser> {
+pub fn verify_tokens(token: &Token) -> FutureResponse<crate::user::TwitterUser> {
     let req = get(links::auth::VERIFY_CREDENTIALS, token, None);
 
     make_parsed_future(req)

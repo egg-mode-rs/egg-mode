@@ -5,8 +5,8 @@
 //! Infrastructure types related to packaging rate-limit information alongside responses from
 //! Twitter.
 
-use error::Error::*;
-use error::{self, TwitterErrors};
+use crate::error::Error::*;
+use crate::error::{self, TwitterErrors};
 use futures::{Async, Future, Poll, Stream};
 use hyper::client::ResponseFuture;
 use hyper::header::CONTENT_LENGTH;

@@ -33,9 +33,9 @@ use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use serde_json;
 
-use auth;
-use common::*;
-use links;
+use crate::auth;
+use crate::common::*;
+use crate::links;
 
 mod fun;
 

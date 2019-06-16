@@ -49,11 +49,11 @@ use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use tokio::timer::Delay;
 
-use auth;
-use common::*;
-use error;
-use error::Error::InvalidResponse;
-use links;
+use crate::auth;
+use crate::common::*;
+use crate::error;
+use crate::error::Error::InvalidResponse;
+use crate::links;
 
 use mime;
 
@@ -802,7 +802,7 @@ impl StdError for UploadError {
 #[cfg(test)]
 mod tests {
     use super::RawMedia;
-    use common::tests::load_file;
+    use crate::common::tests::load_file;
 
     fn load_media(path: &str) -> RawMedia {
         let content = load_file(path);
@@ -856,7 +856,7 @@ mod tests {
         match media.progress {
             Some(super::ProgressInfo::Failed(error)) => assert_eq!(
                 error,
-                ::error::MediaError {
+                crate::error::MediaError {
                     code: 1,
                     name: "InvalidMedia".to_string(),
                     message: "Unsupported video format".to_string(),

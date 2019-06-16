@@ -6,8 +6,8 @@ extern crate egg_mode;
 
 mod common;
 
-use common::futures::Stream;
-use common::tokio::runtime::current_thread::block_on_all;
+use crate::common::futures::Stream;
+use crate::common::tokio::runtime::current_thread::block_on_all;
 
 use egg_mode::user;
 

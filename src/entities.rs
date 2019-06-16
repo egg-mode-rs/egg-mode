@@ -45,7 +45,7 @@
 use mime;
 use serde::{Deserialize, Deserializer};
 
-use common::deserialize_mime;
+use crate::common::deserialize_mime;
 
 ///Represents a hashtag or symbol extracted from another piece of text.
 #[derive(Debug, Clone, Deserialize)]

@@ -6,11 +6,11 @@ use std::collections::HashMap;
 
 use futures::{Async, Future, Poll};
 
-use auth;
-use common::*;
-use error;
-use error::Error::BadUrl;
-use links;
+use crate::auth;
+use crate::common::*;
+use crate::error;
+use crate::error::Error::BadUrl;
+use crate::links;
 
 use super::PlaceQuery;
 use super::*;
