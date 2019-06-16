@@ -11,9 +11,6 @@
 //!
 //! ### Example
 //! ```rust,no_run
-//! # extern crate egg_mode;
-//! # extern crate tokio;
-//! # extern crate futures;
 //! # fn main() {
 //! # let token: egg_mode::Token = unimplemented!();
 //! use egg_mode::stream::{filter, StreamMessage};
@@ -362,7 +359,6 @@ impl StreamBuilder {
     /// Filter stream to only return Tweets relating to given user IDs.
     /// ### Example
     /// ```rust,no_run
-    /// # extern crate egg_mode;
     /// # fn main() {
     /// # let token: egg_mode::Token = unimplemented!();
     /// use egg_mode::stream::filter;
@@ -406,7 +402,6 @@ impl StreamBuilder {
     ///
     /// ### Example
     /// ```rust,no_run
-    /// # extern crate egg_mode;
     /// # fn main() {
     /// # let token: egg_mode::Token = unimplemented!();
     /// use egg_mode::stream::{filter, BoundingBox};

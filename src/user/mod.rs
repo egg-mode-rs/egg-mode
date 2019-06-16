@@ -418,7 +418,6 @@ pub struct UserEntityDetail {
 /// [`search`]: fn.search.html
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// use futures::Stream;
@@ -436,7 +435,6 @@ pub struct UserEntityDetail {
 /// entire search setup:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -477,7 +475,6 @@ pub struct UserEntityDetail {
 /// forward and backward as needed:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {

@@ -142,7 +142,6 @@ impl Cursor for ListCursor {
 /// several can be immedately returned whenever a single network call completes.
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// use futures::Stream;
@@ -160,7 +159,6 @@ impl Cursor for ListCursor {
 /// entire search setup:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -204,7 +202,6 @@ impl Cursor for ListCursor {
 /// page forward and backward as needed:
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {

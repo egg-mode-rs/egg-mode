@@ -20,7 +20,6 @@ use super::*;
 /// ## Examples
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -43,7 +42,6 @@ pub fn show(id: &str, token: &auth::Token) -> FutureResponse<Place> {
 /// ## Examples
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -106,7 +104,6 @@ pub fn reverse_geocode_url<'a>(url: &'a str, token: &auth::Token) -> CachedSearc
 /// ## Example
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {
@@ -129,7 +126,6 @@ pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder<'static> {
 /// ## Example
 ///
 /// ```rust,no_run
-/// # extern crate egg_mode; extern crate tokio; extern crate futures;
 /// # use egg_mode::Token;
 /// use tokio::runtime::current_thread::block_on_all;
 /// # fn main() {

@@ -32,7 +32,6 @@
 //! To load the profile information of a single user:
 //!
 //! ```rust,no_run
-//! # extern crate egg_mode; extern crate tokio;
 //! # use egg_mode::Token;
 //! use tokio::runtime::current_thread::block_on_all;
 //! # fn main() {
@@ -46,7 +45,6 @@
 //! To post a new tweet:
 //!
 //! ```rust,no_run
-//! # extern crate egg_mode; extern crate tokio;
 //! # use egg_mode::Token;
 //! use tokio::runtime::current_thread::block_on_all;
 //! use egg_mode::tweet::DraftTweet;
