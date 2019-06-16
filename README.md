@@ -2,7 +2,7 @@
 
 another twitter library for rust [![Build Status](https://travis-ci.org/QuietMisdreavus/twitter-rs.svg?branch=master)](https://travis-ci.org/QuietMisdreavus/twitter-rs) [![Build status](https://ci.appveyor.com/api/projects/status/3oi86ir82kj1rxu3/branch/master?svg=true)](https://ci.appveyor.com/project/QuietMisdreavus/twitter-rs/branch/master)
 
-[v0.12.0 Documentation][documentation] | [(Pending release documentation)][doc-dev]
+[v0.13.0 Documentation][documentation] | [(master documentation)][doc-dev]
 
 [Documentation]: https://tonberry.quietmisdreavus.net/doc/egg_mode/
 [doc-dev]: https://tonberry.quietmisdreavus.net/doc-dev/egg_mode/
@@ -29,23 +29,17 @@ To start using this library, put the following into your Cargo.toml:
 
 ```TOML
 [dependencies]
-egg-mode = "0.12.0"
+egg-mode = "0.13.0"
 ```
 
-...and the following in your lib.rs or main.rs:
-
-```rust
-extern crate egg_mode;
+By default, `egg-mode` uses `native-tls` for encryption, but also supports `rustls`.
+This may be helpful if you wish to avoid linking against `OpenSSL`.
+To enable, modify your `Cargo.toml` entry:
+```
+egg-mode = { version = "0.13", features = ["hyper-rustls"], default-features = false }`
 ```
 
 See available methods and tips to get started in the [Documentation][].
-
-**Note about these code samples:** This README reflects the current release, which uses Hyper v0.11
-to provide asynchronous network calls for the interface. The last synchronous release was
-[`v0.10.0`], and documentation and code samples for that version can be found on that tag on this
-repo.
-
-[`v0.10.0`]: https://github.com/QuietMisdreavus/twitter-rs/tree/v0.10.0
 
 To authenticate a user and request an access token:
 
@@ -82,11 +76,6 @@ let rustlang = core.run(egg_mode::user::show("rustlang", &token, &handle)).unwra
 
 println!("{} (@{})", rustlang.name, rustlang.screen_name);
 ```
-
-If you'd like to see the examples and implementation for the version currently on crates.io, check
-the [`v0.12.0`] tag.
-
-[`v0.12.0`]: https://github.com/QuietMisdreavus/twitter-rs/tree/v0.12.0
 
 For more examples of how to use this library, check the files in the examples folder. The
 authentication code for most of them is in `examples/common/mod.rs`, though that's also mostly

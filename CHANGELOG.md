@@ -1,6 +1,6 @@
 # Changelog for egg-mode
 
-## Pending
+## [0.13.0] - 2019-06-18
 
 ### Added
 - `stream` module and its contents, for accessing the streaming API

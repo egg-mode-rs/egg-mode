@@ -184,11 +184,8 @@ return a list of IDs of something are grouped in with the rest of the main struc
 
 ## [Streaming API](https://dev.twitter.com/streaming/overview)
 
-Site Streams are apparently in a closed beta, and the public firehose is unavailable to the general
-public, so I don't plan to implement them unless asked. They shouldn't be much different from the
-other streams, though, so once I have these ones working, all I'd need is the request to implement
-them.
+The firehose is unavailable to the general public, so I don't plan to implement it unless asked.
+(It shouldn't be much different from the other streams, though.)
 
 - [x] statuses/sample (`stream::sample`)
 - [x] statuses/filter (`stream::filter`)
-- [x] user (`stream::user`)

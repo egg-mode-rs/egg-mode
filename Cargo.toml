@@ -1,7 +1,7 @@
 [package]
 name = "egg-mode"
-version = "0.12.0"
-authors = ["QuietMisdreavus <grey@quietmisdreavus.net>"]
+version = "0.13.0"
+authors = ["QuietMisdreavus <grey@quietmisdreavus.net>", "Alex Whitney <adwhit@fastmail.com>"]
 description = "Library to interact with the Twitter API"
 documentation = "https://tonberry.quietmisdreavus.net/doc/egg_mode/"
 repository = "https://github.com/QuietMisdreavus/twitter-rs"
