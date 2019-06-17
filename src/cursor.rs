@@ -12,11 +12,8 @@
 use futures::{Async, Future, Poll, Stream};
 use serde::Deserialize;
 
-use crate::auth;
 use crate::common::*;
-use crate::error;
-use crate::list;
-use crate::user;
+use crate::{auth, error, list, user};
 
 ///Trait to generalize over paginated views of API results.
 ///

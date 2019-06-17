@@ -111,8 +111,6 @@
 //! with the rate-limit info parsed out. It's only exported for a couple functions in `list` which
 //! need to get that info even on an error.
 
-use crate::list;
-use crate::user;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::iter::Peekable;
@@ -126,6 +124,7 @@ use serde::{Deserialize, Deserializer};
 mod response;
 
 pub use crate::common::response::*;
+use crate::{list, user};
 
 pub type Headers = HeaderMap<HeaderValue>;
 

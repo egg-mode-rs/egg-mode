@@ -2,12 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::auth;
 use crate::common::*;
-use crate::cursor;
 use crate::error::Error::InvalidResponse;
-use crate::links;
 use crate::user::UserID;
+use crate::{auth, cursor, links};
 use serde_json;
 use std::collections::HashMap;
 

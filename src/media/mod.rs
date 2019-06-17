@@ -48,11 +48,9 @@ use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use tokio::timer::Delay;
 
-use crate::auth;
 use crate::common::*;
-use crate::error;
 use crate::error::Error::InvalidResponse;
-use crate::links;
+use crate::{auth, error, links};
 
 use mime;
 

@@ -69,14 +69,11 @@
 
 use std::collections::HashMap;
 
-use crate::common::*;
-
 use chrono;
+use serde::Deserialize;
 
-use crate::auth;
-use crate::error;
-use crate::links;
-use crate::user;
+use crate::common::*;
+use crate::{auth, error, links, user};
 
 mod fun;
 pub use self::fun::*;

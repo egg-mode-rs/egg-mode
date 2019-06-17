@@ -23,12 +23,9 @@ use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use serde_json;
 
-use crate::auth;
 use crate::common::*;
-use crate::entities;
-use crate::error;
 use crate::error::Error::{InvalidResponse, MissingValue};
-use crate::links;
+use crate::{auth, entities, error, links};
 
 ///Returns a future that resolves to the current Twitter Terms of Service as plain text.
 ///

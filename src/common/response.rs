@@ -15,7 +15,7 @@ use hyper::{self, Body, Request, StatusCode};
 use hyper_rustls::HttpsConnector;
 #[cfg(feature = "native-tls")]
 use hyper_tls::HttpsConnector;
-use serde;
+use serde::Deserialize;
 use serde_json;
 use std::iter::FromIterator;
 use std::ops::{Deref, DerefMut};
@@ -551,7 +551,7 @@ impl<T> Future for TwitterFuture<T> {
 
 /// Shortcut `MakeResponse` method that attempts to parse the given type from the response and
 /// loads rate-limit information from the response headers.
-pub fn make_response<T: for<'a> serde::Deserialize<'a>>(
+pub fn make_response<T: for<'a> Deserialize<'a>>(
     full_resp: String,
     headers: &Headers,
 ) -> Result<Response<T>, error::Error> {
@@ -570,7 +570,7 @@ pub fn make_future<T>(
 }
 
 /// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
-pub fn make_parsed_future<T: for<'de> serde::Deserialize<'de>>(
+pub fn make_parsed_future<T: for<'de> Deserialize<'de>>(
     request: Request<Body>,
 ) -> TwitterFuture<Response<T>> {
     make_future(request, make_response)
