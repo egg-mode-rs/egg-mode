@@ -55,11 +55,9 @@ use std::fmt;
 use futures::{Async, Future, Poll};
 use serde::{Deserialize, Deserializer};
 
-use crate::auth;
 use crate::common::*;
-use crate::error;
-use crate::links;
 use crate::tweet::Tweet;
+use crate::{auth, error, links};
 
 ///Begin setting up a tweet search with the given query.
 pub fn search<'a, S: Into<Cow<'a, str>>>(query: S) -> SearchBuilder<'a> {

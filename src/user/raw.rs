@@ -6,6 +6,7 @@ use crate::common::*;
 use crate::tweet;
 
 use chrono;
+use serde::Deserialize;
 
 use super::UserEntities;
 

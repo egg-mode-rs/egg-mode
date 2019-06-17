@@ -23,8 +23,7 @@ use sha1::Sha1;
 use url::percent_encoding::{utf8_percent_encode, EncodeSet, PercentEncode};
 
 use crate::common::*;
-use crate::error;
-use crate::links;
+use crate::{error, links};
 
 //the encode sets in the url crate don't quite match what twitter wants, so i'll make up my own
 #[derive(Copy, Clone)]

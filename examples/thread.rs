@@ -4,9 +4,9 @@
 
 mod common;
 
-use tokio::runtime::current_thread::block_on_all;
 use egg_mode::tweet;
 use std::collections::{HashSet, VecDeque};
+use tokio::runtime::current_thread::block_on_all;
 
 fn main() {
     let c = common::Config::load();

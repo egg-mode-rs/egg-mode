@@ -64,15 +64,10 @@ use regex::Regex;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 
-use crate::auth;
 use crate::common::*;
-use crate::entities;
-use crate::error;
 use crate::error::Error::InvalidResponse;
-use crate::links;
-use crate::place;
 use crate::stream::FilterLevel;
-use crate::user;
+use crate::{auth, entities, error, links, place, user};
 
 mod fun;
 mod raw;

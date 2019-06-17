@@ -6,12 +6,10 @@ use super::*;
 
 use std::collections::HashMap;
 
-use crate::auth;
 use crate::cursor::{CursorIter, ListCursor, UserCursor};
 use crate::error::Error::TwitterError;
-use crate::links;
-use crate::tweet;
 use crate::user::{TwitterUser, UserID};
+use crate::{auth, links, tweet};
 
 ///Look up the lists the given user has been added to.
 ///

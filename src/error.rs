@@ -19,6 +19,7 @@ use chrono;
 use hyper;
 #[cfg(feature = "native-tls")]
 use native_tls;
+use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{self, fmt};
 use tokio;

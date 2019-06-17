@@ -4,8 +4,8 @@
 
 mod common;
 
-use tokio::runtime::current_thread::block_on_all;
 use egg_mode::list::{self, ListID};
+use tokio::runtime::current_thread::block_on_all;
 
 fn main() {
     let config = common::Config::load();

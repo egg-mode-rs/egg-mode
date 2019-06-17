@@ -6,6 +6,7 @@ use crate::common::*;
 use crate::user;
 
 use chrono;
+use serde::Deserialize;
 
 use super::DMEntities;
 
