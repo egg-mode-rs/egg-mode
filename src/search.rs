@@ -4,7 +4,7 @@
 
 //! Structs and methods for searching for tweets.
 //!
-//! Since there are several optional parameters for searches, egg-mode handles it with a builder
+//! Since there are several optiona parameters for searches, egg-mode handles it with a builder
 //! pattern. To begin, call `search` with your requested search term. Additional parameters can be
 //! added onto the `SearchBuilder` struct that is returned. When you're ready to load the first
 //! page of results, hand your tokens to `call`.
@@ -40,7 +40,7 @@
 //! page][search-place]. A future version of egg-mode might break these options into further
 //! methods on `SearchBuilder`.
 //!
-//! The lifetime parameter on `SearchBuilder`, `SearchFuture`, and `SearchResult` correspond to the
+//! The lifetime parameter on `SearchBuilder`, and `SearchResult` correspond to the
 //! text given as the search query and (if applicable) to the `lang` method of `SearchBuilder`. As
 //! these types use `Cow<'a, str>` internally, you can hand these types owned Strings to give them
 //! a `'static` lifetime, if necessary.
@@ -52,7 +52,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 
-use futures::{Async, Future, Poll};
+use futures::Future;
 use serde::{Deserialize, Deserializer};
 
 use crate::common::*;
@@ -182,7 +182,10 @@ impl<'a> SearchBuilder<'a> {
     }
 
     ///Finalize the search terms and return the first page of responses.
-    pub fn call(self, token: &auth::Token) -> SearchFuture<'a> {
+    pub fn call(
+        self,
+        token: &auth::Token,
+    ) -> impl Future<Item = Response<SearchResult<'a>>, Error = error::Error> {
         let mut params = HashMap::new();
 
         add_param(&mut params, "q", self.query);
@@ -228,36 +231,10 @@ impl<'a> SearchBuilder<'a> {
 
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
-        SearchFuture {
-            loader: make_parsed_future(req),
-            params: Some(params),
-        }
-    }
-}
-
-/// `Future` that represents a search query in progress.
-///
-/// When this future resolves, it will either contain a `SearchResult` or the error that was
-/// encountered while loading or parsing the response.
-#[must_use = "futures do nothing unless polled"]
-pub struct SearchFuture<'a> {
-    loader: FutureResponse<SearchResult<'a>>,
-    params: Option<ParamList<'a>>,
-}
-
-impl<'a> Future for SearchFuture<'a> {
-    type Item = Response<SearchResult<'a>>;
-    type Error = error::Error;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        let mut resp = match self.loader.poll() {
-            Ok(Async::Ready(resp)) => resp,
-            Ok(Async::NotReady) => return Ok(Async::NotReady),
-            Err(e) => return Err(e),
-        };
-
-        resp.params = self.params.take();
-        Ok(Async::Ready(resp))
+        make_parsed_future(req).map(move |mut resp: Response<SearchResult>| {
+            resp.response.params = Some(params);
+            resp
+        })
     }
 }
 
@@ -314,7 +291,10 @@ pub struct SearchResult<'a> {
 
 impl<'a> SearchResult<'a> {
     ///Load the next page of search results for the same query.
-    pub fn older(&self, token: &auth::Token) -> SearchFuture<'a> {
+    pub fn older(
+        &self,
+        token: &auth::Token,
+    ) -> impl Future<Item = Response<SearchResult<'a>>, Error = error::Error> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("since_id");
 
@@ -326,14 +306,17 @@ impl<'a> SearchResult<'a> {
 
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
-        SearchFuture {
-            loader: make_parsed_future(req),
-            params: Some(params),
-        }
+        make_parsed_future(req).map(move |mut resp: Response<SearchResult>| {
+            resp.response.params = Some(params);
+            resp
+        })
     }
 
     ///Load the previous page of search results for the same query.
-    pub fn newer(&self, token: &auth::Token) -> SearchFuture<'a> {
+    pub fn newer(
+        &self,
+        token: &auth::Token,
+    ) -> impl Future<Item = Response<SearchResult<'a>>, Error = error::Error> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("max_id");
 
@@ -345,9 +328,9 @@ impl<'a> SearchResult<'a> {
 
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
 
-        SearchFuture {
-            loader: make_parsed_future(req),
-            params: Some(params),
-        }
+        make_parsed_future(req).map(move |mut resp: Response<SearchResult>| {
+            resp.response.params = Some(params);
+            resp
+        })
     }
 }
