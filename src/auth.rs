@@ -13,7 +13,7 @@ use std::fmt;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use base64;
-use futures::{Async, Future, Poll};
+use futures::{Future, IntoFuture};
 use hmac::{Hmac, Mac};
 use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
 use hyper::{Body, Method, Request};
@@ -765,14 +765,14 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 /// returned. If you would like to use the consumer token to authenticate multiple accounts in the
 /// same session, clone the `KeyPair` when passing it into this function.
 ///
-/// The `AuthFuture` returned by this function, on success, yields a tuple of three items: The
+/// The `Future` returned by this function, on success, yields a tuple of three items: The
 /// final access token, the ID of the authenticated user, and the screen name of the authenticated
 /// user.
 pub fn access_token<S: Into<String>>(
     con_token: KeyPair,
     request_token: &KeyPair,
     verifier: S,
-) -> AuthFuture {
+) -> impl Future<Item = (Token, u64, String), Error = error::Error> {
     let header = get_header(
         Method::POST,
         links::auth::ACCESS_TOKEN,
@@ -785,75 +785,48 @@ pub fn access_token<S: Into<String>>(
     let mut request = Request::post(links::auth::ACCESS_TOKEN);
     request.header(AUTHORIZATION, header.to_string());
 
-    AuthFuture {
-        con_token: Some(con_token),
-        loader: make_raw_future(request.body(Body::empty()).unwrap()),
-    }
+    let loader = make_raw_future(request.body(Body::empty()).unwrap());
+    loader.and_then(|resp| fetch_urlencoded_auth(&resp, con_token).into_future())
 }
 
-/// `Future` which yields an access token when it finishes.
-///
-/// See the docs for [`access_token`][] for more details.
-///
-/// [`access_token`]: fn.access_token.html
-///
-/// The `Future` implementation yields a tuple of three items upon success: The final access token,
-/// the ID of the authenticated user, and the screen name of the authenticated user.
-#[must_use = "futures do nothing unless polled"]
-pub struct AuthFuture {
-    con_token: Option<KeyPair>,
-    loader: RawFuture,
-}
+fn fetch_urlencoded_auth(
+    urlencoded: &str,
+    con_token: KeyPair,
+) -> Result<(Token, u64, String), error::Error> {
+    // TODO deserialize into a struct
+    let mut key: Option<String> = None;
+    let mut secret: Option<String> = None;
+    let mut id: Option<u64> = None;
+    let mut username: Option<String> = None;
 
-impl Future for AuthFuture {
-    type Item = (Token, u64, String);
-    type Error = error::Error;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        let full_resp = match self.loader.poll() {
-            Err(e) => return Err(e),
-            Ok(Async::NotReady) => return Ok(Async::NotReady),
-            Ok(Async::Ready(resp)) => resp,
-        };
-
-        if let Some(con_token) = self.con_token.take() {
-            let mut key: Option<String> = None;
-            let mut secret: Option<String> = None;
-            let mut id: Option<u64> = None;
-            let mut username: Option<String> = None;
-
-            for elem in full_resp.split('&') {
-                let mut kv = elem.splitn(2, '=');
-                match kv.next() {
-                    Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
-                    Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
-                    Some("user_id") => id = kv.next().and_then(|s| u64::from_str_radix(s, 10).ok()),
-                    Some("screen_name") => username = kv.next().map(|s| s.to_string()),
-                    Some(_) => (),
-                    None => {
-                        return Err(error::Error::InvalidResponse(
-                            "unexpected end of response in access_token",
-                            None,
-                        ))
-                    }
-                }
+    for elem in urlencoded.split('&') {
+        let mut kv = elem.splitn(2, '=');
+        match kv.next() {
+            Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
+            Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
+            Some("user_id") => id = kv.next().and_then(|s| u64::from_str_radix(s, 10).ok()),
+            Some("screen_name") => username = kv.next().map(|s| s.to_string()),
+            Some(_) => (),
+            None => {
+                return Err(error::Error::InvalidResponse(
+                    "unexpected end of response in access_token",
+                    None,
+                ))
             }
-
-            let access_key = key.ok_or(error::Error::MissingValue("oauth_token"))?;
-            let access_secret = secret.ok_or(error::Error::MissingValue("oauth_token_secret"))?;
-
-            Ok(Async::Ready((
-                Token::Access {
-                    consumer: con_token,
-                    access: KeyPair::new(access_key, access_secret),
-                },
-                id.ok_or(error::Error::MissingValue("user_id"))?,
-                username.ok_or(error::Error::MissingValue("screen_name"))?,
-            )))
-        } else {
-            Err(error::Error::FutureAlreadyCompleted)
         }
     }
+
+    let access_key = key.ok_or(error::Error::MissingValue("oauth_token"))?;
+    let access_secret = secret.ok_or(error::Error::MissingValue("oauth_token_secret"))?;
+
+    Ok((
+        Token::Access {
+            consumer: con_token,
+            access: KeyPair::new(access_key, access_secret),
+        },
+        id.ok_or(error::Error::MissingValue("user_id"))?,
+        username.ok_or(error::Error::MissingValue("screen_name"))?,
+    ))
 }
 
 /// With the given consumer KeyPair, request the current Bearer token to perform Application-only
