@@ -260,34 +260,39 @@ impl Timeline {
     }
 
     ///Clear the saved IDs on this timeline, and return the most recent set of messages.
-    pub fn start<'s>(&'s mut self) -> TimelineFuture<'s> {
+    pub fn start<'s>(
+        &'s mut self,
+    ) -> impl Future<Item = Response<Vec<DirectMessage>>, Error = error::Error> + 's {
         self.reset();
-
         self.older(None)
     }
 
     ///Return the set of DMs older than the last set pulled, optionally placing a minimum DM ID to
     ///bound with.
-    pub fn older<'s>(&'s mut self, since_id: Option<u64>) -> TimelineFuture<'s> {
+    pub fn older<'s>(
+        &'s mut self,
+        since_id: Option<u64>,
+    ) -> impl Future<Item = Response<Vec<DirectMessage>>, Error = error::Error> + 's {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
         let loader = make_parsed_future(req);
-
-        TimelineFuture {
-            timeline: self,
-            loader: loader,
-        }
+        loader.map(move |resp: Response<Vec<DirectMessage>>| {
+            self.map_ids(&resp.response);
+            resp
+        })
     }
 
     ///Return the set of DMs newer than the last set pulled, optionally placing a maximum DM ID to
     ///bound with.
-    pub fn newer<'s>(&'s mut self, max_id: Option<u64>) -> TimelineFuture<'s> {
+    pub fn newer<'s>(
+        &'s mut self,
+        max_id: Option<u64>,
+    ) -> impl Future<Item = Response<Vec<DirectMessage>>, Error = error::Error> + 's {
         let req = self.request(self.max_id, max_id);
         let loader = make_parsed_future(req);
-
-        TimelineFuture {
-            timeline: self,
-            loader: loader,
-        }
+        loader.map(move |resp: Response<Vec<DirectMessage>>| {
+            self.map_ids(&resp.response);
+            resp
+        })
     }
 
     ///Return the set of DMs between the IDs given.
@@ -348,33 +353,6 @@ impl Timeline {
             count: 20,
             max_id: None,
             min_id: None,
-        }
-    }
-}
-
-/// `Future` which represents loading from a `Timeline`.
-///
-/// When this future completes, it will either return the direct messages given by Twitter (after
-/// having updated the IDs in the parent `Timeline`) or the error encountered when loading or
-/// parsing the response.
-#[must_use = "futures do nothing unless polled"]
-pub struct TimelineFuture<'timeline> {
-    timeline: &'timeline mut Timeline,
-    loader: FutureResponse<Vec<DirectMessage>>,
-}
-
-impl<'timeline> Future for TimelineFuture<'timeline> {
-    type Item = Response<Vec<DirectMessage>>;
-    type Error = error::Error;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        match self.loader.poll() {
-            Err(e) => Err(e),
-            Ok(Async::NotReady) => Ok(Async::NotReady),
-            Ok(Async::Ready(resp)) => {
-                self.timeline.map_ids(&resp.response);
-                Ok(Async::Ready(resp))
-            }
         }
     }
 }
