@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use futures::{Async, Future, Poll};
+use futures::{Future, IntoFuture};
 
 use crate::common::*;
 use crate::error::Error::BadUrl;
@@ -92,9 +92,15 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `reverse_geocode` query URL.
-pub fn reverse_geocode_url<'a>(url: &'a str, token: &auth::Token) -> CachedSearchFuture<'a> {
+pub fn reverse_geocode_url<'a>(
+    url: &'a str,
+    token: &'a auth::Token,
+) -> impl Future<Item = Response<SearchResult>, Error = error::Error> + 'a {
     let params = parse_url(links::place::REVERSE_GEOCODE, url);
-    CachedSearchFuture::new(links::place::REVERSE_GEOCODE, token, params)
+    params.into_future().and_then(move |params| {
+        let req = auth::get(links::place::REVERSE_GEOCODE, &token, Some(&params));
+        make_parsed_future(req)
+    })
 }
 
 /// Begins building a location search via latitude/longitude.
@@ -152,70 +158,13 @@ pub fn search_ip<'a>(query: &'a str) -> SearchBuilder<'a> {
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `search` query URL.
-pub fn search_url<'a>(url: &'a str, token: &auth::Token) -> CachedSearchFuture<'a> {
+pub fn search_url<'a>(
+    url: &'a str,
+    token: &'a auth::Token,
+) -> impl Future<Item = Response<SearchResult>, Error = error::Error> + 'a {
     let params = parse_url(links::place::SEARCH, url);
-    CachedSearchFuture::new(links::place::SEARCH, token, params)
-}
-
-/// A `TwitterFuture` that needs to parse a provided URL before making a request.
-///
-/// This is a special case of [`TwitterFuture`] returned by [`reverse_geocode_url`] and
-/// [`search_url`] so it can parse the cached search URL and return an error before making a web
-/// request. See the docs for `TwitterFuture` for details.
-///
-/// [`TwitterFuture`]: ../struct.TwitterFuture.html
-/// [`reverse_geocode_url`]: fn.reverse_geocode_url.html
-/// [`search_url`]: fn search_url.html
-pub struct CachedSearchFuture<'a> {
-    stem: &'static str,
-    params: Option<Result<ParamList<'a>, error::Error>>,
-    token: auth::Token,
-    future: Option<FutureResponse<SearchResult>>,
-}
-
-impl<'a> CachedSearchFuture<'a> {
-    fn new(
-        stem: &'static str,
-        token: &auth::Token,
-        params: Result<ParamList<'a>, error::Error>,
-    ) -> CachedSearchFuture<'a> {
-        CachedSearchFuture {
-            stem: stem,
-            params: Some(params),
-            token: token.clone(),
-            future: None,
-        }
-    }
-}
-
-impl<'a> Future for CachedSearchFuture<'a> {
-    type Item = Response<SearchResult>;
-    type Error = error::Error;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        match self.params.take() {
-            Some(Ok(params)) => {
-                let req = auth::get(self.stem, &self.token, Some(&params));
-
-                self.future = Some(make_parsed_future(req));
-            }
-            Some(Err(e)) => {
-                return Err(e);
-            }
-            None => {}
-        }
-
-        if let Some(mut fut) = self.future.take() {
-            match fut.poll() {
-                Ok(Async::NotReady) => {
-                    self.future = Some(fut);
-                    Ok(Async::NotReady)
-                }
-                Ok(Async::Ready(res)) => Ok(Async::Ready(res)),
-                Err(e) => Err(e),
-            }
-        } else {
-            Err(error::Error::FutureAlreadyCompleted)
-        }
-    }
+    params.into_future().and_then(move |params| {
+        let req = auth::get(links::place::REVERSE_GEOCODE, &token, Some(&params));
+        make_parsed_future(req)
+    })
 }
