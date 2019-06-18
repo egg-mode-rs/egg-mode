@@ -46,8 +46,7 @@ use std::collections::HashMap;
 use std::mem;
 
 use chrono;
-use futures::future::Join;
-use futures::{Async, Future, Poll};
+use futures::Future;
 use hyper::{Body, Request};
 use serde::{Deserialize, Deserializer};
 
@@ -58,8 +57,6 @@ mod fun;
 mod raw;
 
 pub use self::fun::*;
-
-type DMFuture = TwitterFuture<Response<Vec<DirectMessage>>>;
 
 ///Represents a single direct message.
 ///
@@ -306,7 +303,7 @@ impl Timeline {
         &self,
         since_id: Option<u64>,
         max_id: Option<u64>,
-    ) -> FutureResponse<Vec<DirectMessage>> {
+    ) -> impl Future<Item = Response<Vec<DirectMessage>>, Error = error::Error> {
         make_parsed_future(self.request(since_id, max_id))
     }
 
@@ -507,7 +504,7 @@ impl ConversationTimeline {
     ///Load messages newer than the currently-loaded set, or the newset set if no messages have
     ///been loaded yet. The complete conversation set can be viewed from the `ConversationTimeline`
     ///after it is finished loading.
-    pub fn newest(self) -> ConversationFuture {
+    pub fn newest(self) -> impl Future<Item = ConversationTimeline, Error = error::Error> {
         let sent = self.sent.call(self.last_sent, None);
         let received = self.received.call(self.last_received, None);
 
@@ -517,49 +514,25 @@ impl ConversationTimeline {
     ///Load messages older than the currently-loaded set, or the newest set if no messages have
     ///been loaded. The complete conversation set can be viewed from the `ConversationTimeline`
     ///after it is finished loading.
-    pub fn next(self) -> ConversationFuture {
+    pub fn next(self) -> impl Future<Item = ConversationTimeline, Error = error::Error> {
         let sent = self.sent.call(None, self.first_sent);
         let received = self.received.call(None, self.first_received);
 
         self.make_future(sent, received)
     }
 
-    fn make_future(self, sent: DMFuture, received: DMFuture) -> ConversationFuture {
-        ConversationFuture {
-            loader: Some(self),
-            future: sent.join(received),
-        }
-    }
-}
-
-/// A `Future` that represents loading a Direct Message conversation.
-///
-/// See [ConversationTimeline] for details.
-///
-/// [ConversationTimeline]: struct.ConversationTimeline.html
-#[must_use = "futures do nothing unless polled"]
-pub struct ConversationFuture {
-    loader: Option<ConversationTimeline>,
-    future: Join<DMFuture, DMFuture>,
-}
-
-impl Future for ConversationFuture {
-    type Item = ConversationTimeline;
-    type Error = error::Error;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        let (sent, received) = match self.future.poll() {
-            Ok(Async::Ready(res)) => res,
-            Ok(Async::NotReady) => return Ok(Async::NotReady),
-            Err(e) => return Err(e),
-        };
-
-        if let Some(mut tl) = self.loader.take() {
-            tl.merge(sent.response, received.response);
-
-            Ok(Async::Ready(tl))
-        } else {
-            Err(error::Error::FutureAlreadyCompleted)
-        }
+    fn make_future<S, R>(
+        mut self,
+        sent: S,
+        received: R,
+    ) -> impl Future<Item = ConversationTimeline, Error = error::Error>
+    where
+        S: Future<Item = Response<Vec<DirectMessage>>, Error = error::Error>,
+        R: Future<Item = Response<Vec<DirectMessage>>, Error = error::Error>,
+    {
+        sent.join(received).map(|(sent, recvd)| {
+            self.merge(sent.response, recvd.response);
+            self
+        })
     }
 }
