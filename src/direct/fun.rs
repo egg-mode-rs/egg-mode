@@ -11,7 +11,10 @@ use crate::{auth, links};
 use super::*;
 
 ///Lookup a single DM by its numeric ID.
-pub fn show(id: u64, token: &auth::Token) -> FutureResponse<DirectMessage> {
+pub fn show(
+    id: u64,
+    token: &auth::Token,
+) -> impl Future<Item = Response<DirectMessage>, Error = error::Error> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
 
@@ -43,7 +46,7 @@ pub fn send<'id, T: Into<UserID<'id>>>(
     to: T,
     text: &str,
     token: &auth::Token,
-) -> FutureResponse<DirectMessage> {
+) -> impl Future<Item = Response<DirectMessage>, Error = error::Error> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &to.into());
 
@@ -60,7 +63,10 @@ pub fn send<'id, T: Into<UserID<'id>>>(
 ///
 ///On a successful deletion, the future returned by this function yields the freshly-deleted
 ///message.
-pub fn delete(id: u64, token: &auth::Token) -> FutureResponse<DirectMessage> {
+pub fn delete(
+    id: u64,
+    token: &auth::Token,
+) -> impl Future<Item = Response<DirectMessage>, Error = error::Error> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
 
