@@ -8,12 +8,16 @@ use tokio::runtime::current_thread::block_on_all;
 
 use egg_mode::search::{self, ResultType};
 
+use std::io::{stdin, BufRead};
+
 fn main() {
     let config = common::Config::load();
 
-    //rust tweets around dallas
+    println!("Search term:");
+    let line = stdin().lock().lines().next().unwrap().unwrap();
+
     let search = block_on_all(
-        search::search("rustlang")
+        search::search(line)
             .result_type(ResultType::Recent)
             .count(10)
             .call(&config.token),
