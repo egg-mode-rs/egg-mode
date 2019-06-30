@@ -23,7 +23,7 @@ matrix:
 
 cache:
   - '%USERPROFILE%\.cargo -> Cargo.toml'
-  - '%USERPROFILE%\.rustup'
+  - '%USERPROFILE%\.rustup -> appveyor.yml'
 
 install:
   - curl -sSf -o rustup-init.exe https://win.rustup.rs/
