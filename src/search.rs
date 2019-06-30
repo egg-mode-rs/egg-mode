@@ -4,7 +4,7 @@
 
 //! Structs and methods for searching for tweets.
 //!
-//! Since there are several optiona parameters for searches, egg-mode handles it with a builder
+//! Since there are several optional parameters for searches, egg-mode handles it with a builder
 //! pattern. To begin, call `search` with your requested search term. Additional parameters can be
 //! added onto the `SearchBuilder` struct that is returned. When you're ready to load the first
 //! page of results, hand your tokens to `call`.
