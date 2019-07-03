@@ -17,7 +17,7 @@
 
 use chrono;
 use hyper;
-#[cfg(feature = "native-tls")]
+#[cfg(feature = "native_tls")]
 use native_tls;
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -122,7 +122,7 @@ pub enum Error {
     NetError(hyper::error::Error),
     ///The `native_tls` implementation returned an error. The enclosed error was returned from
     ///`native_tls`.
-    #[cfg(feature = "native-tls")]
+    #[cfg(feature = "native_tls")]
     TlsError(native_tls::Error),
     ///An error was experienced while processing the response stream. The enclosed error was
     ///returned from libstd.
@@ -164,7 +164,7 @@ impl std::fmt::Display for Error {
             Error::MediaError(ref err) => write!(f, "Error processing media: {}", err.message),
             Error::BadStatus(ref val) => write!(f, "Error status received: {}", val),
             Error::NetError(ref err) => write!(f, "Network error: {}", err),
-            #[cfg(feature = "native-tls")]
+            #[cfg(feature = "native_tls")]
             Error::TlsError(ref err) => write!(f, "TLS error: {}", err),
             Error::IOError(ref err) => write!(f, "IO error: {}", err),
             Error::DeserializeError(ref err) => write!(f, "JSON deserialize error: {}", err),
@@ -188,7 +188,7 @@ impl std::error::Error for Error {
             Error::MediaError(_) => "Error processing media",
             Error::BadStatus(_) => "Response included error code",
             Error::NetError(ref err) => err.description(),
-            #[cfg(feature = "native-tls")]
+            #[cfg(feature = "native_tls")]
             Error::TlsError(ref err) => err.description(),
             Error::IOError(ref err) => err.description(),
             Error::DeserializeError(ref err) => err.description(),
@@ -202,7 +202,7 @@ impl std::error::Error for Error {
     fn cause(&self) -> Option<&dyn std::error::Error> {
         match *self {
             Error::NetError(ref err) => Some(err),
-            #[cfg(feature = "native-tls")]
+            #[cfg(feature = "native_tls")]
             Error::TlsError(ref err) => Some(err),
             Error::IOError(ref err) => Some(err),
             Error::TimestampParseError(ref err) => Some(err),
@@ -221,7 +221,7 @@ impl From<hyper::error::Error> for Error {
     }
 }
 
-#[cfg(feature = "native-tls")]
+#[cfg(feature = "native_tls")]
 impl From<native_tls::Error> for Error {
     fn from(err: native_tls::Error) -> Error {
         Error::TlsError(err)
