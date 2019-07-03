@@ -13,7 +13,7 @@ use hyper::header::CONTENT_LENGTH;
 use hyper::{self, Body, Request, StatusCode};
 #[cfg(feature = "hyper-rustls")]
 use hyper_rustls::HttpsConnector;
-#[cfg(feature = "native-tls")]
+#[cfg(feature = "native_tls")]
 use hyper_tls::HttpsConnector;
 use serde::Deserialize;
 use serde_json;
@@ -393,7 +393,7 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
 
 pub fn get_response(request: Request<Body>) -> Result<ResponseFuture, error::Error> {
     // TODO: num-cpus?
-    #[cfg(feature = "native-tls")]
+    #[cfg(feature = "native_tls")]
     let connector = HttpsConnector::new(1)?;
     #[cfg(feature = "hyper-rustls")]
     let connector = HttpsConnector::new(1);
