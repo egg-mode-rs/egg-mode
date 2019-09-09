@@ -4,25 +4,23 @@
 
 mod common;
 
-use tokio::runtime::current_thread::block_on_all;
-
 use egg_mode::search::{self, ResultType};
 
 use std::io::{stdin, BufRead};
 
-fn main() {
-    let config = common::Config::load();
+#[tokio::main]
+async fn main() {
+    let config = common::Config::load().await;
 
     println!("Search term:");
     let line = stdin().lock().lines().next().unwrap().unwrap();
 
-    let search = block_on_all(
-        search::search(line)
-            .result_type(ResultType::Recent)
-            .count(10)
-            .call(&config.token),
-    )
-    .unwrap();
+    let search = search::search(line)
+        .result_type(ResultType::Recent)
+        .count(10)
+        .call(&config.token)
+        .await
+        .unwrap();
 
     for tweet in &search.statuses {
         common::print_tweet(tweet);

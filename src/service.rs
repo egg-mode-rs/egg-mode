@@ -161,10 +161,10 @@ pub struct Configuration {
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
-/// # let status = block_on_all(egg_mode::service::rate_limit_status(&token)).unwrap();
+/// # let status = egg_mode::service::rate_limit_status(&token).await.unwrap();
 /// use egg_mode::service::TweetMethod;
 /// println!("home_timeline calls remaining: {}",
 ///          status.tweet[&TweetMethod::HomeTimeline].rate_limit_remaining);

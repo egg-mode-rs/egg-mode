@@ -21,57 +21,57 @@ use super::*;
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// let mut list: Vec<u64> = Vec::new();
 ///
 /// list.push(1234);
 /// list.push(2345);
 ///
-/// let users = block_on_all(egg_mode::user::lookup(&list, &token)).unwrap();
+/// let users = egg_mode::user::lookup(&list, &token).await.unwrap();
 /// # }
 /// ```
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// let mut list: Vec<&str> = Vec::new();
 ///
 /// list.push("rustlang");
 /// list.push("ThisWeekInRust");
 ///
-/// let users = block_on_all(egg_mode::user::lookup(&list, &token)).unwrap();
+/// let users = egg_mode::user::lookup(&list, &token).await.unwrap();
 /// # }
 /// ```
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// let mut list: Vec<String> = Vec::new();
 ///
 /// list.push("rustlang".to_string());
 /// list.push("ThisWeekInRust".to_string());
 ///
-/// let users = block_on_all(egg_mode::user::lookup(&list, &token)).unwrap();
+/// let users = egg_mode::user::lookup(&list, &token).await.unwrap();
 /// # }
 /// ```
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// let mut list: Vec<egg_mode::user::UserID> = Vec::new();
 ///
 /// list.push(1234.into());
 /// list.push("rustlang".into());
 ///
-/// let users = block_on_all(egg_mode::user::lookup(&list, &token)).unwrap();
+/// let users = egg_mode::user::lookup(&list, &token).await.unwrap();
 /// # }
 /// ```
 pub fn lookup<'a, T, I>(accts: I, token: &auth::Token) -> FutureResponse<Vec<TwitterUser>>

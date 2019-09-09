@@ -4,15 +4,16 @@
 
 mod common;
 
-use futures::Stream;
-use tokio::runtime::current_thread::block_on_all;
+use futures::future;
+use futures::StreamExt;
 
 use egg_mode::user;
 
 //IMPORTANT: see common.rs for instructions on making sure this properly authenticates with
 //Twitter.
-fn main() {
-    let config = common::Config::load();
+#[tokio::main]
+async fn main() {
+    let config = common::Config::load().await;
 
     println!("");
     println!("Heterogeneous multi-user lookup:");
@@ -21,7 +22,8 @@ fn main() {
     users.push(config.user_id.into());
     users.push("SwiftOnSecurity".into());
 
-    for user in block_on_all(user::lookup(&users, &config.token))
+    for user in user::lookup(&users, &config.token)
+        .await
         .unwrap()
         .response
         .iter()
@@ -31,42 +33,39 @@ fn main() {
 
     println!("");
     println!("Searching based on a term: (here, it's 'rustlang')");
-    block_on_all(
-        user::search("rustlang", &config.token)
-            .with_page_size(5)
-            .take(5)
-            .for_each(|resp| {
-                print_user(&resp);
-                Ok(())
-            }),
-    )
-    .unwrap();
+    user::search("rustlang", &config.token)
+        .with_page_size(5)
+        .take(5)
+        .for_each(|resp| {
+            let resp = resp.unwrap();
+            print_user(&resp);
+            future::ready(())
+        })
+        .await;
 
     println!("");
     println!("Who do you follow?");
-    block_on_all(
-        user::friends_of(config.user_id, &config.token)
-            .with_page_size(5)
-            .take(5)
-            .for_each(|resp| {
-                print_user(&resp);
-                Ok(())
-            }),
-    )
-    .unwrap();
+    user::friends_of(config.user_id, &config.token)
+        .with_page_size(5)
+        .take(5)
+        .for_each(|resp| {
+            let resp = resp.unwrap();
+            print_user(&resp);
+            future::ready(())
+        })
+        .await;
 
     println!("");
     println!("Who follows you?");
-    block_on_all(
-        user::followers_of(config.user_id, &config.token)
-            .with_page_size(5)
-            .take(5)
-            .for_each(|resp| {
-                print_user(&resp);
-                Ok(())
-            }),
-    )
-    .unwrap();
+    user::followers_of(config.user_id, &config.token)
+        .with_page_size(5)
+        .take(5)
+        .for_each(|resp| {
+            let resp = resp.unwrap();
+            print_user(&resp);
+            future::ready(())
+        })
+        .await;
 }
 
 fn print_user(user: &user::TwitterUser) {

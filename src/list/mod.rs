@@ -176,14 +176,14 @@ pub struct List {
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// use egg_mode::list::{self, ListID};
 ///
 /// //remember, you can only update a list if you own it!
 /// let update = list::update(ListID::from_slug("Twitter", "support"));
-/// let list = block_on_all(update.name("Official Support").send(&token)).unwrap();
+/// let list = update.name("Official Support").send(&token).await.unwrap();
 /// # }
 /// ```
 pub struct ListUpdate<'a> {

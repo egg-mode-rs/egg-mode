@@ -55,10 +55,12 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
 use std::str::FromStr;
+use std::task::{Context, Poll};
 
 use chrono;
-use futures::{Async, Future, Poll};
 use hyper::{Body, Request};
 use regex::Regex;
 use serde::de::Error;
@@ -415,12 +417,12 @@ pub struct ExtendedTweetEntities {
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// let timeline = egg_mode::tweet::home_timeline(&token).with_page_size(10);
 ///
-/// let (timeline, feed) = block_on_all(timeline.start()).unwrap();
+/// let (timeline, feed) = timeline.start().await.unwrap();
 /// for tweet in &feed {
 ///     println!("<@{}> {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
 /// }
@@ -432,12 +434,12 @@ pub struct ExtendedTweetEntities {
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// # let timeline = egg_mode::tweet::home_timeline(&token);
-/// # let (timeline, _) = block_on_all(timeline.start()).unwrap();
-/// let (timeline, feed) = block_on_all(timeline.older(None)).unwrap();
+/// # let (timeline, _) = timeline.start().await.unwrap();
+/// let (timeline, feed) = timeline.older(None).await.unwrap();
 /// for tweet in &feed {
 ///     println!("<@{}> {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
 /// }
@@ -453,24 +455,24 @@ pub struct ExtendedTweetEntities {
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// let timeline = egg_mode::tweet::home_timeline(&token)
 ///                                .with_page_size(10);
 ///
-/// let (timeline, _feed) = block_on_all(timeline.start()).unwrap();
+/// let (timeline, _feed) = timeline.start().await.unwrap();
 ///
 /// //keep the max_id for later
 /// let reload_id = timeline.max_id.unwrap();
 ///
 /// //simulate scrolling down a little bit
-/// let (timeline, _feed) = block_on_all(timeline.older(None)).unwrap();
-/// let (mut timeline, _feed) = block_on_all(timeline.older(None)).unwrap();
+/// let (timeline, _feed) = timeline.older(None).await.unwrap();
+/// let (mut timeline, _feed) = timeline.older(None).await.unwrap();
 ///
 /// //reload the timeline with only what's new
 /// timeline.reset();
-/// let (timeline, _new_posts) = block_on_all(timeline.older(Some(reload_id))).unwrap();
+/// let (timeline, _new_posts) = timeline.older(Some(reload_id)).await.unwrap();
 /// # }
 /// ```
 ///
@@ -613,19 +615,18 @@ pub struct TimelineFuture<'timeline> {
 }
 
 impl<'timeline> Future for TimelineFuture<'timeline> {
-    type Item = (Timeline<'timeline>, Response<Vec<Tweet>>);
-    type Error = error::Error;
+    type Output = Result<(Timeline<'timeline>, Response<Vec<Tweet>>), error::Error>;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        match self.loader.poll() {
-            Err(e) => Err(e),
-            Ok(Async::NotReady) => Ok(Async::NotReady),
-            Ok(Async::Ready(resp)) => {
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
+        match Pin::new(&mut self.loader).poll(cx) {
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(Err(e)) => Poll::Ready(Err(e)),
+            Poll::Ready(Ok(resp)) => {
                 if let Some(mut timeline) = self.timeline.take() {
                     timeline.map_ids(&resp.response);
-                    Ok(Async::Ready((timeline, resp)))
+                    Poll::Ready(Ok((timeline, resp)))
                 } else {
-                    Err(error::Error::FutureAlreadyCompleted)
+                    Poll::Ready(Err(error::Error::FutureAlreadyCompleted))
                 }
             }
         }
@@ -647,13 +648,13 @@ impl<'timeline> Future for TimelineFuture<'timeline> {
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// # use egg_mode::tweet::DraftTweet;
 /// # let draft = DraftTweet::new("This is an example status!");
 ///
-/// block_on_all(draft.send(&token)).unwrap();
+/// draft.send(&token).await.unwrap();
 /// # }
 /// ```
 ///
@@ -663,21 +664,21 @@ impl<'timeline> Future for TimelineFuture<'timeline> {
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// use egg_mode::tweet::DraftTweet;
 ///
 /// let draft = DraftTweet::new("I'd like to start a thread here.");
-/// let tweet = block_on_all(draft.send(&token)).unwrap();
+/// let tweet = draft.send(&token).await.unwrap();
 ///
 /// let draft = DraftTweet::new("You see, I have a lot of things to say.")
 ///                        .in_reply_to(tweet.id);
-/// let tweet = block_on_all(draft.send(&token)).unwrap();
+/// let tweet = draft.send(&token).await.unwrap();
 ///
 /// let draft = DraftTweet::new("Thank you for your time.")
 ///                        .in_reply_to(tweet.id);
-/// let tweet = block_on_all(draft.send(&token)).unwrap();
+/// let tweet = draft.send(&token).await.unwrap();
 /// # }
 /// ```
 #[derive(Debug, Clone)]

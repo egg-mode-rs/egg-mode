@@ -17,9 +17,9 @@
 //! There are a couple prerequisites to using egg-mode, which its examples also assume:
 //!
 //! * This library provides several types which implement the `Future` trait, but does not describe
-//!   how to interact with them. The examples use the `block_on_all` method from [tokio]'s runtime
-//!   to show a synchronous interaction, but more advanced scenarios are beyond the scope of this
-//!   documentation. See the [tokio] documentation for more information.
+//!   how to interact with them. The examples use `await` syntax inside `async`
+//!   functions. For more information on this syntax, check out [tokio] and the
+//!   [Rust `async` book][rust-futures].
 //! * Twitter tracks API use through "tokens" which are managed by Twitter and processed separately
 //!   for each "authenticated user" you wish to connect to your app. egg-mode's [Token]
 //!   documentation describes how you can obtain one of these, but each example outside of the
@@ -28,15 +28,16 @@
 //!
 //! [Token]: enum.Token.html
 //! [tokio]: https://tokio.rs
+//! [rust-futures]: https://rust-lang.github.io/async-book/
 //!
 //! To load the profile information of a single user:
 //!
 //! ```rust,no_run
 //! # use egg_mode::Token;
-//! use tokio::runtime::current_thread::block_on_all;
-//! # fn main() {
+//! # #[tokio::main]
+//! # async fn main() {
 //! # let token: Token = unimplemented!();
-//! let rustlang = block_on_all(egg_mode::user::show("rustlang", &token)).unwrap();
+//! let rustlang = egg_mode::user::show("rustlang", &token).await.unwrap();
 //!
 //! println!("{} (@{})", rustlang.name, rustlang.screen_name);
 //! # }
@@ -46,12 +47,12 @@
 //!
 //! ```rust,no_run
 //! # use egg_mode::Token;
-//! use tokio::runtime::current_thread::block_on_all;
 //! use egg_mode::tweet::DraftTweet;
-//! # fn main() {
+//! # #[tokio::main]
+//! # async fn main() {
 //! # let token: Token = unimplemented!();
 //!
-//! let post = block_on_all(DraftTweet::new("Hey Twitter!").send(&token)).unwrap();
+//! let post = DraftTweet::new("Hey Twitter!").send(&token).await.unwrap();
 //! # }
 //! ```
 //!
