@@ -13,7 +13,6 @@ use std::fmt;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use base64;
-use futures::{Future, IntoFuture};
 use hmac::{Hmac, Mac};
 use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
 use hyper::{Body, Method, Request};
@@ -235,11 +234,11 @@ impl KeyPair {
 /// For "PIN-Based Authorization":
 ///
 /// ```rust,no_run
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
 /// // "oob" is needed for PIN-based auth; see docs for `request_token` for more info
-/// let request_token = block_on_all(egg_mode::request_token(&con_token, "oob")).unwrap();
+/// let request_token = egg_mode::request_token(&con_token, "oob").await.unwrap();
 /// let auth_url = egg_mode::authorize_url(&request_token);
 ///
 /// // give auth_url to the user, they can sign in to Twitter and accept your app's permissions.
@@ -249,7 +248,7 @@ impl KeyPair {
 ///
 /// // note this consumes con_token; if you want to sign in multiple accounts, clone it here
 /// let (token, user_id, screen_name) =
-///     block_on_all(egg_mode::access_token(con_token, &request_token, verifier)).unwrap();
+///     egg_mode::access_token(con_token, &request_token, verifier).await.unwrap();
 ///
 /// // token can be given to any egg_mode method that asks for a token
 /// // user_id and screen_name refer to the user who signed in
@@ -302,10 +301,10 @@ impl KeyPair {
 /// ### Example (Bearer Token)
 ///
 /// ```rust,no_run
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
-/// let token = block_on_all(egg_mode::bearer_token(&con_token)).unwrap();
+/// let token = egg_mode::bearer_token(&con_token).await.unwrap();
 ///
 /// // token can be given to *most* egg_mode methods that ask for a token
 /// // for restrictions, see docs for bearer_token
@@ -589,14 +588,15 @@ pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request<
 /// # Examples
 ///
 /// ```rust,no_run
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
 /// // for PIN-Based Auth
-/// let req_token = block_on_all(egg_mode::request_token(&con_token, "oob")).unwrap();
+/// let req_token = egg_mode::request_token(&con_token, "oob").await.unwrap();
 /// // for Sign In With Twitter/3-Legged Auth
-/// let req_token = block_on_all(egg_mode::request_token(&con_token,
-///                                                      "https://myapp.io/auth")).unwrap();
+/// let req_token = egg_mode::request_token(&con_token, "https://myapp.io/auth")
+///     .await
+///     .unwrap();
 /// # }
 /// ```
 pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> TwitterFuture<KeyPair> {
@@ -768,11 +768,11 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 /// The `Future` returned by this function, on success, yields a tuple of three items: The
 /// final access token, the ID of the authenticated user, and the screen name of the authenticated
 /// user.
-pub fn access_token<S: Into<String>>(
+pub async fn access_token<S: Into<String>>(
     con_token: KeyPair,
     request_token: &KeyPair,
     verifier: S,
-) -> impl Future<Item = (Token, u64, String), Error = error::Error> {
+) -> Result<(Token, u64, String), error::Error> {
     let header = get_header(
         Method::POST,
         links::auth::ACCESS_TOKEN,
@@ -785,14 +785,8 @@ pub fn access_token<S: Into<String>>(
     let mut request = Request::post(links::auth::ACCESS_TOKEN);
     request.header(AUTHORIZATION, header.to_string());
 
-    let loader = make_raw_future(request.body(Body::empty()).unwrap());
-    loader.and_then(|resp| fetch_urlencoded_auth(&resp, con_token).into_future())
-}
+    let urlencoded = make_raw_future(request.body(Body::empty()).unwrap()).await?;
 
-fn fetch_urlencoded_auth(
-    urlencoded: &str,
-    con_token: KeyPair,
-) -> Result<(Token, u64, String), error::Error> {
     // TODO deserialize into a struct
     let mut key: Option<String> = None;
     let mut secret: Option<String> = None;

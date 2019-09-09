@@ -4,16 +4,15 @@
 
 mod common;
 
-use tokio::runtime::current_thread::block_on_all;
-
-fn main() {
-    let c = common::Config::load();
+#[tokio::main]
+async fn main() {
+    let c = common::Config::load().await;
 
     let convos = egg_mode::direct::conversations(&c.token);
-    let convos = block_on_all(convos.newest()).unwrap();
+    let convos = convos.newest().await.unwrap();
 
     for (id, convo) in &convos.conversations {
-        let user = block_on_all(egg_mode::user::show(id, &c.token)).unwrap();
+        let user = egg_mode::user::show(id, &c.token).await.unwrap();
         println!("-----");
         println!("Conversation with @{}:", user.screen_name);
         for msg in convo {

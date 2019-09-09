@@ -4,8 +4,6 @@
 
 use std::collections::HashMap;
 
-use futures::{Future, IntoFuture};
-
 use crate::common::*;
 use crate::error::Error::BadUrl;
 use crate::{auth, error, links};
@@ -19,10 +17,10 @@ use super::*;
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
-/// let result = block_on_all(egg_mode::place::show("18810aa5b43e76c7", &token)).unwrap();
+/// let result = egg_mode::place::show("18810aa5b43e76c7", &token).await.unwrap();
 ///
 /// assert!(result.full_name == "Dallas, TX");
 /// # }
@@ -41,14 +39,15 @@ pub fn show(id: &str, token: &auth::Token) -> FutureResponse<Place> {
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// use egg_mode::place::{self, PlaceType};
-/// let result = block_on_all(place::reverse_geocode(51.507222, -0.1275)
-///                                 .granularity(PlaceType::City)
-///                                 .call(&token))
-///                  .unwrap();
+/// let result = place::reverse_geocode(51.507222, -0.1275)
+///     .granularity(PlaceType::City)
+///     .call(&token)
+///     .await
+///     .unwrap();
 ///
 /// assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
 /// # }
@@ -92,15 +91,13 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `reverse_geocode` query URL.
-pub fn reverse_geocode_url<'a>(
-    url: &'a str,
-    token: &'a auth::Token,
-) -> impl Future<Item = Response<SearchResult>, Error = error::Error> + 'a {
-    let params = parse_url(links::place::REVERSE_GEOCODE, url);
-    params.into_future().and_then(move |params| {
-        let req = auth::get(links::place::REVERSE_GEOCODE, &token, Some(&params));
-        make_parsed_future(req)
-    })
+pub async fn reverse_geocode_url(
+    url: &str,
+    token: &auth::Token,
+) -> Result<Response<SearchResult>, error::Error> {
+    let params = parse_url(links::place::REVERSE_GEOCODE, url)?;
+    let req = auth::get(links::place::REVERSE_GEOCODE, &token, Some(&params));
+    make_parsed_future(req).await
 }
 
 /// Begins building a location search via latitude/longitude.
@@ -109,14 +106,15 @@ pub fn reverse_geocode_url<'a>(
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// use egg_mode::place::{self, PlaceType};
-/// let result = block_on_all(place::search_point(51.507222, -0.1275)
-///                                 .granularity(PlaceType::City)
-///                                 .call(&token))
-///                  .unwrap();
+/// let result = place::search_point(51.507222, -0.1275)
+///     .granularity(PlaceType::City)
+///     .call(&token)
+///     .await
+///     .unwrap();
 ///
 /// assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
 /// # }
@@ -131,14 +129,15 @@ pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder<'static> {
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// use egg_mode::place::{self, PlaceType};
-/// let result = block_on_all(place::search_query("columbia")
-///                                 .granularity(PlaceType::Admin)
-///                                 .call(&token))
-///                  .unwrap();
+/// let result = place::search_query("columbia")
+///     .granularity(PlaceType::Admin)
+///     .call(&token)
+///     .await
+///     .unwrap();
 ///
 /// assert!(result.results.iter().any(|pl| pl.full_name == "British Columbia, Canada"));
 /// # }
@@ -158,13 +157,11 @@ pub fn search_ip<'a>(query: &'a str) -> SearchBuilder<'a> {
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `search` query URL.
-pub fn search_url<'a>(
-    url: &'a str,
-    token: &'a auth::Token,
-) -> impl Future<Item = Response<SearchResult>, Error = error::Error> + 'a {
-    let params = parse_url(links::place::SEARCH, url);
-    params.into_future().and_then(move |params| {
-        let req = auth::get(links::place::REVERSE_GEOCODE, &token, Some(&params));
-        make_parsed_future(req)
-    })
+pub async fn search_url(
+    url: &str,
+    token: &auth::Token,
+) -> Result<Response<SearchResult>, error::Error> {
+    let params = parse_url(links::place::SEARCH, url)?;
+    let req = auth::get(links::place::REVERSE_GEOCODE, &token, Some(&params));
+    make_parsed_future(req).await
 }

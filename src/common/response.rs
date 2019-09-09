@@ -7,7 +7,7 @@
 
 use crate::error::Error::*;
 use crate::error::{self, TwitterErrors};
-use futures::{Async, Future, Poll, Stream};
+use futures::Stream;
 use hyper::client::ResponseFuture;
 use hyper::header::CONTENT_LENGTH;
 use hyper::{self, Body, Request, StatusCode};
@@ -17,8 +17,11 @@ use hyper_rustls::HttpsConnector;
 use hyper_tls::HttpsConnector;
 use serde::Deserialize;
 use serde_json;
+use std::future::Future;
 use std::iter::FromIterator;
 use std::ops::{Deref, DerefMut};
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use std::{io, mem, slice, vec};
 
 use super::Headers;
@@ -394,9 +397,9 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
 pub fn get_response(request: Request<Body>) -> Result<ResponseFuture, error::Error> {
     // TODO: num-cpus?
     #[cfg(feature = "native_tls")]
-    let connector = HttpsConnector::new(1)?;
+    let connector = HttpsConnector::new()?;
     #[cfg(feature = "hyper-rustls")]
-    let connector = HttpsConnector::new(1);
+    let connector = HttpsConnector::new();
     let client = hyper::Client::builder().build(connector);
     Ok(client.request(request))
 }
@@ -422,23 +425,22 @@ impl RawFuture {
 }
 
 impl Future for RawFuture {
-    type Item = String;
-    type Error = error::Error;
+    type Output = Result<String, error::Error>;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         if let Some(req) = self.request.take() {
             // needed to pull this section into the future so i could try!() on the connector
             self.response = Some(get_response(req)?);
         }
 
         if let Some(mut resp) = self.response.take() {
-            match resp.poll() {
-                Err(e) => return Err(e.into()),
-                Ok(Async::NotReady) => {
+            match Pin::new(&mut resp).poll(cx) {
+                Poll::Pending => {
                     self.response = Some(resp);
-                    return Ok(Async::NotReady);
+                    return Poll::Pending;
                 }
-                Ok(Async::Ready(resp)) => {
+                Poll::Ready(Err(e)) => return Poll::Ready(Err(e.into())),
+                Poll::Ready(Ok(resp)) => {
                     self.resp_headers = Some(resp.headers().clone());
                     self.resp_status = Some(resp.status());
                     if let Some(len) = resp.headers().get(CONTENT_LENGTH) {
@@ -455,42 +457,46 @@ impl Future for RawFuture {
 
         if let Some(mut resp) = self.body_stream.take() {
             loop {
-                match resp.poll() {
-                    Err(e) => return Err(e.into()),
-                    Ok(Async::NotReady) => {
+                match Pin::new(&mut resp).poll_next(cx) {
+                    Poll::Pending => {
                         self.body_stream = Some(resp);
-                        return Ok(Async::NotReady);
+                        return Poll::Pending;
                     }
-                    Ok(Async::Ready(None)) => break,
-                    Ok(Async::Ready(Some(chunk))) => {
+                    Poll::Ready(None) => break,
+                    Poll::Ready(Some(Err(e))) => return Poll::Ready(Err(e.into())),
+                    Poll::Ready(Some(Ok(chunk))) => {
                         self.body.extend(&*chunk);
                     }
                 }
             }
         } else {
-            return Err(FutureAlreadyCompleted);
+            return Poll::Ready(Err(FutureAlreadyCompleted));
         };
 
         match String::from_utf8(mem::replace(&mut self.body, Vec::new())) {
-            Err(_) => Err(io::Error::new(
+            Err(_) => Poll::Ready(Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "stream did not contain valid UTF-8",
             )
-            .into()),
+            .into())),
             Ok(resp) => {
                 if let Ok(err) = serde_json::from_str::<TwitterErrors>(&resp) {
                     if err.errors.iter().any(|e| e.code == 88)
                         && self.headers().contains_key(X_RATE_LIMIT_RESET)
                     {
-                        return Err(RateLimit(rate_limit_reset(self.headers())?.unwrap()));
+                        return Poll::Ready(Err(RateLimit(
+                            rate_limit_reset(self.headers())?.unwrap(),
+                        )));
                     } else {
-                        return Err(TwitterError(err));
+                        return Poll::Ready(Err(TwitterError(err)));
                     }
                 }
 
-                match self.resp_status.unwrap() {
-                    st if st.is_success() => Ok(Async::Ready(resp)),
-                    st => Err(BadStatus(st)),
+                let st = self.resp_status.unwrap();
+                if st.is_success() {
+                    Poll::Ready(Ok(resp))
+                } else {
+                    Poll::Ready(Err(BadStatus(st)))
                 }
             }
         }
@@ -532,20 +538,16 @@ pub struct TwitterFuture<T> {
 }
 
 impl<T> Future for TwitterFuture<T> {
-    type Item = T;
-    type Error = error::Error;
+    type Output = Result<T, error::Error>;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        let full_resp = match self.request.poll() {
-            Err(e) => return Err(e),
-            Ok(Async::NotReady) => return Ok(Async::NotReady),
-            Ok(Async::Ready(r)) => r,
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
+        let full_resp = match Pin::new(&mut self.request).poll(cx) {
+            Poll::Pending => return Poll::Pending,
+            Poll::Ready(Err(e)) => return Poll::Ready(Err(e)),
+            Poll::Ready(Ok(r)) => r,
         };
 
-        Ok(Async::Ready((self.make_resp)(
-            full_resp,
-            self.request.headers(),
-        )?))
+        Poll::Ready(Ok((self.make_resp)(full_resp, self.request.headers())?))
     }
 }
 

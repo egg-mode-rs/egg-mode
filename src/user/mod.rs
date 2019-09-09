@@ -57,9 +57,12 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 use chrono;
-use futures::{Async, Future, Poll, Stream};
+use futures::Stream;
 use serde::{Deserialize, Deserializer};
 
 use crate::common::*;
@@ -415,15 +418,15 @@ pub struct UserEntityDetail {
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// use futures::Stream;
+/// use futures::{Stream, StreamExt, TryStreamExt};
 ///
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
-/// block_on_all(egg_mode::user::search("rustlang", &token).take(10).for_each(|resp| {
+/// egg_mode::user::search("rustlang", &token).take(10).try_for_each(|resp| {
 ///     println!("{}", resp.screen_name);
-///     Ok(())
-/// })).unwrap();
+///     futures::future::ready(Ok(()))
+/// }).await.unwrap();
 /// # }
 /// ```
 ///
@@ -432,10 +435,10 @@ pub struct UserEntityDetail {
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
-/// use futures::Stream;
+/// use futures::{Stream, StreamExt, TryStreamExt};
 /// use egg_mode::Response;
 /// use egg_mode::user::TwitterUser;
 /// use egg_mode::error::Error;
@@ -443,8 +446,11 @@ pub struct UserEntityDetail {
 /// // Because Streams don't have a FromIterator adaptor, we load all the responses first, then
 /// // collect them into the final Vec
 /// let names: Result<Response<Vec<TwitterUser>>, Error> =
-///     block_on_all(egg_mode::user::search("rustlang", &token).take(10).collect())
-///         .map(|resp| resp.into_iter().collect());
+///     egg_mode::user::search("rustlang", &token)
+///         .take(10)
+///         .try_collect::<Vec<_>>()
+///         .await
+///         .map(|res| res.into_iter().collect());
 /// # }
 /// ```
 ///
@@ -465,25 +471,25 @@ pub struct UserEntityDetail {
 /// by `with_page_size`/the `page_size` field) when it's polled, and serving the individual
 /// elements from that locally-cached page until it runs out. This can be nice, but it also means
 /// that your only warning that something involves a network call is that the stream returns
-/// `Ok(Async::NotReady)`, by which time the network call has already started. If you want to know
+/// `Poll::Pending`, by which time the network call has already started. If you want to know
 /// that ahead of time, that's where the `call()` method comes in. By using `call()`, you can get
 /// a page of results directly from Twitter. With that you can iterate over the results and page
 /// forward and backward as needed:
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// let mut search = egg_mode::user::search("rustlang", &token).with_page_size(20);
-/// let resp = block_on_all(search.call()).unwrap();
+/// let resp = search.call().await.unwrap();
 ///
 /// for user in resp.response {
 ///    println!("{} (@{})", user.name, user.screen_name);
 /// }
 ///
 /// search.page_num += 1;
-/// let resp = block_on_all(search.call()).unwrap();
+/// let resp = search.call().await.unwrap();
 ///
 /// for user in resp.response {
 ///    println!("{} (@{})", user.name, user.screen_name);
@@ -559,37 +565,36 @@ impl<'a> UserSearch<'a> {
 }
 
 impl<'a> Stream for UserSearch<'a> {
-    type Item = Response<TwitterUser>;
-    type Error = error::Error;
+    type Item = Result<Response<TwitterUser>, error::Error>;
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         if let Some(mut fut) = self.current_loader.take() {
-            match fut.poll() {
-                Ok(Async::NotReady) => {
+            match Pin::new(&mut fut).poll(cx) {
+                Poll::Pending => {
                     self.current_loader = Some(fut);
-                    return Ok(Async::NotReady);
+                    return Poll::Pending;
                 }
-                Ok(Async::Ready(res)) => self.current_results = Some(res.into_iter()),
-                Err(e) => {
+                Poll::Ready(Ok(res)) => self.current_results = Some(res.into_iter()),
+                Poll::Ready(Err(e)) => {
                     //Invalidate current results so we don't increment the page number again
                     self.current_results = None;
-                    return Err(e);
+                    return Poll::Ready(Some(Err(e)));
                 }
             }
         }
 
         if let Some(ref mut results) = self.current_results {
             if let Some(user) = results.next() {
-                return Ok(Async::Ready(Some(user)));
+                return Poll::Ready(Some(Ok(user)));
             } else if (results.len() as i32) < self.page_size {
-                return Ok(Async::Ready(None));
+                return Poll::Ready(None);
             } else {
                 self.page_num += 1;
             }
         }
 
         self.current_loader = Some(self.call());
-        self.poll()
+        self.poll_next(cx)
     }
 }
 

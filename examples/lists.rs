@@ -5,13 +5,13 @@
 mod common;
 
 use egg_mode::list::{self, ListID};
-use tokio::runtime::current_thread::block_on_all;
 
-fn main() {
-    let config = common::Config::load();
+#[tokio::main]
+async fn main() {
+    let config = common::Config::load().await;
 
     println!("Lists curated by user @Scobleizer:");
-    let lists = block_on_all(list::list("Scobleizer", true, &config.token)).unwrap();
+    let lists = list::list("Scobleizer", true, &config.token).await.unwrap();
     for list in lists {
         if list.user.screen_name == "Scobleizer" {
             println!("    {} ({})", list.name, list.slug);
@@ -19,10 +19,10 @@ fn main() {
     }
 
     println!("\nMembers of @Scobleizer/lists/tech-news:");
-    let members = block_on_all(
-        list::members(ListID::from_slug("Scobleizer", "tech-news"), &config.token).call(),
-    )
-    .unwrap();
+    let members = list::members(ListID::from_slug("Scobleizer", "tech-news"), &config.token)
+        .call()
+        .await
+        .unwrap();
     for m in members.response.users {
         println!("    {}", m.screen_name)
     }

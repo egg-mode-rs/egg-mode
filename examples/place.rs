@@ -4,20 +4,18 @@
 
 mod common;
 
-use tokio::runtime::current_thread::block_on_all;
-
 use egg_mode::place::PlaceType;
 
-fn main() {
-    let config = common::Config::load();
+#[tokio::main]
+async fn main() {
+    let config = common::Config::load().await;
 
-    let result = block_on_all(
-        egg_mode::place::search_query("columbia")
-            .granularity(PlaceType::Admin)
-            .max_results(10)
-            .call(&config.token),
-    )
-    .unwrap();
+    let result = egg_mode::place::search_query("columbia")
+        .granularity(PlaceType::Admin)
+        .max_results(10)
+        .call(&config.token)
+        .await
+        .unwrap();
 
     println!(
         "{} results for \"columbia\", administrative regions or larger:",
@@ -29,12 +27,11 @@ fn main() {
     }
     println!("");
 
-    let result = block_on_all(
-        egg_mode::place::reverse_geocode(51.507222, -0.1275)
-            .granularity(PlaceType::City)
-            .call(&config.token),
-    )
-    .unwrap();
+    let result = egg_mode::place::reverse_geocode(51.507222, -0.1275)
+        .granularity(PlaceType::City)
+        .call(&config.token)
+        .await
+        .unwrap();
 
     println!(
         "{} results for reverse-geocoding {}, {}:",

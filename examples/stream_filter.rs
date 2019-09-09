@@ -3,13 +3,13 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 mod common;
-use futures::Stream;
-use tokio::runtime::current_thread::block_on_all;
+use futures::TryStreamExt;
 
 use egg_mode::stream::StreamMessage;
 
-fn main() {
-    let config = common::Config::load();
+#[tokio::main]
+async fn main() {
+    let config = common::Config::load().await;
     println!("Streaming tweets containing popular programming languages (and also Rust)");
     println!("Ctrl-C to quit\n");
 
@@ -17,18 +17,16 @@ fn main() {
         .track(&["rustlang", "python", "java", "javascript"])
         .language(&["en"])
         .start(&config.token)
-        .for_each(|m| {
+        .try_for_each(|m| {
             if let StreamMessage::Tweet(tweet) = m {
                 common::print_tweet(&tweet);
-                println!(
-                    "──────────────────────────────────────"
-                );
+                println!("──────────────────────────────────────");
             } else {
                 println!("{:?}", m);
             }
             futures::future::ok(())
         });
-    if let Err(e) = block_on_all(stream) {
+    if let Err(e) = stream.await {
         println!("Stream error: {}", e);
         println!("Disconnected")
     }

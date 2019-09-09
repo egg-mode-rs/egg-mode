@@ -4,22 +4,21 @@
 
 mod common;
 
-use tokio::runtime::current_thread::block_on_all;
-
-fn main() {
+#[tokio::main]
+async fn main() {
     let con_key = include_str!("common/consumer_key").trim();
     let con_secret = include_str!("common/consumer_secret").trim();
 
     let con_token = egg_mode::KeyPair::new(con_key, con_secret);
 
     println!("Pulling up the bearer token...");
-    let token = block_on_all(egg_mode::bearer_token(&con_token)).unwrap();
+    let token = egg_mode::bearer_token(&con_token).await.unwrap();
 
     println!("Pulling up a user timeline...");
     let timeline =
         egg_mode::tweet::user_timeline("rustlang", false, true, &token).with_page_size(5);
 
-    let (_timeline, feed) = block_on_all(timeline.start()).unwrap();
+    let (_timeline, feed) = timeline.start().await.unwrap();
     for tweet in feed {
         println!("");
         common::print_tweet(&tweet);

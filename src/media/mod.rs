@@ -18,19 +18,19 @@
 //!
 //! ```rust,no_run
 //! # use egg_mode::Token;
-//! use tokio::runtime::current_thread::block_on_all;
-//! # fn main() {
+//! # #[tokio::main]
+//! # async fn main() {
 //! # let token: Token = unimplemented!();
 //! use egg_mode::media::{UploadBuilder, media_types};
 //! use egg_mode::tweet::DraftTweet;
 //!
 //! let image = vec![]; //pretend we loaded an image file into this
 //! let builder = UploadBuilder::new(image, media_types::image_png());
-//! let media_handle = block_on_all(builder.call(&token)).unwrap();
+//! let media_handle = builder.call(&token).await.unwrap();
 //!
 //! let draft = DraftTweet::new("Hey, check out this cute cat!")
 //!                        .media_ids(&[media_handle.id]);
-//! let tweet = block_on_all(draft.send(&token)).unwrap();
+//! let tweet = draft.send(&token).await.unwrap();
 //! # }
 //! ```
 //!
@@ -40,13 +40,15 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::error::Error as StdError;
 use std::fmt;
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use std::time::{Duration, Instant};
 
 use base64;
-use futures::{Async, Future, Poll};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
-use tokio::timer::Delay;
+use tokio::timer::{self, Delay};
 
 use crate::common::*;
 use crate::error::Error::InvalidResponse;
@@ -515,66 +517,67 @@ impl<'a> UploadFuture<'a> {
 }
 
 impl<'a> Future for UploadFuture<'a> {
-    type Item = MediaHandle;
-    type Error = UploadError;
+    type Output = Result<MediaHandle, UploadError>;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         use std::mem::replace;
 
         match replace(&mut self.status, UploadInner::Invalid) {
             UploadInner::PreInit => {
                 self.status = UploadInner::WaitingForInit(self.init());
-                self.poll()
+                self.poll(cx)
             }
             UploadInner::WaitingForInit(mut init) => {
-                match init.poll() {
-                    Ok(Async::NotReady) => {
+                match Pin::new(&mut init).poll(cx) {
+                    Poll::Pending => {
                         self.status = UploadInner::WaitingForInit(init);
-                        Ok(Async::NotReady)
+                        Poll::Pending
                     }
-                    Ok(Async::Ready(media)) => {
+                    Poll::Ready(Ok(media)) => {
                         self.timeout = Instant::now() + Duration::from_secs(media.expires_after);
                         let id = media.id;
                         //chunk zero is guaranteed to return *something*, even an empty slice
                         let loader = self.append(0, id).unwrap();
                         self.status = UploadInner::UploadingChunk(id, 0, loader);
-                        self.poll()
+                        self.poll(cx)
                     }
-                    Err(e) => {
+                    Poll::Ready(Err(e)) => {
                         self.status = UploadInner::PreInit;
-                        Err(UploadError::initialize(e))
+                        Poll::Ready(Err(UploadError::initialize(e)))
                     }
                 }
             }
-            UploadInner::UploadingChunk(id, chunk_idx, mut upload) => match upload.poll() {
-                Ok(Async::NotReady) => {
-                    self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
-                    Ok(Async::NotReady)
-                }
-                Ok(Async::Ready(_)) => {
-                    let chunk_idx = chunk_idx + 1;
-                    if let Some(upload) = self.append(chunk_idx, id) {
+            UploadInner::UploadingChunk(id, chunk_idx, mut upload) => {
+                match Pin::new(&mut upload).poll(cx) {
+                    Poll::Pending => {
                         self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
-                    } else {
-                        let loader = self.finalize(id);
-                        self.status = UploadInner::Finalizing(id, loader);
+                        Poll::Pending
                     }
+                    Poll::Ready(Ok(_)) => {
+                        let chunk_idx = chunk_idx + 1;
+                        if let Some(upload) = self.append(chunk_idx, id) {
+                            self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
+                        } else {
+                            let loader = self.finalize(id);
+                            self.status = UploadInner::Finalizing(id, loader);
+                        }
 
-                    self.poll()
+                        self.poll(cx)
+                    }
+                    Poll::Ready(Err(e)) => {
+                        self.status = UploadInner::FailedChunk(id, chunk_idx);
+                        Poll::Ready(Err(UploadError::chunk(self.timeout, e)))
+                    }
                 }
-                Err(e) => {
-                    self.status = UploadInner::FailedChunk(id, chunk_idx);
-                    Err(UploadError::chunk(self.timeout, e))
-                }
-            },
+            }
             UploadInner::FailedChunk(id, chunk_idx) => {
                 if Instant::now() >= self.timeout {
                     //we've timed out, restart the upload
                     self.status = UploadInner::PreInit;
-                    self.poll()
+                    self.poll(cx)
                 } else if let Some(upload) = self.append(chunk_idx, id) {
                     self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
-                    self.poll()
+                    self.poll(cx)
                 } else {
                     //this... should never happen? the FailedChunk status means that this specific
                     //id/index should have yielded a chunk before.
@@ -582,12 +585,12 @@ impl<'a> Future for UploadFuture<'a> {
                 }
             }
             UploadInner::Finalizing(id, mut finalize) => {
-                match finalize.poll() {
-                    Ok(Async::NotReady) => {
+                match Pin::new(&mut finalize).poll(cx) {
+                    Poll::Pending => {
                         self.status = UploadInner::Finalizing(id, finalize);
-                        Ok(Async::NotReady)
+                        Poll::Pending
                     }
-                    Ok(Async::Ready(media)) => {
+                    Poll::Ready(Ok(media)) => {
                         if media.progress.is_none() || media.progress == Some(ProgressInfo::Success)
                         {
                             let media = media.response.into_handle();
@@ -595,9 +598,9 @@ impl<'a> Future for UploadFuture<'a> {
                             let loader = self.alt_text.as_ref().map(|txt| self.metadata(id, txt));
                             if let Some(loader) = loader {
                                 self.status = UploadInner::Metadata(media, loader);
-                                return self.poll();
+                                return self.poll(cx);
                             } else {
-                                return Ok(Async::Ready(media));
+                                return Poll::Ready(Ok(media));
                             }
                         }
 
@@ -609,23 +612,23 @@ impl<'a> Future for UploadFuture<'a> {
                                 //TODO: oh hey we needed the handle for something - we need to use
                                 //new-tokio to fix this
                                 let wake = Instant::now() + Duration::from_secs(time);
-                                let timer = Delay::new(wake);
+                                let timer = timer::delay(wake);
                                 self.status = UploadInner::PostProcessing(media.id, timer);
-                                self.poll()
+                                self.poll(cx)
                             }
                             Some(ProgressInfo::Failed(err)) => {
                                 self.status = UploadInner::FailedFinalize(id);
-                                Err(UploadError::finalize(
+                                Poll::Ready(Err(UploadError::finalize(
                                     self.timeout,
                                     error::Error::MediaError(err),
-                                ))
+                                )))
                             }
                             None | Some(ProgressInfo::Success) => unreachable!(),
                         }
                     }
-                    Err(e) => {
+                    Poll::Ready(Err(e)) => {
                         self.status = UploadInner::FailedFinalize(id);
-                        Err(UploadError::finalize(self.timeout, e))
+                        Poll::Ready(Err(UploadError::finalize(self.timeout, e)))
                     }
                 }
             }
@@ -637,33 +640,28 @@ impl<'a> Future for UploadFuture<'a> {
                     let finalize = self.finalize(id);
                     self.status = UploadInner::Finalizing(id, finalize);
                 }
-                self.poll()
+                self.poll(cx)
             }
-            UploadInner::PostProcessing(id, mut timer) => {
-                match timer.poll() {
-                    Ok(Async::NotReady) => {
-                        self.status = UploadInner::PostProcessing(id, timer);
-                        Ok(Async::NotReady)
-                    }
-                    Ok(Async::Ready(())) => {
-                        let loader = self.status(id);
-                        self.status = UploadInner::Finalizing(id, loader);
-                        self.poll()
-                    }
-                    // Delay will only return an error if the runtime has shut down, so don't
-                    // bother resetting the state
-                    Err(e) => Err(UploadError::finalize(self.timeout, e.into())),
+            UploadInner::PostProcessing(id, mut timer) => match Pin::new(&mut timer).poll(cx) {
+                Poll::Pending => {
+                    self.status = UploadInner::PostProcessing(id, timer);
+                    Poll::Pending
                 }
-            }
-            UploadInner::Metadata(media, mut loader) => match loader.poll() {
-                Ok(Async::NotReady) => {
+                Poll::Ready(()) => {
+                    let loader = self.status(id);
+                    self.status = UploadInner::Finalizing(id, loader);
+                    self.poll(cx)
+                }
+            },
+            UploadInner::Metadata(media, mut loader) => match Pin::new(&mut loader).poll(cx) {
+                Poll::Pending => {
                     self.status = UploadInner::Metadata(media, loader);
-                    Ok(Async::NotReady)
+                    Poll::Pending
                 }
-                Ok(Async::Ready(_)) => Ok(Async::Ready(media)),
-                Err(e) => {
+                Poll::Ready(Ok(_)) => Poll::Ready(Ok(media)),
+                Poll::Ready(Err(e)) => {
                     self.status = UploadInner::FailedMetadata(media);
-                    Err(UploadError::metadata(self.timeout, e))
+                    Poll::Ready(Err(UploadError::metadata(self.timeout, e)))
                 }
             },
             UploadInner::FailedMetadata(media) => {
@@ -678,9 +676,9 @@ impl<'a> Future for UploadFuture<'a> {
                     unreachable!();
                 }
 
-                self.poll()
+                self.poll(cx)
             }
-            UploadInner::Invalid => Err(UploadError::complete()),
+            UploadInner::Invalid => Poll::Ready(Err(UploadError::complete())),
         }
     }
 }

@@ -9,7 +9,11 @@
 //! module. The rest of it is available to make sure consumers of the API can understand precisely
 //! what types come out of functions that return `CursorIter`.
 
-use futures::{Async, Future, Poll, Stream};
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+
+use futures::Stream;
 use serde::Deserialize;
 
 use crate::common::*;
@@ -140,15 +144,15 @@ impl Cursor for ListCursor {
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// use futures::Stream;
+/// use futures::{StreamExt, TryStreamExt};
 ///
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
-/// block_on_all(egg_mode::user::followers_of("rustlang", &token).take(10).for_each(|resp| {
+/// egg_mode::user::followers_of("rustlang", &token).take(10).try_for_each(|resp| {
 ///     println!("{}", resp.screen_name);
-///     Ok(())
-/// })).unwrap();
+///     futures::future::ok(())
+/// }).await.unwrap();
 /// # }
 /// ```
 ///
@@ -157,10 +161,10 @@ impl Cursor for ListCursor {
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
-/// use futures::Stream;
+/// use futures::StreamExt;
 /// use egg_mode::Response;
 /// use egg_mode::user::TwitterUser;
 /// use egg_mode::error::Error;
@@ -168,8 +172,10 @@ impl Cursor for ListCursor {
 /// // Because Streams don't have a FromIterator adaptor, we load all the responses first, then
 /// // collect them into the final Vec
 /// let names: Result<Response<Vec<TwitterUser>>, Error> =
-///     block_on_all(egg_mode::user::followers_of("rustlang", &token).take(10).collect())
-///         .map(|resp| resp.into_iter().collect());
+///     egg_mode::user::followers_of("rustlang", &token).take(10).collect::<Vec<_>>()
+///         .await
+///         .into_iter()
+///         .collect();
 /// # }
 /// ```
 ///
@@ -193,25 +199,25 @@ impl Cursor for ListCursor {
 /// method's default or by `with_page_size`/the `page_size` field) when it's polled, and serving
 /// the individual elements from that locally-cached page until it runs out. This can be nice, but
 /// it also means that your only warning that something involves a network call is that the stream
-/// returns `Ok(Async::NotReady)`, by which time the network call has already started. If you want
+/// returns `Poll::Pending`, by which time the network call has already started. If you want
 /// to know that ahead of time, that's where the `call()` method comes in. By using `call()`, you
 /// can get the cursor struct directly from Twitter. With that you can iterate over the results and
 /// page forward and backward as needed:
 ///
 /// ```rust,no_run
 /// # use egg_mode::Token;
-/// use tokio::runtime::current_thread::block_on_all;
-/// # fn main() {
+/// # #[tokio::main]
+/// # async fn main() {
 /// # let token: Token = unimplemented!();
 /// let mut list = egg_mode::user::followers_of("rustlang", &token).with_page_size(20);
-/// let resp = block_on_all(list.call()).unwrap();
+/// let resp = list.call().await.unwrap();
 ///
 /// for user in resp.response.users {
 ///     println!("{} (@{})", user.name, user.screen_name);
 /// }
 ///
 /// list.next_cursor = resp.response.next_cursor;
-/// let resp = block_on_all(list.call()).unwrap();
+/// let resp = list.call().await.unwrap();
 ///
 /// for user in resp.response.users {
 ///     println!("{} (@{})", user.name, user.screen_name);
@@ -321,18 +327,18 @@ where
 impl<'a, T> Stream for CursorIter<'a, T>
 where
     T: Cursor + for<'de> Deserialize<'de> + 'a,
+    T::Item: Unpin,
 {
-    type Item = Response<T::Item>;
-    type Error = error::Error;
+    type Item = Result<Response<T::Item>, error::Error>;
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         if let Some(mut fut) = self.loader.take() {
-            match fut.poll() {
-                Ok(Async::NotReady) => {
+            match Pin::new(&mut fut).poll(cx) {
+                Poll::Pending => {
                     self.loader = Some(fut);
-                    return Ok(Async::NotReady);
+                    return Poll::Pending;
                 }
-                Ok(Async::Ready(resp)) => {
+                Poll::Ready(Ok(resp)) => {
                     self.previous_cursor = resp.previous_cursor_id();
                     self.next_cursor = resp.next_cursor_id();
 
@@ -343,23 +349,23 @@ where
                     self.iter = Some(iter);
 
                     match first {
-                        Some(item) => return Ok(Async::Ready(Some(item))),
-                        None => return Ok(Async::Ready(None)),
+                        Some(item) => return Poll::Ready(Some(Ok(item))),
+                        None => return Poll::Ready(None),
                     }
                 }
-                Err(e) => return Err(e),
+                Poll::Ready(Err(e)) => return Poll::Ready(Some(Err(e))),
             }
         }
 
         if let Some(ref mut results) = self.iter {
             if let Some(item) = results.next() {
-                return Ok(Async::Ready(Some(item)));
+                return Poll::Ready(Some(Ok(item)));
             } else if self.next_cursor == 0 {
-                return Ok(Async::Ready(None));
+                return Poll::Ready(None);
             }
         }
 
         self.loader = Some(self.call());
-        self.poll()
+        self.poll_next(cx)
     }
 }

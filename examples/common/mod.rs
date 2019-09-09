@@ -10,7 +10,6 @@ use egg_mode;
 use std;
 use std::io::{Read, Write};
 
-pub use tokio::runtime::current_thread::block_on_all;
 pub use yansi::Paint;
 
 //This is not an example that can be built with cargo! This is some helper code for the other
@@ -23,7 +22,19 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load() -> Self {
+    pub async fn load() -> Self {
+        let a1 = Config::load_inner().await;
+        if let Some(conf) = a1 {
+            return conf;
+        }
+
+        Config::load_inner().await.unwrap()
+    }
+
+    /// This needs to be a separate function so we can retry after creating the
+    /// twitter_settings file. Idealy we would recurse, but that requires boxing
+    /// the output which doesn't seem worthwhile
+    async fn load_inner() -> Option<Self> {
         //IMPORTANT: make an app for yourself at apps.twitter.com and get your
         //key/secret into these files; these examples won't work without them
         let consumer_key = include_str!("consumer_key").trim();
@@ -53,7 +64,7 @@ impl Config {
                 access: access_token,
             };
 
-            if let Err(err) = block_on_all(egg_mode::verify_tokens(&token)) {
+            if let Err(err) = egg_mode::verify_tokens(&token).await {
                 println!("We've hit an error using your old tokens: {:?}", err);
                 println!("We'll have to reauthenticate before continuing.");
                 std::fs::remove_file("twitter_settings").unwrap();
@@ -61,7 +72,7 @@ impl Config {
                 println!("Welcome back, {}!\n", username);
             }
         } else {
-            let request_token = block_on_all(egg_mode::request_token(&con_token, "oob")).unwrap();
+            let request_token = egg_mode::request_token(&con_token, "oob").await.unwrap();
 
             println!("Go to the following URL, sign in, and give me the PIN that comes back:");
             println!("{}", egg_mode::authorize_url(&request_token));
@@ -70,8 +81,9 @@ impl Config {
             std::io::stdin().read_line(&mut pin).unwrap();
             println!("");
 
-            let tok_result =
-                block_on_all(egg_mode::access_token(con_token, &request_token, pin)).unwrap();
+            let tok_result = egg_mode::access_token(con_token, &request_token, pin)
+                .await
+                .unwrap();
 
             token = tok_result.0;
             user_id = tok_result.1;
@@ -101,13 +113,13 @@ impl Config {
 
         //TODO: Is there a better way to query whether a file exists?
         if std::fs::metadata("twitter_settings").is_ok() {
-            Config {
+            Some(Config {
                 token: token,
                 user_id: user_id,
                 screen_name: username,
-            }
+            })
         } else {
-            Self::load()
+            None
         }
     }
 }

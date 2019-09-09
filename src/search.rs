@@ -11,15 +11,16 @@
 //!
 //! ```rust,no_run
 //! # use egg_mode::Token;
-//! use tokio::runtime::current_thread::block_on_all;
-//! # fn main() {
+//! # #[tokio::main]
+//! # async fn main() {
 //! # let token: Token = unimplemented!();
 //! use egg_mode::search::{self, ResultType};
 //!
-//! let search = block_on_all(search::search("rustlang")
-//!                                  .result_type(ResultType::Recent)
-//!                                  .call(&token))
-//!                  .unwrap();
+//! let search = search::search("rustlang")
+//!     .result_type(ResultType::Recent)
+//!     .call(&token)
+//!     .await
+//!     .unwrap();
 //!
 //! for tweet in &search.statuses {
 //!     println!("(@{}) {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
@@ -52,7 +53,6 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 
-use futures::Future;
 use serde::{Deserialize, Deserializer};
 
 use crate::common::*;
@@ -182,10 +182,10 @@ impl<'a> SearchBuilder<'a> {
     }
 
     ///Finalize the search terms and return the first page of responses.
-    pub fn call(
+    pub async fn call(
         self,
         token: &auth::Token,
-    ) -> impl Future<Item = Response<SearchResult<'a>>, Error = error::Error> {
+    ) -> Result<Response<SearchResult<'a>>, error::Error> {
         let mut params = HashMap::new();
 
         add_param(&mut params, "q", self.query);
@@ -230,11 +230,10 @@ impl<'a> SearchBuilder<'a> {
         }
 
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
+        let mut resp = make_parsed_future::<SearchResult>(req).await?;
 
-        make_parsed_future(req).map(move |mut resp: Response<SearchResult>| {
-            resp.response.params = Some(params);
-            resp
-        })
+        resp.response.params = Some(params);
+        Ok(resp)
     }
 }
 
@@ -291,10 +290,10 @@ pub struct SearchResult<'a> {
 
 impl<'a> SearchResult<'a> {
     ///Load the next page of search results for the same query.
-    pub fn older(
+    pub async fn older(
         &self,
         token: &auth::Token,
-    ) -> impl Future<Item = Response<SearchResult<'a>>, Error = error::Error> {
+    ) -> Result<Response<SearchResult<'a>>, error::Error> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("since_id");
 
@@ -305,18 +304,17 @@ impl<'a> SearchResult<'a> {
         }
 
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
+        let mut resp = make_parsed_future::<SearchResult>(req).await?;
 
-        make_parsed_future(req).map(move |mut resp: Response<SearchResult>| {
-            resp.response.params = Some(params);
-            resp
-        })
+        resp.response.params = Some(params);
+        Ok(resp)
     }
 
     ///Load the previous page of search results for the same query.
-    pub fn newer(
+    pub async fn newer(
         &self,
         token: &auth::Token,
-    ) -> impl Future<Item = Response<SearchResult<'a>>, Error = error::Error> {
+    ) -> Result<Response<SearchResult<'a>>, error::Error> {
         let mut params = self.params.as_ref().cloned().unwrap_or_default();
         params.remove("max_id");
 
@@ -327,10 +325,9 @@ impl<'a> SearchResult<'a> {
         }
 
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
+        let mut resp = make_parsed_future::<SearchResult>(req).await?;
 
-        make_parsed_future(req).map(move |mut resp: Response<SearchResult>| {
-            resp.response.params = Some(params);
-            resp
-        })
+        resp.response.params = Some(params);
+        Ok(resp)
     }
 }

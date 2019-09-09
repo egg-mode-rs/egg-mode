@@ -11,16 +11,13 @@ use crate::{auth, links};
 use super::*;
 
 ///Lookup a single DM by its numeric ID.
-pub fn show(
-    id: u64,
-    token: &auth::Token,
-) -> impl Future<Item = Response<DirectMessage>, Error = error::Error> {
+pub async fn show(id: u64, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
 
     let req = auth::get(links::direct::SHOW, token, Some(&params));
 
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Create a `Timeline` struct to navigate the direct messages received by the authenticated user.
@@ -42,11 +39,11 @@ pub fn sent(token: &auth::Token) -> Timeline {
 ///DM beforehand.
 ///
 ///Upon successfully sending the DM, the message will be returned.
-pub fn send<'id, T: Into<UserID<'id>>>(
+pub async fn send<'id, T: Into<UserID<'id>>>(
     to: T,
     text: &str,
     token: &auth::Token,
-) -> impl Future<Item = Response<DirectMessage>, Error = error::Error> {
+) -> Result<Response<DirectMessage>, error::Error> {
     let mut params = HashMap::new();
     add_name_param(&mut params, &to.into());
 
@@ -54,7 +51,7 @@ pub fn send<'id, T: Into<UserID<'id>>>(
 
     let req = auth::post(links::direct::SEND, token, Some(&params));
 
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Delete the direct message with the given ID.
@@ -63,16 +60,13 @@ pub fn send<'id, T: Into<UserID<'id>>>(
 ///
 ///On a successful deletion, the future returned by this function yields the freshly-deleted
 ///message.
-pub fn delete(
-    id: u64,
-    token: &auth::Token,
-) -> impl Future<Item = Response<DirectMessage>, Error = error::Error> {
+pub async fn delete(id: u64, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
     let mut params = HashMap::new();
     add_param(&mut params, "id", id.to_string());
 
     let req = auth::post(links::direct::DELETE, token, Some(&params));
 
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Create a `ConversationTimeline` loader that can load direct messages as a collection of
