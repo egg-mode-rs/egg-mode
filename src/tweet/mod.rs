@@ -1020,5 +1020,4 @@ mod tests {
             Some("test alt text for the image".to_string())
         );
     }
-
 }
