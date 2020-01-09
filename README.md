@@ -1,11 +1,8 @@
 # egg-mode
 
-another twitter library for rust [![Build Status](https://travis-ci.org/QuietMisdreavus/twitter-rs.svg?branch=master)](https://travis-ci.org/QuietMisdreavus/twitter-rs) [![Build status](https://ci.appveyor.com/api/projects/status/3oi86ir82kj1rxu3/branch/master?svg=true)](https://ci.appveyor.com/project/QuietMisdreavus/twitter-rs/branch/master)
+Twitter library for rust ![Build Status](https://github.com/QuietMisdreavus/twitter-rs/workflows/CI/badge.svg)
 
-[v0.13.0 Documentation][documentation] | [(master documentation)][doc-dev]
-
-[Documentation]: https://tonberry.quietmisdreavus.net/doc/egg_mode/
-[doc-dev]: https://tonberry.quietmisdreavus.net/doc-dev/egg_mode/
+[v0.13.0 Documentation](https://tonberry.quietmisdreavus.net/doc/egg_mode/)
 
 This is a library for interacting with Twitter from Rust. You can see how much of the Public API is
 available in the file [TODO.md]. In addition to eventually implementing the entire Public API, an
