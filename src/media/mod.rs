@@ -48,7 +48,7 @@ use std::time::{Duration, Instant};
 use base64;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
-use tokio::timer::{self, Delay};
+use tokio::time::{self, Delay};
 
 use crate::common::*;
 use crate::error::Error::InvalidResponse;
@@ -611,8 +611,8 @@ impl<'a> Future for UploadFuture<'a> {
                                     Instant::now() + Duration::from_secs(media.expires_after);
                                 //TODO: oh hey we needed the handle for something - we need to use
                                 //new-tokio to fix this
-                                let wake = Instant::now() + Duration::from_secs(time);
-                                let timer = timer::delay(wake);
+                                let delay = Duration::from_secs(time);
+                                let timer = time::delay_for(delay);
                                 self.status = UploadInner::PostProcessing(media.id, timer);
                                 self.poll(cx)
                             }

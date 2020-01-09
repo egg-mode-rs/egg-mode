@@ -82,7 +82,7 @@ pub struct MediaError {
 }
 
 /// A set of errors that can occur when interacting with Twitter.
-#[derive(Debug)]
+#[derive(Debug, derive_more::From)]
 pub enum Error {
     ///A URL was passed to a shortcut function that didn't match the method being called.
     BadUrl,
@@ -135,7 +135,7 @@ pub enum Error {
     TimestampParseError(chrono::ParseError),
     ///The tokio `Timer` instance was shut down while waiting on a timer, for example while waiting
     ///for media to be processed by Twitter. The enclosed error was returned from `tokio`.
-    TimerShutdownError(tokio::timer::Error),
+    TimerShutdownError(tokio::time::Error),
     ///An error occurred when reading the value from a response header. The enclused error was
     ///returned from hyper.
     ///
@@ -212,54 +212,5 @@ impl std::error::Error for Error {
             Error::HeaderConvertError(ref err) => Some(err),
             _ => None,
         }
-    }
-}
-
-impl From<hyper::error::Error> for Error {
-    fn from(err: hyper::error::Error) -> Error {
-        Error::NetError(err)
-    }
-}
-
-#[cfg(feature = "native_tls")]
-impl From<native_tls::Error> for Error {
-    fn from(err: native_tls::Error) -> Error {
-        Error::TlsError(err)
-    }
-}
-
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Error {
-        Error::IOError(err)
-    }
-}
-
-impl From<serde_json::Error> for Error {
-    fn from(err: serde_json::Error) -> Error {
-        Error::DeserializeError(err)
-    }
-}
-
-impl From<chrono::ParseError> for Error {
-    fn from(err: chrono::ParseError) -> Error {
-        Error::TimestampParseError(err)
-    }
-}
-
-impl From<tokio::timer::Error> for Error {
-    fn from(err: tokio::timer::Error) -> Error {
-        Error::TimerShutdownError(err)
-    }
-}
-
-impl From<hyper::header::ToStrError> for Error {
-    fn from(err: hyper::header::ToStrError) -> Error {
-        Error::HeaderParseError(err)
-    }
-}
-
-impl From<std::num::ParseIntError> for Error {
-    fn from(err: std::num::ParseIntError) -> Error {
-        Error::HeaderConvertError(err)
     }
 }
