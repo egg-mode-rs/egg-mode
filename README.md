@@ -1,8 +1,8 @@
 # egg-mode
 
-Twitter library for rust ![Build Status](https://github.com/QuietMisdreavus/twitter-rs/workflows/CI/badge.svg)
+Twitter library for Rust ![Build Status](https://github.com/QuietMisdreavus/twitter-rs/workflows/CI/badge.svg)
 
-[v0.13.0 Documentation](https://tonberry.quietmisdreavus.net/doc/egg_mode/)
+[v0.14.0 Documentation](https://tonberry.quietmisdreavus.net/doc/egg_mode/)
 
 This is a library for interacting with Twitter from Rust. You can see how much of the Public API is
 available in the file [TODO.md]. In addition to eventually implementing the entire Public API, an
@@ -10,6 +10,8 @@ explicit goal for egg-mode is to make it as easy as possible for a client of thi
 interact with the Twitter API. Parts of this library are added as a convenience on top of the API
 mechanisms; for example, cursored lists of users and tweets can be used as an iterator in addition
 to being able to manually load a page at a time.
+
+From `v0.14`, egg-mode uses the `async/await` syntax and therefore requires Rust **v1.39.0+**.
 
 [TODO.md]: https://github.com/QuietMisdreavus/twitter-rs/blob/master/TODO.md
 
@@ -19,21 +21,19 @@ counting and mention/hashtag/url extraction. That has since been extracted into 
 
 [egg-mode-text]: https://github.com/QuietMisdreavus/twitter-text-rs
 
-Compatibility note: egg-mode is tested to run on Rust 1.27.0 and later. On Windows, both the -msvc
-and -gnu environments are tested.
 
 To start using this library, put the following into your Cargo.toml:
 
 ```TOML
 [dependencies]
-egg-mode = "0.13.0"
+egg-mode = "0.14.0"
 ```
 
 By default, `egg-mode` uses `native-tls` for encryption, but also supports `rustls`.
 This may be helpful if you wish to avoid linking against `OpenSSL`.
 To enable, modify your `Cargo.toml` entry:
 ```
-egg-mode = { version = "0.13", features = ["hyper-rustls"], default-features = false }`
+egg-mode = { version = "0.14", features = ["hyper-rustls"], default-features = false }`
 ```
 
 See available methods and tips to get started in the [Documentation][].
@@ -41,11 +41,11 @@ See available methods and tips to get started in the [Documentation][].
 To authenticate a user and request an access token:
 
 ```rust
-// NOTE: this assumes you have a Tokio `core` and its `handle` sitting around already
+// NOTE: this assumes you are running inside an `async` function
 
 let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
 // "oob" is needed for PIN-based auth; see docs for `request_token` for more info
-let request_token = core.run(egg_mode::request_token(&con_token, "oob", &handle)).unwrap();
+let request_token = egg_mode::request_token(&con_token, "oob").await.unwrap();
 let auth_url = egg_mode::authorize_url(&request_token);
 
 // give auth_url to the user, they can sign in to Twitter and accept your app's permissions.
@@ -55,7 +55,7 @@ let verifier = "123456"; //read the PIN from the user here
 
 // note this consumes con_token; if you want to sign in multiple accounts, clone it here
 let (token, user_id, screen_name) =
-    core.run(egg_mode::access_token(con_token, &request_token, verifier, &handle)).unwrap();
+    egg_mode::access_token(con_token, &request_token, verifier).await.unwrap()
 
 // token can be given to any egg_mode method that asks for a token
 // user_id and screen_name refer to the user who signed in
@@ -67,9 +67,7 @@ with your application. With this access token, all of the other Twitter function
 With this token in hand, you can get a user's profile information like this:
 
 ```rust
-// NOTE: as above, this assumes you have the Tokio `core` and `handle` available
-
-let rustlang = core.run(egg_mode::user::show("rustlang", &token, &handle)).unwrap();
+let rustlang = egg_mode::user::show("rustlang", &token).await.unwrap();
 
 println!("{} (@{})", rustlang.name, rustlang.screen_name);
 ```
