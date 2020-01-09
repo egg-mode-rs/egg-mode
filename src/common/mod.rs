@@ -340,9 +340,6 @@ pub(crate) mod tests {
 
         let mut range = (6, 30);
         codepoints_to_bytes(&mut range, unicode);
-        assert_eq!(
-            &unicode[range.0..range.1],
-            "Iñtërnâtiônàližætiøn ënd"
-        );
+        assert_eq!(&unicode[range.0..range.1], "Iñtërnâtiônàližætiøn ënd");
     }
 }

@@ -397,7 +397,7 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
 pub fn get_response(request: Request<Body>) -> Result<ResponseFuture, error::Error> {
     // TODO: num-cpus?
     #[cfg(feature = "native_tls")]
-    let connector = HttpsConnector::new()?;
+    let connector = HttpsConnector::new();
     #[cfg(feature = "hyper-rustls")]
     let connector = HttpsConnector::new();
     let client = hyper::Client::builder().build(connector);

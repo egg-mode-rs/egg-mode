@@ -16,30 +16,20 @@ use base64;
 use hmac::{Hmac, Mac};
 use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
 use hyper::{Body, Method, Request};
+use percent_encoding::{utf8_percent_encode, AsciiSet, PercentEncode};
 use rand::{self, Rng};
 use serde_json;
 use sha1::Sha1;
-use url::percent_encoding::{utf8_percent_encode, EncodeSet, PercentEncode};
 
 use crate::common::*;
 use crate::{error, links};
 
 //the encode sets in the url crate don't quite match what twitter wants, so i'll make up my own
-#[derive(Copy, Clone)]
-struct TwitterEncodeSet;
-
-impl EncodeSet for TwitterEncodeSet {
-    fn contains(&self, byte: u8) -> bool {
-        match byte {
-            b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' => false,
-            _ => true,
-        }
+fn percent_encode(src: &str) -> PercentEncode {
+    lazy_static::lazy_static! {
+        static ref ENCODER: AsciiSet = percent_encoding::NON_ALPHANUMERIC.remove(b'-').remove(b'.').remove(b'_').remove(b'~');
     }
-}
-
-///Encodes the given string slice for transmission to Twitter.
-fn percent_encode(src: &str) -> PercentEncode<TwitterEncodeSet> {
-    utf8_percent_encode(src, TwitterEncodeSet)
+    utf8_percent_encode(src, &*ENCODER)
 }
 
 ///OAuth header set given to Twitter calls.
@@ -448,8 +438,8 @@ pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body
         uri.to_string()
     };
 
-    let mut request = Request::get(full_url);
-    match *token {
+    let request = Request::get(full_url);
+    let request = match *token {
         Token::Access {
             consumer: ref con_token,
             access: ref access_token,
@@ -463,12 +453,10 @@ pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body
                 None,
                 params,
             );
-            request.header(AUTHORIZATION, header.to_string());
+            request.header(AUTHORIZATION, header.to_string())
         }
-        Token::Bearer(ref token) => {
-            request.header(AUTHORIZATION, bearer(token));
-        }
-    }
+        Token::Bearer(ref token) => request.header(AUTHORIZATION, bearer(token)),
+    };
 
     request.body(Body::empty()).unwrap()
 }
@@ -487,10 +475,9 @@ pub fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Bod
         Body::empty()
     };
 
-    let mut request = Request::post(uri);
-    request.header(CONTENT_TYPE, content);
+    let request = Request::post(uri).header(CONTENT_TYPE, content);
 
-    match *token {
+    let request = match *token {
         Token::Access {
             consumer: ref con_token,
             access: ref access_token,
@@ -505,12 +492,10 @@ pub fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Bod
                 params,
             );
 
-            request.header(AUTHORIZATION, header.to_string());
+            request.header(AUTHORIZATION, header.to_string())
         }
-        Token::Bearer(ref token) => {
-            request.header(AUTHORIZATION, bearer(token));
-        }
-    }
+        Token::Bearer(ref token) => request.header(AUTHORIZATION, bearer(token)),
+    };
 
     request.body(body).unwrap()
 }
@@ -520,10 +505,9 @@ pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request<
     let content = "application/json; charset=UTF-8";
     let body = Body::from(body.to_string());
 
-    let mut request = Request::post(uri);
-    request.header(CONTENT_TYPE, content);
+    let request = Request::post(uri).header(CONTENT_TYPE, content);
 
-    match *token {
+    let request = match *token {
         Token::Access {
             consumer: ref con_token,
             access: ref access_token,
@@ -538,12 +522,10 @@ pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request<
                 None,
             );
 
-            request.header(AUTHORIZATION, header.to_string());
+            request.header(AUTHORIZATION, header.to_string())
         }
-        Token::Bearer(ref token) => {
-            request.header(AUTHORIZATION, bearer(token));
-        }
-    }
+        Token::Bearer(ref token) => request.header(AUTHORIZATION, bearer(token)),
+    };
 
     request.body(body).unwrap()
 }
@@ -610,8 +592,10 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Twitt
         None,
     );
 
-    let mut request = Request::post(links::auth::REQUEST_TOKEN);
-    request.header(AUTHORIZATION, header.to_string());
+    let request = Request::post(links::auth::REQUEST_TOKEN)
+        .header(AUTHORIZATION, header.to_string())
+        .body(Body::empty())
+        .unwrap();
 
     fn parse_tok(full_resp: String, _: &Headers) -> Result<KeyPair, error::Error> {
         let mut key: Option<String> = None;
@@ -638,7 +622,7 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Twitt
         ))
     }
 
-    make_future(request.body(Body::empty()).unwrap(), parse_tok)
+    make_future(request, parse_tok)
 }
 
 /// With the given request KeyPair, return a URL that a user can access to accept or reject an
@@ -782,10 +766,12 @@ pub async fn access_token<S: Into<String>>(
         Some(verifier.into()),
         None,
     );
-    let mut request = Request::post(links::auth::ACCESS_TOKEN);
-    request.header(AUTHORIZATION, header.to_string());
+    let request = Request::post(links::auth::ACCESS_TOKEN)
+        .header(AUTHORIZATION, header.to_string())
+        .body(Body::empty())
+        .unwrap();
 
-    let urlencoded = make_raw_future(request.body(Body::empty()).unwrap()).await?;
+    let urlencoded = make_raw_future(request).await?;
 
     // TODO deserialize into a struct
     let mut key: Option<String> = None;
@@ -855,10 +841,9 @@ pub fn bearer_token(con_token: &KeyPair) -> TwitterFuture<Token> {
     let content = "application/x-www-form-urlencoded;charset=UTF-8";
 
     let auth_header = bearer_request(con_token);
-    let mut request = Request::post(links::auth::BEARER_TOKEN);
-    request.header(AUTHORIZATION, auth_header);
-    request.header(CONTENT_TYPE, content);
-    let request = request
+    let request = Request::post(links::auth::BEARER_TOKEN)
+        .header(AUTHORIZATION, auth_header)
+        .header(CONTENT_TYPE, content)
         .body(Body::from("grant_type=client_credentials"))
         .unwrap();
 
@@ -891,11 +876,12 @@ pub fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> TwitterFuture<To
     let content = "application/x-www-form-urlencoded;charset=UTF-8";
 
     let auth_header = bearer_request(con_token);
-    let mut request = Request::post(links::auth::INVALIDATE_BEARER);
-    request.header(AUTHORIZATION, auth_header);
-    request.header(CONTENT_TYPE, content);
     let body = Body::from(format!("access_token={}", token));
-    let request = request.body(body).unwrap();
+    let request = Request::post(links::auth::INVALIDATE_BEARER)
+        .header(AUTHORIZATION, auth_header)
+        .header(CONTENT_TYPE, content)
+        .body(body)
+        .unwrap();
 
     fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
         let decoded: serde_json::Value = serde_json::from_str(&full_resp)?;

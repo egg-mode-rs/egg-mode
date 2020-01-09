@@ -492,5 +492,4 @@ mod tests {
         let sample = load_file("sample_payloads/rate_limit_sample.json");
         ::serde_json::from_str::<RateLimitStatus>(&sample).unwrap();
     }
-
 }
