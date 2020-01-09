@@ -1,5 +1,14 @@
 # Changelog for egg-mode
 
+## [0.14.0] - Unreleased
+
+### Changed
+- Updated to use `std::future::Future`,`async/await`.
+  - This is a very **breaking change**
+  - Lots of dependencies updated, most notably `tokio 0.2` and `hyper 0.13`
+  - Thanks to @bobtwinkles for the implementation
+- Various internal refactorings and simplifications
+
 ## [0.13.0] - 2019-06-16
 
 ### Added
