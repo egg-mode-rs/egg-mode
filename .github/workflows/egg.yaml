@@ -1,0 +1,31 @@
+on: [push, pull_request]
+
+name: CI
+
+jobs:
+  build:
+    name: Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macOS-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.39.0
+
+      - name: Prep tests
+        shell: bash
+        run: touch examples/common/consumer_key examples/common/consumer_secret
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test

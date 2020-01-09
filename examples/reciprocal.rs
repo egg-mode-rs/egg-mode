@@ -10,8 +10,8 @@ use futures::StreamExt;
 use egg_mode::user;
 use std::collections::HashSet;
 
-//IMPORTANT: see common.rs for instructions on making sure this properly authenticates with
-//Twitter.
+// IMPORTANT: see common.rs for instructions on making
+// sure this properly authenticates with Twitter.
 #[tokio::main]
 async fn main() {
     let config = common::Config::load().await;
