@@ -415,7 +415,7 @@ fn bearer_request(con_token: &KeyPair) -> String {
 }
 
 /// Assemble a signed GET request to the given URL with the given parameters.
-pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
+pub(crate) fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
     let full_url = if let Some(p) = params {
         let query = p
             .iter()
@@ -452,7 +452,7 @@ pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body
 }
 
 /// Assemble a signed POST request to the given URL with the given parameters.
-pub fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
+pub(crate) fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
     let content = "application/x-www-form-urlencoded";
     let body = if let Some(p) = params {
         Body::from(

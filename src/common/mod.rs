@@ -130,15 +130,19 @@ pub type Headers = HeaderMap<HeaderValue>;
 
 ///Convenience type used to hold parameters to an API call.
 #[derive(Debug, Clone, Default, derive_more::Deref, derive_more::DerefMut, derive_more::From)]
-pub struct ParamList<'a>(HashMap<Cow<'a, str>, Cow<'a, str>>);
+pub(crate) struct ParamList<'a>(HashMap<Cow<'a, str>, Cow<'a, str>>);
 
 impl<'a> ParamList<'a> {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self(HashMap::new())
     }
 
+    pub(crate) fn extended_tweets(self) -> Self {
+        self.add_param("tweet_mode", "extended")
+    }
+
     ///Convenience function to add a key/value parameter to a `ParamList`.
-    pub fn add_param(
+    pub(crate) fn add_param(
         mut self,
         key: impl Into<Cow<'a, str>>,
         value: impl Into<Cow<'a, str>>,
@@ -148,7 +152,7 @@ impl<'a> ParamList<'a> {
     }
 
     ///Convenience function to add a key/value parameter to a `ParamList`.
-    pub fn add_opt_param(
+    pub(crate) fn add_opt_param(
         self,
         key: impl Into<Cow<'a, str>>,
         value: Option<impl Into<Cow<'a, str>>>,
@@ -160,18 +164,22 @@ impl<'a> ParamList<'a> {
     }
 
     ///Convenience function to add a key/value parameter to a `ParamList` without moving.
-    pub fn add_param_ref(&mut self, key: impl Into<Cow<'a, str>>, value: impl Into<Cow<'a, str>>) {
+    pub(crate) fn add_param_ref(
+        &mut self,
+        key: impl Into<Cow<'a, str>>,
+        value: impl Into<Cow<'a, str>>,
+    ) {
         self.0.insert(key.into(), value.into());
     }
 
-    pub fn add_name_param(self, id: &user::UserID<'a>) -> Self {
+    pub(crate) fn add_name_param(self, id: &user::UserID<'a>) -> Self {
         match *id {
             user::UserID::ID(id) => self.add_param("user_id", id.to_string()),
             user::UserID::ScreenName(name) => self.add_param("screen_name", name),
         }
     }
 
-    pub fn add_list_param(mut self, list: &list::ListID<'a>) -> Self {
+    pub(crate) fn add_list_param(mut self, list: &list::ListID<'a>) -> Self {
         match *list {
             list::ListID::Slug(ref owner, name) => {
                 match *owner {
@@ -189,6 +197,7 @@ impl<'a> ParamList<'a> {
     }
 }
 
+// Helper trait to stringify the contents of an Option
 pub(crate) trait MapString {
     fn map_string(&self) -> Option<String>;
 }

@@ -15,9 +15,9 @@ use super::*;
 ///Lookup a single tweet by numeric ID.
 pub fn show(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
     let params = ParamList::new()
+        .extended_tweets()
         .add_param("id", id.to_string())
         .add_param("include_my_retweet", "true")
-        .add_param("tweet_mode", "extended")
         .add_param("include_ext_alt_text", "true");
 
     let req = auth::get(links::statuses::SHOW, token, Some(&params));
@@ -30,19 +30,15 @@ pub fn show(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
 ///Use the `count` parameter to indicate how many retweets you would like to retrieve. If `count`
 ///is 0 or greater than 100, it will be defaulted to 100 before making the call.
 pub fn retweets_of(id: u64, count: u32, token: &auth::Token) -> FutureResponse<Vec<Tweet>> {
-    let params = ParamList::new()
-        .add_param("tweet_mode", "extended")
-        .add_param(
-            "count",
-            {
-                if count == 0 || count > 100 {
-                    100
-                } else {
-                    count
-                }
-            }
-            .to_string(),
-        );
+    let params = ParamList::new().extended_tweets().add_param(
+        "count",
+        if count == 0 || count > 100 {
+            100
+        } else {
+            count
+        }
+        .to_string(),
+    );
 
     let url = format!("{}/{}.json", links::statuses::RETWEETS_OF_STEM, id);
 
@@ -81,8 +77,8 @@ pub fn lookup<I: IntoIterator<Item = u64>>(
         acc
     });
     let params = ParamList::new()
+        .extended_tweets()
         .add_param("id", id_param)
-        .add_param("tweet_mode", "extended")
         .add_param("include_ext_alt_text", "true");
 
     let req = auth::post(links::statuses::LOOKUP, token, Some(&params));
@@ -109,9 +105,9 @@ pub fn lookup_map<I: IntoIterator<Item = u64>>(
         acc
     });
     let params = ParamList::new()
+        .extended_tweets()
         .add_param("id", id_param)
         .add_param("map", "true")
-        .add_param("tweet_mode", "extended")
         .add_param("include_ext_alt_text", "true");
 
     let req = auth::post(links::statuses::LOOKUP, token, Some(&params));
@@ -191,6 +187,7 @@ pub fn user_timeline<'a, T: Into<UserID<'a>>>(
     token: &auth::Token,
 ) -> Timeline<'a> {
     let params = ParamList::new()
+        .extended_tweets()
         .add_name_param(&acct.into())
         .add_param("exclude_replies", (!with_replies).to_string())
         .add_param("include_rts", with_rts.to_string());
@@ -210,7 +207,9 @@ pub fn retweets_of_me(token: &auth::Token) -> Timeline<'static> {
 ///
 ///This method has a default page size of 20 tweets, with a maximum of 200.
 pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> Timeline<'a> {
-    let params = ParamList::new().add_name_param(&acct.into());
+    let params = ParamList::new()
+        .extended_tweets()
+        .add_name_param(&acct.into());
     Timeline::new(links::statuses::LIKES_OF, Some(params), token)
 }
 
@@ -219,7 +218,7 @@ pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> Timeli
 ///On success, the future returned by this function yields the retweet, with the original status
 ///contained in `retweeted_status`.
 pub fn retweet(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
-    let params = ParamList::new().add_param("tweet_mode", "extended");
+    let params = ParamList::new().extended_tweets();
     let url = format!("{}/{}.json", links::statuses::RETWEET_STEM, id);
     let req = auth::post(&url, token, Some(&params));
     make_parsed_future(req)
@@ -232,7 +231,7 @@ pub fn retweet(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
 ///
 ///On success, the future returned by this function yields the original tweet.
 pub fn unretweet(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
-    let params = ParamList::new().add_param("tweet_mode", "extended");
+    let params = ParamList::new().extended_tweets();
     let url = format!("{}/{}.json", links::statuses::UNRETWEET_STEM, id);
     let req = auth::post(&url, token, Some(&params));
 
@@ -244,8 +243,8 @@ pub fn unretweet(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
 ///On success, the future returned by this function yields the liked tweet.
 pub fn like(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
     let params = ParamList::new()
-        .add_param("id", id.to_string())
-        .add_param("tweet_mode", "extended");
+        .extended_tweets()
+        .add_param("id", id.to_string());
 
     let req = auth::post(links::statuses::LIKE, token, Some(&params));
     make_parsed_future(req)
@@ -256,8 +255,8 @@ pub fn like(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
 ///On success, the future returned by this function yields the given tweet.
 pub fn unlike(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
     let params = ParamList::new()
-        .add_param("id", id.to_string())
-        .add_param("tweet_mode", "extended");
+        .extended_tweets()
+        .add_param("id", id.to_string());
 
     let req = auth::post(links::statuses::UNLIKE, token, Some(&params));
     make_parsed_future(req)
@@ -267,7 +266,7 @@ pub fn unlike(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
 ///
 ///On success, the future returned by this function yields the given tweet.
 pub fn delete(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
-    let params = ParamList::new().add_param("tweet_mode", "extended");
+    let params = ParamList::new().extended_tweets();
     let url = format!("{}/{}.json", links::statuses::DELETE_STEM, id);
     let req = auth::post(&url, token, Some(&params));
     make_parsed_future(req)

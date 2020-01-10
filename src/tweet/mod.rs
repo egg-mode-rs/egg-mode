@@ -579,8 +579,7 @@ impl<'a> Timeline<'a> {
     }
 
     ///Create an instance of `Timeline` with the given link and tokens.
-    #[doc(hidden)]
-    pub fn new(
+    pub(crate) fn new(
         link: &'static str,
         params_base: Option<ParamList<'a>>,
         token: &auth::Token,
