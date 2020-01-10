@@ -301,8 +301,7 @@ where
     ///
     ///This is essentially an internal infrastructure function, not meant to be used from consumer
     ///code.
-    #[doc(hidden)]
-    pub fn new(
+    pub(crate) fn new(
         link: &'static str,
         token: &auth::Token,
         params_base: Option<ParamList<'a>>,

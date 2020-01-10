@@ -186,6 +186,7 @@ impl<'a> SearchBuilder<'a> {
         token: &auth::Token,
     ) -> Result<Response<SearchResult<'a>>, error::Error> {
         let params = ParamList::new()
+            .extended_tweets()
             .add_param("q", self.query)
             .add_opt_param("lang", self.lang)
             .add_opt_param("result_type", self.result_type.map_string())
@@ -270,7 +271,8 @@ impl<'a> SearchResult<'a> {
         &self,
         token: &auth::Token,
     ) -> Result<Response<SearchResult<'a>>, error::Error> {
-        let mut params = ParamList::from(self.params.as_ref().cloned().unwrap_or_default());
+        let mut params =
+            ParamList::from(self.params.as_ref().cloned().unwrap_or_default()).extended_tweets();
 
         params.remove("since_id");
 
@@ -292,7 +294,8 @@ impl<'a> SearchResult<'a> {
         &self,
         token: &auth::Token,
     ) -> Result<Response<SearchResult<'a>>, error::Error> {
-        let mut params = ParamList::from(self.params.as_ref().cloned().unwrap_or_default());
+        let mut params =
+            ParamList::from(self.params.as_ref().cloned().unwrap_or_default()).extended_tweets();
 
         params.remove("max_id");
         if let Some(max_id) = self.statuses.iter().map(|t| t.id).max() {

@@ -81,6 +81,7 @@ where
     let (id_param, name_param) = multiple_names_param(accts);
 
     let params = ParamList::new()
+        .extended_tweets()
         .add_param("user_id", id_param)
         .add_param("screen_name", name_param);
 
@@ -91,7 +92,9 @@ where
 
 /// Lookup user information for a single user.
 pub fn show<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> FutureResponse<TwitterUser> {
-    let params = ParamList::new().add_name_param(&acct.into());
+    let params = ParamList::new()
+        .extended_tweets()
+        .add_name_param(&acct.into());
 
     let req = auth::get(links::users::SHOW, token, Some(&params));
 
@@ -198,7 +201,9 @@ pub fn followers_of<'a, T: Into<UserID<'a>>>(
     acct: T,
     token: &auth::Token,
 ) -> cursor::CursorIter<'a, cursor::UserCursor> {
-    let params = ParamList::new().add_name_param(&acct.into());
+    let params = ParamList::new()
+        .extended_tweets()
+        .add_name_param(&acct.into());
     cursor::CursorIter::new(links::users::FOLLOWERS_LIST, token, Some(params), Some(20))
 }
 
@@ -296,6 +301,7 @@ pub fn follow<'a, T: Into<UserID<'a>>>(
     token: &auth::Token,
 ) -> FutureResponse<TwitterUser> {
     let params = ParamList::new()
+        .extended_tweets()
         .add_name_param(&acct.into())
         .add_param("follow", notifications.to_string());
     let req = auth::post(links::users::FOLLOW, token, Some(&params));
@@ -312,7 +318,9 @@ pub fn unfollow<'a, T: Into<UserID<'a>>>(
     acct: T,
     token: &auth::Token,
 ) -> FutureResponse<TwitterUser> {
-    let params = ParamList::new().add_name_param(&acct.into());
+    let params = ParamList::new()
+        .extended_tweets()
+        .add_name_param(&acct.into());
     let req = auth::post(links::users::UNFOLLOW, token, Some(&params));
     make_parsed_future(req)
 }
@@ -344,7 +352,9 @@ where
 ///
 /// Upon success, the future returned by this function yields the given user.
 pub fn block<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> FutureResponse<TwitterUser> {
-    let params = ParamList::new().add_name_param(&acct.into());
+    let params = ParamList::new()
+        .extended_tweets()
+        .add_name_param(&acct.into());
     let req = auth::post(links::users::BLOCK, token, Some(&params));
     make_parsed_future(req)
 }
@@ -356,7 +366,9 @@ pub fn report_spam<'a, T: Into<UserID<'a>>>(
     acct: T,
     token: &auth::Token,
 ) -> FutureResponse<TwitterUser> {
-    let params = ParamList::new().add_name_param(&acct.into());
+    let params = ParamList::new()
+        .extended_tweets()
+        .add_name_param(&acct.into());
     let req = auth::post(links::users::REPORT_SPAM, token, Some(&params));
     make_parsed_future(req)
 }
@@ -368,7 +380,9 @@ pub fn unblock<'a, T: Into<UserID<'a>>>(
     acct: T,
     token: &auth::Token,
 ) -> FutureResponse<TwitterUser> {
-    let params = ParamList::new().add_name_param(&acct.into());
+    let params = ParamList::new()
+        .extended_tweets()
+        .add_name_param(&acct.into());
     let req = auth::post(links::users::UNBLOCK, token, Some(&params));
     make_parsed_future(req)
 }
@@ -377,7 +391,9 @@ pub fn unblock<'a, T: Into<UserID<'a>>>(
 ///
 /// Upon success, the future returned by this function yields the given user.
 pub fn mute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> FutureResponse<TwitterUser> {
-    let params = ParamList::new().add_name_param(&acct.into());
+    let params = ParamList::new()
+        .extended_tweets()
+        .add_name_param(&acct.into());
     let req = auth::post(links::users::MUTE, token, Some(&params));
     make_parsed_future(req)
 }
@@ -389,7 +405,9 @@ pub fn unmute<'a, T: Into<UserID<'a>>>(
     acct: T,
     token: &auth::Token,
 ) -> FutureResponse<TwitterUser> {
-    let params = ParamList::new().add_name_param(&acct.into());
+    let params = ParamList::new()
+        .extended_tweets()
+        .add_name_param(&acct.into());
     let req = auth::post(links::users::UNMUTE, token, Some(&params));
     make_parsed_future(req)
 }
