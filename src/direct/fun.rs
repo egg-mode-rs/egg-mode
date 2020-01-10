@@ -2,8 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::collections::HashMap;
-
 use crate::common::*;
 use crate::user::UserID;
 use crate::{auth, links};
@@ -12,11 +10,8 @@ use super::*;
 
 ///Lookup a single DM by its numeric ID.
 pub async fn show(id: u64, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
-    let mut params = HashMap::new();
-    add_param(&mut params, "id", id.to_string());
-
+    let params = ParamList::default().add_param("id", id.to_string());
     let req = auth::get(links::direct::SHOW, token, Some(&params));
-
     make_parsed_future(req).await
 }
 
@@ -44,10 +39,9 @@ pub async fn send<'id, T: Into<UserID<'id>>>(
     text: &str,
     token: &auth::Token,
 ) -> Result<Response<DirectMessage>, error::Error> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &to.into());
-
-    add_param(&mut params, "text", text);
+    let params = ParamList::new()
+        .add_name_param(&to.into())
+        .add_param("text", text);
 
     let req = auth::post(links::direct::SEND, token, Some(&params));
 
@@ -61,11 +55,8 @@ pub async fn send<'id, T: Into<UserID<'id>>>(
 ///On a successful deletion, the future returned by this function yields the freshly-deleted
 ///message.
 pub async fn delete(id: u64, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
-    let mut params = HashMap::new();
-    add_param(&mut params, "id", id.to_string());
-
+    let params = ParamList::new().add_param("id", id.to_string());
     let req = auth::post(links::direct::DELETE, token, Some(&params));
-
     make_parsed_future(req).await
 }
 

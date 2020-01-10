@@ -5,7 +5,6 @@
 use crate::common::*;
 use crate::{auth, cursor, links};
 use std::borrow::Cow;
-use std::collections::HashMap;
 
 use super::*;
 
@@ -79,11 +78,11 @@ where
     T: Into<UserID<'a>>,
     I: IntoIterator<Item = T>,
 {
-    let mut params = HashMap::new();
     let (id_param, name_param) = multiple_names_param(accts);
 
-    add_param(&mut params, "user_id", id_param);
-    add_param(&mut params, "screen_name", name_param);
+    let params = ParamList::new()
+        .add_param("user_id", id_param)
+        .add_param("screen_name", name_param);
 
     let req = auth::post(links::users::LOOKUP, token, Some(&params));
 
@@ -92,8 +91,7 @@ where
 
 /// Lookup user information for a single user.
 pub fn show<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> FutureResponse<TwitterUser> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
+    let params = ParamList::new().add_name_param(&acct.into());
 
     let req = auth::get(links::users::SHOW, token, Some(&params));
 
@@ -115,14 +113,13 @@ where
     F: Into<UserID<'a>>,
     T: Into<UserID<'a>>,
 {
-    let mut params = HashMap::new();
-    match from.into() {
-        UserID::ID(id) => add_param(&mut params, "source_id", id.to_string()),
-        UserID::ScreenName(name) => add_param(&mut params, "source_screen_name", name),
+    let mut params = match from.into() {
+        UserID::ID(id) => ParamList::new().add_param("source_id", id.to_string()),
+        UserID::ScreenName(name) => ParamList::new().add_param("source_screen_name", name),
     };
     match to.into() {
-        UserID::ID(id) => add_param(&mut params, "target_id", id.to_string()),
-        UserID::ScreenName(name) => add_param(&mut params, "target_screen_name", name),
+        UserID::ID(id) => params.add_param_ref("target_id", id.to_string()),
+        UserID::ScreenName(name) => params.add_param_ref("target_screen_name", name),
     };
 
     let req = auth::get(links::users::FRIENDSHIP_SHOW, token, Some(&params));
@@ -139,11 +136,11 @@ where
     T: Into<UserID<'a>>,
     I: IntoIterator<Item = T>,
 {
-    let mut params = HashMap::new();
     let (id_param, name_param) = multiple_names_param(accts);
 
-    add_param(&mut params, "user_id", id_param);
-    add_param(&mut params, "screen_name", name_param);
+    let params = ParamList::new()
+        .add_param("user_id", id_param)
+        .add_param("screen_name", name_param);
 
     let req = auth::get(links::users::FRIENDSHIP_LOOKUP, token, Some(&params));
 
@@ -172,8 +169,7 @@ pub fn friends_of<'a, T: Into<UserID<'a>>>(
     acct: T,
     token: &auth::Token,
 ) -> cursor::CursorIter<'a, cursor::UserCursor> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
+    let params = ParamList::new().add_name_param(&acct.into());
     cursor::CursorIter::new(links::users::FRIENDS_LIST, token, Some(params), Some(20))
 }
 
@@ -190,8 +186,7 @@ pub fn friends_ids<'a, T: Into<UserID<'a>>>(
     acct: T,
     token: &auth::Token,
 ) -> cursor::CursorIter<'a, cursor::IDCursor> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
+    let params = ParamList::new().add_name_param(&acct.into());
     cursor::CursorIter::new(links::users::FRIENDS_IDS, token, Some(params), Some(500))
 }
 
@@ -203,8 +198,7 @@ pub fn followers_of<'a, T: Into<UserID<'a>>>(
     acct: T,
     token: &auth::Token,
 ) -> cursor::CursorIter<'a, cursor::UserCursor> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
+    let params = ParamList::new().add_name_param(&acct.into());
     cursor::CursorIter::new(links::users::FOLLOWERS_LIST, token, Some(params), Some(20))
 }
 
@@ -220,8 +214,7 @@ pub fn followers_ids<'a, T: Into<UserID<'a>>>(
     acct: T,
     token: &auth::Token,
 ) -> cursor::CursorIter<'a, cursor::IDCursor> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
+    let params = ParamList::new().add_name_param(&acct.into());
     cursor::CursorIter::new(links::users::FOLLOWERS_IDS, token, Some(params), Some(500))
 }
 
@@ -302,12 +295,10 @@ pub fn follow<'a, T: Into<UserID<'a>>>(
     notifications: bool,
     token: &auth::Token,
 ) -> FutureResponse<TwitterUser> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
-    add_param(&mut params, "follow", notifications.to_string());
-
+    let params = ParamList::new()
+        .add_name_param(&acct.into())
+        .add_param("follow", notifications.to_string());
     let req = auth::post(links::users::FOLLOW, token, Some(&params));
-
     make_parsed_future(req)
 }
 
@@ -321,11 +312,8 @@ pub fn unfollow<'a, T: Into<UserID<'a>>>(
     acct: T,
     token: &auth::Token,
 ) -> FutureResponse<TwitterUser> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
-
+    let params = ParamList::new().add_name_param(&acct.into());
     let req = auth::post(links::users::UNFOLLOW, token, Some(&params));
-
     make_parsed_future(req)
 }
 
@@ -344,17 +332,11 @@ pub fn update_follow<'a, T>(
 where
     T: Into<UserID<'a>>,
 {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
-    if let Some(notifications) = notifications {
-        add_param(&mut params, "device", notifications.to_string());
-    }
-    if let Some(retweets) = retweets {
-        add_param(&mut params, "retweets", retweets.to_string());
-    }
-
+    let params = ParamList::new()
+        .add_name_param(&acct.into())
+        .add_opt_param("device", notifications.map(|v| v.to_string()))
+        .add_opt_param("retweets", retweets.map(|v| v.to_string()));
     let req = auth::post(links::users::FRIENDSHIP_UPDATE, token, Some(&params));
-
     make_parsed_future(req)
 }
 
@@ -362,11 +344,8 @@ where
 ///
 /// Upon success, the future returned by this function yields the given user.
 pub fn block<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> FutureResponse<TwitterUser> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
-
+    let params = ParamList::new().add_name_param(&acct.into());
     let req = auth::post(links::users::BLOCK, token, Some(&params));
-
     make_parsed_future(req)
 }
 
@@ -377,11 +356,8 @@ pub fn report_spam<'a, T: Into<UserID<'a>>>(
     acct: T,
     token: &auth::Token,
 ) -> FutureResponse<TwitterUser> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
-
+    let params = ParamList::new().add_name_param(&acct.into());
     let req = auth::post(links::users::REPORT_SPAM, token, Some(&params));
-
     make_parsed_future(req)
 }
 
@@ -392,11 +368,8 @@ pub fn unblock<'a, T: Into<UserID<'a>>>(
     acct: T,
     token: &auth::Token,
 ) -> FutureResponse<TwitterUser> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
-
+    let params = ParamList::new().add_name_param(&acct.into());
     let req = auth::post(links::users::UNBLOCK, token, Some(&params));
-
     make_parsed_future(req)
 }
 
@@ -404,11 +377,8 @@ pub fn unblock<'a, T: Into<UserID<'a>>>(
 ///
 /// Upon success, the future returned by this function yields the given user.
 pub fn mute<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> FutureResponse<TwitterUser> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
-
+    let params = ParamList::new().add_name_param(&acct.into());
     let req = auth::post(links::users::MUTE, token, Some(&params));
-
     make_parsed_future(req)
 }
 
@@ -419,10 +389,7 @@ pub fn unmute<'a, T: Into<UserID<'a>>>(
     acct: T,
     token: &auth::Token,
 ) -> FutureResponse<TwitterUser> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &acct.into());
-
+    let params = ParamList::new().add_name_param(&acct.into());
     let req = auth::post(links::users::UNMUTE, token, Some(&params));
-
     make_parsed_future(req)
 }

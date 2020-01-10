@@ -288,12 +288,9 @@ where
     ///This is intended to be used as part of this struct's Iterator implementation. It is provided
     ///as a convenience for those who wish to manage network calls and pagination manually.
     pub fn call(&self) -> FutureResponse<T> {
-        let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
-
-        add_param(&mut params, "cursor", self.next_cursor.to_string());
-        if let Some(count) = self.page_size {
-            add_param(&mut params, "count", count.to_string());
-        }
+        let params = ParamList::from(self.params_base.as_ref().cloned().unwrap_or_default())
+            .add_param("cursor", self.next_cursor.to_string())
+            .add_opt_param("count", self.page_size.map_string());
 
         let req = auth::get(self.link, &self.token, Some(&params));
 

@@ -4,8 +4,6 @@
 
 use super::*;
 
-use std::collections::HashMap;
-
 use crate::cursor::{CursorIter, ListCursor, UserCursor};
 use crate::error::Error::TwitterError;
 use crate::user::{TwitterUser, UserID};
@@ -19,8 +17,7 @@ pub fn memberships<'a, T: Into<UserID<'a>>>(
     user: T,
     token: &auth::Token,
 ) -> CursorIter<'a, ListCursor> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &user.into());
+    let params = ParamList::new().add_name_param(&user.into());
     CursorIter::new(links::lists::MEMBERSHIPS, token, Some(params), Some(20))
 }
 
@@ -40,9 +37,9 @@ pub fn list<'id, T: Into<UserID<'id>>>(
     owned_first: bool,
     token: &auth::Token,
 ) -> FutureResponse<Vec<List>> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &user.into());
-    add_param(&mut params, "reverse", owned_first.to_string());
+    let params = ParamList::new()
+        .add_name_param(&user.into())
+        .add_param("reverse", owned_first.to_string());
 
     let req = auth::get(links::lists::LIST, token, Some(&params));
 
@@ -57,8 +54,7 @@ pub fn subscriptions<'a, T: Into<UserID<'a>>>(
     user: T,
     token: &auth::Token,
 ) -> CursorIter<'a, ListCursor> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &user.into());
+    let params = ParamList::new().add_name_param(&user.into());
     CursorIter::new(links::lists::SUBSCRIPTIONS, token, Some(params), Some(20))
 }
 
@@ -70,16 +66,13 @@ pub fn ownerships<'a, T: Into<UserID<'a>>>(
     user: T,
     token: &auth::Token,
 ) -> CursorIter<'a, ListCursor> {
-    let mut params = HashMap::new();
-    add_name_param(&mut params, &user.into());
+    let params = ParamList::new().add_name_param(&user.into());
     CursorIter::new(links::lists::OWNERSHIPS, token, Some(params), Some(20))
 }
 
 ///Look up information for a single list.
 pub fn show(list: ListID, token: &auth::Token) -> FutureResponse<List> {
-    let mut params = HashMap::new();
-
-    add_list_param(&mut params, &list);
+    let params = ParamList::new().add_list_param(&list);
 
     let req = auth::get(links::lists::SHOW, token, Some(&params));
 
@@ -91,9 +84,7 @@ pub fn show(list: ListID, token: &auth::Token) -> FutureResponse<List> {
 ///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
 pub fn members<'a>(list: ListID<'a>, token: &auth::Token) -> CursorIter<'a, UserCursor> {
-    let mut params = HashMap::new();
-
-    add_list_param(&mut params, &list);
+    let params = ParamList::new().add_list_param(&list);
 
     CursorIter::new(links::lists::MEMBERS, token, Some(params), Some(20))
 }
@@ -103,9 +94,7 @@ pub fn members<'a>(list: ListID<'a>, token: &auth::Token) -> CursorIter<'a, User
 ///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
 pub fn subscribers<'a>(list: ListID<'a>, token: &auth::Token) -> CursorIter<'a, UserCursor> {
-    let mut params = HashMap::new();
-
-    add_list_param(&mut params, &list);
+    let params = ParamList::new().add_list_param(&list);
 
     CursorIter::new(links::lists::SUBSCRIBERS, token, Some(params), Some(20))
 }
@@ -116,10 +105,9 @@ pub fn is_subscribed<'id, T: Into<UserID<'id>>>(
     list: ListID,
     token: &auth::Token,
 ) -> FutureResponse<bool> {
-    let mut params = HashMap::new();
-
-    add_list_param(&mut params, &list);
-    add_name_param(&mut params, &user.into());
+    let params = ParamList::new()
+        .add_list_param(&list)
+        .add_name_param(&user.into());
 
     let req = auth::get(links::lists::IS_SUBSCRIBER, token, Some(&params));
 
@@ -152,10 +140,9 @@ pub fn is_member<'id, T: Into<UserID<'id>>>(
     list: ListID,
     token: &auth::Token,
 ) -> FutureResponse<bool> {
-    let mut params = HashMap::new();
-
-    add_list_param(&mut params, &list);
-    add_name_param(&mut params, &user.into());
+    let params = ParamList::new()
+        .add_list_param(&list)
+        .add_name_param(&user.into());
 
     let req = auth::get(links::lists::IS_MEMBER, token, Some(&params));
 
@@ -189,9 +176,9 @@ pub fn is_member<'id, T: Into<UserID<'id>>>(
 ///
 ///[`Timeline`]: ../tweet/struct.Timeline.html
 pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &auth::Token) -> tweet::Timeline<'a> {
-    let mut params = HashMap::new();
-    add_list_param(&mut params, &list);
-    add_param(&mut params, "include_rts", with_rts.to_string());
+    let params = ParamList::new()
+        .add_list_param(&list)
+        .add_param("include_rts", with_rts.to_string());
 
     tweet::Timeline::new(links::lists::STATUSES, Some(params), token)
 }
@@ -206,9 +193,9 @@ pub fn add_member<'id, T: Into<UserID<'id>>>(
     user: T,
     token: &auth::Token,
 ) -> FutureResponse<List> {
-    let mut params = HashMap::new();
-    add_list_param(&mut params, &list);
-    add_name_param(&mut params, &user.into());
+    let params = ParamList::new()
+        .add_list_param(&list)
+        .add_name_param(&user.into());
 
     let req = auth::post(links::lists::ADD, token, Some(&params));
 
@@ -237,16 +224,25 @@ where
     T: Into<UserID<'id>>,
     I: IntoIterator<Item = T>,
 {
-    let mut params = HashMap::new();
-    add_list_param(&mut params, &list);
-
     let (id_param, name_param) = multiple_names_param(members);
-    if !id_param.is_empty() {
-        add_param(&mut params, "user_id", id_param);
-    }
-    if !name_param.is_empty() {
-        add_param(&mut params, "screen_name", name_param);
-    }
+    let params = ParamList::new()
+        .add_list_param(&list)
+        .add_opt_param(
+            "user_id",
+            if !id_param.is_empty() {
+                Some(id_param)
+            } else {
+                None
+            },
+        )
+        .add_opt_param(
+            "screen_name",
+            if !name_param.is_empty() {
+                Some(name_param)
+            } else {
+                None
+            },
+        );
 
     let req = auth::post(links::lists::ADD_LIST, token, Some(&params));
 
@@ -259,9 +255,9 @@ pub fn remove_member<'id, T: Into<UserID<'id>>>(
     user: T,
     token: &auth::Token,
 ) -> FutureResponse<List> {
-    let mut params = HashMap::new();
-    add_list_param(&mut params, &list);
-    add_name_param(&mut params, &user.into());
+    let params = ParamList::new()
+        .add_list_param(&list)
+        .add_name_param(&user.into());
 
     let req = auth::post(links::lists::REMOVE_MEMBER, token, Some(&params));
 
@@ -289,16 +285,25 @@ where
     T: Into<UserID<'a>>,
     I: IntoIterator<Item = T>,
 {
-    let mut params = HashMap::new();
-    add_list_param(&mut params, &list);
-
     let (id_param, name_param) = multiple_names_param(members);
-    if !id_param.is_empty() {
-        add_param(&mut params, "user_id", id_param);
-    }
-    if !name_param.is_empty() {
-        add_param(&mut params, "screen_name", name_param);
-    }
+    let params = ParamList::new()
+        .add_list_param(&list)
+        .add_opt_param(
+            "user_id",
+            if !id_param.is_empty() {
+                Some(id_param)
+            } else {
+                None
+            },
+        )
+        .add_opt_param(
+            "screen_name",
+            if !name_param.is_empty() {
+                Some(name_param)
+            } else {
+                None
+            },
+        );
 
     let req = auth::post(links::lists::REMOVE_LIST, token, Some(&params));
 
@@ -316,16 +321,10 @@ pub fn create(
     desc: Option<&str>,
     token: &auth::Token,
 ) -> FutureResponse<List> {
-    let mut params = HashMap::new();
-    add_param(&mut params, "name", name);
-    if public {
-        add_param(&mut params, "mode", "public");
-    } else {
-        add_param(&mut params, "mode", "private");
-    }
-    if let Some(desc) = desc {
-        add_param(&mut params, "description", desc);
-    }
+    let params = ParamList::new()
+        .add_param("name", name)
+        .add_param("mode", if public { "public" } else { "private" })
+        .add_opt_param("description", desc);
 
     let req = auth::post(links::lists::CREATE, token, Some(&params));
 
@@ -336,8 +335,7 @@ pub fn create(
 ///
 ///The authenticated user must have created the list.
 pub fn delete(list: ListID, token: &auth::Token) -> FutureResponse<List> {
-    let mut params = HashMap::new();
-    add_list_param(&mut params, &list);
+    let params = ParamList::new().add_list_param(&list);
 
     let req = auth::post(links::lists::DELETE, token, Some(&params));
 
@@ -349,8 +347,7 @@ pub fn delete(list: ListID, token: &auth::Token) -> FutureResponse<List> {
 ///Subscribing to a list is a way to make it available in the "Lists" section of a user's profile
 ///without having to create it themselves.
 pub fn subscribe(list: ListID, token: &auth::Token) -> FutureResponse<List> {
-    let mut params = HashMap::new();
-    add_list_param(&mut params, &list);
+    let params = ParamList::new().add_list_param(&list);
 
     let req = auth::post(links::lists::SUBSCRIBE, token, Some(&params));
 
@@ -359,8 +356,7 @@ pub fn subscribe(list: ListID, token: &auth::Token) -> FutureResponse<List> {
 
 ///Unsubscribes the authenticated user from the given list.
 pub fn unsubscribe(list: ListID, token: &auth::Token) -> FutureResponse<List> {
-    let mut params = HashMap::new();
-    add_list_param(&mut params, &list);
+    let params = ParamList::new().add_list_param(&list);
 
     let req = auth::post(links::lists::UNSUBSCRIBE, token, Some(&params));
 

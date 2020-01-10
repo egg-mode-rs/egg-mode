@@ -129,40 +129,73 @@ use crate::{list, user};
 pub type Headers = HeaderMap<HeaderValue>;
 
 ///Convenience type used to hold parameters to an API call.
-pub type ParamList<'a> = HashMap<Cow<'a, str>, Cow<'a, str>>;
+#[derive(Debug, Clone, Default, derive_more::Deref, derive_more::DerefMut, derive_more::From)]
+pub struct ParamList<'a>(HashMap<Cow<'a, str>, Cow<'a, str>>);
 
-///Convenience function to add a key/value parameter to a `ParamList`.
-pub fn add_param<'a, K, V>(list: &mut ParamList<'a>, key: K, value: V) -> Option<Cow<'a, str>>
-where
-    K: Into<Cow<'a, str>>,
-    V: Into<Cow<'a, str>>,
-{
-    list.insert(key.into(), value.into())
-}
+impl<'a> ParamList<'a> {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
 
-pub fn add_name_param<'a>(list: &mut ParamList<'a>, id: &user::UserID<'a>) -> Option<Cow<'a, str>> {
-    match *id {
-        user::UserID::ID(id) => add_param(list, "user_id", id.to_string()),
-        user::UserID::ScreenName(name) => add_param(list, "screen_name", name),
+    ///Convenience function to add a key/value parameter to a `ParamList`.
+    pub fn add_param(
+        mut self,
+        key: impl Into<Cow<'a, str>>,
+        value: impl Into<Cow<'a, str>>,
+    ) -> Self {
+        self.insert(key.into(), value.into());
+        self
+    }
+
+    ///Convenience function to add a key/value parameter to a `ParamList`.
+    pub fn add_opt_param(
+        self,
+        key: impl Into<Cow<'a, str>>,
+        value: Option<impl Into<Cow<'a, str>>>,
+    ) -> Self {
+        match value {
+            Some(val) => self.add_param(key.into(), val.into()),
+            None => self,
+        }
+    }
+
+    ///Convenience function to add a key/value parameter to a `ParamList` without moving.
+    pub fn add_param_ref(&mut self, key: impl Into<Cow<'a, str>>, value: impl Into<Cow<'a, str>>) {
+        self.0.insert(key.into(), value.into());
+    }
+
+    pub fn add_name_param(self, id: &user::UserID<'a>) -> Self {
+        match *id {
+            user::UserID::ID(id) => self.add_param("user_id", id.to_string()),
+            user::UserID::ScreenName(name) => self.add_param("screen_name", name),
+        }
+    }
+
+    pub fn add_list_param(mut self, list: &list::ListID<'a>) -> Self {
+        match *list {
+            list::ListID::Slug(ref owner, name) => {
+                match *owner {
+                    user::UserID::ID(id) => {
+                        self.add_param_ref("owner_id", id.to_string());
+                    }
+                    user::UserID::ScreenName(name) => {
+                        self.add_param_ref("owner_screen_name", name);
+                    }
+                }
+                self.add_param("slug", name)
+            }
+            list::ListID::ID(id) => self.add_param("list_id", id.to_string()),
+        }
     }
 }
 
-pub fn add_list_param<'a>(params: &mut ParamList<'a>, list: &list::ListID<'a>) {
-    match *list {
-        list::ListID::Slug(ref owner, name) => {
-            match *owner {
-                user::UserID::ID(id) => {
-                    add_param(params, "owner_id", id.to_string());
-                }
-                user::UserID::ScreenName(name) => {
-                    add_param(params, "owner_screen_name", name);
-                }
-            }
-            add_param(params, "slug", name);
-        }
-        list::ListID::ID(id) => {
-            add_param(params, "list_id", id.to_string());
-        }
+pub(crate) trait MapString {
+    fn map_string(&self) -> Option<String>;
+}
+
+impl<T: std::fmt::Display> MapString for Option<T> {
+    fn map_string(&self) -> Option<String> {
+        self.as_ref().map(|v| v.to_string())
     }
 }
 

@@ -67,8 +67,6 @@
 //! - `show`
 //! - `statuses`
 
-use std::collections::HashMap;
-
 use chrono;
 use serde::Deserialize;
 
@@ -220,24 +218,14 @@ impl<'a> ListUpdate<'a> {
 
     ///Sends the update request to Twitter.
     pub fn send(self, token: &auth::Token) -> FutureResponse<List> {
-        let mut params = HashMap::new();
-        add_list_param(&mut params, &self.list);
-
-        if let Some(name) = self.name {
-            add_param(&mut params, "name", name);
-        }
-
-        if let Some(public) = self.public {
-            if public {
-                add_param(&mut params, "mode", "public");
-            } else {
-                add_param(&mut params, "mode", "private");
-            }
-        }
-
-        if let Some(desc) = self.desc {
-            add_param(&mut params, "description", desc);
-        }
+        let params = ParamList::new()
+            .add_list_param(&self.list)
+            .add_opt_param("name", self.name)
+            .add_opt_param(
+                "mode",
+                self.public.map(|p| if p { "public" } else { "private" }),
+            )
+            .add_opt_param("description", self.desc);
 
         let req = auth::post(links::lists::UPDATE, token, Some(&params));
 

@@ -43,7 +43,6 @@
 //! * In the case of an unreliable connection (e.g. mobile network), fall back to the polling API
 //!
 //! The [official guide](https://developer.twitter.com/en/docs/tweets/filter-realtime/guides/connecting) has more information.
-use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::str::FromStr;
@@ -435,11 +434,8 @@ impl StreamBuilder {
         // 'invalid' from POV of twitter api, rather it is invalid at the application level.
         // So I think the current behaviour make sense.
 
-        let mut params = HashMap::new();
-
-        if let Some(filter_level) = self.filter_level {
-            add_param(&mut params, "filter_level", filter_level.to_string());
-        }
+        let mut params =
+            ParamList::new().add_opt_param("filter_level", self.filter_level.map_string());
 
         if !self.follow.is_empty() {
             let to_follow = self
@@ -448,17 +444,17 @@ impl StreamBuilder {
                 .map(|id| id.to_string())
                 .collect::<Vec<String>>()
                 .join(",");
-            add_param(&mut params, "follow", to_follow);
+            params.add_param_ref("follow", to_follow);
         }
 
         if !self.track.is_empty() {
             let to_track = self.track.join(",");
-            add_param(&mut params, "track", to_track);
+            params.add_param_ref("track", to_track);
         }
 
         if !self.language.is_empty() {
             let langs = self.language.join(",");
-            add_param(&mut params, "language", langs);
+            params.add_param_ref("language", langs);
         }
 
         if !self.locations.is_empty() {
@@ -468,7 +464,7 @@ impl StreamBuilder {
                 .map(|bb| bb.to_string())
                 .collect::<Vec<String>>()
                 .join(",");
-            add_param(&mut params, "locations", locs);
+            params.add_param_ref("locations", locs);
         }
 
         let req = auth::post(self.url, token, Some(&params));
