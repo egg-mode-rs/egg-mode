@@ -54,7 +54,6 @@
 //! - `user_timeline`/`liked_by`
 
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::str::FromStr;
@@ -555,18 +554,12 @@ impl<'a> Timeline<'a> {
 
     ///Helper function to construct a `Request` from the current state.
     fn request(&self, since_id: Option<u64>, max_id: Option<u64>) -> Request<Body> {
-        let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
-        add_param(&mut params, "count", self.count.to_string());
-        add_param(&mut params, "tweet_mode", "extended");
-        add_param(&mut params, "include_ext_alt_text", "true");
-
-        if let Some(id) = since_id {
-            add_param(&mut params, "since_id", id.to_string());
-        }
-
-        if let Some(id) = max_id {
-            add_param(&mut params, "max_id", id.to_string());
-        }
+        let params = ParamList::from(self.params_base.as_ref().cloned().unwrap_or_default())
+            .add_param("count", self.count.to_string())
+            .add_param("tweet_mode", "extended")
+            .add_param("include_ext_alt_text", "true")
+            .add_opt_param("since_id", since_id.map(|v| v.to_string()))
+            .add_opt_param("max_id", max_id.map(|v| v.to_string()));
 
         auth::get(self.link, &self.token, Some(&params))
     }
@@ -849,20 +842,29 @@ impl<'a> DraftTweet<'a> {
 
     ///Send the assembled tweet as the authenticated user.
     pub fn send(&self, token: &auth::Token) -> FutureResponse<Tweet> {
-        let mut params = HashMap::new();
-        add_param(&mut params, "status", self.text.clone());
-
-        if let Some(reply) = self.in_reply_to {
-            add_param(&mut params, "in_reply_to_status_id", reply.to_string());
-        }
-
-        if let Some(auto_populate) = self.auto_populate_reply_metadata {
-            add_param(
-                &mut params,
+        let mut params = ParamList::new()
+            .add_param("status", self.text.clone())
+            .add_opt_param(
+                "in_reply_to_status_id",
+                self.in_reply_to.map(|v| v.to_string()),
+            )
+            .add_opt_param(
                 "auto_populate_reply_metadata",
-                auto_populate.to_string(),
+                self.auto_populate_reply_metadata.map(|v| v.to_string()),
+            )
+            .add_opt_param(
+                "attachment_url",
+                self.attachment_url.as_ref().map(|v| v.clone()),
+            )
+            .add_opt_param(
+                "display_coordinates",
+                self.display_coordinates.map(|v| v.to_string()),
+            )
+            .add_opt_param("place_id", self.place_id.as_ref().map(|v| v.clone()))
+            .add_opt_param(
+                "possible_sensitive",
+                self.possibly_sensitive.map(|v| v.to_string()),
             );
-        }
 
         if let Some(ref exclude) = self.exclude_reply_user_ids {
             let list = exclude
@@ -870,24 +872,12 @@ impl<'a> DraftTweet<'a> {
                 .map(|id| id.to_string())
                 .collect::<Vec<_>>()
                 .join(",");
-            add_param(&mut params, "exclude_reply_user_ids", list);
-        }
-
-        if let Some(ref url) = self.attachment_url {
-            add_param(&mut params, "attachment_url", url.clone());
+            params.add_param_ref("exclude_reply_user_ids", list);
         }
 
         if let Some((lat, long)) = self.coordinates {
-            add_param(&mut params, "lat", lat.to_string());
-            add_param(&mut params, "long", long.to_string());
-        }
-
-        if let Some(display) = self.display_coordinates {
-            add_param(&mut params, "display_coordinates", display.to_string());
-        }
-
-        if let Some(ref place_id) = self.place_id {
-            add_param(&mut params, "place_id", place_id.clone());
+            params.add_param_ref("lat", lat.to_string());
+            params.add_param_ref("long", long.to_string());
         }
 
         let media = self
@@ -898,11 +888,7 @@ impl<'a> DraftTweet<'a> {
             .collect::<Vec<String>>()
             .join(",");
         if !media.is_empty() {
-            add_param(&mut params, "media_ids", media);
-        }
-
-        if let Some(sensitive) = self.possibly_sensitive {
-            add_param(&mut params, "possibly_sensitive", sensitive.to_string());
+            params.add_param_ref("media_ids", media);
         }
 
         let req = auth::post(links::statuses::UPDATE, token, Some(&params));

@@ -56,7 +56,6 @@
 //! - `incoming_requests`/`outgoing_requests`
 
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -541,10 +540,10 @@ impl<'a> UserSearch<'a> {
     /// made public for convenience if you want to manage the pagination yourself. Remember to
     /// change `page_num` between calls.
     pub fn call(&self) -> FutureResponse<Vec<TwitterUser>> {
-        let mut params = HashMap::new();
-        add_param(&mut params, "q", self.query.clone());
-        add_param(&mut params, "page", self.page_num.to_string());
-        add_param(&mut params, "count", self.page_size.to_string());
+        let params = ParamList::new()
+            .add_param("q", self.query.clone())
+            .add_param("page", self.page_num.to_string())
+            .add_param("count", self.page_size.to_string());
 
         let req = auth::get(links::users::SEARCH, &self.token, Some(&params));
 

@@ -324,16 +324,10 @@ impl Timeline {
 
     ///Helper function to construct a `Request` from the current state.
     fn request(&self, since_id: Option<u64>, max_id: Option<u64>) -> Request<Body> {
-        let mut params = self.params_base.as_ref().cloned().unwrap_or_default();
-        add_param(&mut params, "count", self.count.to_string());
-
-        if let Some(id) = since_id {
-            add_param(&mut params, "since_id", id.to_string());
-        }
-
-        if let Some(id) = max_id {
-            add_param(&mut params, "max_id", id.to_string());
-        }
+        let params = ParamList::from(self.params_base.as_ref().cloned().unwrap_or_default())
+            .add_param("count", self.count.to_string())
+            .add_opt_param("since_id", since_id.map(|v| v.to_string()))
+            .add_opt_param("max_id", max_id.map(|v| v.to_string()));
 
         auth::get(self.link, &self.token, Some(&params))
     }

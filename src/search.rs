@@ -50,7 +50,6 @@
 //! [search-place]: https://dev.twitter.com/rest/public/search-by-place
 
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::fmt;
 
 use serde::{Deserialize, Deserializer};
@@ -186,48 +185,25 @@ impl<'a> SearchBuilder<'a> {
         self,
         token: &auth::Token,
     ) -> Result<Response<SearchResult<'a>>, error::Error> {
-        let mut params = HashMap::new();
-
-        add_param(&mut params, "q", self.query);
-
-        if let Some(lang) = self.lang {
-            add_param(&mut params, "lang", lang);
-        }
-
-        if let Some(result_type) = self.result_type {
-            add_param(&mut params, "result_type", result_type.to_string());
-        }
-
-        if let Some(count) = self.count {
-            add_param(&mut params, "count", count.to_string());
-        }
-
-        if let Some((year, month, day)) = self.until {
-            add_param(&mut params, "until", format!("{}-{}-{}", year, month, day));
-        }
-
-        if let Some((lat, lon, radius)) = self.geocode {
-            match radius {
-                Distance::Miles(r) => add_param(
-                    &mut params,
-                    "geocode",
-                    format!("{:.6},{:.6},{}mi", lat, lon, r),
-                ),
-                Distance::Kilometers(r) => add_param(
-                    &mut params,
-                    "geocode",
-                    format!("{:.6},{:.6},{}km", lat, lon, r),
-                ),
-            };
-        }
-
-        if let Some(since_id) = self.since_id {
-            add_param(&mut params, "since_id", since_id.to_string());
-        }
-
-        if let Some(max_id) = self.max_id {
-            add_param(&mut params, "max_id", max_id.to_string());
-        }
+        let params = ParamList::new()
+            .add_param("q", self.query)
+            .add_opt_param("lang", self.lang)
+            .add_opt_param("result_type", self.result_type.map_string())
+            .add_opt_param("count", self.count.map_string())
+            .add_opt_param("since_id", self.since_id.map_string())
+            .add_opt_param("max_id", self.max_id.map_string())
+            .add_opt_param(
+                "until",
+                self.until
+                    .map(|(year, month, day)| format!("{}-{}-{}", year, month, day)),
+            )
+            .add_opt_param(
+                "geocode",
+                self.geocode.map(|(lat, lon, radius)| match radius {
+                    Distance::Miles(r) => format!("{:.6},{:.6},{}mi", lat, lon, r),
+                    Distance::Kilometers(r) => format!("{:.6},{:.6},{}km", lat, lon, r),
+                }),
+            );
 
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
         let mut resp = make_parsed_future::<SearchResult>(req).await?;
@@ -294,11 +270,12 @@ impl<'a> SearchResult<'a> {
         &self,
         token: &auth::Token,
     ) -> Result<Response<SearchResult<'a>>, error::Error> {
-        let mut params = self.params.as_ref().cloned().unwrap_or_default();
+        let mut params = ParamList::from(self.params.as_ref().cloned().unwrap_or_default());
+
         params.remove("since_id");
 
         if let Some(min_id) = self.statuses.iter().map(|t| t.id).min() {
-            add_param(&mut params, "max_id", (min_id - 1).to_string());
+            params.add_param_ref("max_id", (min_id - 1).to_string());
         } else {
             params.remove("max_id");
         }
@@ -315,11 +292,11 @@ impl<'a> SearchResult<'a> {
         &self,
         token: &auth::Token,
     ) -> Result<Response<SearchResult<'a>>, error::Error> {
-        let mut params = self.params.as_ref().cloned().unwrap_or_default();
-        params.remove("max_id");
+        let mut params = ParamList::from(self.params.as_ref().cloned().unwrap_or_default());
 
+        params.remove("max_id");
         if let Some(max_id) = self.statuses.iter().map(|t| t.id).max() {
-            add_param(&mut params, "since_id", max_id.to_string());
+            params.add_param_ref("since_id", max_id.to_string());
         } else {
             params.remove("since_id");
         }

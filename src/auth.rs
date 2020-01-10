@@ -325,33 +325,23 @@ fn sign(
     access_token: Option<&KeyPair>,
 ) -> TwitterOAuth {
     let query_string = {
-        let mut sig_params = params.cloned().unwrap_or_default();
-
-        add_param(
-            &mut sig_params,
-            "oauth_consumer_key",
-            header.consumer_key.as_str(),
-        );
-        add_param(&mut sig_params, "oauth_nonce", header.nonce.as_str());
-        add_param(&mut sig_params, "oauth_signature_method", "HMAC-SHA1");
-        add_param(
-            &mut sig_params,
-            "oauth_timestamp",
-            format!("{}", header.timestamp),
-        );
-        add_param(&mut sig_params, "oauth_version", "1.0");
-
-        if let Some(ref token) = header.token {
-            add_param(&mut sig_params, "oauth_token", token.as_str());
-        }
-
-        if let Some(ref callback) = header.callback {
-            add_param(&mut sig_params, "oauth_callback", callback.as_str());
-        }
-
-        if let Some(ref verifier) = header.verifier {
-            add_param(&mut sig_params, "oauth_verifier", verifier.as_str());
-        }
+        let sig_params = params
+            .cloned()
+            .unwrap_or_default()
+            .add_param("oauth_consumer_key", header.consumer_key.as_str())
+            .add_param("oauth_nonce", header.nonce.as_str())
+            .add_param("oauth_signature_method", "HMAC-SHA1")
+            .add_param("oauth_timestamp", format!("{}", header.timestamp))
+            .add_param("oauth_version", "1.0")
+            .add_opt_param("oauth_token", header.token.as_ref().map(|t| t.as_str()))
+            .add_opt_param(
+                "oauth_callback",
+                header.callback.as_ref().map(|v| v.as_str()),
+            )
+            .add_opt_param(
+                "oauth_verifier",
+                header.verifier.as_ref().map(|v| v.as_str()),
+            );
 
         let mut query = sig_params
             .iter()

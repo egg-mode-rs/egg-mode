@@ -2,8 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::collections::HashMap;
-
 use crate::common::*;
 use crate::error::Error::BadUrl;
 use crate::{auth, error, links};
@@ -68,18 +66,12 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
     }
 
     if let Some(list) = iter.next() {
-        let mut p = HashMap::new();
-
-        for item in list.split('&') {
-            let mut kv_iter = item.split('=');
-
+        list.split('&').try_fold(ParamList::new(), |p, pair| {
+            let mut kv_iter = pair.split('=');
             let k = kv_iter.next().ok_or(BadUrl)?;
             let v = kv_iter.next().ok_or(BadUrl)?;
-
-            add_param(&mut p, k, v);
-        }
-
-        Ok(p)
+            Ok(p.add_param(k, v))
+        })
     } else {
         Err(BadUrl)
     }

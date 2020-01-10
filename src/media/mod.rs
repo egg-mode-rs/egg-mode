@@ -37,7 +37,6 @@
 //! For more information, see the [`UploadBuilder`] documentation.
 
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::error::Error as StdError;
 use std::fmt;
 use std::future::Future;
@@ -421,16 +420,11 @@ impl<'a> UploadFuture<'a> {
     }
 
     fn init(&self) -> FutureResponse<RawMedia> {
-        let mut params = HashMap::new();
-
-        add_param(&mut params, "command", "INIT");
-        add_param(&mut params, "total_bytes", self.data.len().to_string());
-        add_param(&mut params, "media_type", self.media_type.to_string());
-        add_param(
-            &mut params,
-            "media_category",
-            self.media_category.to_string(),
-        );
+        let params = ParamList::new()
+            .add_param("command", "INIT")
+            .add_param("total_bytes", self.data.len().to_string())
+            .add_param("media_type", self.media_type.to_string())
+            .add_param("media_category", self.media_category.to_string());
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
         make_parsed_future(req)
@@ -443,12 +437,11 @@ impl<'a> UploadFuture<'a> {
         }
 
         if let Some(chunk) = chunk {
-            let mut params = HashMap::new();
-
-            add_param(&mut params, "command", "APPEND");
-            add_param(&mut params, "media_id", media_id.to_string());
-            add_param(&mut params, "media_data", base64::encode(chunk));
-            add_param(&mut params, "segment_index", chunk_num.to_string());
+            let params = ParamList::new()
+                .add_param("command", "APPEND")
+                .add_param("media_id", media_id.to_string())
+                .add_param("media_data", base64::encode(chunk))
+                .add_param("segment_index", chunk_num.to_string());
 
             let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
 
@@ -470,20 +463,18 @@ impl<'a> UploadFuture<'a> {
     }
 
     fn finalize(&self, media_id: u64) -> FutureResponse<RawMedia> {
-        let mut params = HashMap::new();
-
-        add_param(&mut params, "command", "FINALIZE");
-        add_param(&mut params, "media_id", media_id.to_string());
+        let params = ParamList::new()
+            .add_param("command", "FINALIZE")
+            .add_param("media_id", media_id.to_string());
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
         make_parsed_future(req)
     }
 
     fn status(&self, media_id: u64) -> FutureResponse<RawMedia> {
-        let mut params = HashMap::new();
-
-        add_param(&mut params, "command", "STATUS");
-        add_param(&mut params, "media_id", media_id.to_string());
+        let params = ParamList::new()
+            .add_param("command", "STATUS")
+            .add_param("media_id", media_id.to_string());
 
         let req = auth::get(links::media::UPLOAD, &self.token, Some(&params));
         make_parsed_future(req)

@@ -191,23 +191,18 @@ impl GeocodeBuilder {
 
     ///Finalize the search parameters and return the results collection.
     pub fn call(&self, token: &auth::Token) -> FutureResponse<SearchResult> {
-        let mut params = HashMap::new();
-
-        add_param(&mut params, "lat", self.coordinate.0.to_string());
-        add_param(&mut params, "long", self.coordinate.1.to_string());
-
-        if let Some(ref accuracy) = self.accuracy {
-            add_param(&mut params, "accuracy", accuracy.to_string());
-        }
-
-        if let Some(ref param) = self.granularity {
-            add_param(&mut params, "granularity", param.to_string());
-        }
-
-        if let Some(count) = self.max_results {
-            let count = if count == 0 || count > 20 { 20 } else { count };
-            add_param(&mut params, "max_results", count.to_string());
-        }
+        let params = ParamList::new()
+            .add_param("lat", self.coordinate.0.to_string())
+            .add_param("long", self.coordinate.1.to_string())
+            .add_opt_param("accuracy", self.accuracy.map_string())
+            .add_opt_param("granularity", self.granularity.map_string())
+            .add_opt_param(
+                "max_results",
+                self.max_results.map(|count| {
+                    let count = if count == 0 || count > 20 { 20 } else { count };
+                    count.to_string()
+                }),
+            );
 
         let req = auth::get(links::place::REVERSE_GEOCODE, token, Some(&params));
 
@@ -317,40 +312,21 @@ impl<'a> SearchBuilder<'a> {
 
     ///Finalize the search parameters and return the results collection.
     pub fn call(&self, token: &auth::Token) -> FutureResponse<SearchResult> {
-        let mut params = HashMap::new();
-
-        match self.query {
-            PlaceQuery::LatLon(lat, long) => {
-                add_param(&mut params, "lat", lat.to_string());
-                add_param(&mut params, "long", long.to_string());
-            }
-            PlaceQuery::Query(text) => {
-                add_param(&mut params, "query", text);
-            }
-            PlaceQuery::IPAddress(text) => {
-                add_param(&mut params, "ip", text);
-            }
+        let mut params = match self.query {
+            PlaceQuery::LatLon(lat, long) => ParamList::new()
+                .add_param("lat", lat.to_string())
+                .add_param("long", long.to_string()),
+            PlaceQuery::Query(text) => ParamList::new().add_param("query", text),
+            PlaceQuery::IPAddress(text) => ParamList::new().add_param("ip", text),
         }
-
-        if let Some(ref acc) = self.accuracy {
-            add_param(&mut params, "accuracy", acc.to_string());
-        }
-
-        if let Some(ref gran) = self.granularity {
-            add_param(&mut params, "granularity", gran.to_string());
-        }
-
-        if let Some(max) = self.max_results {
-            add_param(&mut params, "max_results", max.to_string());
-        }
-
-        if let Some(id) = self.contained_within {
-            add_param(&mut params, "contained_within", id);
-        }
+        .add_opt_param("accuracy", self.accuracy.map_string())
+        .add_opt_param("granularity", self.granularity.map_string())
+        .add_opt_param("max_results", self.max_results.map_string())
+        .add_opt_param("contained_within", self.contained_within);
 
         if let Some(ref attrs) = self.attributes {
             for (k, v) in attrs {
-                add_param(&mut params, format!("attribute:{}", k), *v);
+                params.add_param_ref(format!("attribute:{}", k), *v);
             }
         }
 
