@@ -310,7 +310,7 @@ impl<'a> SearchBuilder<'a> {
     }
 
     ///Finalize the search parameters and return the results collection.
-    pub fn call(&self, token: &auth::Token) -> FutureResponse<SearchResult> {
+    pub async fn call(&self, token: &auth::Token) -> Result<Response<SearchResult>, error::Error> {
         let mut params = match self.query {
             PlaceQuery::LatLon(lat, long) => ParamList::new()
                 .add_param("lat", lat.to_string())
@@ -330,8 +330,7 @@ impl<'a> SearchBuilder<'a> {
         }
 
         let req = auth::get(links::place::SEARCH, token, Some(&params));
-
-        make_parsed_future(req)
+        make_parsed_future(req).await
     }
 }
 

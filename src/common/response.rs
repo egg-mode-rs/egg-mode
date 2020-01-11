@@ -6,7 +6,8 @@
 //! Twitter.
 
 use crate::error::Error::*;
-use crate::error::{self, TwitterErrors};
+use crate::error::{Result, TwitterErrors};
+
 use futures::Stream;
 use hyper::client::ResponseFuture;
 use hyper::header::CONTENT_LENGTH;
@@ -17,6 +18,7 @@ use hyper_rustls::HttpsConnector;
 use hyper_tls::HttpsConnector;
 use serde::Deserialize;
 use serde_json;
+
 use std::future::Future;
 use std::iter::FromIterator;
 use std::ops::{Deref, DerefMut};
@@ -30,7 +32,7 @@ const X_RATE_LIMIT_LIMIT: &'static str = "X-Rate-Limit-Limit";
 const X_RATE_LIMIT_REMAINING: &'static str = "X-Rate-Limit-Remaining";
 const X_RATE_LIMIT_RESET: &'static str = "X-Rate-Limit-Reset";
 
-fn rate_limit(headers: &Headers, header: &'static str) -> Result<Option<i32>, error::Error> {
+fn rate_limit(headers: &Headers, header: &'static str) -> Result<Option<i32>> {
     let val = headers.get(header);
 
     if let Some(val) = val {
@@ -41,15 +43,15 @@ fn rate_limit(headers: &Headers, header: &'static str) -> Result<Option<i32>, er
     }
 }
 
-fn rate_limit_limit(headers: &Headers) -> Result<Option<i32>, error::Error> {
+fn rate_limit_limit(headers: &Headers) -> Result<Option<i32>> {
     rate_limit(headers, X_RATE_LIMIT_LIMIT)
 }
 
-fn rate_limit_remaining(headers: &Headers) -> Result<Option<i32>, error::Error> {
+fn rate_limit_remaining(headers: &Headers) -> Result<Option<i32>> {
     rate_limit(headers, X_RATE_LIMIT_REMAINING)
 }
 
-fn rate_limit_reset(headers: &Headers) -> Result<Option<i32>, error::Error> {
+fn rate_limit_reset(headers: &Headers) -> Result<Option<i32>> {
     rate_limit(headers, X_RATE_LIMIT_RESET)
 }
 
@@ -394,7 +396,7 @@ impl<T> FromIterator<Response<T>> for Response<Vec<T>> {
     }
 }
 
-pub fn get_response(request: Request<Body>) -> Result<ResponseFuture, error::Error> {
+pub fn get_response(request: Request<Body>) -> Result<ResponseFuture> {
     // TODO: num-cpus?
     #[cfg(feature = "native_tls")]
     let connector = HttpsConnector::new();
@@ -425,7 +427,7 @@ impl RawFuture {
 }
 
 impl Future for RawFuture {
-    type Output = Result<String, error::Error>;
+    type Output = Result<String>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         if let Some(req) = self.request.take() {
@@ -534,11 +536,11 @@ pub fn make_raw_future(request: Request<Body>) -> RawFuture {
 #[must_use = "futures do nothing unless polled"]
 pub struct TwitterFuture<T> {
     request: RawFuture,
-    make_resp: fn(String, &Headers) -> Result<T, error::Error>,
+    make_resp: fn(String, &Headers) -> Result<T>,
 }
 
 impl<T> Future for TwitterFuture<T> {
-    type Output = Result<T, error::Error>;
+    type Output = Result<T>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let full_resp = match Pin::new(&mut self.request).poll(cx) {
@@ -556,14 +558,14 @@ impl<T> Future for TwitterFuture<T> {
 pub fn make_response<T: for<'a> Deserialize<'a>>(
     full_resp: String,
     headers: &Headers,
-) -> Result<Response<T>, error::Error> {
+) -> Result<Response<T>> {
     let out = serde_json::from_str(&full_resp)?;
     Ok(Response::map(rate_headers(headers)?, |_| out))
 }
 
 pub fn make_future<T>(
     request: Request<Body>,
-    make_resp: fn(String, &Headers) -> Result<T, error::Error>,
+    make_resp: fn(String, &Headers) -> Result<T>,
 ) -> TwitterFuture<T> {
     TwitterFuture {
         request: make_raw_future(request),
@@ -572,13 +574,19 @@ pub fn make_future<T>(
 }
 
 /// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
-pub fn make_parsed_future<T: for<'de> Deserialize<'de>>(
+pub async fn make_parsed_future<T: for<'de> Deserialize<'de>>(
+    request: Request<Body>,
+) -> Result<Response<T>> {
+    make_future(request, make_response).await
+}
+
+pub fn make_parsed_future2<T: for<'de> Deserialize<'de>>(
     request: Request<Body>,
 ) -> TwitterFuture<Response<T>> {
     make_future(request, make_response)
 }
 
-pub fn rate_headers(resp: &Headers) -> Result<Response<()>, error::Error> {
+pub fn rate_headers(resp: &Headers) -> Result<Response<()>> {
     Ok(Response {
         rate_limit: rate_limit_limit(resp)?.unwrap_or(-1),
         rate_limit_remaining: rate_limit_remaining(resp)?.unwrap_or(-1),
