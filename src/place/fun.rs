@@ -2,8 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::future::Future;
-
 use crate::common::*;
 use crate::error::{Error::BadUrl, Result};
 use crate::{auth, links};
@@ -25,12 +23,10 @@ use super::*;
 /// assert!(result.full_name == "Dallas, TX");
 /// # }
 /// ```
-pub fn show(id: &str, token: &auth::Token) -> impl Future<Output = Result<Response<Place>>> {
+pub async fn show(id: &str, token: &auth::Token) -> Result<Response<Place>> {
     let url = format!("{}/{}.json", links::place::SHOW_STEM, id);
-
     let req = auth::get(&url, token, None);
-
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 /// Begins building a reverse-geocode search with the given coordinate.
