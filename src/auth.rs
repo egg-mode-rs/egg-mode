@@ -574,7 +574,7 @@ pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request<
 ///     .unwrap();
 /// # }
 /// ```
-pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> TwitterFuture<KeyPair> {
+pub async fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Result<KeyPair> {
     let header = get_header(
         Method::POST,
         links::auth::REQUEST_TOKEN,
@@ -615,7 +615,7 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Twitt
         ))
     }
 
-    make_future(request, parse_tok)
+    make_future(request, parse_tok).await
 }
 
 /// With the given request KeyPair, return a URL that a user can access to accept or reject an
@@ -830,7 +830,7 @@ pub async fn access_token<S: Into<String>>(
 /// For more information, see the Twitter documentation on [Application-only authentication][auth].
 ///
 /// [auth]: https://dev.twitter.com/oauth/application-only
-pub fn bearer_token(con_token: &KeyPair) -> TwitterFuture<Token> {
+pub async fn bearer_token(con_token: &KeyPair) -> Result<Token> {
     let content = "application/x-www-form-urlencoded;charset=UTF-8";
 
     let auth_header = bearer_request(con_token);
@@ -850,7 +850,7 @@ pub fn bearer_token(con_token: &KeyPair) -> TwitterFuture<Token> {
         Ok(Token::Bearer(result.to_owned()))
     }
 
-    make_future(request, parse_tok)
+    make_future(request, parse_tok).await
 }
 
 /// Invalidate the given Bearer token using the given consumer KeyPair. Upon success, the future
@@ -859,7 +859,7 @@ pub fn bearer_token(con_token: &KeyPair) -> TwitterFuture<Token> {
 /// # Panics
 ///
 /// If this function is handed a `Token` that is not a Bearer token, this function will panic.
-pub fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> TwitterFuture<Token> {
+pub async fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> Result<Token> {
     let token = if let Token::Bearer(ref token) = *token {
         token
     } else {
@@ -886,7 +886,7 @@ pub fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> TwitterFuture<To
         Ok(Token::Bearer(result.to_owned()))
     }
 
-    make_future(request, parse_tok)
+    make_future(request, parse_tok).await
 }
 
 /// If the given tokens are valid, return the user information for the authenticated user.

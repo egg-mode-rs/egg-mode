@@ -563,7 +563,18 @@ pub fn make_response<T: for<'a> Deserialize<'a>>(
     Ok(Response::map(rate_headers(headers)?, |_| out))
 }
 
-pub fn make_future<T>(
+pub async fn make_future<T>(
+    request: Request<Body>,
+    make_resp: fn(String, &Headers) -> Result<T>,
+) -> Result<T> {
+    TwitterFuture {
+        request: make_raw_future(request),
+        make_resp: make_resp,
+    }
+    .await
+}
+
+pub fn make_future2<T>(
     request: Request<Body>,
     make_resp: fn(String, &Headers) -> Result<T>,
 ) -> TwitterFuture<T> {
@@ -583,7 +594,7 @@ pub async fn make_parsed_future<T: for<'de> Deserialize<'de>>(
 pub fn make_parsed_future2<T: for<'de> Deserialize<'de>>(
     request: Request<Body>,
 ) -> TwitterFuture<Response<T>> {
-    make_future(request, make_response)
+    make_future2(request, make_response)
 }
 
 pub fn rate_headers(resp: &Headers) -> Result<Response<()>> {
