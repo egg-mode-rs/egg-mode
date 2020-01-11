@@ -456,7 +456,7 @@ impl<'a> UploadFuture<'a> {
                 }
             }
 
-            Some(make_future(req, parse_resp))
+            Some(make_future2(req, parse_resp))
         } else {
             None
         }
@@ -503,7 +503,7 @@ impl<'a> UploadFuture<'a> {
             }
         }
 
-        make_future(req, parse_resp)
+        make_future2(req, parse_resp)
     }
 }
 
