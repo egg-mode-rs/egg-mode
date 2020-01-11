@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use crate::common::*;
-use crate::error::Error::InvalidResponse;
+use crate::error::{Error::InvalidResponse, Result};
 use crate::user::UserID;
 use crate::{auth, cursor, links};
 use serde_json;
@@ -13,23 +13,21 @@ use serde_json;
 use super::*;
 
 ///Lookup a single tweet by numeric ID.
-pub fn show(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
+pub async fn show(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
     let params = ParamList::new()
         .extended_tweets()
         .add_param("id", id.to_string())
         .add_param("include_my_retweet", "true")
         .add_param("include_ext_alt_text", "true");
-
     let req = auth::get(links::statuses::SHOW, token, Some(&params));
-
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Lookup the most recent 100 (or fewer) retweets of the given tweet.
 ///
 ///Use the `count` parameter to indicate how many retweets you would like to retrieve. If `count`
 ///is 0 or greater than 100, it will be defaulted to 100 before making the call.
-pub fn retweets_of(id: u64, count: u32, token: &auth::Token) -> FutureResponse<Vec<Tweet>> {
+pub async fn retweets_of(id: u64, count: u32, token: &auth::Token) -> Result<Response<Vec<Tweet>>> {
     let params = ParamList::new().extended_tweets().add_param(
         "count",
         if count == 0 || count > 100 {
@@ -41,10 +39,8 @@ pub fn retweets_of(id: u64, count: u32, token: &auth::Token) -> FutureResponse<V
     );
 
     let url = format!("{}/{}.json", links::statuses::RETWEETS_OF_STEM, id);
-
     let req = auth::get(&url, token, Some(&params));
-
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Lookup the user IDs that have retweeted the given tweet.
@@ -65,10 +61,10 @@ pub fn retweeters_of(
 ///
 ///This function differs from `lookup_map` in how it handles protected or nonexistent tweets.
 ///`lookup` gives a Vec of just the tweets it could load, leaving out any that it couldn't find.
-pub fn lookup<I: IntoIterator<Item = u64>>(
+pub async fn lookup<I: IntoIterator<Item = u64>>(
     ids: I,
     token: &auth::Token,
-) -> FutureResponse<Vec<Tweet>> {
+) -> Result<Response<Vec<Tweet>>> {
     let id_param = ids.into_iter().fold(String::new(), |mut acc, x| {
         if !acc.is_empty() {
             acc.push(',');
@@ -82,8 +78,7 @@ pub fn lookup<I: IntoIterator<Item = u64>>(
         .add_param("include_ext_alt_text", "true");
 
     let req = auth::post(links::statuses::LOOKUP, token, Some(&params));
-
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Lookup tweet information for the given list of tweet IDs, and return a map indicating which IDs
@@ -93,10 +88,10 @@ pub fn lookup<I: IntoIterator<Item = u64>>(
 ///`lookup_map` gives a map containing every ID in the input slice; tweets that don't exist or
 ///can't be read by the authenticated user store `None` in the map, whereas tweets that could be
 ///loaded store `Some` and the requested status.
-pub fn lookup_map<I: IntoIterator<Item = u64>>(
+pub async fn lookup_map<I: IntoIterator<Item = u64>>(
     ids: I,
     token: &auth::Token,
-) -> FutureResponse<HashMap<u64, Option<Tweet>>> {
+) -> Result<Response<HashMap<u64, Option<Tweet>>>> {
     let id_param = ids.into_iter().fold(String::new(), |mut acc, x| {
         if !acc.is_empty() {
             acc.push(',');
@@ -115,7 +110,7 @@ pub fn lookup_map<I: IntoIterator<Item = u64>>(
     fn parse_map(
         full_resp: String,
         headers: &Headers,
-    ) -> Result<Response<HashMap<u64, Option<Tweet>>>, error::Error> {
+    ) -> Result<Response<HashMap<u64, Option<Tweet>>>> {
         let parsed: Response<serde_json::Value> = make_response(full_resp, headers)?;
         let mut map = HashMap::new();
 
@@ -145,7 +140,7 @@ pub fn lookup_map<I: IntoIterator<Item = u64>>(
         Ok(Response::map(parsed, |_| map))
     }
 
-    make_future(req, parse_map)
+    make_future(req, parse_map).await
 }
 
 ///Make a `Timeline` struct for navigating the collection of tweets posted by the authenticated
@@ -217,11 +212,11 @@ pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> Timeli
 ///
 ///On success, the future returned by this function yields the retweet, with the original status
 ///contained in `retweeted_status`.
-pub fn retweet(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
+pub async fn retweet(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
     let params = ParamList::new().extended_tweets();
     let url = format!("{}/{}.json", links::statuses::RETWEET_STEM, id);
     let req = auth::post(&url, token, Some(&params));
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Unretweet the given status as the authenticated user.
@@ -230,44 +225,41 @@ pub fn retweet(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
 ///it.
 ///
 ///On success, the future returned by this function yields the original tweet.
-pub fn unretweet(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
+pub async fn unretweet(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
     let params = ParamList::new().extended_tweets();
     let url = format!("{}/{}.json", links::statuses::UNRETWEET_STEM, id);
     let req = auth::post(&url, token, Some(&params));
-
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Like the given status as the authenticated user.
 ///
 ///On success, the future returned by this function yields the liked tweet.
-pub fn like(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
+pub async fn like(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
     let params = ParamList::new()
         .extended_tweets()
         .add_param("id", id.to_string());
-
     let req = auth::post(links::statuses::LIKE, token, Some(&params));
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Clears a like of the given status as the authenticated user.
 ///
 ///On success, the future returned by this function yields the given tweet.
-pub fn unlike(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
+pub async fn unlike(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
     let params = ParamList::new()
         .extended_tweets()
         .add_param("id", id.to_string());
-
     let req = auth::post(links::statuses::UNLIKE, token, Some(&params));
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Delete the given tweet. The authenticated user must be the user who posted the given tweet.
 ///
 ///On success, the future returned by this function yields the given tweet.
-pub fn delete(id: u64, token: &auth::Token) -> FutureResponse<Tweet> {
+pub async fn delete(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
     let params = ParamList::new().extended_tweets();
     let url = format!("{}/{}.json", links::statuses::DELETE_STEM, id);
     let req = auth::post(&url, token, Some(&params));
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }

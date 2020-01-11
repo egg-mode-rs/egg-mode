@@ -2,9 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::future::Future;
+
 use crate::common::*;
-use crate::error::Error::BadUrl;
-use crate::{auth, error, links};
+use crate::error::{Error::BadUrl, Result};
+use crate::{auth, links};
 
 use super::PlaceQuery;
 use super::*;
@@ -23,7 +25,7 @@ use super::*;
 /// assert!(result.full_name == "Dallas, TX");
 /// # }
 /// ```
-pub fn show(id: &str, token: &auth::Token) -> FutureResponse<Place> {
+pub fn show(id: &str, token: &auth::Token) -> impl Future<Output = Result<Response<Place>>> {
     let url = format!("{}/{}.json", links::place::SHOW_STEM, id);
 
     let req = auth::get(&url, token, None);
@@ -54,7 +56,7 @@ pub fn reverse_geocode(latitude: f64, longitude: f64) -> GeocodeBuilder {
     GeocodeBuilder::new(latitude, longitude)
 }
 
-fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, error::Error> {
+fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>> {
     let mut iter = full.split('?');
 
     if let Some(base_part) = iter.next() {
@@ -83,10 +85,7 @@ fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>, err
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `reverse_geocode` query URL.
-pub async fn reverse_geocode_url(
-    url: &str,
-    token: &auth::Token,
-) -> Result<Response<SearchResult>, error::Error> {
+pub async fn reverse_geocode_url(url: &str, token: &auth::Token) -> Result<Response<SearchResult>> {
     let params = parse_url(links::place::REVERSE_GEOCODE, url)?;
     let req = auth::get(links::place::REVERSE_GEOCODE, &token, Some(&params));
     make_parsed_future(req).await
@@ -149,10 +148,7 @@ pub fn search_ip<'a>(query: &'a str) -> SearchBuilder<'a> {
 ///
 ///In addition to errors that might occur generally, this function will return a `BadUrl` error if
 ///the given URL is not a valid `search` query URL.
-pub async fn search_url(
-    url: &str,
-    token: &auth::Token,
-) -> Result<Response<SearchResult>, error::Error> {
+pub async fn search_url(url: &str, token: &auth::Token) -> Result<Response<SearchResult>> {
     let params = parse_url(links::place::SEARCH, url)?;
     let req = auth::get(links::place::REVERSE_GEOCODE, &token, Some(&params));
     make_parsed_future(req).await

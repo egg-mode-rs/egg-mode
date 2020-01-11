@@ -22,7 +22,10 @@ use serde_json;
 use sha1::Sha1;
 
 use crate::common::*;
-use crate::{error, links};
+use crate::{
+    error::{self, Result},
+    links,
+};
 
 //the encode sets in the url crate don't quite match what twitter wants, so i'll make up my own
 fn percent_encode(src: &str) -> PercentEncode {
@@ -587,7 +590,7 @@ pub fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Twitt
         .body(Body::empty())
         .unwrap();
 
-    fn parse_tok(full_resp: String, _: &Headers) -> Result<KeyPair, error::Error> {
+    fn parse_tok(full_resp: String, _: &Headers) -> Result<KeyPair> {
         let mut key: Option<String> = None;
         let mut secret: Option<String> = None;
 
@@ -746,7 +749,7 @@ pub async fn access_token<S: Into<String>>(
     con_token: KeyPair,
     request_token: &KeyPair,
     verifier: S,
-) -> Result<(Token, u64, String), error::Error> {
+) -> Result<(Token, u64, String)> {
     let header = get_header(
         Method::POST,
         links::auth::ACCESS_TOKEN,
@@ -837,7 +840,7 @@ pub fn bearer_token(con_token: &KeyPair) -> TwitterFuture<Token> {
         .body(Body::from("grant_type=client_credentials"))
         .unwrap();
 
-    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
+    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token> {
         let decoded: serde_json::Value = serde_json::from_str(&full_resp)?;
         let result = decoded
             .get("access_token")
@@ -873,7 +876,7 @@ pub fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> TwitterFuture<To
         .body(body)
         .unwrap();
 
-    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token, error::Error> {
+    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token> {
         let decoded: serde_json::Value = serde_json::from_str(&full_resp)?;
         let result = decoded
             .get("access_token")
@@ -891,10 +894,9 @@ pub fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> TwitterFuture<To
 /// If you have cached access tokens, using this method is a convenient way to make sure they're
 /// still valid. If the user has revoked access from your app, this function will return an error
 /// from Twitter indicating that you don't have access to the user.
-pub fn verify_tokens(token: &Token) -> FutureResponse<crate::user::TwitterUser> {
+pub async fn verify_tokens(token: &Token) -> Result<Response<crate::user::TwitterUser>> {
     let req = get(links::auth::VERIFY_CREDENTIALS, token, None);
-
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 #[cfg(test)]
