@@ -294,7 +294,7 @@ where
 
         let req = auth::get(self.link, &self.token, Some(&params));
 
-        make_parsed_future(req)
+        make_parsed_future2(req)
     }
 
     ///Creates a new instance of CursorIter, with the given parameters and empty initial results.

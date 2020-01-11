@@ -217,7 +217,7 @@ impl<'a> ListUpdate<'a> {
     }
 
     ///Sends the update request to Twitter.
-    pub fn send(self, token: &auth::Token) -> FutureResponse<List> {
+    pub async fn send(self, token: &auth::Token) -> Result<Response<List>, crate::error::Error> {
         let params = ParamList::new()
             .add_list_param(&self.list)
             .add_opt_param("name", self.name)
@@ -228,8 +228,7 @@ impl<'a> ListUpdate<'a> {
             .add_opt_param("description", self.desc);
 
         let req = auth::post(links::lists::UPDATE, token, Some(&params));
-
-        make_parsed_future(req)
+        make_parsed_future(req).await
     }
 }
 

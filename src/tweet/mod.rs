@@ -518,7 +518,7 @@ impl<'a> Timeline<'a> {
     ///ID to bound with.
     pub fn older(self, since_id: Option<u64>) -> TimelineFuture<'a> {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
-        let loader = make_parsed_future(req);
+        let loader = make_parsed_future2(req);
 
         TimelineFuture {
             timeline: Some(self),
@@ -530,7 +530,7 @@ impl<'a> Timeline<'a> {
     ///ID to bound with.
     pub fn newer(self, max_id: Option<u64>) -> TimelineFuture<'a> {
         let req = self.request(self.max_id, max_id);
-        let loader = make_parsed_future(req);
+        let loader = make_parsed_future2(req);
 
         TimelineFuture {
             timeline: Some(self),
