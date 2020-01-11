@@ -2,8 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::future::Future;
-
 use super::*;
 
 use crate::cursor::{CursorIter, ListCursor, UserCursor};
@@ -34,18 +32,18 @@ pub fn memberships<'a, T: Into<UserID<'a>>>(
 ///
 ///If the user has more than 100 lists total like this, you'll need to call `ownerships` and
 ///`subscriptions` separately to be able to properly load everything.
-pub fn list<'id, T: Into<UserID<'id>>>(
+pub async fn list<'id, T: Into<UserID<'id>>>(
     user: T,
     owned_first: bool,
     token: &auth::Token,
-) -> impl Future<Output = Result<Response<Vec<List>>>> {
+) -> Result<Response<Vec<List>>> {
     let params = ParamList::new()
         .add_name_param(&user.into())
         .add_param("reverse", owned_first.to_string());
 
     let req = auth::get(links::lists::LIST, token, Some(&params));
 
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Look up the lists the given user is subscribed to, but not ones the user made themselves.
@@ -73,12 +71,12 @@ pub fn ownerships<'a, T: Into<UserID<'a>>>(
 }
 
 ///Look up information for a single list.
-pub fn show(list: ListID, token: &auth::Token) -> impl Future<Output = Result<Response<List>>> {
+pub async fn show(list: ListID<'_>, token: &auth::Token) -> Result<Response<List>> {
     let params = ParamList::new().add_list_param(&list);
 
     let req = auth::get(links::lists::SHOW, token, Some(&params));
 
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Look up the users that have been added to the given list.
@@ -102,11 +100,11 @@ pub fn subscribers<'a>(list: ListID<'a>, token: &auth::Token) -> CursorIter<'a, 
 }
 
 ///Check whether the given user is subscribed to the given list.
-pub fn is_subscribed<'id, T: Into<UserID<'id>>>(
+pub async fn is_subscribed<'id, T: Into<UserID<'id>>>(
     user: T,
-    list: ListID,
+    list: ListID<'_>,
     token: &auth::Token,
-) -> impl Future<Output = Result<Response<bool>>> {
+) -> Result<Response<bool>> {
     let params = ParamList::new()
         .add_list_param(&list)
         .add_name_param(&user.into());
@@ -133,15 +131,15 @@ pub fn is_subscribed<'id, T: Into<UserID<'id>>>(
         }
     }
 
-    make_future(req, parse_resp)
+    make_future(req, parse_resp).await
 }
 
 ///Check whether the given user has been added to the given list.
-pub fn is_member<'id, T: Into<UserID<'id>>>(
+pub async fn is_member<'id, T: Into<UserID<'id>>>(
     user: T,
-    list: ListID,
+    list: ListID<'_>,
     token: &auth::Token,
-) -> impl Future<Output = Result<Response<bool>>> {
+) -> Result<Response<bool>> {
     let params = ParamList::new()
         .add_list_param(&list)
         .add_name_param(&user.into());
@@ -168,7 +166,7 @@ pub fn is_member<'id, T: Into<UserID<'id>>>(
         }
     }
 
-    make_future(req, parse_resp)
+    make_future(req, parse_resp).await
 }
 
 ///Begin navigating the collection of tweets made by the users added to the given list.
@@ -190,18 +188,18 @@ pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &auth::Token) -> tw
 ///Note that lists cannot have more than 5000 members.
 ///
 ///Upon success, the future returned by this function yields the freshly-modified list.
-pub fn add_member<'id, T: Into<UserID<'id>>>(
-    list: ListID,
+pub async fn add_member<'id, T: Into<UserID<'id>>>(
+    list: ListID<'_>,
     user: T,
     token: &auth::Token,
-) -> impl Future<Output = Result<Response<List>>> {
+) -> Result<Response<List>> {
     let params = ParamList::new()
         .add_list_param(&list)
         .add_name_param(&user.into());
 
     let req = auth::post(links::lists::ADD, token, Some(&params));
 
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Adds a set of users to the given list.
@@ -217,11 +215,11 @@ pub fn add_member<'id, T: Into<UserID<'id>>>(
 ///When using this method, take care not to add and remove many members in rapid succession; there
 ///are no guarantees that the result of a `add_member_list` or `remove_member_list` will be
 ///immediately available for a corresponding removal or addition, respectively.
-pub fn add_member_list<'id, T, I>(
+pub async fn add_member_list<'id, T, I>(
     members: I,
-    list: ListID,
+    list: ListID<'_>,
     token: &auth::Token,
-) -> impl Future<Output = Result<Response<List>>>
+) -> Result<Response<List>>
 where
     T: Into<UserID<'id>>,
     I: IntoIterator<Item = T>,
@@ -248,22 +246,22 @@ where
 
     let req = auth::post(links::lists::ADD_LIST, token, Some(&params));
 
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Removes the given user from the given list.
-pub fn remove_member<'id, T: Into<UserID<'id>>>(
-    list: ListID,
+pub async fn remove_member<'id, T: Into<UserID<'id>>>(
+    list: ListID<'_>,
     user: T,
     token: &auth::Token,
-) -> impl Future<Output = Result<Response<List>>> {
+) -> Result<Response<List>> {
     let params = ParamList::new()
         .add_list_param(&list)
         .add_name_param(&user.into());
 
     let req = auth::post(links::lists::REMOVE_MEMBER, token, Some(&params));
 
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Removes a set of users from the given list.
@@ -278,11 +276,11 @@ pub fn remove_member<'id, T: Into<UserID<'id>>>(
 ///When using this method, take care not to add and remove many members in rapid succession; there
 ///are no guarantees that the result of a `add_member_list` or `remove_member_list` will be
 ///immediately available for a corresponding removal or addition, respectively.
-pub fn remove_member_list<'a, T, I>(
+pub async fn remove_member_list<'a, T, I>(
     members: I,
-    list: ListID,
+    list: ListID<'_>,
     token: &auth::Token,
-) -> impl Future<Output = Result<Response<List>>>
+) -> Result<Response<List>>
 where
     T: Into<UserID<'a>>,
     I: IntoIterator<Item = T>,
@@ -309,7 +307,7 @@ where
 
     let req = auth::post(links::lists::REMOVE_LIST, token, Some(&params));
 
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Creates a list, with the given name, visibility, and description.
@@ -317,12 +315,12 @@ where
 ///The new list is owned by the authenticated user, and its slug can be created with their handle
 ///and the name given to `name`. Twitter places an upper limit on 1000 lists owned by a single
 ///account.
-pub fn create(
+pub async fn create(
     name: &str,
     public: bool,
     desc: Option<&str>,
     token: &auth::Token,
-) -> impl Future<Output = Result<Response<List>>> {
+) -> Result<Response<List>> {
     let params = ParamList::new()
         .add_param("name", name)
         .add_param("mode", if public { "public" } else { "private" })
@@ -330,45 +328,39 @@ pub fn create(
 
     let req = auth::post(links::lists::CREATE, token, Some(&params));
 
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Deletes the given list.
 ///
 ///The authenticated user must have created the list.
-pub fn delete(list: ListID, token: &auth::Token) -> impl Future<Output = Result<Response<List>>> {
+pub async fn delete(list: ListID<'_>, token: &auth::Token) -> Result<Response<List>> {
     let params = ParamList::new().add_list_param(&list);
 
     let req = auth::post(links::lists::DELETE, token, Some(&params));
 
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Subscribes the authenticated user to the given list.
 ///
 ///Subscribing to a list is a way to make it available in the "Lists" section of a user's profile
 ///without having to create it themselves.
-pub fn subscribe(
-    list: ListID,
-    token: &auth::Token,
-) -> impl Future<Output = Result<Response<List>>> {
+pub async fn subscribe(list: ListID<'_>, token: &auth::Token) -> Result<Response<List>> {
     let params = ParamList::new().add_list_param(&list);
 
     let req = auth::post(links::lists::SUBSCRIBE, token, Some(&params));
 
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Unsubscribes the authenticated user from the given list.
-pub fn unsubscribe(
-    list: ListID,
-    token: &auth::Token,
-) -> impl Future<Output = Result<Response<List>>> {
+pub async fn unsubscribe(list: ListID<'_>, token: &auth::Token) -> Result<Response<List>> {
     let params = ParamList::new().add_list_param(&list);
 
     let req = auth::post(links::lists::UNSUBSCRIBE, token, Some(&params));
 
-    make_parsed_future(req)
+    make_parsed_future(req).await
 }
 
 ///Begins updating a list's metadata.
