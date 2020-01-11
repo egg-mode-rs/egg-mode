@@ -71,7 +71,7 @@ use chrono;
 use serde::Deserialize;
 
 use crate::common::*;
-use crate::{auth, error, links, user};
+use crate::{auth, links, user};
 
 mod fun;
 pub use self::fun::*;

@@ -2,10 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::future::Future;
+
 use super::*;
 
 use crate::cursor::{CursorIter, ListCursor, UserCursor};
-use crate::error::Error::TwitterError;
+use crate::error::{Error::TwitterError, Result};
 use crate::user::{TwitterUser, UserID};
 use crate::{auth, links, tweet};
 
@@ -36,7 +38,7 @@ pub fn list<'id, T: Into<UserID<'id>>>(
     user: T,
     owned_first: bool,
     token: &auth::Token,
-) -> FutureResponse<Vec<List>> {
+) -> impl Future<Output = Result<Response<Vec<List>>>> {
     let params = ParamList::new()
         .add_name_param(&user.into())
         .add_param("reverse", owned_first.to_string());
@@ -71,7 +73,7 @@ pub fn ownerships<'a, T: Into<UserID<'a>>>(
 }
 
 ///Look up information for a single list.
-pub fn show(list: ListID, token: &auth::Token) -> FutureResponse<List> {
+pub fn show(list: ListID, token: &auth::Token) -> impl Future<Output = Result<Response<List>>> {
     let params = ParamList::new().add_list_param(&list);
 
     let req = auth::get(links::lists::SHOW, token, Some(&params));
@@ -104,14 +106,14 @@ pub fn is_subscribed<'id, T: Into<UserID<'id>>>(
     user: T,
     list: ListID,
     token: &auth::Token,
-) -> FutureResponse<bool> {
+) -> impl Future<Output = Result<Response<bool>>> {
     let params = ParamList::new()
         .add_list_param(&list)
         .add_name_param(&user.into());
 
     let req = auth::get(links::lists::IS_SUBSCRIBER, token, Some(&params));
 
-    fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<bool>, error::Error> {
+    fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<bool>> {
         let out: WebResponse<TwitterUser> = make_response(full_resp, headers);
 
         match out {
@@ -139,14 +141,14 @@ pub fn is_member<'id, T: Into<UserID<'id>>>(
     user: T,
     list: ListID,
     token: &auth::Token,
-) -> FutureResponse<bool> {
+) -> impl Future<Output = Result<Response<bool>>> {
     let params = ParamList::new()
         .add_list_param(&list)
         .add_name_param(&user.into());
 
     let req = auth::get(links::lists::IS_MEMBER, token, Some(&params));
 
-    fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<bool>, error::Error> {
+    fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<bool>> {
         let out: WebResponse<TwitterUser> = make_response(full_resp, headers);
 
         match out {
@@ -192,7 +194,7 @@ pub fn add_member<'id, T: Into<UserID<'id>>>(
     list: ListID,
     user: T,
     token: &auth::Token,
-) -> FutureResponse<List> {
+) -> impl Future<Output = Result<Response<List>>> {
     let params = ParamList::new()
         .add_list_param(&list)
         .add_name_param(&user.into());
@@ -219,7 +221,7 @@ pub fn add_member_list<'id, T, I>(
     members: I,
     list: ListID,
     token: &auth::Token,
-) -> FutureResponse<List>
+) -> impl Future<Output = Result<Response<List>>>
 where
     T: Into<UserID<'id>>,
     I: IntoIterator<Item = T>,
@@ -254,7 +256,7 @@ pub fn remove_member<'id, T: Into<UserID<'id>>>(
     list: ListID,
     user: T,
     token: &auth::Token,
-) -> FutureResponse<List> {
+) -> impl Future<Output = Result<Response<List>>> {
     let params = ParamList::new()
         .add_list_param(&list)
         .add_name_param(&user.into());
@@ -280,7 +282,7 @@ pub fn remove_member_list<'a, T, I>(
     members: I,
     list: ListID,
     token: &auth::Token,
-) -> FutureResponse<List>
+) -> impl Future<Output = Result<Response<List>>>
 where
     T: Into<UserID<'a>>,
     I: IntoIterator<Item = T>,
@@ -320,7 +322,7 @@ pub fn create(
     public: bool,
     desc: Option<&str>,
     token: &auth::Token,
-) -> FutureResponse<List> {
+) -> impl Future<Output = Result<Response<List>>> {
     let params = ParamList::new()
         .add_param("name", name)
         .add_param("mode", if public { "public" } else { "private" })
@@ -334,7 +336,7 @@ pub fn create(
 ///Deletes the given list.
 ///
 ///The authenticated user must have created the list.
-pub fn delete(list: ListID, token: &auth::Token) -> FutureResponse<List> {
+pub fn delete(list: ListID, token: &auth::Token) -> impl Future<Output = Result<Response<List>>> {
     let params = ParamList::new().add_list_param(&list);
 
     let req = auth::post(links::lists::DELETE, token, Some(&params));
@@ -346,7 +348,10 @@ pub fn delete(list: ListID, token: &auth::Token) -> FutureResponse<List> {
 ///
 ///Subscribing to a list is a way to make it available in the "Lists" section of a user's profile
 ///without having to create it themselves.
-pub fn subscribe(list: ListID, token: &auth::Token) -> FutureResponse<List> {
+pub fn subscribe(
+    list: ListID,
+    token: &auth::Token,
+) -> impl Future<Output = Result<Response<List>>> {
     let params = ParamList::new().add_list_param(&list);
 
     let req = auth::post(links::lists::SUBSCRIBE, token, Some(&params));
@@ -355,7 +360,10 @@ pub fn subscribe(list: ListID, token: &auth::Token) -> FutureResponse<List> {
 }
 
 ///Unsubscribes the authenticated user from the given list.
-pub fn unsubscribe(list: ListID, token: &auth::Token) -> FutureResponse<List> {
+pub fn unsubscribe(
+    list: ListID,
+    token: &auth::Token,
+) -> impl Future<Output = Result<Response<List>>> {
     let params = ParamList::new().add_list_param(&list);
 
     let req = auth::post(links::lists::UNSUBSCRIBE, token, Some(&params));

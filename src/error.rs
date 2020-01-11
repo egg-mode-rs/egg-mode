@@ -24,6 +24,9 @@ use serde_json;
 use std::{self, fmt};
 use tokio;
 
+/// Convenient alias to a Result containing a local Error type
+pub(crate) type Result<T> = std::result::Result<T, Error>;
+
 ///Represents a collection of errors returned from a Twitter API call.
 ///
 ///This is returned as part of [`Error::TwitterError`][] whenever Twitter has rejected a call.

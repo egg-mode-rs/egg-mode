@@ -66,7 +66,7 @@ use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 
 use crate::common::*;
-use crate::error::Error::InvalidResponse;
+use crate::error::{Error::InvalidResponse, Result};
 use crate::stream::FilterLevel;
 use crate::{auth, entities, error, links, place, user};
 
@@ -234,7 +234,7 @@ pub struct Tweet {
 }
 
 impl<'de> Deserialize<'de> for Tweet {
-    fn deserialize<D>(deser: D) -> Result<Tweet, D::Error>
+    fn deserialize<D>(deser: D) -> std::result::Result<Tweet, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -324,7 +324,7 @@ pub struct TweetSource {
 impl FromStr for TweetSource {
     type Err = error::Error;
 
-    fn from_str(full: &str) -> Result<TweetSource, error::Error> {
+    fn from_str(full: &str) -> Result<TweetSource> {
         use lazy_static::lazy_static;
         lazy_static! {
             static ref RE_URL: Regex = Regex::new("href=\"(.*?)\"").unwrap();
@@ -360,7 +360,7 @@ impl FromStr for TweetSource {
     }
 }
 
-fn deserialize_tweet_source<'de, D>(ser: D) -> Result<Option<TweetSource>, D::Error>
+fn deserialize_tweet_source<'de, D>(ser: D) -> std::result::Result<Option<TweetSource>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -545,8 +545,12 @@ impl<'a> Timeline<'a> {
     ///
     ///If the range of tweets given by the IDs would return more than `self.count`, the newest set
     ///of tweets will be returned.
-    pub fn call(&self, since_id: Option<u64>, max_id: Option<u64>) -> FutureResponse<Vec<Tweet>> {
-        make_parsed_future(self.request(since_id, max_id))
+    pub async fn call(
+        &self,
+        since_id: Option<u64>,
+        max_id: Option<u64>,
+    ) -> Result<Response<Vec<Tweet>>> {
+        make_parsed_future(self.request(since_id, max_id)).await
     }
 
     ///Helper function to construct a `Request` from the current state.
@@ -604,7 +608,7 @@ pub struct TimelineFuture<'timeline> {
 }
 
 impl<'timeline> Future for TimelineFuture<'timeline> {
-    type Output = Result<(Timeline<'timeline>, Response<Vec<Tweet>>), error::Error>;
+    type Output = Result<(Timeline<'timeline>, Response<Vec<Tweet>>)>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         match Pin::new(&mut self.loader).poll(cx) {
@@ -837,30 +841,21 @@ impl<'a> DraftTweet<'a> {
     }
 
     ///Send the assembled tweet as the authenticated user.
-    pub fn send(&self, token: &auth::Token) -> FutureResponse<Tweet> {
+    pub async fn send(&self, token: &auth::Token) -> Result<Response<Tweet>> {
         let mut params = ParamList::new()
             .add_param("status", self.text.clone())
-            .add_opt_param(
-                "in_reply_to_status_id",
-                self.in_reply_to.map(|v| v.to_string()),
-            )
+            .add_opt_param("in_reply_to_status_id", self.in_reply_to.map_string())
             .add_opt_param(
                 "auto_populate_reply_metadata",
-                self.auto_populate_reply_metadata.map(|v| v.to_string()),
+                self.auto_populate_reply_metadata.map_string(),
             )
             .add_opt_param(
                 "attachment_url",
                 self.attachment_url.as_ref().map(|v| v.clone()),
             )
-            .add_opt_param(
-                "display_coordinates",
-                self.display_coordinates.map(|v| v.to_string()),
-            )
+            .add_opt_param("display_coordinates", self.display_coordinates.map_string())
             .add_opt_param("place_id", self.place_id.as_ref().map(|v| v.clone()))
-            .add_opt_param(
-                "possible_sensitive",
-                self.possibly_sensitive.map(|v| v.to_string()),
-            );
+            .add_opt_param("possible_sensitive", self.possibly_sensitive.map_string());
 
         if let Some(ref exclude) = self.exclude_reply_user_ids {
             let list = exclude
@@ -888,7 +883,7 @@ impl<'a> DraftTweet<'a> {
         }
 
         let req = auth::post(links::statuses::UPDATE, token, Some(&params));
-        make_parsed_future(req)
+        make_parsed_future(req).await
     }
 }
 

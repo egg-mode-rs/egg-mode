@@ -34,7 +34,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json;
 
 use crate::common::*;
-use crate::{auth, links};
+use crate::{auth, error, links};
 
 mod fun;
 
@@ -190,7 +190,7 @@ impl GeocodeBuilder {
     }
 
     ///Finalize the search parameters and return the results collection.
-    pub fn call(&self, token: &auth::Token) -> FutureResponse<SearchResult> {
+    pub async fn call(&self, token: &auth::Token) -> Result<Response<SearchResult>, error::Error> {
         let params = ParamList::new()
             .add_param("lat", self.coordinate.0.to_string())
             .add_param("long", self.coordinate.1.to_string())
@@ -205,8 +205,7 @@ impl GeocodeBuilder {
             );
 
         let req = auth::get(links::place::REVERSE_GEOCODE, token, Some(&params));
-
-        make_parsed_future(req)
+        make_parsed_future(req).await
     }
 }
 
