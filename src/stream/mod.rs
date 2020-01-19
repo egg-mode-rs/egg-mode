@@ -228,7 +228,7 @@ impl Stream for TwitterStream {
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         if let Some(req) = self.request.take() {
-            self.response = Some(get_response(req)?);
+            self.response = Some(get_response(req));
         }
 
         if let Some(mut resp) = self.response.take() {
