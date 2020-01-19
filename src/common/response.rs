@@ -64,11 +64,20 @@ fn rate_limit_reset(headers: &Headers) -> Result<Option<i32>> {
 ///
 ///As this implements `Deref` and `DerefMut`, you can transparently use the contained `response`'s
 ///methods as if they were methods on this struct.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, derive_more::Constructor)]
 pub struct Response<T> {
-    pub rate_limit_status: RateLimitStatus,
+    pub rate_limit_status: RateLimit,
     ///The decoded response from the request.
     pub response: T,
+}
+
+impl Response<()> {
+    pub(crate) fn unit(headers: &Headers) -> Result<Self> {
+        Ok(Self {
+            rate_limit_status: RateLimit::try_from(headers)?,
+            response: (),
+        })
+    }
 }
 
 impl<T> Response<T> {
@@ -88,28 +97,6 @@ impl<T> Response<T> {
     }
 }
 
-impl<T> Response<Vec<T>> {
-    ///Returns an iterator that yields references into the returned collection, alongside
-    ///rate-limit information for the whole method call.
-    pub fn iter(&self) -> ResponseIterRef<T> {
-        ResponseIterRef {
-            rate_limit_statue: self.rate_limit_status,
-            resp_iter: self.response.iter(),
-        }
-    }
-
-    ///Returns an iterator that yields mutable references into the returned collection, alongside
-    ///rate-limit information for the whole method call.
-    pub fn iter_mut(&mut self) -> ResponseIterMut<T> {
-        ResponseIterMut {
-            rate_limit: self.rate_limit,
-            rate_limit_remaining: self.rate_limit_remaining,
-            rate_limit_reset: self.rate_limit_reset,
-            resp_iter: self.response.iter_mut(),
-        }
-    }
-}
-
 impl<T> Deref for Response<T> {
     type Target = T;
 
@@ -121,84 +108,6 @@ impl<T> Deref for Response<T> {
 impl<T> DerefMut for Response<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.response
-    }
-}
-
-///Iterator returned by calling `.iter()` on a `Response<Vec<T>>`.
-///
-///This provides a convenient method to iterate over a response that returned a collection, while
-///copying rate-limit information across the entire iteration.
-pub struct ResponseIterRef<'a, T>
-where
-    T: 'a,
-{
-    rate_limit: i32,
-    rate_limit_remaining: i32,
-    rate_limit_reset: i32,
-    resp_iter: slice::Iter<'a, T>,
-}
-
-impl<'a, T> Iterator for ResponseIterRef<'a, T>
-where
-    T: 'a,
-{
-    type Item = Response<&'a T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(resp) = self.resp_iter.next() {
-            Some(Response {
-                rate_limit: self.rate_limit,
-                rate_limit_remaining: self.rate_limit_remaining,
-                rate_limit_reset: self.rate_limit_reset,
-                response: resp,
-            })
-        } else {
-            None
-        }
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.resp_iter.size_hint()
-    }
-}
-
-impl<'a, T> DoubleEndedIterator for ResponseIterRef<'a, T>
-where
-    T: 'a,
-{
-    fn next_back(&mut self) -> Option<Self::Item> {
-        if let Some(resp) = self.resp_iter.next_back() {
-            Some(Response {
-                rate_limit: self.rate_limit,
-                rate_limit_remaining: self.rate_limit_remaining,
-                rate_limit_reset: self.rate_limit_reset,
-                response: resp,
-            })
-        } else {
-            None
-        }
-    }
-}
-
-impl<'a, T> ExactSizeIterator for ResponseIterRef<'a, T>
-where
-    T: 'a,
-{
-    fn len(&self) -> usize {
-        self.resp_iter.len()
-    }
-}
-
-///Iteration over a response that returned a collection, while leaving the response in place.
-impl<'a, T> IntoIterator for &'a Response<Vec<T>>
-where
-    T: 'a,
-{
-    type Item = Response<&'a T>;
-    type IntoIter = ResponseIterRef<'a, T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
     }
 }
 
@@ -359,11 +268,15 @@ impl<T> Future for TwitterFuture<T> {
 /// Shortcut `MakeResponse` method that attempts to parse the given type from the response and
 /// loads rate-limit information from the response headers.
 pub fn make_response<T: for<'a> Deserialize<'a>>(
-    full_resp: String,
+    body: String,
     headers: &Headers,
 ) -> Result<Response<T>> {
-    let out = serde_json::from_str(&full_resp)?;
-    Ok(Response::map(rate_headers(headers)?, |_| out))
+    let response = serde_json::from_str(&body)?;
+    let rate_limit_status = RateLimit::try_from(headers)?;
+    Ok(Response {
+        rate_limit_status,
+        response,
+    })
 }
 
 pub async fn make_future<T>(
@@ -400,7 +313,8 @@ pub fn make_parsed_future2<T: for<'de> Deserialize<'de>>(
     make_future2(request, make_response)
 }
 
-struct RateLimitStatus {
+#[derive(Clone, Debug, Deserialize)]
+pub struct RateLimit {
     ///The rate limit ceiling for the given request.
     pub rate_limit: i32,
     ///The number of requests left for the 15-minute window.
@@ -409,8 +323,7 @@ struct RateLimitStatus {
     pub rate_limit_reset: i32,
 }
 
-
-impl TryFrom<&Headers> for RateLimitStatus {
+impl TryFrom<&Headers> for RateLimit {
     type Error = Error;
     fn try_from(headers: &Headers) -> Result<Self> {
         Ok(Self {
@@ -419,13 +332,4 @@ impl TryFrom<&Headers> for RateLimitStatus {
             rate_limit_reset: rate_limit_reset(headers)?.unwrap_or(-1),
         })
     }
-}
-
-pub fn rate_headers(resp: &Headers) -> Result<Response<()>> {
-    Ok(Response {
-        rate_limit: rate_limit_limit(resp)?.unwrap_or(-1),
-        rate_limit_remaining: rate_limit_remaining(resp)?.unwrap_or(-1),
-        rate_limit_reset: rate_limit_reset(resp)?.unwrap_or(-1),
-        response: (),
-    })
 }
