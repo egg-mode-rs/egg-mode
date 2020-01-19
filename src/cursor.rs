@@ -12,6 +12,7 @@
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use std::vec::IntoIter as VecIter;
 
 use futures::Stream;
 use serde::Deserialize;
@@ -253,7 +254,7 @@ where
     ///pagination.
     pub next_cursor: i64,
     loader: Option<FutureResponse<T>>,
-    iter: Option<ResponseIter<T::Item>>,
+    iter: Option<VecIter<T::Item>>,
 }
 
 impl<'a, T> CursorIter<'a, T>
@@ -325,7 +326,7 @@ where
     T: Cursor + for<'de> Deserialize<'de> + 'a,
     T::Item: Unpin,
 {
-    type Item = Result<Response<T::Item>, error::Error>;
+    type Item = Result<T::Item, error::Error>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         if let Some(mut fut) = self.loader.take() {
@@ -340,7 +341,7 @@ where
 
                     let resp = Response::map(resp, |r| r.into_inner());
 
-                    let mut iter = resp.into_iter();
+                    let mut iter = resp.response.into_iter();
                     let first = iter.next();
                     self.iter = Some(iter);
 

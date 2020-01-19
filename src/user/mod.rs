@@ -59,6 +59,7 @@ use std::borrow::Cow;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use std::vec::IntoIter as VecIter;
 
 use chrono;
 use futures::Stream;
@@ -504,7 +505,7 @@ pub struct UserSearch<'a> {
     /// The number of user records per page of results. Defaults to 10, maximum of 20.
     pub page_size: i32,
     current_loader: Option<FutureResponse<Vec<TwitterUser>>>,
-    current_results: Option<ResponseIter<TwitterUser>>,
+    current_results: Option<VecIter<TwitterUser>>,
 }
 
 impl<'a> UserSearch<'a> {
@@ -563,7 +564,7 @@ impl<'a> UserSearch<'a> {
 }
 
 impl<'a> Stream for UserSearch<'a> {
-    type Item = Result<Response<TwitterUser>, error::Error>;
+    type Item = Result<TwitterUser, error::Error>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         if let Some(mut fut) = self.current_loader.take() {
@@ -572,7 +573,7 @@ impl<'a> Stream for UserSearch<'a> {
                     self.current_loader = Some(fut);
                     return Poll::Pending;
                 }
-                Poll::Ready(Ok(res)) => self.current_results = Some(res.into_iter()),
+                Poll::Ready(Ok(res)) => self.current_results = Some(res.response.into_iter()),
                 Poll::Ready(Err(e)) => {
                     //Invalidate current results so we don't increment the page number again
                     self.current_results = None;

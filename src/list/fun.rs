@@ -2,8 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::convert::TryFrom;
+
 use super::*;
 
+use crate::common::RateLimit;
 use crate::cursor::{CursorIter, ListCursor, UserCursor};
 use crate::error::{Error::TwitterError, Result};
 use crate::user::{TwitterUser, UserID};
@@ -118,11 +121,11 @@ pub async fn is_subscribed<'id, T: Into<UserID<'id>>>(
             Ok(user) => Ok(Response::map(user, |_| true)),
             Err(TwitterError(terrs)) => {
                 if terrs.errors.iter().any(|e| e.code == 109) {
-                    //here's a fun conundrum: since "is not in this list" is returned as an error code,
-                    //the rate limit info that would otherwise be part of the response isn't there. the
-                    //rate_headers method was factored out specifically for this location, since it's
-                    //still there, just accompanying an error response instead of a user.
-                    Ok(Response::map(rate_headers(headers)?, |_| false))
+                    // here's a fun conundrum: since "is not in this list" is returned as an error code,
+                    // the rate limit info that would otherwise be part of the response isn't there. the
+                    // rate_headers method was factored out specifically for this location, since it's
+                    // still there, just accompanying an error response instead of a user.
+                    Ok(Response::new(RateLimit::try_from(headers)?, false))
                 } else {
                     Err(TwitterError(terrs))
                 }
@@ -153,11 +156,11 @@ pub async fn is_member<'id, T: Into<UserID<'id>>>(
             Ok(user) => Ok(Response::map(user, |_| true)),
             Err(TwitterError(terrs)) => {
                 if terrs.errors.iter().any(|e| e.code == 109) {
-                    //here's a fun conundrum: since "is not in this list" is returned as an error code,
-                    //the rate limit info that would otherwise be part of the response isn't there. the
-                    //rate_headers method was factored out specifically for this location, since it's
-                    //still there, just accompanying an error response instead of a user.
-                    Ok(Response::map(rate_headers(headers)?, |_| false))
+                    // here's a fun conundrum: since "is not in this list" is returned as an error code,
+                    // the rate limit info that would otherwise be part of the response isn't there. the
+                    // rate_headers method was factored out specifically for this location, since it's
+                    // still there, just accompanying an error response instead of a user.
+                    Ok(Response::new(RateLimit::try_from(headers)?, false))
                 } else {
                     Err(TwitterError(terrs))
                 }

@@ -173,6 +173,4 @@ pub use crate::auth::{
     access_token, authenticate_url, authorize_url, bearer_token, invalidate_bearer, request_token,
     verify_tokens, KeyPair, Token,
 };
-pub use crate::common::{
-    FutureResponse, Response, ResponseIter, ResponseIterMut, ResponseIterRef, TwitterFuture,
-};
+pub use crate::common::{FutureResponse, Response, TwitterFuture};

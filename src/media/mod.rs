@@ -450,7 +450,7 @@ impl<'a> UploadFuture<'a> {
                 headers: &Headers,
             ) -> Result<Response<()>, error::Error> {
                 if full_resp.is_empty() {
-                    rate_headers(headers)
+                    Response::unit(headers)
                 } else {
                     Err(InvalidResponse("Expected empty response", Some(full_resp)))
                 }
@@ -497,7 +497,7 @@ impl<'a> UploadFuture<'a> {
 
         fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<()>, error::Error> {
             if full_resp.is_empty() {
-                rate_headers(headers)
+                Response::unit(headers)
             } else {
                 Err(InvalidResponse("Expected empty response", Some(full_resp)))
             }
