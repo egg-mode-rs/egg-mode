@@ -146,7 +146,9 @@ pub fn print_tweet(tweet: &egg_mode::tweet::Tweet) {
         println!("{}", Paint::green(&tweet.text));
     }
 
-    println!("➜ via {} ({})", tweet.source.name, tweet.source.url);
+    if let Some(source) = &tweet.source {
+        println!("➜ via {} ({})", source.name, source.url);
+    }
 
     if let Some(ref place) = tweet.place {
         println!("➜ from: {}", place.full_name);

@@ -209,7 +209,7 @@ pub struct Tweet {
     ///who retweeted the status, as well as the original poster.
     pub retweeted_status: Option<Box<Tweet>>,
     ///The application used to post the tweet.
-    pub source: TweetSource,
+    pub source: Option<TweetSource>,
     ///The text of the tweet. For "extended" tweets, opening reply mentions and/or attached media
     ///or quoted tweet links do not count against character count, so this could be longer than 280
     ///characters in those situations.
@@ -356,19 +356,16 @@ impl FromStr for TweetSource {
                 Some(full.to_string()),
             ))?;
 
-        Ok(TweetSource {
-            name: name,
-            url: url,
-        })
+        Ok(TweetSource { name, url })
     }
 }
 
-fn deserialize_tweet_source<'de, D>(ser: D) -> Result<TweetSource, D::Error>
+fn deserialize_tweet_source<'de, D>(ser: D) -> Result<Option<TweetSource>, D::Error>
 where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(ser)?;
-    Ok(TweetSource::from_str(&s).map_err(|e| D::Error::custom(e))?)
+    Ok(TweetSource::from_str(&s).ok())
 }
 
 ///Container for URL, hashtag, mention, and media information associated with a tweet.
@@ -916,8 +913,9 @@ mod tests {
         assert!(sample.user.is_some());
         assert_eq!(sample.user.unwrap().screen_name, "0xabad1dea");
         assert_eq!(sample.id, 782349500404862976);
-        assert_eq!(sample.source.name, "Tweetbot for iΟS"); //note that's an omicron, not an O
-        assert_eq!(sample.source.url, "http://tapbots.com/tweetbot");
+        let source = sample.source.as_ref().unwrap();
+        assert_eq!(source.name, "Tweetbot for iΟS"); //note that's an omicron, not an O
+        assert_eq!(source.url, "http://tapbots.com/tweetbot");
         assert_eq!(sample.created_at.weekday(), Weekday::Sat);
         assert_eq!(sample.created_at.year(), 2016);
         assert_eq!(sample.created_at.month(), 10);
