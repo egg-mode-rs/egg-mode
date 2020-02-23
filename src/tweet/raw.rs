@@ -33,7 +33,7 @@ pub(crate) struct RawTweet {
     pub retweeted: Option<bool>,
     pub retweeted_status: Option<Box<Tweet>>,
     #[serde(deserialize_with = "deserialize_tweet_source")]
-    pub source: TweetSource,
+    pub source: Option<TweetSource>,
     pub text: Option<String>,
     pub full_text: Option<String>,
     pub truncated: bool,
