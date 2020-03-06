@@ -33,7 +33,7 @@ By default, `egg-mode` uses `native-tls` for encryption, but also supports `rust
 This may be helpful if you wish to avoid linking against `OpenSSL`.
 To enable, modify your `Cargo.toml` entry:
 ```
-egg-mode = { version = "0.14", features = ["hyper-rustls"], default-features = false }`
+egg-mode = { version = "0.14", features = ["hyper-rustls"], default-features = false }
 ```
 
 See available methods and tips to get started in the [Documentation][].
