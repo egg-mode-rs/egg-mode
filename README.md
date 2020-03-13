@@ -2,7 +2,7 @@
 
 Twitter library for Rust ![Build Status](https://github.com/QuietMisdreavus/twitter-rs/workflows/CI/badge.svg)
 
-[v0.14.0 Documentation](https://tonberry.quietmisdreavus.net/doc/egg_mode/)
+[v0.13.0 Documentation](https://tonberry.quietmisdreavus.net/doc/egg_mode/)
 
 This is a library for interacting with Twitter from Rust. You can see how much of the Public API is
 available in the file [TODO.md]. In addition to eventually implementing the entire Public API, an
@@ -11,7 +11,7 @@ interact with the Twitter API. Parts of this library are added as a convenience 
 mechanisms; for example, cursored lists of users and tweets can be used as an iterator in addition
 to being able to manually load a page at a time.
 
-From `v0.14`, egg-mode uses the `async/await` syntax and therefore requires Rust **v1.39.0+**.
+From `v0.13`, egg-mode uses the `async/await` syntax and therefore requires Rust **v1.39.0+**.
 
 [TODO.md]: https://github.com/QuietMisdreavus/twitter-rs/blob/master/TODO.md
 
@@ -26,14 +26,14 @@ To start using this library, put the following into your Cargo.toml:
 
 ```TOML
 [dependencies]
-egg-mode = "0.14.0"
+egg-mode = "0.13.0"
 ```
 
 By default, `egg-mode` uses `native-tls` for encryption, but also supports `rustls`.
 This may be helpful if you wish to avoid linking against `OpenSSL`.
 To enable, modify your `Cargo.toml` entry:
 ```
-egg-mode = { version = "0.14", features = ["hyper-rustls"], default-features = false }
+egg-mode = { version = "0.13", features = ["hyper-rustls"], default-features = false }
 ```
 
 See available methods and tips to get started in the [Documentation][].
