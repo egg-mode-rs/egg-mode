@@ -283,7 +283,7 @@ pub async fn make_parsed_future<T: for<'de> Deserialize<'de>>(
     make_future(request, make_response).await
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize)]
 pub struct RateLimit {
     ///The rate limit ceiling for the given request.
     pub rate_limit: i32,

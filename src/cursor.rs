@@ -9,13 +9,11 @@
 //! module. The rest of it is available to make sure consumers of the API can understand precisely
 //! what types come out of functions that return `CursorIter`.
 
+use futures::Stream;
+use serde::{de::DeserializeOwned, Deserialize};
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use std::vec::IntoIter as VecIter;
-
-use futures::Stream;
-use serde::{de::DeserializeOwned, Deserialize};
 
 use crate::common::*;
 use crate::error::Result;
@@ -255,7 +253,7 @@ where
     ///pagination.
     pub next_cursor: i64,
     loader: Option<FutureResponse<T>>,
-    iter: Option<VecIter<T::Item>>,
+    iter: Option<Box<dyn Iterator<Item = Response<T::Item>>>>,
 }
 
 impl<T> CursorIter<T>
@@ -327,7 +325,7 @@ where
     T: Cursor + DeserializeOwned + 'static,
     T::Item: Unpin,
 {
-    type Item = Result<T::Item>;
+    type Item = Result<Response<T::Item>>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         if let Some(mut fut) = self.loader.take() {
@@ -341,8 +339,12 @@ where
                     self.next_cursor = resp.next_cursor_id();
 
                     let resp = Response::map(resp, |r| r.into_inner());
+                    let rate = resp.rate_limit_status;
 
-                    let mut iter = resp.response.into_iter();
+                    let mut iter = Box::new(resp.response.into_iter().map(move |item| Response {
+                        rate_limit_status: rate,
+                        response: item,
+                    }));
                     let first = iter.next();
                     self.iter = Some(iter);
 

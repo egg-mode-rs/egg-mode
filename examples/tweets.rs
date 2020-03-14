@@ -4,23 +4,23 @@
 
 mod common;
 
+use egg_mode::error::Result;
+
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     let config = common::Config::load().await;
     let tweet_id = 766678057788829697;
 
     println!("");
     println!("Load up an individual tweet:");
-    let status = egg_mode::tweet::show(tweet_id, &config.token)
-        .await
-        .unwrap();
+    let status = egg_mode::tweet::show(tweet_id, &config.token).await?;
     common::print_tweet(&status);
 
     println!("");
     println!("Loading retweets of an individual tweet:");
-    for rt in &egg_mode::tweet::retweets_of(tweet_id, 5, &config.token)
-        .await
-        .unwrap()
+    for rt in egg_mode::tweet::retweets_of(tweet_id, 5, &config.token)
+        .await?
+        .iter()
     {
         if let Some(ref user) = rt.user {
             println!("{} (@{})", user.name, user.screen_name);
@@ -30,7 +30,7 @@ async fn main() {
     println!("");
     println!("Loading the user's home timeline:");
     let home = egg_mode::tweet::home_timeline(&config.token).with_page_size(5);
-    let (_home, feed) = home.start().await.unwrap();
+    let (_home, feed) = home.start().await?;
     for status in feed.iter() {
         common::print_tweet(&status);
         println!("");
@@ -39,7 +39,7 @@ async fn main() {
     println!("");
     println!("Loading the user's mentions timeline:");
     let mentions = egg_mode::tweet::mentions_timeline(&config.token).with_page_size(5);
-    let (_mentions, feed) = mentions.start().await.unwrap();
+    let (_mentions, feed) = mentions.start().await?;
     for status in feed.iter() {
         common::print_tweet(&status);
         println!("");
@@ -49,9 +49,10 @@ async fn main() {
     println!("Loading the user's timeline:");
     let user =
         egg_mode::tweet::user_timeline(config.user_id, true, true, &config.token).with_page_size(5);
-    let (_user, feed) = user.start().await.unwrap();
+    let (_user, feed) = user.start().await?;
     for status in feed.iter() {
         common::print_tweet(&status);
         println!("");
     }
+    Ok(())
 }

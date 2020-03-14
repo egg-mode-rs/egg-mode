@@ -4,23 +4,26 @@
 
 mod common;
 
+use egg_mode::error::Result;
+
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     let con_key = include_str!("common/consumer_key").trim();
     let con_secret = include_str!("common/consumer_secret").trim();
 
     let con_token = egg_mode::KeyPair::new(con_key, con_secret);
 
     println!("Pulling up the bearer token...");
-    let token = egg_mode::bearer_token(&con_token).await.unwrap();
+    let token = egg_mode::bearer_token(&con_token).await?;
 
     println!("Pulling up a user timeline...");
     let timeline =
         egg_mode::tweet::user_timeline("rustlang", false, true, &token).with_page_size(5);
 
-    let (_timeline, feed) = timeline.start().await.unwrap();
-    for tweet in feed {
+    let (_timeline, feed) = timeline.start().await?;
+    for tweet in feed.response {
         println!("");
         common::print_tweet(&tweet);
     }
+    Ok(())
 }
