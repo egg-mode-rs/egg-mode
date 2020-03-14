@@ -180,7 +180,7 @@ pub fn user_timeline<T: Into<UserID>>(
 ) -> Timeline {
     let params = ParamList::new()
         .extended_tweets()
-        .add_name_param(&acct.into())
+        .add_name_param(acct.into())
         .add_param("exclude_replies", (!with_replies).to_string())
         .add_param("include_rts", with_rts.to_string());
 
@@ -201,7 +201,7 @@ pub fn retweets_of_me(token: &auth::Token) -> Timeline {
 pub fn liked_by<T: Into<UserID>>(acct: T, token: &auth::Token) -> Timeline {
     let params = ParamList::new()
         .extended_tweets()
-        .add_name_param(&acct.into());
+        .add_name_param(acct.into());
     Timeline::new(links::statuses::LIKES_OF, Some(params), token)
 }
 

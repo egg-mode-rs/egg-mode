@@ -219,7 +219,7 @@ impl ListUpdate {
     ///Sends the update request to Twitter.
     pub async fn send(self, token: &auth::Token) -> Result<Response<List>, crate::error::Error> {
         let params = ParamList::new()
-            .add_list_param(&self.list)
+            .add_list_param(self.list)
             .add_opt_param("name", self.name)
             .add_opt_param(
                 "mode",
