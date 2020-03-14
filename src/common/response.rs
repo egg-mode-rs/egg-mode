@@ -21,11 +21,10 @@ use serde_json;
 
 use std::convert::TryFrom;
 use std::future::Future;
-use std::iter::FromIterator;
 use std::ops::{Deref, DerefMut};
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use std::{io, mem, slice, vec};
+use std::{io, mem};
 
 use super::Headers;
 
@@ -66,6 +65,7 @@ fn rate_limit_reset(headers: &Headers) -> Result<Option<i32>> {
 ///methods as if they were methods on this struct.
 #[derive(Debug, Deserialize, derive_more::Constructor)]
 pub struct Response<T> {
+    /// Latest rate lime status
     pub rate_limit_status: RateLimit,
     ///The decoded response from the request.
     pub response: T,
@@ -285,6 +285,13 @@ pub async fn make_future<T>(
         make_resp: make_resp,
     }
     .await
+}
+
+/// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
+pub async fn make_parsed_future<T: for<'de> Deserialize<'de>>(
+    request: Request<Body>,
+) -> Result<Response<T>> {
+    make_future(request, make_response).await
 }
 
 #[derive(Clone, Debug, Deserialize)]

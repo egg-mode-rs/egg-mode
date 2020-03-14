@@ -55,7 +55,6 @@
 //! - `mutes`/`mutes_ids`
 //! - `incoming_requests`/`outgoing_requests`
 
-use std::borrow::Cow;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};

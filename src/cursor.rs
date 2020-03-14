@@ -19,7 +19,7 @@ use serde::{de::DeserializeOwned, Deserialize};
 
 use crate::common::*;
 use crate::error::Result;
-use crate::{auth, error, list, user};
+use crate::{auth, list, user};
 
 ///Trait to generalize over paginated views of API results.
 ///

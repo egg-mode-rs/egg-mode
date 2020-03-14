@@ -44,7 +44,6 @@
 //! [search-doc]: https://dev.twitter.com/rest/public/search
 //! [search-place]: https://dev.twitter.com/rest/public/search-by-place
 
-use std::borrow::Cow;
 use std::fmt;
 
 use serde::{Deserialize, Deserializer};
