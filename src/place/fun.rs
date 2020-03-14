@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::common::*;
-use crate::error::{Error::BadUrl, Result};
+use crate::error::{Error, Result};
 use crate::{auth, links};
 
 use super::PlaceQuery;
@@ -52,28 +52,27 @@ pub fn reverse_geocode(latitude: f64, longitude: f64) -> GeocodeBuilder {
     GeocodeBuilder::new(latitude, longitude)
 }
 
-fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList> {
-    // let mut iter = full.split('?');
+fn parse_url(base: &'static str, full: &str) -> Result<ParamList> {
+    let mut iter = full.split('?');
 
-    // if let Some(base_part) = iter.next() {
-    //     if base_part != base {
-    //         return Err(BadUrl);
-    //     }
-    // } else {
-    //     return Err(BadUrl);
-    // }
+    if let Some(base_part) = iter.next() {
+        if base_part != base {
+            return Err(Error::BadUrl);
+        }
+    } else {
+        return Err(Error::BadUrl);
+    }
 
-    // if let Some(list) = iter.next() {
-    //     list.split('&').try_fold(ParamList::new(), |p, pair| {
-    //         let mut kv_iter = pair.split('=');
-    //         let k = kv_iter.next().ok_or(BadUrl)?;
-    //         let v = kv_iter.next().ok_or(BadUrl)?;
-    //         Ok(p.add_param(k, v))
-    //     })
-    // } else {
-    //     Err(BadUrl)
-    // }
-    todo!()
+    if let Some(list) = iter.next() {
+        list.split('&').try_fold(ParamList::new(), |p, pair| {
+            let mut kv_iter = pair.split('=');
+            let k = kv_iter.next().ok_or(Error::BadUrl)?;
+            let v = kv_iter.next().ok_or(Error::BadUrl)?;
+            Ok(p.add_param(k.to_string(), v.to_string()))
+        })
+    } else {
+        Err(Error::BadUrl)
+    }
 }
 
 ///From a URL given with the result of `reverse_geocode`, perform the same reverse-geocode search.

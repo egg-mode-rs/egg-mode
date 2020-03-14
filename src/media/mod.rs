@@ -168,10 +168,10 @@ pub struct MediaHandle {
 }
 
 impl MediaHandle {
-    #[inline]
     /// Returns whether media is still valid to be used in API calls.
     ///
     /// Under hood it is `Instant::now() < handle.valid_until`.
+    #[inline]
     pub fn is_valid(&self) -> bool {
         Instant::now() < self.valid_until
     }

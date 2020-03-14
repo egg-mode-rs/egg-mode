@@ -6,8 +6,6 @@ use crate::common::*;
 use crate::error::Result;
 use crate::{auth, cursor, links};
 
-use std::borrow::Cow;
-
 use super::*;
 
 //---Groups of users---
