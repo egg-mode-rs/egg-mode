@@ -419,7 +419,7 @@ impl<'a> UploadFuture<'a> {
         }
     }
 
-    fn init(&self) -> FutureResponse<RawMedia> {
+    fn init(&self) -> impl Future<Output = error::Result<Response<RawMedia>>> {
         let params = ParamList::new()
             .add_param("command", "INIT")
             .add_param("total_bytes", self.data.len().to_string())
@@ -427,10 +427,14 @@ impl<'a> UploadFuture<'a> {
             .add_param("media_category", self.media_category.to_string());
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future2(req)
+        make_parsed_future(req)
     }
 
-    fn append(&self, chunk_num: usize, media_id: u64) -> Option<FutureResponse<()>> {
+    fn append(
+        &self,
+        chunk_num: usize,
+        media_id: u64,
+    ) -> Option<impl Future<Output = error::Result<Response<()>>>> {
         let mut chunk = self.get_chunk(chunk_num);
         if chunk.is_none() && chunk_num == 0 {
             chunk = Some(&[][..]);
@@ -456,31 +460,35 @@ impl<'a> UploadFuture<'a> {
                 }
             }
 
-            Some(make_future2(req, parse_resp))
+            Some(make_future(req, parse_resp))
         } else {
             None
         }
     }
 
-    fn finalize(&self, media_id: u64) -> FutureResponse<RawMedia> {
+    fn finalize(&self, media_id: u64) -> impl Future<Output = error::Result<Response<RawMedia>>> {
         let params = ParamList::new()
             .add_param("command", "FINALIZE")
             .add_param("media_id", media_id.to_string());
 
         let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future2(req)
+        make_parsed_future(req)
     }
 
-    fn status(&self, media_id: u64) -> FutureResponse<RawMedia> {
+    fn status(&self, media_id: u64) -> impl Future<Output = error::Result<Response<RawMedia>>> {
         let params = ParamList::new()
             .add_param("command", "STATUS")
             .add_param("media_id", media_id.to_string());
 
         let req = auth::get(links::media::UPLOAD, &self.token, Some(&params));
-        make_parsed_future2(req)
+        make_parsed_future(req)
     }
 
-    fn metadata(&self, media_id: u64, alt_text: &str) -> FutureResponse<()> {
+    fn metadata(
+        &self,
+        media_id: u64,
+        alt_text: &str,
+    ) -> impl Future<Output = error::Result<Response<()>>> {
         use serde_json::map::Map;
         use serde_json::Value;
 
@@ -503,7 +511,7 @@ impl<'a> UploadFuture<'a> {
             }
         }
 
-        make_future2(req, parse_resp)
+        make_future(req, parse_resp)
     }
 }
 
@@ -515,7 +523,7 @@ impl<'a> Future for UploadFuture<'a> {
 
         match replace(&mut self.status, UploadInner::Invalid) {
             UploadInner::PreInit => {
-                self.status = UploadInner::WaitingForInit(self.init());
+                self.status = UploadInner::WaitingForInit(Box::pin(self.init()));
                 self.poll(cx)
             }
             UploadInner::WaitingForInit(mut init) => {
@@ -529,7 +537,7 @@ impl<'a> Future for UploadFuture<'a> {
                         let id = media.id;
                         //chunk zero is guaranteed to return *something*, even an empty slice
                         let loader = self.append(0, id).unwrap();
-                        self.status = UploadInner::UploadingChunk(id, 0, loader);
+                        self.status = UploadInner::UploadingChunk(id, 0, Box::pin(loader));
                         self.poll(cx)
                     }
                     Poll::Ready(Err(e)) => {
@@ -547,10 +555,11 @@ impl<'a> Future for UploadFuture<'a> {
                     Poll::Ready(Ok(_)) => {
                         let chunk_idx = chunk_idx + 1;
                         if let Some(upload) = self.append(chunk_idx, id) {
-                            self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
+                            self.status =
+                                UploadInner::UploadingChunk(id, chunk_idx, Box::pin(upload));
                         } else {
                             let loader = self.finalize(id);
-                            self.status = UploadInner::Finalizing(id, loader);
+                            self.status = UploadInner::Finalizing(id, Box::pin(loader));
                         }
 
                         self.poll(cx)
@@ -567,7 +576,7 @@ impl<'a> Future for UploadFuture<'a> {
                     self.status = UploadInner::PreInit;
                     self.poll(cx)
                 } else if let Some(upload) = self.append(chunk_idx, id) {
-                    self.status = UploadInner::UploadingChunk(id, chunk_idx, upload);
+                    self.status = UploadInner::UploadingChunk(id, chunk_idx, Box::pin(upload));
                     self.poll(cx)
                 } else {
                     //this... should never happen? the FailedChunk status means that this specific
@@ -588,7 +597,7 @@ impl<'a> Future for UploadFuture<'a> {
                             self.timeout = media.valid_until;
                             let loader = self.alt_text.as_ref().map(|txt| self.metadata(id, txt));
                             if let Some(loader) = loader {
-                                self.status = UploadInner::Metadata(media, loader);
+                                self.status = UploadInner::Metadata(media, Box::pin(loader));
                                 return self.poll(cx);
                             } else {
                                 return Poll::Ready(Ok(media));
@@ -629,7 +638,7 @@ impl<'a> Future for UploadFuture<'a> {
                     self.status = UploadInner::PreInit;
                 } else {
                     let finalize = self.finalize(id);
-                    self.status = UploadInner::Finalizing(id, finalize);
+                    self.status = UploadInner::Finalizing(id, Box::pin(finalize));
                 }
                 self.poll(cx)
             }
@@ -640,7 +649,7 @@ impl<'a> Future for UploadFuture<'a> {
                 }
                 Poll::Ready(()) => {
                     let loader = self.status(id);
-                    self.status = UploadInner::Finalizing(id, loader);
+                    self.status = UploadInner::Finalizing(id, Box::pin(loader));
                     self.poll(cx)
                 }
             },
@@ -661,7 +670,7 @@ impl<'a> Future for UploadFuture<'a> {
                     self.status = UploadInner::PreInit;
                 } else if let Some(ref alt_text) = self.alt_text {
                     let loader = self.metadata(media.id, alt_text);
-                    self.status = UploadInner::Metadata(media, loader);
+                    self.status = UploadInner::Metadata(media, Box::pin(loader));
                 } else {
                     //if we uploaded metadata then we should have had alt text to begin with
                     unreachable!();
