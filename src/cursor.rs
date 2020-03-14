@@ -254,7 +254,7 @@ where
     ///implementation. It is made available for those who wish to manually manage network calls and
     ///pagination.
     pub next_cursor: i64,
-    loader: Option<Pin<Box<dyn Future<Output = Result<Response<T>>>>>>,
+    loader: Option<FutureResponse<T>>,
     iter: Option<VecIter<T::Item>>,
 }
 

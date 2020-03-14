@@ -109,8 +109,8 @@ pub enum ListID {
 
 impl ListID {
     ///Make a new `ListID` by supplying its owner and name.
-    pub fn from_slug<T: Into<user::UserID>>(owner: T, list_name: CowStr) -> ListID {
-        ListID::Slug(owner.into(), list_name)
+    pub fn from_slug<T: Into<user::UserID>>(owner: T, list_name: impl Into<CowStr>) -> ListID {
+        ListID::Slug(owner.into(), list_name.into())
     }
 
     ///Make a new `ListID` by supplying its numeric ID.

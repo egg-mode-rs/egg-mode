@@ -12,7 +12,7 @@ async fn main() {
 
     println!("Lists curated by user @Scobleizer:");
     let lists = list::list("Scobleizer", true, &config.token).await.unwrap();
-    for list in lists {
+    for list in lists.iter() {
         if list.user.screen_name == "Scobleizer" {
             println!("    {} ({})", list.name, list.slug);
         }

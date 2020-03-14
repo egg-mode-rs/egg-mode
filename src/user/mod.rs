@@ -479,8 +479,7 @@ pub struct UserSearch {
     pub page_num: i32,
     /// The number of user records per page of results. Defaults to 10, maximum of 20.
     pub page_size: i32,
-    current_loader:
-        Option<Pin<Box<dyn Future<Output = error::Result<Response<Vec<TwitterUser>>>>>>>,
+    current_loader: Option<FutureResponse<Vec<TwitterUser>>>,
     current_results: Option<VecIter<TwitterUser>>,
 }
 

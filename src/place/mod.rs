@@ -211,8 +211,8 @@ impl GeocodeBuilder {
 
 enum PlaceQuery {
     LatLon(f64, f64),
-    Query(String),
-    IPAddress(String),
+    Query(CowStr),
+    IPAddress(CowStr),
 }
 
 ///Represents a location search query before it is sent.

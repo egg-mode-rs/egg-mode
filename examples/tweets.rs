@@ -31,7 +31,7 @@ async fn main() {
     println!("Loading the user's home timeline:");
     let home = egg_mode::tweet::home_timeline(&config.token).with_page_size(5);
     let (_home, feed) = home.start().await.unwrap();
-    for status in feed {
+    for status in feed.iter() {
         common::print_tweet(&status);
         println!("");
     }
@@ -40,7 +40,7 @@ async fn main() {
     println!("Loading the user's mentions timeline:");
     let mentions = egg_mode::tweet::mentions_timeline(&config.token).with_page_size(5);
     let (_mentions, feed) = mentions.start().await.unwrap();
-    for status in feed {
+    for status in feed.iter() {
         common::print_tweet(&status);
         println!("");
     }
@@ -50,7 +50,7 @@ async fn main() {
     let user =
         egg_mode::tweet::user_timeline(config.user_id, true, true, &config.token).with_page_size(5);
     let (_user, feed) = user.start().await.unwrap();
-    for status in feed {
+    for status in feed.iter() {
         common::print_tweet(&status);
         println!("");
     }
