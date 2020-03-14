@@ -164,18 +164,19 @@ impl Cursor for ListCursor {
 /// # #[tokio::main]
 /// # async fn main() {
 /// # let token: Token = unimplemented!();
-/// use futures::StreamExt;
+/// use futures::{StreamExt, TryStreamExt};
 /// use egg_mode::Response;
 /// use egg_mode::user::TwitterUser;
-/// use egg_mode::error::Error;
+/// use egg_mode::error::Result;
 ///
 /// // Because Streams don't have a FromIterator adaptor, we load all the responses first, then
 /// // collect them into the final Vec
-/// let names: Result<Response<Vec<TwitterUser>>, Error> =
-///     egg_mode::user::followers_of("rustlang", &token).take(10).collect::<Vec<_>>()
-///         .await
-///         .into_iter()
-///         .collect();
+/// let names: Result<Vec<TwitterUser>> =
+///     egg_mode::user::followers_of("rustlang", &token)
+///         .take(10)
+///         .map_ok(|r| r.response)
+///         .try_collect::<Vec<_>>()
+///         .await;
 /// # }
 /// ```
 ///

@@ -165,7 +165,7 @@ pub struct Configuration {
 /// # let status = egg_mode::service::rate_limit_status(&token).await.unwrap();
 /// use egg_mode::service::TweetMethod;
 /// println!("home_timeline calls remaining: {}",
-///          status.tweet[&TweetMethod::HomeTimeline].rate_limit_remaining);
+///          status.tweet[&TweetMethod::HomeTimeline].rate_limit_status.remaining);
 /// # }
 /// ```
 ///
@@ -199,6 +199,7 @@ impl<'de> Deserialize<'de> for RateLimitStatus {
         D: Deserializer<'de>,
     {
         use serde_json::from_value;
+        println!("HERE");
 
         let input = serde_json::Value::deserialize(ser)?;
 
@@ -220,6 +221,8 @@ impl<'de> Deserialize<'de> for RateLimitStatus {
                 .filter_map(|v| v.as_object())
                 .flat_map(|v| v.iter())
             {
+                println!("HERE2");
+                dbg!(&k, &v);
                 if let Ok(method) = k.parse::<Method>() {
                     match method {
                         Method::Direct(m) => {
@@ -254,13 +257,13 @@ impl<'de> Deserialize<'de> for RateLimitStatus {
         }
 
         Ok(RateLimitStatus {
-            direct: direct,
-            place: place,
-            search: search,
-            service: service,
-            tweet: tweet,
-            user: user,
-            list: list,
+            direct,
+            place,
+            search,
+            service,
+            tweet,
+            user,
+            list,
         })
     }
 }

@@ -420,7 +420,7 @@ pub struct UserEntityDetail {
 ///
 /// // Because Streams don't have a FromIterator adaptor, we load all the responses first, then
 /// // collect them into the final Vec
-/// let names: Result<Response<Vec<TwitterUser>>, Error> =
+/// let names: Result<Vec<TwitterUser>, Error> =
 ///     egg_mode::user::search("rustlang", &token)
 ///         .take(10)
 ///         .try_collect::<Vec<_>>()

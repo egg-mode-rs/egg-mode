@@ -67,10 +67,12 @@ fn rate_limit_reset(headers: &Headers) -> Result<Option<i32>> {
 )]
 pub struct Response<T> {
     /// Latest rate lime status
+    #[serde(flatten)]
     pub rate_limit_status: RateLimit,
     ///The decoded response from the request.
     #[deref]
     #[deref_mut]
+    #[serde(default)]
     pub response: T,
 }
 
@@ -286,20 +288,20 @@ pub async fn make_parsed_future<T: for<'de> Deserialize<'de>>(
 #[derive(Copy, Clone, Debug, Deserialize)]
 pub struct RateLimit {
     ///The rate limit ceiling for the given request.
-    pub rate_limit: i32,
+    pub limit: i32,
     ///The number of requests left for the 15-minute window.
-    pub rate_limit_remaining: i32,
+    pub remaining: i32,
     ///The UTC Unix timestamp at which the rate window resets.
-    pub rate_limit_reset: i32,
+    pub reset: i32,
 }
 
 impl TryFrom<&Headers> for RateLimit {
     type Error = Error;
     fn try_from(headers: &Headers) -> Result<Self> {
         Ok(Self {
-            rate_limit: rate_limit_limit(headers)?.unwrap_or(-1),
-            rate_limit_remaining: rate_limit_remaining(headers)?.unwrap_or(-1),
-            rate_limit_reset: rate_limit_reset(headers)?.unwrap_or(-1),
+            limit: rate_limit_limit(headers)?.unwrap_or(-1),
+            remaining: rate_limit_remaining(headers)?.unwrap_or(-1),
+            reset: rate_limit_reset(headers)?.unwrap_or(-1),
         })
     }
 }

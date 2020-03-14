@@ -28,7 +28,7 @@ use super::*;
 /// list.push(1234);
 /// list.push(2345);
 ///
-/// let users = egg_mode::user::lookup(&list, &token).await.unwrap();
+/// let users = egg_mode::user::lookup(list, &token).await.unwrap();
 /// # }
 /// ```
 ///
@@ -42,7 +42,7 @@ use super::*;
 /// list.push("rustlang");
 /// list.push("ThisWeekInRust");
 ///
-/// let users = egg_mode::user::lookup(&list, &token).await.unwrap();
+/// let users = egg_mode::user::lookup(list, &token).await.unwrap();
 /// # }
 /// ```
 ///
@@ -56,7 +56,7 @@ use super::*;
 /// list.push("rustlang".to_string());
 /// list.push("ThisWeekInRust".to_string());
 ///
-/// let users = egg_mode::user::lookup(&list, &token).await.unwrap();
+/// let users = egg_mode::user::lookup(list, &token).await.unwrap();
 /// # }
 /// ```
 ///
@@ -70,7 +70,7 @@ use super::*;
 /// list.push(1234.into());
 /// list.push("rustlang".into());
 ///
-/// let users = egg_mode::user::lookup(&list, &token).await.unwrap();
+/// let users = egg_mode::user::lookup(list, &token).await.unwrap();
 /// # }
 /// ```
 pub async fn lookup<T, I>(accts: I, token: &auth::Token) -> Result<Response<Vec<TwitterUser>>>

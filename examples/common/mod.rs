@@ -40,7 +40,7 @@ impl Config {
         let consumer_key = include_str!("consumer_key").trim();
         let consumer_secret = include_str!("consumer_secret").trim();
 
-        let con_token = egg_mode::KeyPair::new(consumer_key, consumer_secret);
+        let con_token = egg_mode::KeyPair::new(dbg!(consumer_key), dbg!(consumer_secret));
 
         let mut config = String::new();
         let user_id: u64;
