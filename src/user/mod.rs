@@ -87,50 +87,26 @@ pub use self::fun::*;
 /// * `&String` (to counteract the fact that deref coercion doesn't work with generics)
 /// * `&UserID` (convenient when used with iterators)
 ///
-/// This way, when a function in egg-mode has a paremeter of type `T: Into<UserID<'a>>`, you can
+/// This way, when a function in egg-mode has a paremeter of type `T: Into<UserID>`, you can
 /// call it with any of these types, and it will be converted automatically. egg-mode will then use
 /// the proper parameter when performing the call to Twitter.
-#[derive(Debug, Copy, Clone)]
-pub enum UserID<'a> {
+#[derive(Debug, Clone, derive_more::From)]
+pub enum UserID {
     /// Referring via the account's numeric ID.
     ID(u64),
     /// Referring via the account's screen name.
-    ScreenName(&'a str),
+    ScreenName(CowStr),
 }
 
-impl<'a> From<u64> for UserID<'a> {
-    fn from(id: u64) -> UserID<'a> {
-        UserID::ID(id)
+impl<'a> From<&'static str> for UserID {
+    fn from(name: &'static str) -> UserID {
+        UserID::ScreenName(name.into())
     }
 }
 
-impl<'a> From<&'a u64> for UserID<'a> {
-    fn from(id: &'a u64) -> UserID<'a> {
-        UserID::ID(*id)
-    }
-}
-
-impl<'a> From<&'a str> for UserID<'a> {
-    fn from(name: &'a str) -> UserID<'a> {
-        UserID::ScreenName(name)
-    }
-}
-
-impl<'a, 'b> From<&'b &'a str> for UserID<'a> {
-    fn from(name: &'b &'a str) -> UserID<'a> {
-        UserID::ScreenName(*name)
-    }
-}
-
-impl<'a> From<&'a String> for UserID<'a> {
-    fn from(name: &'a String) -> UserID<'a> {
-        UserID::ScreenName(name.as_str())
-    }
-}
-
-impl<'a> From<&'a UserID<'a>> for UserID<'a> {
-    fn from(id: &'a UserID<'a>) -> UserID<'a> {
-        *id
+impl From<String> for UserID {
+    fn from(name: String) -> UserID {
+        UserID::ScreenName(name.into())
     }
 }
 
@@ -497,9 +473,9 @@ pub struct UserEntityDetail {
 /// # }
 /// ```
 #[must_use = "search iterators are lazy and do nothing unless consumed"]
-pub struct UserSearch<'a> {
+pub struct UserSearch {
     token: auth::Token,
-    query: Cow<'a, str>,
+    query: CowStr,
     /// The current page of results being returned, starting at 1.
     pub page_num: i32,
     /// The number of user records per page of results. Defaults to 10, maximum of 20.
@@ -508,7 +484,7 @@ pub struct UserSearch<'a> {
     current_results: Option<VecIter<TwitterUser>>,
 }
 
-impl<'a> UserSearch<'a> {
+impl UserSearch {
     /// Sets the page size used for the search query.
     ///
     /// Calling this will invalidate any current search results, making the next call to `next()`
@@ -551,7 +527,7 @@ impl<'a> UserSearch<'a> {
     }
 
     /// Returns a new UserSearch with the given query and tokens, with the default page size of 10.
-    fn new<S: Into<Cow<'a, str>>>(query: S, token: &auth::Token) -> UserSearch<'a> {
+    fn new<S: Into<CowStr>>(query: S, token: &auth::Token) -> UserSearch {
         UserSearch {
             token: token.clone(),
             query: query.into(),
@@ -563,7 +539,7 @@ impl<'a> UserSearch<'a> {
     }
 }
 
-impl<'a> Stream for UserSearch<'a> {
+impl Stream for UserSearch {
     type Item = Result<TwitterUser, error::Error>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {

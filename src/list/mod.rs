@@ -99,22 +99,22 @@ pub use self::fun::*;
 /// let slug = ListID::from_slug("Twitter", "support");
 /// let id = ListID::from_id(99924643);
 /// ```
-#[derive(Debug, Copy, Clone)]
-pub enum ListID<'a> {
+#[derive(Debug, Clone)]
+pub enum ListID {
     ///Referring via the list's owner and its "slug" or name.
-    Slug(user::UserID<'a>, &'a str),
+    Slug(user::UserID, CowStr),
     ///Referring via the list's numeric ID.
     ID(u64),
 }
 
-impl<'a> ListID<'a> {
+impl ListID {
     ///Make a new `ListID` by supplying its owner and name.
-    pub fn from_slug<T: Into<user::UserID<'a>>>(owner: T, list_name: &'a str) -> ListID<'a> {
+    pub fn from_slug<T: Into<user::UserID>>(owner: T, list_name: CowStr) -> ListID {
         ListID::Slug(owner.into(), list_name)
     }
 
     ///Make a new `ListID` by supplying its numeric ID.
-    pub fn from_id(list_id: u64) -> ListID<'a> {
+    pub fn from_id(list_id: u64) -> ListID {
         ListID::ID(list_id)
     }
 }
@@ -184,16 +184,16 @@ pub struct List {
 /// let list = update.name("Official Support").send(&token).await.unwrap();
 /// # }
 /// ```
-pub struct ListUpdate<'a> {
-    list: ListID<'a>,
-    name: Option<&'a str>,
+pub struct ListUpdate {
+    list: ListID,
+    name: Option<String>,
     public: Option<bool>,
-    desc: Option<&'a str>,
+    desc: Option<String>,
 }
 
-impl<'a> ListUpdate<'a> {
+impl ListUpdate {
     ///Updates the name of the list.
-    pub fn name(self, name: &'a str) -> ListUpdate<'a> {
+    pub fn name(self, name: String) -> ListUpdate {
         ListUpdate {
             name: Some(name),
             ..self
@@ -201,7 +201,7 @@ impl<'a> ListUpdate<'a> {
     }
 
     ///Sets whether the list is public.
-    pub fn public(self, public: bool) -> ListUpdate<'a> {
+    pub fn public(self, public: bool) -> ListUpdate {
         ListUpdate {
             public: Some(public),
             ..self
@@ -209,7 +209,7 @@ impl<'a> ListUpdate<'a> {
     }
 
     ///Updates the description of the list.
-    pub fn desc(self, desc: &'a str) -> ListUpdate<'a> {
+    pub fn desc(self, desc: String) -> ListUpdate {
         ListUpdate {
             desc: Some(desc),
             ..self

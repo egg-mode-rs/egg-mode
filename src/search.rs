@@ -41,11 +41,6 @@
 //! page][search-place]. A future version of egg-mode might break these options into further
 //! methods on `SearchBuilder`.
 //!
-//! The lifetime parameter on `SearchBuilder`, and `SearchResult` correspond to the
-//! text given as the search query and (if applicable) to the `lang` method of `SearchBuilder`. As
-//! these types use `Cow<'a, str>` internally, you can hand these types owned Strings to give them
-//! a `'static` lifetime, if necessary.
-//!
 //! [search-doc]: https://dev.twitter.com/rest/public/search
 //! [search-place]: https://dev.twitter.com/rest/public/search-by-place
 
@@ -59,7 +54,7 @@ use crate::tweet::Tweet;
 use crate::{auth, error, links};
 
 ///Begin setting up a tweet search with the given query.
-pub fn search<'a, S: Into<Cow<'a, str>>>(query: S) -> SearchBuilder<'a> {
+pub fn search<S: Into<CowStr>>(query: S) -> SearchBuilder {
     SearchBuilder {
         query: query.into(),
         lang: None,
@@ -104,10 +99,10 @@ pub enum Distance {
 
 ///Represents a tweet search query before being sent.
 #[must_use = "SearchBuilder is lazy and won't do anything unless `call`ed"]
-pub struct SearchBuilder<'a> {
+pub struct SearchBuilder {
     ///The text to search for.
-    query: Cow<'a, str>,
-    lang: Option<Cow<'a, str>>,
+    query: CowStr,
+    lang: Option<CowStr>,
     result_type: Option<ResultType>,
     count: Option<u32>,
     until: Option<(u32, u32, u32)>,
@@ -116,10 +111,10 @@ pub struct SearchBuilder<'a> {
     max_id: Option<u64>,
 }
 
-impl<'a> SearchBuilder<'a> {
+impl SearchBuilder {
     ///Restrict search results to those that have been machine-parsed as the given two-letter
     ///language code.
-    pub fn lang<S: Into<Cow<'a, str>>>(self, lang: S) -> Self {
+    pub fn lang<S: Into<CowStr>>(self, lang: S) -> Self {
         SearchBuilder {
             lang: Some(lang.into()),
             ..self
@@ -181,10 +176,7 @@ impl<'a> SearchBuilder<'a> {
     }
 
     ///Finalize the search terms and return the first page of responses.
-    pub async fn call(
-        self,
-        token: &auth::Token,
-    ) -> Result<Response<SearchResult<'a>>, error::Error> {
+    pub async fn call(self, token: &auth::Token) -> Result<Response<SearchResult>, error::Error> {
         let params = ParamList::new()
             .extended_tweets()
             .add_param("q", self.query)
@@ -215,27 +207,26 @@ impl<'a> SearchBuilder<'a> {
 }
 
 #[derive(Debug, Deserialize)]
-struct RawSearch<'a> {
-    #[serde(borrow)]
-    search_metadata: RawSearchMetaData<'a>,
+struct RawSearch {
+    search_metadata: RawSearchMetaData,
     statuses: Vec<Tweet>,
 }
 
 #[derive(Debug, Deserialize)]
-struct RawSearchMetaData<'a> {
+struct RawSearchMetaData {
     completed_in: f64,
     max_id: u64,
     /// absent if no more results to retrieve
-    next_results: Option<&'a str>,
-    query: &'a str,
+    next_results: Option<String>,
+    query: String,
     /// absent if no results
-    refresh_url: Option<&'a str>,
+    refresh_url: Option<String>,
     count: u64,
     since_id: u64,
 }
 
-impl<'de> Deserialize<'de> for SearchResult<'static> {
-    fn deserialize<D>(deser: D) -> Result<SearchResult<'static>, D::Error>
+impl<'de> Deserialize<'de> for SearchResult {
+    fn deserialize<D>(deser: D) -> Result<SearchResult, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -252,7 +243,7 @@ impl<'de> Deserialize<'de> for SearchResult<'static> {
 
 ///Represents a page of search results, along with metadata to request the next or previous page.
 #[derive(Debug)]
-pub struct SearchResult<'a> {
+pub struct SearchResult {
     ///The list of statuses in this page of results.
     pub statuses: Vec<Tweet>,
     ///The query used to generate this page of results. Note that changing this will not affect the
@@ -262,15 +253,12 @@ pub struct SearchResult<'a> {
     pub max_id: u64,
     ///First tweet id in this page of results. This id can be used in `SearchBuilder::since_tweet`
     pub since_id: u64,
-    params: Option<ParamList<'a>>,
+    params: Option<ParamList>,
 }
 
-impl<'a> SearchResult<'a> {
+impl SearchResult {
     ///Load the next page of search results for the same query.
-    pub async fn older(
-        &self,
-        token: &auth::Token,
-    ) -> Result<Response<SearchResult<'a>>, error::Error> {
+    pub async fn older(&self, token: &auth::Token) -> Result<Response<SearchResult>, error::Error> {
         let mut params =
             ParamList::from(self.params.as_ref().cloned().unwrap_or_default()).extended_tweets();
 
@@ -290,10 +278,7 @@ impl<'a> SearchResult<'a> {
     }
 
     ///Load the previous page of search results for the same query.
-    pub async fn newer(
-        &self,
-        token: &auth::Token,
-    ) -> Result<Response<SearchResult<'a>>, error::Error> {
+    pub async fn newer(&self, token: &auth::Token) -> Result<Response<SearchResult>, error::Error> {
         let mut params =
             ParamList::from(self.params.as_ref().cloned().unwrap_or_default()).extended_tweets();
 

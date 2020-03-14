@@ -52,27 +52,28 @@ pub fn reverse_geocode(latitude: f64, longitude: f64) -> GeocodeBuilder {
     GeocodeBuilder::new(latitude, longitude)
 }
 
-fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList<'a>> {
-    let mut iter = full.split('?');
+fn parse_url<'a>(base: &'static str, full: &'a str) -> Result<ParamList> {
+    // let mut iter = full.split('?');
 
-    if let Some(base_part) = iter.next() {
-        if base_part != base {
-            return Err(BadUrl);
-        }
-    } else {
-        return Err(BadUrl);
-    }
+    // if let Some(base_part) = iter.next() {
+    //     if base_part != base {
+    //         return Err(BadUrl);
+    //     }
+    // } else {
+    //     return Err(BadUrl);
+    // }
 
-    if let Some(list) = iter.next() {
-        list.split('&').try_fold(ParamList::new(), |p, pair| {
-            let mut kv_iter = pair.split('=');
-            let k = kv_iter.next().ok_or(BadUrl)?;
-            let v = kv_iter.next().ok_or(BadUrl)?;
-            Ok(p.add_param(k, v))
-        })
-    } else {
-        Err(BadUrl)
-    }
+    // if let Some(list) = iter.next() {
+    //     list.split('&').try_fold(ParamList::new(), |p, pair| {
+    //         let mut kv_iter = pair.split('=');
+    //         let k = kv_iter.next().ok_or(BadUrl)?;
+    //         let v = kv_iter.next().ok_or(BadUrl)?;
+    //         Ok(p.add_param(k, v))
+    //     })
+    // } else {
+    //     Err(BadUrl)
+    // }
+    todo!()
 }
 
 ///From a URL given with the result of `reverse_geocode`, perform the same reverse-geocode search.
@@ -106,7 +107,7 @@ pub async fn reverse_geocode_url(url: &str, token: &auth::Token) -> Result<Respo
 /// assert!(result.results.iter().any(|pl| pl.full_name == "London, England"));
 /// # }
 /// ```
-pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder<'static> {
+pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder {
     SearchBuilder::new(PlaceQuery::LatLon(latitude, longitude))
 }
 
@@ -129,12 +130,12 @@ pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder<'static> {
 /// assert!(result.results.iter().any(|pl| pl.full_name == "British Columbia, Canada"));
 /// # }
 /// ```
-pub fn search_query<'a>(query: &'a str) -> SearchBuilder<'a> {
+pub fn search_query(query: String) -> SearchBuilder {
     SearchBuilder::new(PlaceQuery::Query(query))
 }
 
 ///Begins building a location search via an IP address.
-pub fn search_ip<'a>(query: &'a str) -> SearchBuilder<'a> {
+pub fn search_ip(query: String) -> SearchBuilder {
     SearchBuilder::new(PlaceQuery::IPAddress(query))
 }
 

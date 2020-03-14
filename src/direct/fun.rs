@@ -34,9 +34,9 @@ pub fn sent(token: &auth::Token) -> Timeline {
 ///DM beforehand.
 ///
 ///Upon successfully sending the DM, the message will be returned.
-pub async fn send<'id, T: Into<UserID<'id>>>(
+pub async fn send<T: Into<UserID>>(
     to: T,
-    text: &str,
+    text: CowStr,
     token: &auth::Token,
 ) -> Result<Response<DirectMessage>, error::Error> {
     let params = ParamList::new()

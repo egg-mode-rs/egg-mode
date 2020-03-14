@@ -239,7 +239,7 @@ pub struct Timeline {
     ///The token used to authenticate requests with.
     token: auth::Token,
     ///Optional set of params to include prior to adding timeline navigation parameters.
-    params_base: Option<ParamList<'static>>,
+    params_base: Option<ParamList>,
     ///The maximum number of messages to return in a single call. Twitter doesn't guarantee
     ///returning exactly this number, as suspended or deleted content is removed after retrieving
     ///the initial collection of messages.
@@ -339,11 +339,7 @@ impl Timeline {
     }
 
     ///Create an instance of `Timeline` with the given link and tokens.
-    fn new(
-        link: &'static str,
-        params_base: Option<ParamList<'static>>,
-        token: &auth::Token,
-    ) -> Self {
+    fn new(link: &'static str, params_base: Option<ParamList>, token: &auth::Token) -> Self {
         Timeline {
             link: link,
             token: token.clone(),

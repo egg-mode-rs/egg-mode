@@ -16,10 +16,7 @@ use crate::{auth, links, tweet};
 ///
 ///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn memberships<'a, T: Into<UserID<'a>>>(
-    user: T,
-    token: &auth::Token,
-) -> CursorIter<'a, ListCursor> {
+pub fn memberships<T: Into<UserID>>(user: T, token: &auth::Token) -> CursorIter<ListCursor> {
     let params = ParamList::new().add_name_param(&user.into());
     CursorIter::new(links::lists::MEMBERSHIPS, token, Some(params), Some(20))
 }
@@ -35,7 +32,7 @@ pub fn memberships<'a, T: Into<UserID<'a>>>(
 ///
 ///If the user has more than 100 lists total like this, you'll need to call `ownerships` and
 ///`subscriptions` separately to be able to properly load everything.
-pub async fn list<'id, T: Into<UserID<'id>>>(
+pub async fn list<'id, T: Into<UserID>>(
     user: T,
     owned_first: bool,
     token: &auth::Token,
@@ -53,10 +50,7 @@ pub async fn list<'id, T: Into<UserID<'id>>>(
 ///
 ///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn subscriptions<'a, T: Into<UserID<'a>>>(
-    user: T,
-    token: &auth::Token,
-) -> CursorIter<'a, ListCursor> {
+pub fn subscriptions<T: Into<UserID>>(user: T, token: &auth::Token) -> CursorIter<ListCursor> {
     let params = ParamList::new().add_name_param(&user.into());
     CursorIter::new(links::lists::SUBSCRIPTIONS, token, Some(params), Some(20))
 }
@@ -65,16 +59,13 @@ pub fn subscriptions<'a, T: Into<UserID<'a>>>(
 ///
 ///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
-pub fn ownerships<'a, T: Into<UserID<'a>>>(
-    user: T,
-    token: &auth::Token,
-) -> CursorIter<'a, ListCursor> {
+pub fn ownerships<T: Into<UserID>>(user: T, token: &auth::Token) -> CursorIter<ListCursor> {
     let params = ParamList::new().add_name_param(&user.into());
     CursorIter::new(links::lists::OWNERSHIPS, token, Some(params), Some(20))
 }
 
 ///Look up information for a single list.
-pub async fn show(list: ListID<'_>, token: &auth::Token) -> Result<Response<List>> {
+pub async fn show(list: ListID, token: &auth::Token) -> Result<Response<List>> {
     let params = ParamList::new().add_list_param(&list);
 
     let req = auth::get(links::lists::SHOW, token, Some(&params));
@@ -86,7 +77,7 @@ pub async fn show(list: ListID<'_>, token: &auth::Token) -> Result<Response<List
 ///
 ///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
-pub fn members<'a>(list: ListID<'a>, token: &auth::Token) -> CursorIter<'a, UserCursor> {
+pub fn members<'a>(list: ListID, token: &auth::Token) -> CursorIter<UserCursor> {
     let params = ParamList::new().add_list_param(&list);
 
     CursorIter::new(links::lists::MEMBERS, token, Some(params), Some(20))
@@ -96,16 +87,16 @@ pub fn members<'a>(list: ListID<'a>, token: &auth::Token) -> CursorIter<'a, User
 ///
 ///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
-pub fn subscribers<'a>(list: ListID<'a>, token: &auth::Token) -> CursorIter<'a, UserCursor> {
+pub fn subscribers<'a>(list: ListID, token: &auth::Token) -> CursorIter<UserCursor> {
     let params = ParamList::new().add_list_param(&list);
 
     CursorIter::new(links::lists::SUBSCRIBERS, token, Some(params), Some(20))
 }
 
 ///Check whether the given user is subscribed to the given list.
-pub async fn is_subscribed<'id, T: Into<UserID<'id>>>(
+pub async fn is_subscribed<'id, T: Into<UserID>>(
     user: T,
-    list: ListID<'_>,
+    list: ListID,
     token: &auth::Token,
 ) -> Result<Response<bool>> {
     let params = ParamList::new()
@@ -138,9 +129,9 @@ pub async fn is_subscribed<'id, T: Into<UserID<'id>>>(
 }
 
 ///Check whether the given user has been added to the given list.
-pub async fn is_member<'id, T: Into<UserID<'id>>>(
+pub async fn is_member<'id, T: Into<UserID>>(
     user: T,
-    list: ListID<'_>,
+    list: ListID,
     token: &auth::Token,
 ) -> Result<Response<bool>> {
     let params = ParamList::new()
@@ -178,7 +169,7 @@ pub async fn is_member<'id, T: Into<UserID<'id>>>(
 ///timeline. see the [`Timeline`] docs for details.
 ///
 ///[`Timeline`]: ../tweet/struct.Timeline.html
-pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &auth::Token) -> tweet::Timeline<'a> {
+pub fn statuses(list: ListID, with_rts: bool, token: &auth::Token) -> tweet::Timeline {
     let params = ParamList::new()
         .add_list_param(&list)
         .add_param("include_rts", with_rts.to_string());
@@ -191,8 +182,8 @@ pub fn statuses<'a>(list: ListID<'a>, with_rts: bool, token: &auth::Token) -> tw
 ///Note that lists cannot have more than 5000 members.
 ///
 ///Upon success, the future returned by this function yields the freshly-modified list.
-pub async fn add_member<'id, T: Into<UserID<'id>>>(
-    list: ListID<'_>,
+pub async fn add_member<'id, T: Into<UserID>>(
+    list: ListID,
     user: T,
     token: &auth::Token,
 ) -> Result<Response<List>> {
@@ -220,11 +211,11 @@ pub async fn add_member<'id, T: Into<UserID<'id>>>(
 ///immediately available for a corresponding removal or addition, respectively.
 pub async fn add_member_list<'id, T, I>(
     members: I,
-    list: ListID<'_>,
+    list: ListID,
     token: &auth::Token,
 ) -> Result<Response<List>>
 where
-    T: Into<UserID<'id>>,
+    T: Into<UserID>,
     I: IntoIterator<Item = T>,
 {
     let (id_param, name_param) = multiple_names_param(members);
@@ -253,8 +244,8 @@ where
 }
 
 ///Removes the given user from the given list.
-pub async fn remove_member<'id, T: Into<UserID<'id>>>(
-    list: ListID<'_>,
+pub async fn remove_member<'id, T: Into<UserID>>(
+    list: ListID,
     user: T,
     token: &auth::Token,
 ) -> Result<Response<List>> {
@@ -279,13 +270,13 @@ pub async fn remove_member<'id, T: Into<UserID<'id>>>(
 ///When using this method, take care not to add and remove many members in rapid succession; there
 ///are no guarantees that the result of a `add_member_list` or `remove_member_list` will be
 ///immediately available for a corresponding removal or addition, respectively.
-pub async fn remove_member_list<'a, T, I>(
+pub async fn remove_member_list<T, I>(
     members: I,
-    list: ListID<'_>,
+    list: ListID,
     token: &auth::Token,
 ) -> Result<Response<List>>
 where
-    T: Into<UserID<'a>>,
+    T: Into<UserID>,
     I: IntoIterator<Item = T>,
 {
     let (id_param, name_param) = multiple_names_param(members);
@@ -319,9 +310,9 @@ where
 ///and the name given to `name`. Twitter places an upper limit on 1000 lists owned by a single
 ///account.
 pub async fn create(
-    name: &str,
+    name: String,
     public: bool,
-    desc: Option<&str>,
+    desc: Option<String>,
     token: &auth::Token,
 ) -> Result<Response<List>> {
     let params = ParamList::new()
@@ -337,7 +328,7 @@ pub async fn create(
 ///Deletes the given list.
 ///
 ///The authenticated user must have created the list.
-pub async fn delete(list: ListID<'_>, token: &auth::Token) -> Result<Response<List>> {
+pub async fn delete(list: ListID, token: &auth::Token) -> Result<Response<List>> {
     let params = ParamList::new().add_list_param(&list);
 
     let req = auth::post(links::lists::DELETE, token, Some(&params));
@@ -349,7 +340,7 @@ pub async fn delete(list: ListID<'_>, token: &auth::Token) -> Result<Response<Li
 ///
 ///Subscribing to a list is a way to make it available in the "Lists" section of a user's profile
 ///without having to create it themselves.
-pub async fn subscribe(list: ListID<'_>, token: &auth::Token) -> Result<Response<List>> {
+pub async fn subscribe(list: ListID, token: &auth::Token) -> Result<Response<List>> {
     let params = ParamList::new().add_list_param(&list);
 
     let req = auth::post(links::lists::SUBSCRIBE, token, Some(&params));
@@ -358,7 +349,7 @@ pub async fn subscribe(list: ListID<'_>, token: &auth::Token) -> Result<Response
 }
 
 ///Unsubscribes the authenticated user from the given list.
-pub async fn unsubscribe(list: ListID<'_>, token: &auth::Token) -> Result<Response<List>> {
+pub async fn unsubscribe(list: ListID, token: &auth::Token) -> Result<Response<List>> {
     let params = ParamList::new().add_list_param(&list);
 
     let req = auth::post(links::lists::UNSUBSCRIBE, token, Some(&params));
@@ -371,7 +362,7 @@ pub async fn unsubscribe(list: ListID<'_>, token: &auth::Token) -> Result<Respon
 ///This method is exposed using a builder struct. See the [`ListUpdate`] docs for details.
 ///
 ///[`ListUpdate`]: struct.ListUpdate.html
-pub fn update<'a>(list: ListID<'a>) -> ListUpdate<'a> {
+pub fn update(list: ListID) -> ListUpdate {
     ListUpdate {
         list: list,
         name: None,

@@ -24,7 +24,7 @@
 //! `ParamList` is a type alias for use as a collection of parameters to a given web call. It's
 //! consumed in the auth module, and provides some easy wrappers to consistently handle some types.
 //!
-//! `add_param` is a basic function that turns its arguments into `Cow<'a, str>`, then inserts them
+//! `add_param` is a basic function that turns its arguments into `Cow<'static, str>`, then inserts them
 //! as a parameter into the given `ParamList`.
 //!
 //! `add_name_param` provides some special handling for the `UserID` enum, since Twitter always
@@ -127,12 +127,13 @@ pub use crate::common::response::*;
 use crate::{list, user};
 
 pub type Headers = HeaderMap<HeaderValue>;
+pub(crate) type CowStr = Cow<'static, str>;
 
 ///Convenience type used to hold parameters to an API call.
 #[derive(Debug, Clone, Default, derive_more::Deref, derive_more::DerefMut, derive_more::From)]
-pub(crate) struct ParamList<'a>(HashMap<Cow<'a, str>, Cow<'a, str>>);
+pub(crate) struct ParamList(HashMap<Cow<'static, str>, Cow<'static, str>>);
 
-impl<'a> ParamList<'a> {
+impl ParamList {
     pub(crate) fn new() -> Self {
         Self(HashMap::new())
     }
@@ -144,8 +145,8 @@ impl<'a> ParamList<'a> {
     ///Convenience function to add a key/value parameter to a `ParamList`.
     pub(crate) fn add_param(
         mut self,
-        key: impl Into<Cow<'a, str>>,
-        value: impl Into<Cow<'a, str>>,
+        key: impl Into<Cow<'static, str>>,
+        value: impl Into<Cow<'static, str>>,
     ) -> Self {
         self.insert(key.into(), value.into());
         self
@@ -154,8 +155,8 @@ impl<'a> ParamList<'a> {
     ///Convenience function to add a key/value parameter to a `ParamList`.
     pub(crate) fn add_opt_param(
         self,
-        key: impl Into<Cow<'a, str>>,
-        value: Option<impl Into<Cow<'a, str>>>,
+        key: impl Into<Cow<'static, str>>,
+        value: Option<impl Into<Cow<'static, str>>>,
     ) -> Self {
         match value {
             Some(val) => self.add_param(key.into(), val.into()),
@@ -166,20 +167,20 @@ impl<'a> ParamList<'a> {
     ///Convenience function to add a key/value parameter to a `ParamList` without moving.
     pub(crate) fn add_param_ref(
         &mut self,
-        key: impl Into<Cow<'a, str>>,
-        value: impl Into<Cow<'a, str>>,
+        key: impl Into<Cow<'static, str>>,
+        value: impl Into<Cow<'static, str>>,
     ) {
         self.0.insert(key.into(), value.into());
     }
 
-    pub(crate) fn add_name_param(self, id: &user::UserID<'a>) -> Self {
+    pub(crate) fn add_name_param(self, id: &user::UserID) -> Self {
         match *id {
             user::UserID::ID(id) => self.add_param("user_id", id.to_string()),
             user::UserID::ScreenName(name) => self.add_param("screen_name", name),
         }
     }
 
-    pub(crate) fn add_list_param(mut self, list: &list::ListID<'a>) -> Self {
+    pub(crate) fn add_list_param(mut self, list: &list::ListID) -> Self {
         match *list {
             list::ListID::Slug(ref owner, name) => {
                 match *owner {
@@ -208,9 +209,9 @@ impl<T: std::fmt::Display> MapString for Option<T> {
     }
 }
 
-pub fn multiple_names_param<'a, T, I>(accts: I) -> (String, String)
+pub fn multiple_names_param<T, I>(accts: I) -> (String, String)
 where
-    T: Into<user::UserID<'a>>,
+    T: Into<user::UserID>,
     I: IntoIterator<Item = T>,
 {
     let mut ids = Vec::new();
