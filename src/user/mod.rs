@@ -480,7 +480,8 @@ pub struct UserSearch {
     pub page_num: i32,
     /// The number of user records per page of results. Defaults to 10, maximum of 20.
     pub page_size: i32,
-    current_loader: Option<FutureResponse<Vec<TwitterUser>>>,
+    current_loader:
+        Option<Pin<Box<dyn Future<Output = error::Result<Response<Vec<TwitterUser>>>>>>>,
     current_results: Option<VecIter<TwitterUser>>,
 }
 
@@ -516,14 +517,14 @@ impl UserSearch {
     /// This will automatically be called if you use the `UserSearch` as an iterator. This method is
     /// made public for convenience if you want to manage the pagination yourself. Remember to
     /// change `page_num` between calls.
-    pub fn call(&self) -> FutureResponse<Vec<TwitterUser>> {
+    pub fn call(&self) -> impl Future<Output = error::Result<Response<Vec<TwitterUser>>>> {
         let params = ParamList::new()
             .add_param("q", self.query.clone())
             .add_param("page", self.page_num.to_string())
             .add_param("count", self.page_size.to_string());
 
         let req = auth::get(links::users::SEARCH, &self.token, Some(&params));
-        make_parsed_future2(req)
+        make_parsed_future(req)
     }
 
     /// Returns a new UserSearch with the given query and tokens, with the default page size of 10.
@@ -568,7 +569,7 @@ impl Stream for UserSearch {
             }
         }
 
-        self.current_loader = Some(self.call());
+        self.current_loader = Some(Box::pin(self.call()));
         self.poll_next(cx)
     }
 }

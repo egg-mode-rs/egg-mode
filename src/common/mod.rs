@@ -113,7 +113,9 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::future::Future;
 use std::iter::Peekable;
+use std::pin::Pin;
 
 use chrono::{self, TimeZone};
 use hyper::header::{HeaderMap, HeaderValue};
@@ -124,7 +126,7 @@ use serde::{Deserialize, Deserializer};
 mod response;
 
 pub use crate::common::response::*;
-use crate::{list, user};
+use crate::{error, list, user};
 
 pub type Headers = HeaderMap<HeaderValue>;
 pub(crate) type CowStr = Cow<'static, str>;
@@ -228,7 +230,7 @@ where
 }
 
 ///Type alias for responses from Twitter.
-pub type WebResponse<T> = Result<Response<T>, crate::error::Error>;
+pub type WebResponse<T> = Result<Response<T>, error::Error>;
 
 ///Type alias for futures that resolve to responses from Twitter.
 ///
@@ -236,7 +238,7 @@ pub type WebResponse<T> = Result<Response<T>, crate::error::Error>;
 ///convenience alias that is only there so i don't have to write `Response<T>` all the time.
 ///
 ///[`TwitterFuture`]: struct.TwitterFuture.html
-pub type FutureResponse<T> = TwitterFuture<Response<T>>;
+pub type FutureResponse<T> = Pin<Box<dyn Future<Output = error::Result<Response<T>>>>>;
 
 pub fn codepoints_to_bytes(&mut (ref mut start, ref mut end): &mut (usize, usize), text: &str) {
     let mut byte_start = *start;

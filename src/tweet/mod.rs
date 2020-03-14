@@ -518,7 +518,7 @@ impl Timeline {
     ///ID to bound with.
     pub fn older(self, since_id: Option<u64>) -> TimelineFuture {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
-        let loader = make_parsed_future2(req);
+        let loader = Box::pin(make_parsed_future(req));
 
         TimelineFuture {
             timeline: Some(self),
@@ -530,7 +530,7 @@ impl Timeline {
     ///ID to bound with.
     pub fn newer(self, max_id: Option<u64>) -> TimelineFuture {
         let req = self.request(self.max_id, max_id);
-        let loader = make_parsed_future2(req);
+        let loader = Box::pin(make_parsed_future(req));
 
         TimelineFuture {
             timeline: Some(self),
@@ -604,7 +604,7 @@ impl Timeline {
 #[must_use = "futures do nothing unless polled"]
 pub struct TimelineFuture {
     timeline: Option<Timeline>,
-    loader: FutureResponse<Vec<Tweet>>,
+    loader: Pin<Box<dyn Future<Output = Result<Response<Vec<Tweet>>>>>>,
 }
 
 impl Future for TimelineFuture {

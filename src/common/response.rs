@@ -287,29 +287,6 @@ pub async fn make_future<T>(
     .await
 }
 
-pub fn make_future2<T>(
-    request: Request<Body>,
-    make_resp: fn(String, &Headers) -> Result<T>,
-) -> TwitterFuture<T> {
-    TwitterFuture {
-        request: make_raw_future(request),
-        make_resp: make_resp,
-    }
-}
-
-/// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
-pub async fn make_parsed_future<T: for<'de> Deserialize<'de>>(
-    request: Request<Body>,
-) -> Result<Response<T>> {
-    make_future(request, make_response).await
-}
-
-pub fn make_parsed_future2<T: for<'de> Deserialize<'de>>(
-    request: Request<Body>,
-) -> TwitterFuture<Response<T>> {
-    make_future2(request, make_response)
-}
-
 #[derive(Clone, Debug, Deserialize)]
 pub struct RateLimit {
     ///The rate limit ceiling for the given request.
