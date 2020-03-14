@@ -483,13 +483,13 @@ pub struct ExtendedTweetEntities {
 /// If you want to manually pull tweets between certain IDs, the baseline `call` function can do
 /// that for you. Keep in mind, though, that `call` doesn't update the `min_id` or `max_id` fields,
 /// so you'll have to set those yourself if you want to follow up with `older` or `newer`.
-pub struct Timeline<'a> {
+pub struct Timeline {
     ///The URL to request tweets from.
     link: &'static str,
     ///The token to authorize requests with.
     token: auth::Token,
     ///Optional set of params to include prior to adding timeline navigation parameters.
-    params_base: Option<ParamList<'a>>,
+    params_base: Option<ParamList>,
     ///The maximum number of tweets to return in a single call. Twitter doesn't guarantee returning
     ///exactly this number, as suspended or deleted content is removed after retrieving the initial
     ///collection of tweets.
@@ -500,7 +500,7 @@ pub struct Timeline<'a> {
     pub min_id: Option<u64>,
 }
 
-impl<'a> Timeline<'a> {
+impl Timeline {
     ///Clear the saved IDs on this timeline.
     pub fn reset(&mut self) {
         self.max_id = None;
@@ -508,7 +508,7 @@ impl<'a> Timeline<'a> {
     }
 
     ///Clear the saved IDs on this timeline, and return the most recent set of tweets.
-    pub fn start(mut self) -> TimelineFuture<'a> {
+    pub fn start(mut self) -> TimelineFuture {
         self.reset();
 
         self.older(None)
@@ -516,7 +516,7 @@ impl<'a> Timeline<'a> {
 
     ///Return the set of tweets older than the last set pulled, optionally placing a minimum tweet
     ///ID to bound with.
-    pub fn older(self, since_id: Option<u64>) -> TimelineFuture<'a> {
+    pub fn older(self, since_id: Option<u64>) -> TimelineFuture {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
         let loader = make_parsed_future2(req);
 
@@ -528,7 +528,7 @@ impl<'a> Timeline<'a> {
 
     ///Return the set of tweets newer than the last set pulled, optionall placing a maximum tweet
     ///ID to bound with.
-    pub fn newer(self, max_id: Option<u64>) -> TimelineFuture<'a> {
+    pub fn newer(self, max_id: Option<u64>) -> TimelineFuture {
         let req = self.request(self.max_id, max_id);
         let loader = make_parsed_future2(req);
 
@@ -582,7 +582,7 @@ impl<'a> Timeline<'a> {
     ///Create an instance of `Timeline` with the given link and tokens.
     pub(crate) fn new(
         link: &'static str,
-        params_base: Option<ParamList<'a>>,
+        params_base: Option<ParamList>,
         token: &auth::Token,
     ) -> Self {
         Timeline {
@@ -602,13 +602,13 @@ impl<'a> Timeline<'a> {
 /// updated the IDs in the parent `Timeline`) or the error encountered when loading or parsing the
 /// response.
 #[must_use = "futures do nothing unless polled"]
-pub struct TimelineFuture<'timeline> {
-    timeline: Option<Timeline<'timeline>>,
+pub struct TimelineFuture {
+    timeline: Option<Timeline>,
     loader: FutureResponse<Vec<Tweet>>,
 }
 
-impl<'timeline> Future for TimelineFuture<'timeline> {
-    type Output = Result<(Timeline<'timeline>, Response<Vec<Tweet>>)>;
+impl Future for TimelineFuture {
+    type Output = Result<(Timeline, Response<Vec<Tweet>>)>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         match Pin::new(&mut self.loader).poll(cx) {
@@ -675,9 +675,9 @@ impl<'timeline> Future for TimelineFuture<'timeline> {
 /// # }
 /// ```
 #[derive(Debug, Clone)]
-pub struct DraftTweet<'a> {
+pub struct DraftTweet {
     ///The text of the draft tweet.
-    pub text: Cow<'a, str>,
+    pub text: Cow<'static, str>,
     ///If present, the ID of the tweet this draft is replying to.
     pub in_reply_to: Option<u64>,
     ///If present, whether to automatically fill reply mentions from the metadata of the
@@ -685,7 +685,7 @@ pub struct DraftTweet<'a> {
     pub auto_populate_reply_metadata: Option<bool>,
     ///If present, the list of user IDs to exclude from the automatically-populated metadata pulled
     ///when `auto_populate_reply_metadata` is true.
-    pub exclude_reply_user_ids: Option<Cow<'a, [u64]>>,
+    pub exclude_reply_user_ids: Option<Cow<'static, [u64]>>,
     ///If present, the tweet link to quote or a [DM deep link][] to include in the tweet's
     ///attachment metadata.
     ///
@@ -693,14 +693,14 @@ pub struct DraftTweet<'a> {
     ///error when the draft is sent.
     ///
     ///[DM deep link]: https://business.twitter.com/en/help/campaign-editing-and-optimization/public-to-private-conversation.html
-    pub attachment_url: Option<Cow<'a, str>>,
+    pub attachment_url: Option<CowStr>,
     ///If present, the latitude/longitude coordinates to attach to the draft.
     pub coordinates: Option<(f64, f64)>,
     ///If present (and if `coordinates` is present), indicates whether to display a pin on the
     ///exact coordinate when the eventual tweet is displayed.
     pub display_coordinates: Option<bool>,
     ///If present the Place to attach to this draft.
-    pub place_id: Option<Cow<'a, str>>,
+    pub place_id: Option<CowStr>,
     ///List of media entities associated with tweet.
     ///
     ///A tweet can have one video, one GIF, or up to four images attached to it. When attaching
@@ -716,9 +716,9 @@ pub struct DraftTweet<'a> {
     pub possibly_sensitive: Option<bool>,
 }
 
-impl<'a> DraftTweet<'a> {
+impl DraftTweet {
     ///Creates a new `DraftTweet` with the given status text.
-    pub fn new<S: Into<Cow<'a, str>>>(text: S) -> Self {
+    pub fn new<S: Into<Cow<'static, str>>>(text: S) -> Self {
         DraftTweet {
             text: text.into(),
             in_reply_to: None,
@@ -766,7 +766,7 @@ impl<'a> DraftTweet<'a> {
     ///
     ///Note that you cannot use this parameter to remove the author of the parent tweet from the
     ///reply list. Twitter will silently ignore the author's ID in that scenario.
-    pub fn exclude_reply_user_ids<V: Into<Cow<'a, [u64]>>>(self, user_ids: V) -> Self {
+    pub fn exclude_reply_user_ids<V: Into<Cow<'static, [u64]>>>(self, user_ids: V) -> Self {
         DraftTweet {
             exclude_reply_user_ids: Some(user_ids.into()),
             ..self
@@ -780,7 +780,7 @@ impl<'a> DraftTweet<'a> {
     ///error when this draft is sent.
     ///
     ///[DM deep link]: https://business.twitter.com/en/help/campaign-editing-and-optimization/public-to-private-conversation.html
-    pub fn attachment_url<S: Into<Cow<'a, str>>>(self, url: S) -> Self {
+    pub fn attachment_url<S: Into<Cow<'static, str>>>(self, url: S) -> Self {
         DraftTweet {
             attachment_url: Some(url.into()),
             ..self
@@ -807,7 +807,7 @@ impl<'a> DraftTweet<'a> {
     ///what location is displayed with the tweet.
     ///
     ///Location fields will be ignored unless the user has enabled geolocation from their profile.
-    pub fn place_id<S: Into<Cow<'a, str>>>(self, place_id: S) -> Self {
+    pub fn place_id<S: Into<CowStr>>(self, place_id: S) -> Self {
         DraftTweet {
             place_id: Some(place_id.into()),
             ..self

@@ -16,7 +16,7 @@ use hyper::{self, Body, Request, StatusCode};
 use hyper_rustls::HttpsConnector;
 #[cfg(feature = "native_tls")]
 use hyper_tls::HttpsConnector;
-use serde::Deserialize;
+use serde::{de::DeserializeOwned, Deserialize};
 use serde_json;
 
 use std::convert::TryFrom;
@@ -267,10 +267,7 @@ impl<T> Future for TwitterFuture<T> {
 
 /// Shortcut `MakeResponse` method that attempts to parse the given type from the response and
 /// loads rate-limit information from the response headers.
-pub fn make_response<T: for<'a> Deserialize<'a>>(
-    body: String,
-    headers: &Headers,
-) -> Result<Response<T>> {
+pub fn make_response<T: DeserializeOwned>(body: String, headers: &Headers) -> Result<Response<T>> {
     let response = serde_json::from_str(&body)?;
     let rate_limit_status = RateLimit::try_from(headers)?;
     Ok(Response {

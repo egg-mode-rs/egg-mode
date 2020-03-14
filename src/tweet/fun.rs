@@ -49,10 +49,7 @@ pub async fn retweets_of(id: u64, count: u32, token: &auth::Token) -> Result<Res
 ///set the page size. Calling `with_page_size` on the iterator returned by this function will not
 ///change the page size used by the network call. Setting `page_size` manually may result in an
 ///error from Twitter.
-pub fn retweeters_of(
-    id: u64,
-    token: &auth::Token,
-) -> cursor::CursorIter<'static, cursor::IDCursor> {
+pub fn retweeters_of(id: u64, token: &auth::Token) -> cursor::CursorIter<cursor::IDCursor> {
     let params = ParamList::new().add_param("id", id.to_string());
     cursor::CursorIter::new(links::statuses::RETWEETERS_OF, token, Some(params), None)
 }
@@ -149,7 +146,7 @@ pub async fn lookup_map<I: IntoIterator<Item = u64>>(
 ///This method has a default page size of 20 tweets, with a maximum of 200.
 ///
 ///Twitter will only return the most recent 800 tweets by navigating this method.
-pub fn home_timeline(token: &auth::Token) -> Timeline<'static> {
+pub fn home_timeline(token: &auth::Token) -> Timeline {
     Timeline::new(links::statuses::HOME_TIMELINE, None, token)
 }
 
@@ -159,7 +156,7 @@ pub fn home_timeline(token: &auth::Token) -> Timeline<'static> {
 ///This method has a default page size of 20 tweets, with a maximum of 200.
 ///
 ///Twitter will only return the most recent 800 tweets by navigating this method.
-pub fn mentions_timeline(token: &auth::Token) -> Timeline<'static> {
+pub fn mentions_timeline(token: &auth::Token) -> Timeline {
     Timeline::new(links::statuses::MENTIONS_TIMELINE, None, token)
 }
 
@@ -175,12 +172,12 @@ pub fn mentions_timeline(token: &auth::Token) -> Timeline<'static> {
 ///retweets.
 ///
 ///Twitter will only load the most recent 3,200 tweets with this method.
-pub fn user_timeline<'a, T: Into<UserID<'a>>>(
+pub fn user_timeline<T: Into<UserID>>(
     acct: T,
     with_replies: bool,
     with_rts: bool,
     token: &auth::Token,
-) -> Timeline<'a> {
+) -> Timeline {
     let params = ParamList::new()
         .extended_tweets()
         .add_name_param(&acct.into())
@@ -194,14 +191,14 @@ pub fn user_timeline<'a, T: Into<UserID<'a>>>(
 ///user that have been retweeted by others.
 ///
 ///This method has a default page size of 20 tweets, with a maximum of 100.
-pub fn retweets_of_me(token: &auth::Token) -> Timeline<'static> {
+pub fn retweets_of_me(token: &auth::Token) -> Timeline {
     Timeline::new(links::statuses::RETWEETS_OF_ME, None, token)
 }
 
 ///Make a `Timeline` struct for navigating the collection of tweets liked by the given user.
 ///
 ///This method has a default page size of 20 tweets, with a maximum of 200.
-pub fn liked_by<'a, T: Into<UserID<'a>>>(acct: T, token: &auth::Token) -> Timeline<'a> {
+pub fn liked_by<T: Into<UserID>>(acct: T, token: &auth::Token) -> Timeline {
     let params = ParamList::new()
         .extended_tweets()
         .add_name_param(&acct.into());

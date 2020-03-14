@@ -15,9 +15,10 @@ use std::task::{Context, Poll};
 use std::vec::IntoIter as VecIter;
 
 use futures::Stream;
-use serde::Deserialize;
+use serde::{de::DeserializeOwned, Deserialize};
 
 use crate::common::*;
+use crate::error::Result;
 use crate::{auth, error, list, user};
 
 ///Trait to generalize over paginated views of API results.
@@ -226,13 +227,13 @@ impl Cursor for ListCursor {
 /// # }
 /// ```
 #[must_use = "cursor iterators are lazy and do nothing unless consumed"]
-pub struct CursorIter<'a, T>
+pub struct CursorIter<T>
 where
-    T: Cursor + for<'de> Deserialize<'de> + 'a,
+    T: Cursor + DeserializeOwned,
 {
     link: &'static str,
     token: auth::Token,
-    params_base: Option<ParamList<'a>>,
+    params_base: Option<ParamList>,
     ///The number of results returned in one network call.
     ///
     ///Certain calls set their own minimums and maximums for what this value can be. Furthermore,
@@ -253,13 +254,13 @@ where
     ///implementation. It is made available for those who wish to manually manage network calls and
     ///pagination.
     pub next_cursor: i64,
-    loader: Option<FutureResponse<T>>,
+    loader: Option<Pin<Box<dyn Future<Output = Result<Response<T>>>>>>,
     iter: Option<VecIter<T::Item>>,
 }
 
-impl<'a, T> CursorIter<'a, T>
+impl<T> CursorIter<T>
 where
-    T: Cursor + for<'de> Deserialize<'de> + 'a,
+    T: Cursor + DeserializeOwned,
 {
     ///Sets the number of results returned in a single network call.
     ///
@@ -269,7 +270,7 @@ where
     ///accept changing the page size, no change to the underlying struct will occur.
     ///
     ///Calling this function will invalidate any current results, if any were previously loaded.
-    pub fn with_page_size(self, page_size: i32) -> CursorIter<'a, T> {
+    pub fn with_page_size(self, page_size: i32) -> CursorIter<T> {
         if self.page_size.is_some() {
             CursorIter {
                 page_size: Some(page_size),
@@ -288,7 +289,7 @@ where
     ///
     ///This is intended to be used as part of this struct's Iterator implementation. It is provided
     ///as a convenience for those who wish to manage network calls and pagination manually.
-    pub fn call(&self) -> FutureResponse<T> {
+    pub fn call(&self) -> impl Future<Output = Result<Response<T>>> {
         let params = ParamList::from(self.params_base.as_ref().cloned().unwrap_or_default())
             .add_param("cursor", self.next_cursor.to_string())
             .add_opt_param("count", self.page_size.map_string());
@@ -305,9 +306,9 @@ where
     pub(crate) fn new(
         link: &'static str,
         token: &auth::Token,
-        params_base: Option<ParamList<'a>>,
+        params_base: Option<ParamList>,
         page_size: Option<i32>,
-    ) -> CursorIter<'a, T> {
+    ) -> CursorIter<T> {
         CursorIter {
             link: link,
             token: token.clone(),
@@ -321,12 +322,12 @@ where
     }
 }
 
-impl<'a, T> Stream for CursorIter<'a, T>
+impl<T> Stream for CursorIter<T>
 where
-    T: Cursor + for<'de> Deserialize<'de> + 'a,
+    T: Cursor + DeserializeOwned + 'static,
     T::Item: Unpin,
 {
-    type Item = Result<T::Item, error::Error>;
+    type Item = Result<T::Item>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         if let Some(mut fut) = self.loader.take() {
@@ -362,7 +363,7 @@ where
             }
         }
 
-        self.loader = Some(self.call());
+        self.loader = Some(Box::pin(self.call()));
         self.poll_next(cx)
     }
 }

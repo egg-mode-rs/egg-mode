@@ -209,10 +209,10 @@ impl GeocodeBuilder {
     }
 }
 
-enum PlaceQuery<'a> {
+enum PlaceQuery {
     LatLon(f64, f64),
-    Query(&'a str),
-    IPAddress(&'a str),
+    Query(String),
+    IPAddress(String),
 }
 
 ///Represents a location search query before it is sent.
@@ -223,18 +223,18 @@ enum PlaceQuery<'a> {
 ///To complete your search setup and send the query to Twitter, hand your tokens to `call`. The
 ///list of results from Twitter will be returned, as well as a URL to perform the same search via
 ///`search_url`.
-pub struct SearchBuilder<'a> {
-    query: PlaceQuery<'a>,
+pub struct SearchBuilder {
+    query: PlaceQuery,
     accuracy: Option<Accuracy>,
     granularity: Option<PlaceType>,
     max_results: Option<u32>,
-    contained_within: Option<&'a str>,
-    attributes: Option<HashMap<&'a str, &'a str>>,
+    contained_within: Option<String>,
+    attributes: Option<HashMap<String, String>>,
 }
 
-impl<'a> SearchBuilder<'a> {
+impl SearchBuilder {
     ///Begins building a location search with the given query.
-    fn new(query: PlaceQuery<'a>) -> Self {
+    fn new(query: PlaceQuery) -> Self {
         SearchBuilder {
             query: query,
             accuracy: None,
@@ -283,7 +283,7 @@ impl<'a> SearchBuilder<'a> {
     }
 
     ///Restricts results to those contained within the given Place ID.
-    pub fn contained_within(self, contained_id: &'a str) -> Self {
+    pub fn contained_within(self, contained_id: String) -> Self {
         SearchBuilder {
             contained_within: Some(contained_id),
             ..self
@@ -299,7 +299,7 @@ impl<'a> SearchBuilder<'a> {
     ///
     ///For example, `.attribute("street_address", "123 Main St")` searches for places with the
     ///given street address.
-    pub fn attribute(self, attribute_key: &'a str, attribute_value: &'a str) -> Self {
+    pub fn attribute(self, attribute_key: String, attribute_value: String) -> Self {
         let mut attrs = self.attributes.unwrap_or_default();
         attrs.insert(attribute_key, attribute_value);
 
@@ -311,21 +311,21 @@ impl<'a> SearchBuilder<'a> {
 
     ///Finalize the search parameters and return the results collection.
     pub async fn call(&self, token: &auth::Token) -> Result<Response<SearchResult>, error::Error> {
-        let mut params = match self.query {
+        let mut params = match &self.query {
             PlaceQuery::LatLon(lat, long) => ParamList::new()
                 .add_param("lat", lat.to_string())
                 .add_param("long", long.to_string()),
-            PlaceQuery::Query(text) => ParamList::new().add_param("query", text),
-            PlaceQuery::IPAddress(text) => ParamList::new().add_param("ip", text),
+            PlaceQuery::Query(text) => ParamList::new().add_param("query", text.to_string()),
+            PlaceQuery::IPAddress(text) => ParamList::new().add_param("ip", text.to_string()),
         }
         .add_opt_param("accuracy", self.accuracy.map_string())
         .add_opt_param("granularity", self.granularity.map_string())
         .add_opt_param("max_results", self.max_results.map_string())
-        .add_opt_param("contained_within", self.contained_within);
+        .add_opt_param("contained_within", self.contained_within.map_string());
 
         if let Some(ref attrs) = self.attributes {
             for (k, v) in attrs {
-                params.add_param_ref(format!("attribute:{}", k), *v);
+                params.add_param_ref(format!("attribute:{}", k), v.clone());
             }
         }
 
