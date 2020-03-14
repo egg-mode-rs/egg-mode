@@ -22,7 +22,7 @@ async fn main() {
     users.push(config.user_id.into());
     users.push("SwiftOnSecurity".into());
 
-    for user in user::lookup(&users, &config.token)
+    for user in user::lookup(users, &config.token)
         .await
         .unwrap()
         .response

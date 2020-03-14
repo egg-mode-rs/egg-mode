@@ -21,7 +21,6 @@ use serde_json;
 
 use std::convert::TryFrom;
 use std::future::Future;
-use std::ops::{Deref, DerefMut};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::{io, mem};
@@ -63,11 +62,15 @@ fn rate_limit_reset(headers: &Headers) -> Result<Option<i32>> {
 ///
 ///As this implements `Deref` and `DerefMut`, you can transparently use the contained `response`'s
 ///methods as if they were methods on this struct.
-#[derive(Debug, Deserialize, derive_more::Constructor)]
+#[derive(
+    Debug, Deserialize, derive_more::Constructor, derive_more::Deref, derive_more::DerefMut,
+)]
 pub struct Response<T> {
     /// Latest rate lime status
     pub rate_limit_status: RateLimit,
     ///The decoded response from the request.
+    #[deref]
+    #[deref_mut]
     pub response: T,
 }
 
@@ -94,20 +97,6 @@ impl<T> Response<T> {
             rate_limit_status: src.rate_limit_status,
             response: fun(src.response),
         }
-    }
-}
-
-impl<T> Deref for Response<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.response
-    }
-}
-
-impl<T> DerefMut for Response<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.response
     }
 }
 

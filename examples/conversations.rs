@@ -12,7 +12,7 @@ async fn main() {
     let convos = convos.newest().await.unwrap();
 
     for (id, convo) in &convos.conversations {
-        let user = egg_mode::user::show(id, &c.token).await.unwrap();
+        let user = egg_mode::user::show(*id, &c.token).await.unwrap();
         println!("-----");
         println!("Conversation with @{}:", user.screen_name);
         for msg in convo {

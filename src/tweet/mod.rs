@@ -604,7 +604,7 @@ impl Timeline {
 #[must_use = "futures do nothing unless polled"]
 pub struct TimelineFuture {
     timeline: Option<Timeline>,
-    loader: Pin<Box<dyn Future<Output = Result<Response<Vec<Tweet>>>>>>,
+    loader: FutureResponse<Vec<Tweet>>,
 }
 
 impl Future for TimelineFuture {

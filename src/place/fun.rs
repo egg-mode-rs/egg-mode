@@ -129,13 +129,13 @@ pub fn search_point(latitude: f64, longitude: f64) -> SearchBuilder {
 /// assert!(result.results.iter().any(|pl| pl.full_name == "British Columbia, Canada"));
 /// # }
 /// ```
-pub fn search_query(query: String) -> SearchBuilder {
-    SearchBuilder::new(PlaceQuery::Query(query))
+pub fn search_query(query: impl Into<CowStr>) -> SearchBuilder {
+    SearchBuilder::new(PlaceQuery::Query(query.into()))
 }
 
 ///Begins building a location search via an IP address.
-pub fn search_ip(query: String) -> SearchBuilder {
-    SearchBuilder::new(PlaceQuery::IPAddress(query))
+pub fn search_ip(query: impl Into<CowStr>) -> SearchBuilder {
+    SearchBuilder::new(PlaceQuery::IPAddress(query.into()))
 }
 
 ///From a URL given with the result of any `search_*` function, perform the same location search.

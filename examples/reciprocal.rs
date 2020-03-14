@@ -18,13 +18,10 @@ async fn main() {
 
     println!("");
     let mut friends = HashSet::new();
-    user::friends_ids(config.user_id, &config.token)
+    let mut friends: HashSet<u64> = user::friends_ids(config.user_id, &config.token)
         .map(|r| r.unwrap().response)
-        .for_each(|id| {
-            friends.insert(id);
-            future::ready(())
-        })
-        .await;
+        .await
+        .collect();
 
     let mut followers = HashSet::new();
     user::followers_ids(config.user_id, &config.token)
@@ -46,7 +43,11 @@ async fn main() {
     );
 
     if reciprocals_ct > 0 {
-        for user in user::lookup(&reciprocals, &config.token).await.unwrap() {
+        for user in user::lookup(reciprocals, &config.token)
+            .await
+            .unwrap()
+            .iter()
+        {
             println!("{} (@{})", user.name, user.screen_name);
         }
     }
