@@ -170,7 +170,7 @@ pub struct DMEntities {
 /// let mut timeline = egg_mode::direct::received(&token)
 ///                                     .with_page_size(10);
 ///
-/// for dm in &timeline.start().await.unwrap() {
+/// for dm in timeline.start().await.unwrap().iter() {
 ///     println!("<@{}> {}", dm.sender_screen_name, dm.text);
 /// }
 /// # }
@@ -186,7 +186,7 @@ pub struct DMEntities {
 /// # let token: Token = unimplemented!();
 /// # let mut timeline = egg_mode::direct::received(&token);
 /// # timeline.start().await.unwrap();
-/// for dm in &timeline.older(None).await.unwrap() {
+/// for dm in timeline.older(None).await.unwrap().iter() {
 ///     println!("<@{}> {}", dm.sender_screen_name, dm.text);
 /// }
 /// # }
@@ -424,7 +424,7 @@ fn merge(this: &mut DMConversations, conversations: DMConversations) {
 /// conversations = conversations.newest().await.unwrap();
 ///
 /// for (id, convo) in &conversations.conversations {
-///     let user = egg_mode::user::show(id, &token).await.unwrap();
+///     let user = egg_mode::user::show(*id, &token).await.unwrap();
 ///     println!("Conversation with @{}", user.screen_name);
 ///     for msg in convo {
 ///         println!("<@{}> {}", msg.sender_screen_name, msg.text);

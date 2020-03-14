@@ -193,9 +193,9 @@ pub struct ListUpdate {
 
 impl ListUpdate {
     ///Updates the name of the list.
-    pub fn name(self, name: String) -> ListUpdate {
+    pub fn name(self, name: impl Into<String>) -> ListUpdate {
         ListUpdate {
-            name: Some(name),
+            name: Some(name.into()),
             ..self
         }
     }

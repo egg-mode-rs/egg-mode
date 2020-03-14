@@ -419,7 +419,7 @@ pub struct ExtendedTweetEntities {
 /// let timeline = egg_mode::tweet::home_timeline(&token).with_page_size(10);
 ///
 /// let (timeline, feed) = timeline.start().await.unwrap();
-/// for tweet in &feed {
+/// for tweet in &*feed {
 ///     println!("<@{}> {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
 /// }
 /// # }
@@ -436,7 +436,7 @@ pub struct ExtendedTweetEntities {
 /// # let timeline = egg_mode::tweet::home_timeline(&token);
 /// # let (timeline, _) = timeline.start().await.unwrap();
 /// let (timeline, feed) = timeline.older(None).await.unwrap();
-/// for tweet in &feed {
+/// for tweet in &*feed {
 ///     println!("<@{}> {}", tweet.user.as_ref().unwrap().screen_name, tweet.text);
 /// }
 /// # }
