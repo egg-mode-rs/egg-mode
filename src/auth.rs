@@ -331,20 +331,14 @@ fn sign(
         let sig_params = params
             .cloned()
             .unwrap_or_default()
-            .add_param("oauth_consumer_key", header.consumer_key.as_str())
-            .add_param("oauth_nonce", header.nonce.as_str())
+            .add_param("oauth_consumer_key", header.consumer_key.clone())
+            .add_param("oauth_nonce", header.nonce.clone())
             .add_param("oauth_signature_method", "HMAC-SHA1")
-            .add_param("oauth_timestamp", format!("{}", header.timestamp))
+            .add_param("oauth_timestamp", format!("{}", header.timestamp.clone()))
             .add_param("oauth_version", "1.0")
-            .add_opt_param("oauth_token", header.token.as_ref().map(|t| t.as_str()))
-            .add_opt_param(
-                "oauth_callback",
-                header.callback.as_ref().map(|v| v.as_str()),
-            )
-            .add_opt_param(
-                "oauth_verifier",
-                header.verifier.as_ref().map(|v| v.as_str()),
-            );
+            .add_opt_param("oauth_token", header.token.clone())
+            .add_opt_param("oauth_callback", header.callback.clone())
+            .add_opt_param("oauth_verifier", header.verifier.clone());
 
         let mut query = sig_params
             .iter()

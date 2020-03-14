@@ -96,7 +96,7 @@ where
 pub async fn show<T: Into<UserID>>(acct: T, token: &auth::Token) -> Result<Response<TwitterUser>> {
     let params = ParamList::new()
         .extended_tweets()
-        .add_name_param(&acct.into());
+        .add_name_param(acct.into());
 
     let req = auth::get(links::users::SHOW, token, Some(&params));
 
@@ -174,7 +174,7 @@ pub fn friends_of<T: Into<UserID>>(
     acct: T,
     token: &auth::Token,
 ) -> cursor::CursorIter<cursor::UserCursor> {
-    let params = ParamList::new().add_name_param(&acct.into());
+    let params = ParamList::new().add_name_param(acct.into());
     cursor::CursorIter::new(links::users::FRIENDS_LIST, token, Some(params), Some(20))
 }
 
@@ -191,7 +191,7 @@ pub fn friends_ids<T: Into<UserID>>(
     acct: T,
     token: &auth::Token,
 ) -> cursor::CursorIter<cursor::IDCursor> {
-    let params = ParamList::new().add_name_param(&acct.into());
+    let params = ParamList::new().add_name_param(acct.into());
     cursor::CursorIter::new(links::users::FRIENDS_IDS, token, Some(params), Some(500))
 }
 
@@ -205,7 +205,7 @@ pub fn followers_of<T: Into<UserID>>(
 ) -> cursor::CursorIter<cursor::UserCursor> {
     let params = ParamList::new()
         .extended_tweets()
-        .add_name_param(&acct.into());
+        .add_name_param(acct.into());
     cursor::CursorIter::new(links::users::FOLLOWERS_LIST, token, Some(params), Some(20))
 }
 
@@ -221,7 +221,7 @@ pub fn followers_ids<T: Into<UserID>>(
     acct: T,
     token: &auth::Token,
 ) -> cursor::CursorIter<cursor::IDCursor> {
-    let params = ParamList::new().add_name_param(&acct.into());
+    let params = ParamList::new().add_name_param(acct.into());
     cursor::CursorIter::new(links::users::FOLLOWERS_IDS, token, Some(params), Some(500))
 }
 
@@ -304,7 +304,7 @@ pub async fn follow<T: Into<UserID>>(
 ) -> Result<Response<TwitterUser>> {
     let params = ParamList::new()
         .extended_tweets()
-        .add_name_param(&acct.into())
+        .add_name_param(acct.into())
         .add_param("follow", notifications.to_string());
     let req = auth::post(links::users::FOLLOW, token, Some(&params));
     make_parsed_future(req).await
@@ -322,7 +322,7 @@ pub async fn unfollow<T: Into<UserID>>(
 ) -> Result<Response<TwitterUser>> {
     let params = ParamList::new()
         .extended_tweets()
-        .add_name_param(&acct.into());
+        .add_name_param(acct.into());
     let req = auth::post(links::users::UNFOLLOW, token, Some(&params));
     make_parsed_future(req).await
 }
@@ -343,7 +343,7 @@ where
     T: Into<UserID>,
 {
     let params = ParamList::new()
-        .add_name_param(&acct.into())
+        .add_name_param(acct.into())
         .add_opt_param("device", notifications.map(|v| v.to_string()))
         .add_opt_param("retweets", retweets.map(|v| v.to_string()));
     let req = auth::post(links::users::FRIENDSHIP_UPDATE, token, Some(&params));
@@ -356,7 +356,7 @@ where
 pub async fn block<T: Into<UserID>>(acct: T, token: &auth::Token) -> Result<Response<TwitterUser>> {
     let params = ParamList::new()
         .extended_tweets()
-        .add_name_param(&acct.into());
+        .add_name_param(acct.into());
     let req = auth::post(links::users::BLOCK, token, Some(&params));
     make_parsed_future(req).await
 }
@@ -370,7 +370,7 @@ pub async fn report_spam<T: Into<UserID>>(
 ) -> Result<Response<TwitterUser>> {
     let params = ParamList::new()
         .extended_tweets()
-        .add_name_param(&acct.into());
+        .add_name_param(acct.into());
     let req = auth::post(links::users::REPORT_SPAM, token, Some(&params));
     make_parsed_future(req).await
 }
@@ -384,7 +384,7 @@ pub async fn unblock<T: Into<UserID>>(
 ) -> Result<Response<TwitterUser>> {
     let params = ParamList::new()
         .extended_tweets()
-        .add_name_param(&acct.into());
+        .add_name_param(acct.into());
     let req = auth::post(links::users::UNBLOCK, token, Some(&params));
     make_parsed_future(req).await
 }
@@ -395,7 +395,7 @@ pub async fn unblock<T: Into<UserID>>(
 pub async fn mute<T: Into<UserID>>(acct: T, token: &auth::Token) -> Result<Response<TwitterUser>> {
     let params = ParamList::new()
         .extended_tweets()
-        .add_name_param(&acct.into());
+        .add_name_param(acct.into());
     let req = auth::post(links::users::MUTE, token, Some(&params));
     make_parsed_future(req).await
 }
@@ -409,7 +409,7 @@ pub async fn unmute<T: Into<UserID>>(
 ) -> Result<Response<TwitterUser>> {
     let params = ParamList::new()
         .extended_tweets()
-        .add_name_param(&acct.into());
+        .add_name_param(acct.into());
     let req = auth::post(links::users::UNMUTE, token, Some(&params));
     make_parsed_future(req).await
 }

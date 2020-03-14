@@ -173,17 +173,17 @@ impl ParamList {
         self.0.insert(key.into(), value.into());
     }
 
-    pub(crate) fn add_name_param(self, id: &user::UserID) -> Self {
-        match *id {
+    pub(crate) fn add_name_param(self, id: user::UserID) -> Self {
+        match id {
             user::UserID::ID(id) => self.add_param("user_id", id.to_string()),
             user::UserID::ScreenName(name) => self.add_param("screen_name", name),
         }
     }
 
-    pub(crate) fn add_list_param(mut self, list: &list::ListID) -> Self {
-        match *list {
-            list::ListID::Slug(ref owner, name) => {
-                match *owner {
+    pub(crate) fn add_list_param(mut self, list: list::ListID) -> Self {
+        match list {
+            list::ListID::Slug(owner, name) => {
+                match owner {
                     user::UserID::ID(id) => {
                         self.add_param_ref("owner_id", id.to_string());
                     }
@@ -191,7 +191,7 @@ impl ParamList {
                         self.add_param_ref("owner_screen_name", name);
                     }
                 }
-                self.add_param("slug", name)
+                self.add_param("slug", name.clone())
             }
             list::ListID::ID(id) => self.add_param("list_id", id.to_string()),
         }

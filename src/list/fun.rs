@@ -17,7 +17,7 @@ use crate::{auth, links, tweet};
 ///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
 pub fn memberships<T: Into<UserID>>(user: T, token: &auth::Token) -> CursorIter<ListCursor> {
-    let params = ParamList::new().add_name_param(&user.into());
+    let params = ParamList::new().add_name_param(user.into());
     CursorIter::new(links::lists::MEMBERSHIPS, token, Some(params), Some(20))
 }
 
@@ -38,7 +38,7 @@ pub async fn list<'id, T: Into<UserID>>(
     token: &auth::Token,
 ) -> Result<Response<Vec<List>>> {
     let params = ParamList::new()
-        .add_name_param(&user.into())
+        .add_name_param(user.into())
         .add_param("reverse", owned_first.to_string());
 
     let req = auth::get(links::lists::LIST, token, Some(&params));
@@ -51,7 +51,7 @@ pub async fn list<'id, T: Into<UserID>>(
 ///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
 pub fn subscriptions<T: Into<UserID>>(user: T, token: &auth::Token) -> CursorIter<ListCursor> {
-    let params = ParamList::new().add_name_param(&user.into());
+    let params = ParamList::new().add_name_param(user.into());
     CursorIter::new(links::lists::SUBSCRIPTIONS, token, Some(params), Some(20))
 }
 
@@ -60,13 +60,13 @@ pub fn subscriptions<T: Into<UserID>>(user: T, token: &auth::Token) -> CursorIte
 ///This function returns a `Stream` over the lists returned by Twitter. This method defaults to
 ///reeturning 20 lists in a single network call; the maximum is 1000.
 pub fn ownerships<T: Into<UserID>>(user: T, token: &auth::Token) -> CursorIter<ListCursor> {
-    let params = ParamList::new().add_name_param(&user.into());
+    let params = ParamList::new().add_name_param(user.into());
     CursorIter::new(links::lists::OWNERSHIPS, token, Some(params), Some(20))
 }
 
 ///Look up information for a single list.
 pub async fn show(list: ListID, token: &auth::Token) -> Result<Response<List>> {
-    let params = ParamList::new().add_list_param(&list);
+    let params = ParamList::new().add_list_param(list);
 
     let req = auth::get(links::lists::SHOW, token, Some(&params));
 
@@ -78,7 +78,7 @@ pub async fn show(list: ListID, token: &auth::Token) -> Result<Response<List>> {
 ///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
 pub fn members<'a>(list: ListID, token: &auth::Token) -> CursorIter<UserCursor> {
-    let params = ParamList::new().add_list_param(&list);
+    let params = ParamList::new().add_list_param(list);
 
     CursorIter::new(links::lists::MEMBERS, token, Some(params), Some(20))
 }
@@ -88,7 +88,7 @@ pub fn members<'a>(list: ListID, token: &auth::Token) -> CursorIter<UserCursor> 
 ///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
 pub fn subscribers<'a>(list: ListID, token: &auth::Token) -> CursorIter<UserCursor> {
-    let params = ParamList::new().add_list_param(&list);
+    let params = ParamList::new().add_list_param(list);
 
     CursorIter::new(links::lists::SUBSCRIBERS, token, Some(params), Some(20))
 }
@@ -100,8 +100,8 @@ pub async fn is_subscribed<'id, T: Into<UserID>>(
     token: &auth::Token,
 ) -> Result<Response<bool>> {
     let params = ParamList::new()
-        .add_list_param(&list)
-        .add_name_param(&user.into());
+        .add_list_param(list)
+        .add_name_param(user.into());
 
     let req = auth::get(links::lists::IS_SUBSCRIBER, token, Some(&params));
 
@@ -135,8 +135,8 @@ pub async fn is_member<'id, T: Into<UserID>>(
     token: &auth::Token,
 ) -> Result<Response<bool>> {
     let params = ParamList::new()
-        .add_list_param(&list)
-        .add_name_param(&user.into());
+        .add_list_param(list)
+        .add_name_param(user.into());
 
     let req = auth::get(links::lists::IS_MEMBER, token, Some(&params));
 
@@ -171,7 +171,7 @@ pub async fn is_member<'id, T: Into<UserID>>(
 ///[`Timeline`]: ../tweet/struct.Timeline.html
 pub fn statuses(list: ListID, with_rts: bool, token: &auth::Token) -> tweet::Timeline {
     let params = ParamList::new()
-        .add_list_param(&list)
+        .add_list_param(list)
         .add_param("include_rts", with_rts.to_string());
 
     tweet::Timeline::new(links::lists::STATUSES, Some(params), token)
@@ -188,8 +188,8 @@ pub async fn add_member<'id, T: Into<UserID>>(
     token: &auth::Token,
 ) -> Result<Response<List>> {
     let params = ParamList::new()
-        .add_list_param(&list)
-        .add_name_param(&user.into());
+        .add_list_param(list)
+        .add_name_param(user.into());
 
     let req = auth::post(links::lists::ADD, token, Some(&params));
 
@@ -220,7 +220,7 @@ where
 {
     let (id_param, name_param) = multiple_names_param(members);
     let params = ParamList::new()
-        .add_list_param(&list)
+        .add_list_param(list)
         .add_opt_param(
             "user_id",
             if !id_param.is_empty() {
@@ -250,8 +250,8 @@ pub async fn remove_member<'id, T: Into<UserID>>(
     token: &auth::Token,
 ) -> Result<Response<List>> {
     let params = ParamList::new()
-        .add_list_param(&list)
-        .add_name_param(&user.into());
+        .add_list_param(list)
+        .add_name_param(user.into());
 
     let req = auth::post(links::lists::REMOVE_MEMBER, token, Some(&params));
 
@@ -281,7 +281,7 @@ where
 {
     let (id_param, name_param) = multiple_names_param(members);
     let params = ParamList::new()
-        .add_list_param(&list)
+        .add_list_param(list)
         .add_opt_param(
             "user_id",
             if !id_param.is_empty() {
@@ -329,7 +329,7 @@ pub async fn create(
 ///
 ///The authenticated user must have created the list.
 pub async fn delete(list: ListID, token: &auth::Token) -> Result<Response<List>> {
-    let params = ParamList::new().add_list_param(&list);
+    let params = ParamList::new().add_list_param(list);
 
     let req = auth::post(links::lists::DELETE, token, Some(&params));
 
@@ -341,7 +341,7 @@ pub async fn delete(list: ListID, token: &auth::Token) -> Result<Response<List>>
 ///Subscribing to a list is a way to make it available in the "Lists" section of a user's profile
 ///without having to create it themselves.
 pub async fn subscribe(list: ListID, token: &auth::Token) -> Result<Response<List>> {
-    let params = ParamList::new().add_list_param(&list);
+    let params = ParamList::new().add_list_param(list);
 
     let req = auth::post(links::lists::SUBSCRIBE, token, Some(&params));
 
@@ -350,7 +350,7 @@ pub async fn subscribe(list: ListID, token: &auth::Token) -> Result<Response<Lis
 
 ///Unsubscribes the authenticated user from the given list.
 pub async fn unsubscribe(list: ListID, token: &auth::Token) -> Result<Response<List>> {
-    let params = ParamList::new().add_list_param(&list);
+    let params = ParamList::new().add_list_param(list);
 
     let req = auth::post(links::lists::UNSUBSCRIBE, token, Some(&params));
 

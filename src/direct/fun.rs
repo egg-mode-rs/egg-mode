@@ -40,7 +40,7 @@ pub async fn send<T: Into<UserID>>(
     token: &auth::Token,
 ) -> Result<Response<DirectMessage>, error::Error> {
     let params = ParamList::new()
-        .add_name_param(&to.into())
+        .add_name_param(to.into())
         .add_param("text", text);
 
     let req = auth::post(links::direct::SEND, token, Some(&params));
