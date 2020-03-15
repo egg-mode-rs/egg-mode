@@ -105,27 +105,23 @@ pub async fn is_subscribed<'id, T: Into<UserID>>(
 
     let req = auth::get(links::lists::IS_SUBSCRIBER, token, Some(&params));
 
-    fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<bool>> {
-        let out: WebResponse<TwitterUser> = make_response(full_resp, headers);
+    let out = twitter_json_request::<TwitterUser>(req).await;
 
-        match out {
-            Ok(user) => Ok(Response::map(user, |_| true)),
-            Err(TwitterError(terrs)) => {
-                if terrs.errors.iter().any(|e| e.code == 109) {
-                    // here's a fun conundrum: since "is not in this list" is returned as an error code,
-                    // the rate limit info that would otherwise be part of the response isn't there. the
-                    // rate_headers method was factored out specifically for this location, since it's
-                    // still there, just accompanying an error response instead of a user.
-                    Ok(Response::new(RateLimit::try_from(headers)?, false))
-                } else {
-                    Err(TwitterError(terrs))
-                }
+    match out {
+        Ok(user) => Ok(Response::map(user, |_| true)),
+        Err(TwitterError(headers, terrs)) => {
+            if terrs.errors.iter().any(|e| e.code == 109) {
+                // here's a fun conundrum: since "is not in this list" is returned as an error code,
+                // the rate limit info that would otherwise be part of the response isn't there. the
+                // rate_headers method was factored out specifically for this location, since it's
+                // still there, just accompanying an error response instead of a user.
+                Ok(Response::new(RateLimit::try_from(&headers)?, false))
+            } else {
+                Err(TwitterError(headers, terrs))
             }
-            Err(err) => Err(err),
         }
+        Err(err) => Err(err),
     }
-
-    make_future(req, parse_resp).await
 }
 
 ///Check whether the given user has been added to the given list.
@@ -139,28 +135,23 @@ pub async fn is_member<'id, T: Into<UserID>>(
         .add_name_param(user.into());
 
     let req = auth::get(links::lists::IS_MEMBER, token, Some(&params));
+    let out = twitter_json_request::<TwitterUser>(req).await;
 
-    fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<bool>> {
-        let out: WebResponse<TwitterUser> = make_response(full_resp, headers);
-
-        match out {
-            Ok(user) => Ok(Response::map(user, |_| true)),
-            Err(TwitterError(terrs)) => {
-                if terrs.errors.iter().any(|e| e.code == 109) {
-                    // here's a fun conundrum: since "is not in this list" is returned as an error code,
-                    // the rate limit info that would otherwise be part of the response isn't there. the
-                    // rate_headers method was factored out specifically for this location, since it's
-                    // still there, just accompanying an error response instead of a user.
-                    Ok(Response::new(RateLimit::try_from(headers)?, false))
-                } else {
-                    Err(TwitterError(terrs))
-                }
+    match out {
+        Ok(resp) => Ok(Response::map(resp, |_| true)),
+        Err(TwitterError(headers, errors)) => {
+            if errors.errors.iter().any(|e| e.code == 109) {
+                // here's a fun conundrum: since "is not in this list" is returned as an error code,
+                // the rate limit info that would otherwise be part of the response isn't there. the
+                // rate_headers method was factored out specifically for this location, since it's
+                // still there, just accompanying an error response instead of a user.
+                Ok(Response::new(RateLimit::try_from(&headers)?, false))
+            } else {
+                Err(TwitterError(headers, errors))
             }
-            Err(err) => Err(err),
         }
+        Err(err) => Err(err),
     }
-
-    make_future(req, parse_resp).await
 }
 
 ///Begin navigating the collection of tweets made by the users added to the given list.

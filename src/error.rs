@@ -24,6 +24,8 @@ use serde_json;
 use std::{self, fmt};
 use tokio;
 
+use crate::common::Headers;
+
 /// Convenient alias to a Result containing a local Error type
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -34,7 +36,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 ///[`Error::TwitterError`]: enum.Error.html
 #[derive(Debug, Deserialize, Serialize, thiserror::Error)]
 pub struct TwitterErrors {
-    ///A collection of errors returned by Twitter.
     pub errors: Vec<TwitterErrorCode>,
 }
 
@@ -110,8 +111,8 @@ pub enum Error {
     FutureAlreadyCompleted,
     ///The response from Twitter returned an error structure instead of the expected response. The
     ///enclosed value was the response from Twitter.
-    #[error("Errors returned by Twitter: {}", _0)]
-    TwitterError(#[from] TwitterErrors),
+    #[error("Errors returned by Twitter: {_1}")]
+    TwitterError(Headers, TwitterErrors),
     ///The response returned from Twitter contained an error indicating that the rate limit for
     ///that method has been reached. The enclosed value is the Unix timestamp in UTC when the next
     ///rate-limit window will open.

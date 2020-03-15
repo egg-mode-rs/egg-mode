@@ -103,41 +103,33 @@ pub async fn lookup_map<I: IntoIterator<Item = u64>>(
         .add_param("include_ext_alt_text", "true");
 
     let req = auth::post(links::statuses::LOOKUP, token, Some(&params));
+    let parsed = twitter_json_request::<serde_json::Value>(req).await?;
+    let mut map = HashMap::new();
 
-    fn parse_map(
-        full_resp: String,
-        headers: &Headers,
-    ) -> Result<Response<HashMap<u64, Option<Tweet>>>> {
-        let parsed: Response<serde_json::Value> = make_response(full_resp, headers)?;
-        let mut map = HashMap::new();
-
-        for (key, val) in parsed
-            .response
-            .get("id")
-            .and_then(|v| v.as_object())
-            .ok_or_else(|| {
-                InvalidResponse(
-                    "unexpected response for lookup_map",
-                    Some(parsed.response.to_string()),
-                )
-            })?
-        {
-            let id = key.parse::<u64>().or(Err(InvalidResponse(
-                "could not parse id as integer",
-                Some(key.to_string()),
-            )))?;
-            if val.is_null() {
-                map.insert(id, None);
-            } else {
-                let tweet = Tweet::deserialize(val)?;
-                map.insert(id, Some(tweet));
-            }
+    for (key, val) in parsed
+        .response
+        .get("id")
+        .and_then(|v| v.as_object())
+        .ok_or_else(|| {
+            InvalidResponse(
+                "unexpected response for lookup_map",
+                Some(parsed.response.to_string()),
+            )
+        })?
+    {
+        let id = key.parse::<u64>().or(Err(InvalidResponse(
+            "could not parse id as integer",
+            Some(key.to_string()),
+        )))?;
+        if val.is_null() {
+            map.insert(id, None);
+        } else {
+            let tweet = Tweet::deserialize(val)?;
+            map.insert(id, Some(tweet));
         }
-
-        Ok(Response::map(parsed, |_| map))
     }
 
-    make_future(req, parse_map).await
+    Ok(Response::map(parsed, |_| map))
 }
 
 ///Make a `Timeline` struct for navigating the collection of tweets posted by the authenticated

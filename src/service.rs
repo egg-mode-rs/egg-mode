@@ -38,19 +38,15 @@ use crate::{auth, entities, links};
 pub async fn terms(token: &auth::Token) -> Result<Response<String>> {
     let req = auth::get(links::service::TERMS, token, None);
 
-    fn parse_terms(full_resp: String, headers: &Headers) -> Result<Response<String>> {
-        let ret: Response<serde_json::Value> = make_response(full_resp, headers)?;
+    let ret = twitter_json_request::<serde_json::Value>(req).await?;
 
-        let tos = ret
-            .response
-            .get("tos")
-            .and_then(|tos| tos.as_str())
-            .map(String::from)
-            .ok_or_else(|| InvalidResponse("Missing field: tos", None))?;
-        Ok(Response::map(ret, |_| tos))
-    }
-
-    make_future(req, parse_terms).await
+    let tos = ret
+        .response
+        .get("tos")
+        .and_then(|tos| tos.as_str())
+        .map(String::from)
+        .ok_or_else(|| InvalidResponse("Missing field: tos", None))?;
+    Ok(Response::map(ret, |_| tos))
 }
 
 ///Returns a future that resolves to the current Twitter Privacy Policy as plain text.
@@ -60,19 +56,15 @@ pub async fn terms(token: &auth::Token) -> Result<Response<String>> {
 pub async fn privacy(token: &auth::Token) -> Result<Response<String>> {
     let req = auth::get(links::service::PRIVACY, token, None);
 
-    fn parse_policy(full_resp: String, headers: &Headers) -> Result<Response<String>> {
-        let ret: Response<serde_json::Value> = make_response(full_resp, headers)?;
+    let ret = twitter_json_request::<serde_json::Value>(req).await?;
 
-        let privacy = ret
-            .response
-            .get("privacy")
-            .and_then(|tos| tos.as_str())
-            .map(String::from)
-            .ok_or_else(|| InvalidResponse("Missing field: privacy", None))?;
-        Ok(Response::map(ret, |_| privacy))
-    }
-
-    make_future(req, parse_policy).await
+    let privacy = ret
+        .response
+        .get("privacy")
+        .and_then(|tos| tos.as_str())
+        .map(String::from)
+        .ok_or_else(|| InvalidResponse("Missing field: privacy", None))?;
+    Ok(Response::map(ret, |_| privacy))
 }
 
 ///Returns a future that resolves to the current configuration from Twitter, including the maximum

@@ -584,32 +584,36 @@ pub async fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) ->
         .body(Body::empty())
         .unwrap();
 
-    fn parse_tok(full_resp: String, _: &Headers) -> Result<KeyPair> {
-        let mut key: Option<String> = None;
-        let mut secret: Option<String> = None;
+    let (_, body) = twitter_raw_request(request).await?;
 
-        for elem in full_resp.split('&') {
-            let mut kv = elem.splitn(2, '=');
-            match kv.next() {
-                Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
-                Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
-                Some(_) => (),
-                None => {
-                    return Err(error::Error::InvalidResponse(
-                        "unexpected end of request_token response",
-                        None,
-                    ))
-                }
+    let body = std::str::from_utf8(&body).map_err(|_| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "stream did not contain valid UTF-8",
+        )
+    })?;
+    let mut key: Option<String> = None;
+    let mut secret: Option<String> = None;
+
+    for elem in body.split('&') {
+        let mut kv = elem.splitn(2, '=');
+        match kv.next() {
+            Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
+            Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
+            Some(_) => (),
+            None => {
+                return Err(error::Error::InvalidResponse(
+                    "unexpected end of request_token response",
+                    None,
+                ))
             }
         }
-
-        Ok(KeyPair::new(
-            key.ok_or(error::Error::MissingValue("oauth_token"))?,
-            secret.ok_or(error::Error::MissingValue("oauth_token_secret"))?,
-        ))
     }
 
-    make_future(request, parse_tok).await
+    Ok(KeyPair::new(
+        key.ok_or(error::Error::MissingValue("oauth_token"))?,
+        secret.ok_or(error::Error::MissingValue("oauth_token_secret"))?,
+    ))
 }
 
 /// With the given request KeyPair, return a URL that a user can access to accept or reject an
@@ -758,7 +762,13 @@ pub async fn access_token<S: Into<String>>(
         .body(Body::empty())
         .unwrap();
 
-    let urlencoded = make_raw_future(request).await?;
+    let (_headers, urlencoded) = twitter_raw_request(request).await?;
+    let urlencoded = std::str::from_utf8(&urlencoded).map_err(|_| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "stream did not contain valid UTF-8",
+        )
+    })?;
 
     // TODO deserialize into a struct
     let mut key: Option<String> = None;
@@ -834,17 +844,13 @@ pub async fn bearer_token(con_token: &KeyPair) -> Result<Token> {
         .body(Body::from("grant_type=client_credentials"))
         .unwrap();
 
-    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token> {
-        let decoded: serde_json::Value = serde_json::from_str(&full_resp)?;
-        let result = decoded
-            .get("access_token")
-            .and_then(|s| s.as_str())
-            .ok_or(error::Error::MissingValue("access_token"))?;
+    let decoded = twitter_json_request::<serde_json::Value>(request).await?;
+    let result = decoded
+        .get("access_token")
+        .and_then(|s| s.as_str())
+        .ok_or(error::Error::MissingValue("access_token"))?;
 
-        Ok(Token::Bearer(result.to_owned()))
-    }
-
-    make_future(request, parse_tok).await
+    Ok(Token::Bearer(result.to_owned()))
 }
 
 /// Invalidate the given Bearer token using the given consumer KeyPair. Upon success, the future
@@ -870,17 +876,13 @@ pub async fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> Result<Tok
         .body(body)
         .unwrap();
 
-    fn parse_tok(full_resp: String, _: &Headers) -> Result<Token> {
-        let decoded: serde_json::Value = serde_json::from_str(&full_resp)?;
-        let result = decoded
-            .get("access_token")
-            .and_then(|s| s.as_str())
-            .ok_or(error::Error::MissingValue("access_token"))?;
+    let decoded = twitter_json_request::<serde_json::Value>(request).await?;
+    let result = decoded
+        .get("access_token")
+        .and_then(|s| s.as_str())
+        .ok_or(error::Error::MissingValue("access_token"))?;
 
-        Ok(Token::Bearer(result.to_owned()))
-    }
-
-    make_future(request, parse_tok).await
+    Ok(Token::Bearer(result.to_owned()))
 }
 
 /// If the given tokens are valid, return the user information for the authenticated user.

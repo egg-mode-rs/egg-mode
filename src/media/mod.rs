@@ -448,14 +448,14 @@ impl<'a> UploadFuture<'a> {
 
             let req = auth::post(links::media::UPLOAD, &self.token, Some(&params));
 
-            fn parse_resp(
-                full_resp: String,
-                headers: &Headers,
-            ) -> Result<Response<()>, error::Error> {
-                if full_resp.is_empty() {
+            fn parse_resp(headers: &Headers, body: &[u8]) -> Result<Response<()>, error::Error> {
+                if body.is_empty() {
                     Response::unit(headers)
                 } else {
-                    Err(InvalidResponse("Expected empty response", Some(full_resp)))
+                    Err(InvalidResponse(
+                        "Expected empty response",
+                        Some(String::from_utf8_lossy(body).to_string()),
+                    ))
                 }
             }
 
@@ -502,11 +502,14 @@ impl<'a> UploadFuture<'a> {
 
         let req = auth::post_json(links::media::METADATA, &self.token, &body);
 
-        fn parse_resp(full_resp: String, headers: &Headers) -> Result<Response<()>, error::Error> {
-            if full_resp.is_empty() {
+        fn parse_resp(headers: &Headers, body: &[u8]) -> Result<Response<()>, error::Error> {
+            if body.is_empty() {
                 Response::unit(headers)
             } else {
-                Err(InvalidResponse("Expected empty response", Some(full_resp)))
+                Err(InvalidResponse(
+                    "Expected empty response",
+                    Some(String::from_utf8_lossy(body).to_string()),
+                ))
             }
         }
 

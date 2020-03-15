@@ -229,9 +229,6 @@ where
     (ids.join(","), names.join(","))
 }
 
-///Type alias for responses from Twitter.
-pub type WebResponse<T> = Result<Response<T>, error::Error>;
-
 ///Type alias for futures that resolve to responses from Twitter.
 ///
 ///See the page for [`TwitterFuture`][] for details on how to use this type. `FutureResponse` is a
