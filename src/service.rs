@@ -199,7 +199,6 @@ impl<'de> Deserialize<'de> for RateLimitStatus {
         D: Deserializer<'de>,
     {
         use serde_json::from_value;
-        println!("HERE");
 
         let input = serde_json::Value::deserialize(ser)?;
 
@@ -221,8 +220,6 @@ impl<'de> Deserialize<'de> for RateLimitStatus {
                 .filter_map(|v| v.as_object())
                 .flat_map(|v| v.iter())
             {
-                println!("HERE2");
-                dbg!(&k, &v);
                 if let Ok(method) = k.parse::<Method>() {
                     match method {
                         Method::Direct(m) => {
