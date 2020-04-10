@@ -6,66 +6,49 @@
 //!
 //! Tweet media is uploaded separately from the act of posting the tweet itself. In order to attach
 //! an image to a new tweet, you need to upload it first, then take the Media ID that Twitter
-//! generates and reference that when posting the tweet. The way this works in egg-mode is to
-//! create an [`UploadBuilder`] and turn that into an [`UploadFuture`], which manages the upload
-//! process.
+//! generates and reference that when posting the tweet.
+//! The media id is returned as part of the result of a call to [`upload_media`].
 //!
-//! [`UploadBuilder`]: struct.UploadBuilder.html
-//! [`UploadFuture`]: struct.UploadFuture.html
-//!
-//! For example, here's a basic use of `UploadFuture` to upload an image, then attach it to a
-//! tweet:
+//! Here's a basic example of uploading an image and attaching to a tweet:
 //!
 //! ```rust,no_run
 //! # use egg_mode::Token;
 //! # #[tokio::main]
 //! # async fn main() {
 //! # let token: Token = unimplemented!();
-//! use egg_mode::media::{UploadBuilder, media_types};
+//! use egg_mode::media::upload_media;
 //! use egg_mode::tweet::DraftTweet;
 //!
 //! let image = vec![]; //pretend we loaded an image file into this
-//! let builder = UploadBuilder::new(image, media_types::image_png());
-//! let media_handle = builder.call(&token).await.unwrap();
-//!
+//! let handle = upload_media(image, media_types::image_png()).await?;
 //! let draft = DraftTweet::new("Hey, check out this cute cat!")
 //!                        .media_ids(&[media_handle.id]);
-//! let tweet = draft.send(&token).await.unwrap();
+//! let tweet = draft.send(&token).await?
 //! # }
 //! ```
 //!
 //! For more information, see the [`UploadBuilder`] documentation.
 
-use std::borrow::Cow;
-use std::error::Error as StdError;
-use std::fmt;
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 use std::time::{Duration, Instant};
 
 use base64;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
-use tokio::time::{self, Delay};
 
 use crate::common::*;
-use crate::error::Error::InvalidResponse;
 use crate::{auth, error, links};
 
 use mime;
 
 /// A collection of convenience functions that return media types accepted by Twitter.
 ///
-/// These are convenience types that can be handed to [`UploadBuilder::new`] to set the right media
+/// These are convenience types that can be handed to [`upload_media`] to set the right media
 /// type of a piece of media. The functions in the module correspond to media types that Twitter is
 /// known to accept.
 ///
 /// Note that using `image_gif` and `video_mp4` will automatically set the upload's
 /// `media_category` to `tweet_gif` and `tweet_video` respectively, allowing larger file sizes and
 /// extra processing time.
-///
-/// [`UploadBuilder::new`]: ../struct.UploadBuilder.html#method.new
 pub mod media_types {
     use mime::{self, Mime};
 
@@ -98,13 +81,13 @@ pub mod media_types {
 ///RawMedia's upload progressing info.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProgressInfo {
-    ///Video is pending for processing. Contains number of seconds after which to check.
+    /// Video is pending for processing. Contains number of seconds after which to check.
     Pending(u64),
-    ///Video is beeing processed. Contains number of seconds after which to check.
+    /// Video is beeing processed. Contains number of seconds after which to check.
     InProgress(u64),
-    ///Video's processing failed. Contains reason.
+    /// Video's processing failed. Contains reason.
     Failed(error::MediaError),
-    ///Video's processing is finished. RawMedia can be used in other API calls.
+    /// Video's processing is finished. RawMedia can be used in other API calls.
     Success,
 }
 
@@ -168,17 +151,22 @@ pub struct RawMediaHandle {
     pub progress: Option<ProgressInfo>,
 }
 
+#[derive(Debug, Clone, derive_more::From)]
+/// An opaque type representing a media id.
+pub struct MediaId(pub(crate) String);
+
+/// A handle representing uploaded media.
 #[derive(Debug, Clone)]
 pub struct MediaHandle {
-    id: String,
+    pub id: MediaId,
     expires_at: Instant,
-    progress: Option<ProgressInfo>,
+    pub progress: Option<ProgressInfo>,
 }
 
 impl From<RawMediaHandle> for MediaHandle {
     fn from(raw: RawMediaHandle) -> Self {
         Self {
-            id: raw.id,
+            id: raw.id.into(),
             // this conversion only makes sense if we create it immediately
             // after receiving from the server!
             expires_at: Instant::now() + Duration::from_secs(raw.expires_after),
@@ -188,7 +176,10 @@ impl From<RawMediaHandle> for MediaHandle {
 }
 
 impl MediaHandle {
-    fn is_valid(&self) -> bool {
+    /// Media uploads expire after a certain amount of time
+    /// This method returns true if the upload is still valid
+    /// and can therefore e.g. be attached to a tweet
+    pub fn is_valid(&self) -> bool {
         Instant::now() < self.expires_at
     }
 }
@@ -208,6 +199,7 @@ pub enum MediaCategory {
     Video,
 }
 
+/// Upload media to the server.
 pub async fn upload_media(
     data: &[u8],
     media_type: &mime::Mime,
@@ -225,7 +217,6 @@ pub async fn upload_media(
 
     let nchunks = data.len() / 1024 * 1024; // divide into 1MB chunks
     for (ix, chunk) in data.chunks(nchunks).enumerate() {
-        dbg!("send chunk", ix);
         if Instant::now() > timeout {
             todo!()
         }
@@ -237,14 +228,12 @@ pub async fn upload_media(
         let req = auth::post(links::media::UPLOAD, token, Some(&params));
         // This request has no response (upon success)
         twitter_raw_request(req).await?;
-        dbg!("sent chunk");
     }
 
     let params = ParamList::new()
         .add_param("command", "FINALIZE")
         .add_param("media_id", media.id.clone());
     let req = auth::post(links::media::UPLOAD, token, Some(&params));
-    dbg!("finalize");
     Ok(twitter_json_request::<RawMediaHandle>(req)
         .await?
         .response
