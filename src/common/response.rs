@@ -108,6 +108,7 @@ pub(crate) async fn twitter_raw_request(request: Request<Body>) -> Result<(Heade
     let resp = client.request(request).await?;
     let (parts, body) = resp.into_parts();
     let body: Vec<_> = hyper::body::to_bytes(body).await?.to_vec();
+    println!("{:?}", String::from_utf8_lossy(&body));
     if let Ok(errors) = serde_json::from_slice::<TwitterErrors>(&body) {
         if errors.errors.iter().any(|e| e.code == 88)
             && parts.headers.contains_key(X_RATE_LIMIT_RESET)
