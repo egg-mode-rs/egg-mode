@@ -43,3 +43,4 @@ native_tls = ["native-tls", "hyper-tls"]
 
 [dev-dependencies]
 yansi = "0.5.0"
+structopt = "0.3.13"

@@ -68,7 +68,7 @@ use serde::{Deserialize, Deserializer};
 use crate::common::*;
 use crate::error::{Error::InvalidResponse, Result};
 use crate::stream::FilterLevel;
-use crate::{auth, entities, error, links, place, user};
+use crate::{auth, entities, error, links, media, place, user};
 
 mod fun;
 mod raw;
@@ -710,7 +710,7 @@ pub struct DraftTweet {
     ///[the `media` module]: ../media/index.html
     ///
     ///`DraftTweet` treats zeros in this array as if the media were not present.
-    pub media_ids: [u64; 4],
+    pub media_ids: Vec<media::MediaId>,
     ///States whether the media attached with `media_ids` should be labeled as "possibly
     ///sensitive", to mask the media by default.
     pub possibly_sensitive: Option<bool>,
@@ -728,7 +728,7 @@ impl DraftTweet {
             coordinates: None,
             display_coordinates: None,
             place_id: None,
-            media_ids: [0; 4],
+            media_ids: Vec::new(),
             possibly_sensitive: None,
         }
     }
@@ -818,17 +818,12 @@ impl DraftTweet {
     ///the first four will be attached. Note that Twitter will only allow one GIF, one video, or up
     ///to four images to be attached to a single tweet.
     ///
-    ///Note that if this is called multiple times, only the last set of IDs will be kept.
-    pub fn media_ids(self, media_ids: &[u64]) -> Self {
-        DraftTweet {
-            media_ids: {
-                let mut ret = [0; 4];
-                let len = ::std::cmp::min(media_ids.len(), 4);
-                ret[..len].copy_from_slice(&media_ids[..len]);
-                ret
-            },
-            ..self
+    /// Note that if this is called multiple times, only the last four IDs will be kept.
+    pub fn add_media(&mut self, media_id: media::MediaId) {
+        if self.media_ids.len() == 4 {
+            self.media_ids.remove(0);
         }
+        self.media_ids.push(media_id);
     }
 
     ///Marks the media attached with `media_ids` as being sensitive, so it can be hidden by
@@ -871,13 +866,15 @@ impl DraftTweet {
             params.add_param_ref("long", long.to_string());
         }
 
-        let media = self
-            .media_ids
-            .iter()
-            .filter(|&&id| id != 0)
-            .map(|id| id.to_string())
-            .collect::<Vec<String>>()
-            .join(",");
+        let media = {
+            let media = self
+                .media_ids
+                .iter()
+                .map(|x| x.0.as_str())
+                .collect::<Vec<_>>();
+            media.join(",")
+        };
+
         if !media.is_empty() {
             params.add_param_ref("media_ids", media);
         }
