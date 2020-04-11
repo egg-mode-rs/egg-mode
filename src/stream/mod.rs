@@ -61,6 +61,7 @@ use crate::common::*;
 use crate::tweet::Tweet;
 use crate::{error, links};
 
+// TODO rewrite this
 // https://developer.twitter.com/en/docs/tweets/filter-realtime/guides/streaming-message-types
 /// Represents the kinds of messages that can be sent over Twitter's Streaming API.
 #[derive(Debug)]
