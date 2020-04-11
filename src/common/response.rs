@@ -1,7 +1,3 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
 //! Infrastructure types related to packaging rate-limit information alongside responses from
 //! Twitter.
 
@@ -87,7 +83,7 @@ impl<T> Response<T> {
     }
 }
 
-pub fn get_response(request: Request<Body>) -> ResponseFuture {
+pub(crate) fn get_response(request: Request<Body>) -> ResponseFuture {
     let connector = HttpsConnector::new();
     let client = hyper::Client::builder().build(connector);
     client.request(request)
