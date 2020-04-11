@@ -36,6 +36,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 ///[`Error::TwitterError`]: enum.Error.html
 #[derive(Debug, Deserialize, Serialize, thiserror::Error)]
 pub struct TwitterErrors {
+    /// A collection of errors
     pub errors: Vec<TwitterErrorCode>,
 }
 

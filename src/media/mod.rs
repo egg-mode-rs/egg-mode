@@ -226,9 +226,7 @@ pub async fn upload_media(
         .add_param("media_type", media_type.to_string())
         .add_param("media_category", media_category.to_string());
     let req = auth::post(links::media::UPLOAD, &token, Some(&params));
-    let media = request_with_json_response::<RawMedia>(req)
-        .await?
-        .response;
+    let media = request_with_json_response::<RawMedia>(req).await?.response;
 
     // divide into 1MB chunks
     for (ix, chunk) in data.chunks(1024 * 1024).enumerate() {

@@ -44,11 +44,6 @@
 //! lookup functions, so this saves up all that handling and splits the iterator into two strings:
 //! one for the user IDs, one for the screen names.
 //!
-//! ## `WebResponse` and `FutureResponse`
-//!
-//! These are just convenience type aliases for when i need to return rate-limit information with a
-//! call. Most of the methods in this library do that, so the alias is there to make that easier.
-//!
 //! ## Miscellaneous functions
 //!
 //! `codepoints_to_bytes` is a convenience function that i use when Twitter returns text ranges in
@@ -79,33 +74,9 @@
 //! a web call, parse out the rate-limit headers, and call some handler to perform final processing
 //! on the result.
 //!
-//! `ResponseIterRef`, `ResponseIterMut`, and `ResponseIter` are iterator adaptors on
-//! `Response<Vec<T>>` that copy out the rate-limit information to all the elements of the
-//! contained Vec, individually. There's also a `FromIterator` implementation for
-//! `Response<Vec<T>>`, which takes an iterator of `Response<T>` and loads up the last set of
-//! rate-limit information for the collection as a whole.
-//!
-//! `RawFuture` and `TwitterFuture` are the central `Future` types in egg-mode. `RawFuture` is the
-//! base-line Future that handles all the steps of a web call, loading up the response into a
-//! String to be handled later. `TwitterFuture` wraps `RawFuture` and allows arbitrary handling of
-//! the response when it completes.
-//!
-//! *Most* of the futures in this library can use `TwitterFuture`, but several cannot, because it
-//! uses a bare function pointer at its core. As a core design point i didn't want to use `impl
-//! Trait`, nor did i want to box any function pointers or trait objects, so i instead chose to
-//! create several special-purpose Futures whenever something needed to carry around extra state.
-//! Those are contained within the modules that need them - `common::response` only contains
-//! `RawFuture` and `TwitterFuture`.
-//!
-//! `make_raw_future` is only exported for `AuthFuture`, otherwise it's called by the other Future
-//! constructors to get the basic load-to-String action.
-//!
-//! `make_future` is the general form of the `TwitterFuture` constructor, where the processing
-//! function pointer is handed in directly.
-//!
-//! `request_with_json_response` is the most common `TwitterFuture` constructor, which just uses
-//! `make_response` (which just calls `serde_json` and loads up the rate-limit headers - it's also
-//! exported) as the processor.
+//! `request_with_json_response` is the most common future constructor, which just defers to
+//! `raw_request` (which just calls `serde_json` and loads up the rate-limit headers)
+//! then deserializes the json response to given type.
 //!
 //! `rate_headers` is an infra function that takes the `Headers` and returns an empty `Response`
 //! with the rate-limit info parsed out. It's only exported for a couple functions in `list` which
@@ -229,13 +200,8 @@ where
     (ids.join(","), names.join(","))
 }
 
-///Type alias for futures that resolve to responses from Twitter.
-///
-///See the page for [`TwitterFuture`][] for details on how to use this type. `FutureResponse` is a
-///convenience alias that is only there so i don't have to write `Response<T>` all the time.
-///
-///[`TwitterFuture`]: struct.TwitterFuture.html
-pub type FutureResponse<T> = Pin<Box<dyn Future<Output = error::Result<Response<T>>>>>;
+///Convenient type alias for futures that resolve to responses from Twitter.
+pub(crate) type FutureResponse<T> = Pin<Box<dyn Future<Output = error::Result<Response<T>>>>>;
 
 pub fn codepoints_to_bytes(&mut (ref mut start, ref mut end): &mut (usize, usize), text: &str) {
     let mut byte_start = *start;
