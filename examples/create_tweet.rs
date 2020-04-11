@@ -11,6 +11,7 @@ use structopt::StructOpt;
 use tokio::time::delay_for;
 
 #[derive(StructOpt)]
+/// A simple CLI for uploading a tweet, optionally with media attched
 struct Args {
     /// Text of the tweet
     text: String,

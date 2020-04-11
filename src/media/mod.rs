@@ -1,12 +1,8 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
 //! Functionality to upload images, GIFs, and videos that can be attached to tweets.
 //!
-//! Tweet media is uploaded separately from the act of posting the tweet itself. In order to attach
-//! an image to a new tweet, you need to upload it first, then take the Media ID that Twitter
-//! generates and reference that when posting the tweet.
+//! Tweet media is uploaded separately from the act of posting the tweet itself.
+//! In order to attach an image to a new tweet, you need to upload it first,
+//! then take the Media ID that Twitter generates and reference that when posting the tweet.
 //! The media id is returned as part of the result of a call to [`upload_media`].
 //!
 //! Here's a basic example of uploading an image and attaching to a tweet:
@@ -14,20 +10,18 @@
 //! ```rust,no_run
 //! # use egg_mode::Token;
 //! # #[tokio::main]
-//! # async fn main() {
+//! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! # let token: Token = unimplemented!();
-//! use egg_mode::media::upload_media;
+//! use egg_mode::media::{upload_media, media_types};
 //! use egg_mode::tweet::DraftTweet;
 //!
-//! let image = vec![]; //pretend we loaded an image file into this
-//! let handle = upload_media(image, media_types::image_png()).await?;
-//! let draft = DraftTweet::new("Hey, check out this cute cat!")
-//!                        .media_ids(&[media_handle.id]);
-//! let tweet = draft.send(&token).await?
+//! let image = b"some image bytes"; //pretend we loaded an image file into this
+//! let handle = upload_media(image, &media_types::image_png(), &token).await?;
+//! let draft = DraftTweet::new("Hey, check out this cute cat!");
+//! draft.add_media(handle.id);
+//! let tweet = draft.send(&token).await?;
 //! # }
 //! ```
-//!
-//! For more information, see the [`UploadBuilder`] documentation.
 
 use std::time::{Duration, Instant};
 
@@ -42,13 +36,13 @@ use mime;
 
 /// A collection of convenience functions that return media types accepted by Twitter.
 ///
-/// These are convenience types that can be handed to [`upload_media`] to set the right media
-/// type of a piece of media. The functions in the module correspond to media types that Twitter is
-/// known to accept.
+/// These are convenience types that can be handed to [`upload_media`] to set the right
+/// media type of a piece of media. The functions in the module correspond to media types
+/// that Twitter is known to accept.
 ///
 /// Note that using `image_gif` and `video_mp4` will automatically set the upload's
-/// `media_category` to `tweet_gif` and `tweet_video` respectively, allowing larger file sizes and
-/// extra processing time.
+/// `media_category` to `tweet_gif` and `tweet_video` respectively, allowing
+/// larger file sizes and extra processing time.
 pub mod media_types {
     use mime::{self, Mime};
 
@@ -78,7 +72,7 @@ pub mod media_types {
     }
 }
 
-///RawMedia's upload progressing info.
+/// Upload progress info.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProgressInfo {
     /// Video is pending for processing. Contains number of seconds after which to check.
@@ -137,18 +131,17 @@ impl<'de> Deserialize<'de> for ProgressInfo {
 
 ///Represents media file that is uploaded on twitter.
 #[derive(Debug, Deserialize)]
-pub struct RawMediaHandle {
-    ///ID that can be used in API calls (e.g. attach to tweet).
+struct RawMedia {
+    /// ID that can be used in API calls (e.g. attach to tweet).
     #[serde(rename = "media_id_string")]
-    pub id: String,
-    ///Number of second the media can be used in other API calls.
+    id: String,
+    /// Number of second the media can be used in other API calls.
     //We can miss this field on failed upload in which case 0 is pretty reasonable value.
     #[serde(default)]
     #[serde(rename = "expires_after_secs")]
-    pub expires_after: u64,
-    ///Progress information. If present determines whether RawMedia can be used.
+    expires_after: u64,
     #[serde(rename = "processing_info")]
-    pub progress: Option<ProgressInfo>,
+    progress: Option<ProgressInfo>,
 }
 
 #[derive(Debug, Clone, derive_more::From)]
@@ -158,13 +151,16 @@ pub struct MediaId(pub(crate) String);
 /// A handle representing uploaded media.
 #[derive(Debug, Clone)]
 pub struct MediaHandle {
+    /// ID that can be used in API calls (e.g. to attach media to tweet).
     pub id: MediaId,
-    expires_at: Instant,
+    /// Number of second the media can be used in other API calls.
+    pub expires_at: Instant,
+    /// Progress information. If present determines whether RawMedia can be used.
     pub progress: Option<ProgressInfo>,
 }
 
-impl From<RawMediaHandle> for MediaHandle {
-    fn from(raw: RawMediaHandle) -> Self {
+impl From<RawMedia> for MediaHandle {
+    fn from(raw: RawMedia) -> Self {
         Self {
             id: raw.id.into(),
             // this conversion only makes sense if we create it immediately
@@ -184,8 +180,8 @@ impl MediaHandle {
     }
 }
 
-/// Represents the kinda of media that Twitter will accept.
-/// `.to_string()` will return a string suitable for use
+/// Represents the kind of media that Twitter will accept.
+/// `.to_string()` will return a string suitable for use in API calls
 #[derive(Debug, Copy, Clone, PartialEq, Eq, derive_more::Display)]
 enum MediaCategory {
     /// Static image. Four can be attached to a single tweet.
@@ -213,6 +209,11 @@ impl From<&mime::Mime> for MediaCategory {
 }
 
 /// Upload media to the server.
+///
+/// The upload proceeds in 1MB chunks until completed. After completion,
+/// be sure to check the status of the uploaded media with [`get_status`].
+/// Twitter often needs time to post-process media before it can be attached
+/// to a tweet.
 pub async fn upload_media(
     data: &[u8],
     media_type: &mime::Mime,
@@ -225,7 +226,7 @@ pub async fn upload_media(
         .add_param("media_type", media_type.to_string())
         .add_param("media_category", media_category.to_string());
     let req = auth::post(links::media::UPLOAD, &token, Some(&params));
-    let media = request_with_json_response::<RawMediaHandle>(req)
+    let media = request_with_json_response::<RawMedia>(req)
         .await?
         .response;
 
@@ -245,7 +246,7 @@ pub async fn upload_media(
         .add_param("command", "FINALIZE")
         .add_param("media_id", media.id.clone());
     let req = auth::post(links::media::UPLOAD, token, Some(&params));
-    Ok(request_with_json_response::<RawMediaHandle>(req)
+    Ok(request_with_json_response::<RawMedia>(req)
         .await?
         .response
         .into())
@@ -257,14 +258,14 @@ pub async fn get_status(media_id: MediaId, token: &auth::Token) -> error::Result
         .add_param("command", "STATUS")
         .add_param("media_id", media_id.0);
     let req = auth::get(links::media::UPLOAD, token, Some(&params));
-    Ok(request_with_json_response::<RawMediaHandle>(req)
+    Ok(request_with_json_response::<RawMedia>(req)
         .await?
         .response
         .into())
 }
 
 /// Set metadata for a media upload. At the moment the only attribute that may
-/// be set is `alt-text`.
+/// be set is `alt_text`.
 pub async fn set_metadata(
     media_id: &MediaId,
     alt_text: &str,
@@ -295,7 +296,7 @@ mod tests {
     fn parse_media() {
         let media = load_media("sample_payloads/media.json");
 
-        assert_eq!(media.id, 710511363345354753);
+        assert_eq!(media.id, "710511363345354753");
         assert_eq!(media.expires_after, 86400);
     }
 
@@ -303,7 +304,7 @@ mod tests {
     fn parse_media_pending() {
         let media = load_media("sample_payloads/media_pending.json");
 
-        assert_eq!(media.id, 13);
+        assert_eq!(media.id, "13");
         assert_eq!(media.expires_after, 86400);
         assert!(media.progress.is_some());
 
@@ -317,7 +318,7 @@ mod tests {
     fn parse_media_in_progress() {
         let media = load_media("sample_payloads/media_in_progress.json");
 
-        assert_eq!(media.id, 13);
+        assert_eq!(media.id, "13");
         assert_eq!(media.expires_after, 3595);
         assert!(media.progress.is_some());
 
@@ -331,7 +332,7 @@ mod tests {
     fn parse_media_fail() {
         let media = load_media("sample_payloads/media_fail.json");
 
-        assert_eq!(media.id, 710511363345354753);
+        assert_eq!(media.id, "710511363345354753");
         assert_eq!(media.expires_after, 0);
         assert!(media.progress.is_some());
 
