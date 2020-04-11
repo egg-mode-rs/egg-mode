@@ -522,7 +522,7 @@ impl UserSearch {
             .add_param("count", self.page_size.to_string());
 
         let req = auth::get(links::users::SEARCH, &self.token, Some(&params));
-        make_parsed_future(req)
+        request_with_json_response(req)
     }
 
     /// Returns a new UserSearch with the given query and tokens, with the default page size of 10.

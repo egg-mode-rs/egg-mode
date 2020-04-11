@@ -518,7 +518,7 @@ impl Timeline {
     ///ID to bound with.
     pub fn older(self, since_id: Option<u64>) -> TimelineFuture {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
-        let loader = Box::pin(make_parsed_future(req));
+        let loader = Box::pin(request_with_json_response(req));
 
         TimelineFuture {
             timeline: Some(self),
@@ -530,7 +530,7 @@ impl Timeline {
     ///ID to bound with.
     pub fn newer(self, max_id: Option<u64>) -> TimelineFuture {
         let req = self.request(self.max_id, max_id);
-        let loader = Box::pin(make_parsed_future(req));
+        let loader = Box::pin(request_with_json_response(req));
 
         TimelineFuture {
             timeline: Some(self),
@@ -550,7 +550,7 @@ impl Timeline {
         since_id: Option<u64>,
         max_id: Option<u64>,
     ) -> Result<Response<Vec<Tweet>>> {
-        make_parsed_future(self.request(since_id, max_id)).await
+        request_with_json_response(self.request(since_id, max_id)).await
     }
 
     ///Helper function to construct a `Request` from the current state.
@@ -880,7 +880,7 @@ impl DraftTweet {
         }
 
         let req = auth::post(links::statuses::UPDATE, token, Some(&params));
-        make_parsed_future(req).await
+        request_with_json_response(req).await
     }
 }
 

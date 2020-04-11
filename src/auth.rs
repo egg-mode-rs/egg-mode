@@ -584,7 +584,7 @@ pub async fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) ->
         .body(Body::empty())
         .unwrap();
 
-    let (_, body) = twitter_raw_request(request).await?;
+    let (_, body) = raw_request(request).await?;
 
     let body = std::str::from_utf8(&body).map_err(|_| {
         std::io::Error::new(
@@ -762,7 +762,7 @@ pub async fn access_token<S: Into<String>>(
         .body(Body::empty())
         .unwrap();
 
-    let (_headers, urlencoded) = twitter_raw_request(request).await?;
+    let (_headers, urlencoded) = raw_request(request).await?;
     let urlencoded = std::str::from_utf8(&urlencoded).map_err(|_| {
         std::io::Error::new(
             std::io::ErrorKind::InvalidData,
@@ -844,7 +844,7 @@ pub async fn bearer_token(con_token: &KeyPair) -> Result<Token> {
         .body(Body::from("grant_type=client_credentials"))
         .unwrap();
 
-    let decoded = twitter_json_request::<serde_json::Value>(request).await?;
+    let decoded = request_with_json_response::<serde_json::Value>(request).await?;
     let result = decoded
         .get("access_token")
         .and_then(|s| s.as_str())
@@ -876,7 +876,7 @@ pub async fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> Result<Tok
         .body(body)
         .unwrap();
 
-    let decoded = twitter_json_request::<serde_json::Value>(request).await?;
+    let decoded = request_with_json_response::<serde_json::Value>(request).await?;
     let result = decoded
         .get("access_token")
         .and_then(|s| s.as_str())
@@ -892,7 +892,7 @@ pub async fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> Result<Tok
 /// from Twitter indicating that you don't have access to the user.
 pub async fn verify_tokens(token: &Token) -> Result<Response<crate::user::TwitterUser>> {
     let req = get(links::auth::VERIFY_CREDENTIALS, token, None);
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 #[cfg(test)]

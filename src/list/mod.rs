@@ -228,7 +228,7 @@ impl ListUpdate {
             .add_opt_param("description", self.desc);
 
         let req = auth::post(links::lists::UPDATE, token, Some(&params));
-        make_parsed_future(req).await
+        request_with_json_response(req).await
     }
 }
 

@@ -294,8 +294,7 @@ where
             .add_opt_param("count", self.page_size.map_string());
 
         let req = auth::get(self.link, &self.token, Some(&params));
-
-        make_parsed_future(req)
+        request_with_json_response(req)
     }
 
     ///Creates a new instance of CursorIter, with the given parameters and empty initial results.

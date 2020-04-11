@@ -103,7 +103,7 @@
 //! `make_future` is the general form of the `TwitterFuture` constructor, where the processing
 //! function pointer is handed in directly.
 //!
-//! `make_parsed_future` is the most common `TwitterFuture` constructor, which just uses
+//! `request_with_json_response` is the most common `TwitterFuture` constructor, which just uses
 //! `make_response` (which just calls `serde_json` and loads up the rate-limit headers - it's also
 //! exported) as the processor.
 //!

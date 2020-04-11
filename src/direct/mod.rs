@@ -272,7 +272,7 @@ impl Timeline {
         since_id: Option<u64>,
     ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's {
         let req = self.request(since_id, self.min_id.map(|id| id - 1));
-        let loader = make_parsed_future(req);
+        let loader = request_with_json_response(req);
         loader.map(
             move |resp: Result<Response<Vec<DirectMessage>>, error::Error>| {
                 let resp = resp?;
@@ -289,7 +289,7 @@ impl Timeline {
         max_id: Option<u64>,
     ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's {
         let req = self.request(self.max_id, max_id);
-        let loader = make_parsed_future(req);
+        let loader = request_with_json_response(req);
         loader.map(
             move |resp: Result<Response<Vec<DirectMessage>>, error::Error>| {
                 let resp = resp?;
@@ -311,7 +311,7 @@ impl Timeline {
         since_id: Option<u64>,
         max_id: Option<u64>,
     ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> {
-        make_parsed_future(self.request(since_id, max_id))
+        request_with_json_response(self.request(since_id, max_id))
     }
 
     ///Helper builder function to set the page size.
