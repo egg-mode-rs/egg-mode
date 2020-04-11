@@ -38,7 +38,7 @@ use crate::{auth, entities, links};
 pub async fn terms(token: &auth::Token) -> Result<Response<String>> {
     let req = auth::get(links::service::TERMS, token, None);
 
-    let ret = twitter_json_request::<serde_json::Value>(req).await?;
+    let ret = request_with_json_response::<serde_json::Value>(req).await?;
 
     let tos = ret
         .response
@@ -56,7 +56,7 @@ pub async fn terms(token: &auth::Token) -> Result<Response<String>> {
 pub async fn privacy(token: &auth::Token) -> Result<Response<String>> {
     let req = auth::get(links::service::PRIVACY, token, None);
 
-    let ret = twitter_json_request::<serde_json::Value>(req).await?;
+    let ret = request_with_json_response::<serde_json::Value>(req).await?;
 
     let privacy = ret
         .response
@@ -79,7 +79,7 @@ pub async fn privacy(token: &auth::Token) -> Result<Response<String>> {
 ///[`Configuration`]: struct.Configuration.html
 pub async fn config(token: &auth::Token) -> Result<Response<Configuration>> {
     let req = auth::get(links::service::CONFIG, token, None);
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Return the current rate-limit status for all available methods from the authenticated user.
@@ -91,7 +91,7 @@ pub async fn config(token: &auth::Token) -> Result<Response<Configuration>> {
 ///[`RateLimitStatus`]: struct.RateLimitStatus.html
 pub async fn rate_limit_status(token: &auth::Token) -> Result<Response<RateLimitStatus>> {
     let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Like `rate_limit_status`, but returns the raw JSON without processing it. Only intended to
@@ -100,7 +100,7 @@ pub async fn rate_limit_status(token: &auth::Token) -> Result<Response<RateLimit
 #[doc(hidden)]
 pub async fn rate_limit_status_raw(token: &auth::Token) -> Result<Response<serde_json::Value>> {
     let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Represents a service configuration from Twitter.

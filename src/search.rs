@@ -198,7 +198,7 @@ impl SearchBuilder {
             );
 
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
-        let mut resp = make_parsed_future::<SearchResult>(req).await?;
+        let mut resp = request_with_json_response::<SearchResult>(req).await?;
 
         resp.response.params = Some(params);
         Ok(resp)
@@ -270,7 +270,7 @@ impl SearchResult {
         }
 
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
-        let mut resp = make_parsed_future::<SearchResult>(req).await?;
+        let mut resp = request_with_json_response::<SearchResult>(req).await?;
 
         resp.response.params = Some(params);
         Ok(resp)
@@ -289,7 +289,7 @@ impl SearchResult {
         }
 
         let req = auth::get(links::statuses::SEARCH, token, Some(&params));
-        let mut resp = make_parsed_future::<SearchResult>(req).await?;
+        let mut resp = request_with_json_response::<SearchResult>(req).await?;
 
         resp.response.params = Some(params);
         Ok(resp)

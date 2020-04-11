@@ -20,7 +20,7 @@ pub async fn show(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
         .add_param("include_my_retweet", "true")
         .add_param("include_ext_alt_text", "true");
     let req = auth::get(links::statuses::SHOW, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Lookup the most recent 100 (or fewer) retweets of the given tweet.
@@ -40,7 +40,7 @@ pub async fn retweets_of(id: u64, count: u32, token: &auth::Token) -> Result<Res
 
     let url = format!("{}/{}.json", links::statuses::RETWEETS_OF_STEM, id);
     let req = auth::get(&url, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Lookup the user IDs that have retweeted the given tweet.
@@ -75,7 +75,7 @@ pub async fn lookup<I: IntoIterator<Item = u64>>(
         .add_param("include_ext_alt_text", "true");
 
     let req = auth::post(links::statuses::LOOKUP, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Lookup tweet information for the given list of tweet IDs, and return a map indicating which IDs
@@ -103,7 +103,7 @@ pub async fn lookup_map<I: IntoIterator<Item = u64>>(
         .add_param("include_ext_alt_text", "true");
 
     let req = auth::post(links::statuses::LOOKUP, token, Some(&params));
-    let parsed = twitter_json_request::<serde_json::Value>(req).await?;
+    let parsed = request_with_json_response::<serde_json::Value>(req).await?;
     let mut map = HashMap::new();
 
     for (key, val) in parsed
@@ -205,7 +205,7 @@ pub async fn retweet(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
     let params = ParamList::new().extended_tweets();
     let url = format!("{}/{}.json", links::statuses::RETWEET_STEM, id);
     let req = auth::post(&url, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Unretweet the given status as the authenticated user.
@@ -218,7 +218,7 @@ pub async fn unretweet(id: u64, token: &auth::Token) -> Result<Response<Tweet>> 
     let params = ParamList::new().extended_tweets();
     let url = format!("{}/{}.json", links::statuses::UNRETWEET_STEM, id);
     let req = auth::post(&url, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Like the given status as the authenticated user.
@@ -229,7 +229,7 @@ pub async fn like(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
         .extended_tweets()
         .add_param("id", id.to_string());
     let req = auth::post(links::statuses::LIKE, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Clears a like of the given status as the authenticated user.
@@ -240,7 +240,7 @@ pub async fn unlike(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
         .extended_tweets()
         .add_param("id", id.to_string());
     let req = auth::post(links::statuses::UNLIKE, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Delete the given tweet. The authenticated user must be the user who posted the given tweet.
@@ -250,5 +250,5 @@ pub async fn delete(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
     let params = ParamList::new().extended_tweets();
     let url = format!("{}/{}.json", links::statuses::DELETE_STEM, id);
     let req = auth::post(&url, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }

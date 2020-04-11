@@ -1,10 +1,14 @@
 mod common;
 
-use egg_mode::media::{media_types, upload_media, set_metadata};
+use egg_mode::media::{get_status, media_types, set_metadata, upload_media, ProgressInfo};
 use egg_mode::tweet::DraftTweet;
 
+use std::io::{stdout, Write};
 use std::path::PathBuf;
+use std::time::Duration;
+
 use structopt::StructOpt;
+use tokio::time::delay_for;
 
 #[derive(StructOpt)]
 struct Args {
@@ -44,11 +48,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(alt) = &args.alt_text {
             set_metadata(&handle.id, alt, &config.token).await?;
         }
+        println!("Media uploaded");
+        // Wait 60 seconds for processing
+        print!("Waiting for media to finish processing..");
+        stdout().flush()?;
+        for ct in 0..=60u32 {
+            match get_status(handle.id.clone(), &config.token).await?.progress {
+                None | Some(ProgressInfo::Success) => {
+                    println!("\nMedia sucessfully processed");
+                    break;
+                }
+                Some(ProgressInfo::Pending(_)) | Some(ProgressInfo::InProgress(_)) => {
+                    print!(".");
+                    stdout().flush()?;
+                    delay_for(Duration::from_secs(1)).await;
+                }
+                Some(ProgressInfo::Failed(err)) => Err(err)?,
+            }
+            if ct == 60 {
+                Err("Error: timeout")?
+            }
+        }
     }
 
     tweet.send(&config.token).await?;
-
     println!("Sent tweet: '{}'", args.text);
-
     Ok(())
 }

@@ -12,7 +12,7 @@ use super::*;
 pub async fn show(id: u64, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
     let params = ParamList::default().add_param("id", id.to_string());
     let req = auth::get(links::direct::SHOW, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Create a `Timeline` struct to navigate the direct messages received by the authenticated user.
@@ -45,7 +45,7 @@ pub async fn send<T: Into<UserID>>(
 
     let req = auth::post(links::direct::SEND, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Delete the direct message with the given ID.
@@ -57,7 +57,7 @@ pub async fn send<T: Into<UserID>>(
 pub async fn delete(id: u64, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
     let params = ParamList::new().add_param("id", id.to_string());
     let req = auth::post(links::direct::DELETE, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Create a `ConversationTimeline` loader that can load direct messages as a collection of

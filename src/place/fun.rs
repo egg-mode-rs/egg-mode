@@ -26,7 +26,7 @@ use super::*;
 pub async fn show(id: &str, token: &auth::Token) -> Result<Response<Place>> {
     let url = format!("{}/{}.json", links::place::SHOW_STEM, id);
     let req = auth::get(&url, token, None);
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 /// Begins building a reverse-geocode search with the given coordinate.
@@ -84,7 +84,7 @@ fn parse_url(base: &'static str, full: &str) -> Result<ParamList> {
 pub async fn reverse_geocode_url(url: &str, token: &auth::Token) -> Result<Response<SearchResult>> {
     let params = parse_url(links::place::REVERSE_GEOCODE, url)?;
     let req = auth::get(links::place::REVERSE_GEOCODE, &token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 /// Begins building a location search via latitude/longitude.
@@ -147,5 +147,5 @@ pub fn search_ip(query: impl Into<CowStr>) -> SearchBuilder {
 pub async fn search_url(url: &str, token: &auth::Token) -> Result<Response<SearchResult>> {
     let params = parse_url(links::place::SEARCH, url)?;
     let req = auth::get(links::place::REVERSE_GEOCODE, &token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }

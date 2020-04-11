@@ -87,7 +87,7 @@ where
 
     let req = auth::post(links::users::LOOKUP, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 /// Lookup user information for a single user.
@@ -98,7 +98,7 @@ pub async fn show<T: Into<UserID>>(acct: T, token: &auth::Token) -> Result<Respo
 
     let req = auth::get(links::users::SHOW, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 /// Lookup the user IDs that the authenticating user has disabled retweets from.
@@ -107,7 +107,7 @@ pub async fn show<T: Into<UserID>>(acct: T, token: &auth::Token) -> Result<Respo
 pub async fn friends_no_retweets(token: &auth::Token) -> Result<Response<Vec<u64>>> {
     let req = auth::get(links::users::FRIENDS_NO_RETWEETS, token, None);
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 /// Lookup relationship settings between two arbitrary users.
@@ -127,7 +127,7 @@ where
 
     let req = auth::get(links::users::FRIENDSHIP_SHOW, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 /// Lookup the relations between the authenticated user and the given accounts.
@@ -147,7 +147,7 @@ where
 
     let req = auth::get(links::users::FRIENDSHIP_LOOKUP, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 //---Cursored collections---
@@ -305,7 +305,7 @@ pub async fn follow<T: Into<UserID>>(
         .add_name_param(acct.into())
         .add_param("follow", notifications.to_string());
     let req = auth::post(links::users::FOLLOW, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 /// Unfollow the given account with the authenticated user.
@@ -322,7 +322,7 @@ pub async fn unfollow<T: Into<UserID>>(
         .extended_tweets()
         .add_name_param(acct.into());
     let req = auth::post(links::users::UNFOLLOW, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 /// Update notification settings and reweet visibility for the given user.
@@ -345,7 +345,7 @@ where
         .add_opt_param("device", notifications.map(|v| v.to_string()))
         .add_opt_param("retweets", retweets.map(|v| v.to_string()));
     let req = auth::post(links::users::FRIENDSHIP_UPDATE, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 /// Block the given account with the authenticated user.
@@ -356,7 +356,7 @@ pub async fn block<T: Into<UserID>>(acct: T, token: &auth::Token) -> Result<Resp
         .extended_tweets()
         .add_name_param(acct.into());
     let req = auth::post(links::users::BLOCK, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 /// Block the given account and report it for spam, with the authenticated user.
@@ -370,7 +370,7 @@ pub async fn report_spam<T: Into<UserID>>(
         .extended_tweets()
         .add_name_param(acct.into());
     let req = auth::post(links::users::REPORT_SPAM, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 /// Unblock the given user with the authenticated user.
@@ -384,7 +384,7 @@ pub async fn unblock<T: Into<UserID>>(
         .extended_tweets()
         .add_name_param(acct.into());
     let req = auth::post(links::users::UNBLOCK, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 /// Mute the given user with the authenticated user.
@@ -395,7 +395,7 @@ pub async fn mute<T: Into<UserID>>(acct: T, token: &auth::Token) -> Result<Respo
         .extended_tweets()
         .add_name_param(acct.into());
     let req = auth::post(links::users::MUTE, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 /// Unmute the given user with the authenticated user.
@@ -409,5 +409,5 @@ pub async fn unmute<T: Into<UserID>>(
         .extended_tweets()
         .add_name_param(acct.into());
     let req = auth::post(links::users::UNMUTE, token, Some(&params));
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }

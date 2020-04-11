@@ -225,14 +225,12 @@ pub async fn upload_media(
         .add_param("media_type", media_type.to_string())
         .add_param("media_category", media_category.to_string());
     let req = auth::post(links::media::UPLOAD, &token, Some(&params));
-    let media = twitter_json_request::<RawMediaHandle>(req).await?.response;
-    let timeout = Instant::now() + Duration::from_secs(media.expires_after);
+    let media = request_with_json_response::<RawMediaHandle>(req)
+        .await?
+        .response;
 
-    let nchunks = data.len() / 1024 * 1024; // divide into 1MB chunks
-    for (ix, chunk) in data.chunks(nchunks).enumerate() {
-        if Instant::now() > timeout {
-            todo!()
-        }
+    // divide into 1MB chunks
+    for (ix, chunk) in data.chunks(1024 * 1024).enumerate() {
         let params = ParamList::new()
             .add_param("command", "APPEND")
             .add_param("media_id", media.id.clone())
@@ -240,14 +238,26 @@ pub async fn upload_media(
             .add_param("segment_index", ix.to_string());
         let req = auth::post(links::media::UPLOAD, token, Some(&params));
         // This request has no response (upon success)
-        twitter_raw_request(req).await?;
+        raw_request(req).await?;
     }
 
     let params = ParamList::new()
         .add_param("command", "FINALIZE")
         .add_param("media_id", media.id.clone());
     let req = auth::post(links::media::UPLOAD, token, Some(&params));
-    Ok(twitter_json_request::<RawMediaHandle>(req)
+    Ok(request_with_json_response::<RawMediaHandle>(req)
+        .await?
+        .response
+        .into())
+}
+
+/// Check the status of uploaded media
+pub async fn get_status(media_id: MediaId, token: &auth::Token) -> error::Result<MediaHandle> {
+    let params = ParamList::new()
+        .add_param("command", "STATUS")
+        .add_param("media_id", media_id.0);
+    let req = auth::get(links::media::UPLOAD, token, Some(&params));
+    Ok(request_with_json_response::<RawMediaHandle>(req)
         .await?
         .response
         .into())
@@ -267,7 +277,7 @@ pub async fn set_metadata(
         }
     });
     let req = auth::post_json(links::media::METADATA, &token, payload);
-    twitter_raw_request(req).await?;
+    raw_request(req).await?;
     Ok(())
 }
 

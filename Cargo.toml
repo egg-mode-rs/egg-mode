@@ -16,6 +16,7 @@ edition = "2018"
 
 [dependencies]
 base64 = "0.11"
+bytes = "0.5.4"
 chrono = { version = "0.4", features = ["serde"] }
 futures = "0.3"
 derive_more = "0.99"
@@ -35,7 +36,6 @@ sha-1 = "0.8"
 thiserror = "1.0.11"
 tokio = { version = "0.2.8", features = ["time", "rt-core", "macros"] }
 url = "2.1.1"
-bytes = "0.5.4"
 
 [features]
 default = ["native_tls"]

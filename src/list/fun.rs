@@ -43,7 +43,7 @@ pub async fn list<'id, T: Into<UserID>>(
 
     let req = auth::get(links::lists::LIST, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Look up the lists the given user is subscribed to, but not ones the user made themselves.
@@ -70,7 +70,7 @@ pub async fn show(list: ListID, token: &auth::Token) -> Result<Response<List>> {
 
     let req = auth::get(links::lists::SHOW, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Look up the users that have been added to the given list.
@@ -105,7 +105,7 @@ pub async fn is_subscribed<'id, T: Into<UserID>>(
 
     let req = auth::get(links::lists::IS_SUBSCRIBER, token, Some(&params));
 
-    let out = twitter_json_request::<TwitterUser>(req).await;
+    let out = request_with_json_response::<TwitterUser>(req).await;
 
     match out {
         Ok(user) => Ok(Response::map(user, |_| true)),
@@ -135,7 +135,7 @@ pub async fn is_member<'id, T: Into<UserID>>(
         .add_name_param(user.into());
 
     let req = auth::get(links::lists::IS_MEMBER, token, Some(&params));
-    let out = twitter_json_request::<TwitterUser>(req).await;
+    let out = request_with_json_response::<TwitterUser>(req).await;
 
     match out {
         Ok(resp) => Ok(Response::map(resp, |_| true)),
@@ -184,7 +184,7 @@ pub async fn add_member<'id, T: Into<UserID>>(
 
     let req = auth::post(links::lists::ADD, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Adds a set of users to the given list.
@@ -231,7 +231,7 @@ where
 
     let req = auth::post(links::lists::ADD_LIST, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Removes the given user from the given list.
@@ -246,7 +246,7 @@ pub async fn remove_member<'id, T: Into<UserID>>(
 
     let req = auth::post(links::lists::REMOVE_MEMBER, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Removes a set of users from the given list.
@@ -292,7 +292,7 @@ where
 
     let req = auth::post(links::lists::REMOVE_LIST, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Creates a list, with the given name, visibility, and description.
@@ -313,7 +313,7 @@ pub async fn create(
 
     let req = auth::post(links::lists::CREATE, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Deletes the given list.
@@ -324,7 +324,7 @@ pub async fn delete(list: ListID, token: &auth::Token) -> Result<Response<List>>
 
     let req = auth::post(links::lists::DELETE, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Subscribes the authenticated user to the given list.
@@ -336,7 +336,7 @@ pub async fn subscribe(list: ListID, token: &auth::Token) -> Result<Response<Lis
 
     let req = auth::post(links::lists::SUBSCRIBE, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Unsubscribes the authenticated user from the given list.
@@ -345,7 +345,7 @@ pub async fn unsubscribe(list: ListID, token: &auth::Token) -> Result<Response<L
 
     let req = auth::post(links::lists::UNSUBSCRIBE, token, Some(&params));
 
-    make_parsed_future(req).await
+    request_with_json_response(req).await
 }
 
 ///Begins updating a list's metadata.

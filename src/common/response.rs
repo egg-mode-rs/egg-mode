@@ -93,7 +93,7 @@ pub fn get_response(request: Request<Body>) -> ResponseFuture {
     client.request(request)
 }
 
-pub(crate) async fn twitter_raw_request(request: Request<Body>) -> Result<(Headers, Vec<u8>)> {
+pub(crate) async fn raw_request(request: Request<Body>) -> Result<(Headers, Vec<u8>)> {
     let connector = HttpsConnector::new();
     let client = hyper::Client::builder().build(connector);
     let resp = client.request(request).await?;
@@ -114,25 +114,18 @@ pub(crate) async fn twitter_raw_request(request: Request<Body>) -> Result<(Heade
     Ok((parts.headers, body))
 }
 
-/// Shortcut `MakeResponse` method that attempts to parse the given type from the response and
+/// Convenience method that attempts to parse the given type from the response and
 /// loads rate-limit information from the response headers.
-pub(crate) async fn twitter_json_request<T: DeserializeOwned>(
+pub(crate) async fn request_with_json_response<T: DeserializeOwned>(
     request: Request<Body>,
 ) -> Result<Response<T>> {
-    let (headers, body) = twitter_raw_request(request).await?;
+    let (headers, body) = raw_request(request).await?;
     let response = serde_json::from_slice(&body)?;
     let rate_limit_status = RateLimit::try_from(&headers)?;
     Ok(Response {
         rate_limit_status,
         response,
     })
-}
-
-/// Shortcut function to create a `TwitterFuture` that parses out the given type from its response.
-pub async fn make_parsed_future<T: for<'de> Deserialize<'de>>(
-    request: Request<Body>,
-) -> Result<Response<T>> {
-    twitter_json_request(request).await
 }
 
 #[derive(Copy, Clone, Debug, Deserialize)]
