@@ -26,14 +26,14 @@ To start using this library, put the following into your Cargo.toml:
 
 ```TOML
 [dependencies]
-egg-mode = "0.14.0-beta.1"
+egg-mode = "0.14.0"
 ```
 
 By default, `egg-mode` uses `native-tls` for encryption, but also supports `rustls`.
 This may be helpful if you wish to avoid linking against `OpenSSL`.
 To enable, modify your `Cargo.toml` entry:
 ```
-egg-mode = { version = "0.14-beta.1", features = ["hyper-rustls"], default-features = false }
+egg-mode = { version = "0.14", features = ["hyper-rustls"], default-features = false }
 ```
 
 See available methods and tips to get started in the [Documentation][].

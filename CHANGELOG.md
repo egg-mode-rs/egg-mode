@@ -1,13 +1,20 @@
 # Changelog for egg-mode
 
-## [0.14.0] - Unreleased
+## [0.14.0]
+
+This release has a lot of important changes!
 
 ### Changed
 - Updated to use `std::future::Future`,`async/await`.
   - This is a very **breaking change**
   - Lots of dependencies updated, most notably `tokio 0.2` and `hyper 0.13`
-  - Thanks to @bobtwinkles for the implementation
+  - Thanks to @bobtwinkles for the initial implementation
 - Various internal refactorings and simplifications
+- Media module substantially rewritten
+- Probably lots of other things!
+
+### Added
+- New `create_tweet` example
 
 ## [0.13.0] - 2019-06-16
 
