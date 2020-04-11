@@ -488,9 +488,9 @@ pub(crate) fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Requ
 }
 
 /// Assemble a signed POST request to the given URL with the given JSON body.
-pub fn post_json(uri: &str, token: &Token, body: &serde_json::Value) -> Request<Body> {
+pub fn post_json<B: serde::Serialize>(uri: &str, token: &Token, body: B) -> Request<Body> {
     let content = "application/json; charset=UTF-8";
-    let body = Body::from(body.to_string());
+    let body = Body::from(serde_json::to_string(&body).unwrap()); // TODO rewrite
 
     let request = Request::post(uri).header(CONTENT_TYPE, content);
 

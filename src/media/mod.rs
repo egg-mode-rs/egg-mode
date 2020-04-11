@@ -187,7 +187,7 @@ impl MediaHandle {
 /// Represents the kinda of media that Twitter will accept.
 /// `.to_string()` will return a string suitable for use
 #[derive(Debug, Copy, Clone, PartialEq, Eq, derive_more::Display)]
-pub enum MediaCategory {
+enum MediaCategory {
     /// Static image. Four can be attached to a single tweet.
     #[display(fmt = "tweet_image")]
     Image,
@@ -199,13 +199,26 @@ pub enum MediaCategory {
     Video,
 }
 
+impl From<&mime::Mime> for MediaCategory {
+    fn from(mime: &mime::Mime) -> Self {
+        if mime == &media_types::image_gif() {
+            MediaCategory::Gif
+        } else if mime == &media_types::video_mp4() {
+            MediaCategory::Video
+        } else {
+            // fallthrough
+            MediaCategory::Image
+        }
+    }
+}
+
 /// Upload media to the server.
 pub async fn upload_media(
     data: &[u8],
     media_type: &mime::Mime,
-    media_category: &MediaCategory,
     token: &auth::Token,
 ) -> error::Result<MediaHandle> {
+    let media_category = MediaCategory::from(media_type);
     let params = ParamList::new()
         .add_param("command", "INIT")
         .add_param("total_bytes", data.len().to_string())
@@ -238,6 +251,24 @@ pub async fn upload_media(
         .await?
         .response
         .into())
+}
+
+/// Set metadata for a media upload. At the moment the only attribute that may
+/// be set is `alt-text`.
+pub async fn set_metadata(
+    media_id: &MediaId,
+    alt_text: &str,
+    token: &auth::Token,
+) -> error::Result<()> {
+    let payload = serde_json::json!({
+        "media_id": media_id.0,
+        "alt_text": {
+            "text": alt_text
+        }
+    });
+    let req = auth::post_json(links::media::METADATA, &token, payload);
+    twitter_raw_request(req).await?;
+    Ok(())
 }
 
 #[cfg(test)]

@@ -70,15 +70,6 @@ pub struct Response<T> {
     pub response: T,
 }
 
-impl Response<()> {
-    pub(crate) fn unit(headers: &Headers) -> Result<Self> {
-        Ok(Self {
-            rate_limit_status: RateLimit::try_from(headers)?,
-            response: (),
-        })
-    }
-}
-
 impl<T> Response<T> {
     ///Convert a `Response<T>` to a `Response<U>` by running its contained response through the
     ///given function. This preserves its rate-limit information.
