@@ -201,7 +201,8 @@ where
 }
 
 ///Convenient type alias for futures that resolve to responses from Twitter.
-pub(crate) type FutureResponse<T> = Pin<Box<dyn Future<Output = error::Result<Response<T>>>>>;
+pub(crate) type FutureResponse<T> =
+    Pin<Box<dyn Future<Output = error::Result<Response<T>>> + Send>>;
 
 pub fn codepoints_to_bytes(&mut (ref mut start, ref mut end): &mut (usize, usize), text: &str) {
     let mut byte_start = *start;
