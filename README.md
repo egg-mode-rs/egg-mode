@@ -19,7 +19,7 @@ From `v0.14`, egg-mode uses the `async/await` syntax and therefore requires Rust
 counting and mention/hashtag/url extraction. That has since been extracted into its own crate,
 [egg-mode-text].
 
-[egg-mode-text]: https://github.com/QuietMisdreavus/twitter-text-rs
+[egg-mode-text]: https://github.com/egg-mode-rs/egg-mode-text
 
 
 To start using this library, put the following into your Cargo.toml:
