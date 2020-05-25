@@ -3,7 +3,7 @@
 So you'd like to help out with egg-mode? Great! Here are some ways you can contribute, in terms of
 "things that take place on github". If you have a suggestion for the library but can't or don't want
 to go through the PR process, feel free to leave an issue on github, or contact me on twitter
-(@QuietMisdreavus), IRC (misdreavus on the Rust channels), or even email (grey @ (my twitter handle)
+(@QuietMisdreavus), IRC (misdreavus on the Rust channels), or even email (victoria @ (my twitter handle)
 . net).
 
 ## Documentation Contributions
