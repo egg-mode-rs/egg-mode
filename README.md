@@ -1,6 +1,6 @@
 # egg-mode
 
-Twitter library for Rust ![Build Status](https://github.com/QuietMisdreavus/twitter-rs/workflows/CI/badge.svg)
+Twitter library for Rust ![Build Status](https://github.com/egg-mode-rs/egg-mode/workflows/CI/badge.svg)
 
 [Documentation](https://docs.rs/egg-mode/)
 
@@ -13,7 +13,7 @@ to being able to manually load a page at a time.
 
 From `v0.14`, egg-mode uses the `async/await` syntax and therefore requires Rust **v1.39.0+**.
 
-[TODO.md]: https://github.com/QuietMisdreavus/twitter-rs/blob/master/TODO.md
+[TODO.md]: https://github.com/egg-mode-rs/egg-mode/blob/master/TODO.md
 
 **NOTE**: Previous versions of egg-mode contained a port of twitter-text to use for character
 counting and mention/hashtag/url extraction. That has since been extracted into its own crate,

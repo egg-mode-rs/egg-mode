@@ -4,7 +4,7 @@
 
 //! A library for interacting with Twitter.
 //!
-//! [Repository](https://github.com/QuietMisdreavus/twitter-rs)
+//! [Repository](https://github.com/egg-mode-rs/egg-mode)
 //!
 //! egg-mode is a Twitter library that aims to make as few assumptions about the user's codebase as
 //! possible. Endpoints are exposed as bare functions where authentication details are passed in as
