@@ -145,6 +145,7 @@ mod links;
 pub mod list;
 pub mod media;
 pub mod place;
+pub mod raw;
 pub mod search;
 pub mod service;
 pub mod stream;

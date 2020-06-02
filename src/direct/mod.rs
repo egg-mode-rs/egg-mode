@@ -339,7 +339,7 @@ impl Timeline {
     }
 
     ///Create an instance of `Timeline` with the given link and tokens.
-    fn new(link: &'static str, params_base: Option<ParamList>, token: &auth::Token) -> Self {
+    pub(crate) fn new(link: &'static str, params_base: Option<ParamList>, token: &auth::Token) -> Self {
         Timeline {
             link: link,
             token: token.clone(),

@@ -214,7 +214,7 @@ pub struct TwitterStream {
 }
 
 impl TwitterStream {
-    fn new(request: Request<Body>) -> TwitterStream {
+    pub(crate) fn new(request: Request<Body>) -> TwitterStream {
         TwitterStream {
             buf: vec![],
             request: Some(request),

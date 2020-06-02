@@ -83,13 +83,16 @@ impl<T> Response<T> {
     }
 }
 
-pub(crate) fn get_response(request: Request<Body>) -> ResponseFuture {
+/// Converts the given request into a raw `ResponseFuture` from hyper.
+pub fn get_response(request: Request<Body>) -> ResponseFuture {
     let connector = HttpsConnector::new();
     let client = hyper::Client::builder().build(connector);
     client.request(request)
 }
 
-pub(crate) async fn raw_request(request: Request<Body>) -> Result<(Headers, Vec<u8>)> {
+/// Loads the given request, parses the headers and response for potential errors given by Twitter,
+/// and returns the headers and raw bytes returned from the response.
+pub async fn raw_request(request: Request<Body>) -> Result<(Headers, Vec<u8>)> {
     let connector = HttpsConnector::new();
     let client = hyper::Client::builder().build(connector);
     let resp = client.request(request).await?;
@@ -110,9 +113,9 @@ pub(crate) async fn raw_request(request: Request<Body>) -> Result<(Headers, Vec<
     Ok((parts.headers, body))
 }
 
-/// Convenience method that attempts to parse the given type from the response and
-/// loads rate-limit information from the response headers.
-pub(crate) async fn request_with_json_response<T: DeserializeOwned>(
+/// Loads the given request and parses the response as JSON into the given type, including
+/// rate-limit headers.
+pub async fn request_with_json_response<T: DeserializeOwned>(
     request: Request<Body>,
 ) -> Result<Response<T>> {
     let (headers, body) = raw_request(request).await?;

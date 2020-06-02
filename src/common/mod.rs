@@ -99,24 +99,29 @@ mod response;
 pub use crate::common::response::*;
 use crate::{error, list, user};
 
+/// A set of headers returned with a response.
 pub type Headers = HeaderMap<HeaderValue>;
-pub(crate) type CowStr = Cow<'static, str>;
+pub type CowStr = Cow<'static, str>;
 
-///Convenience type used to hold parameters to an API call.
+/// Represents a list of parameters to a Twitter API call.
 #[derive(Debug, Clone, Default, derive_more::Deref, derive_more::DerefMut, derive_more::From)]
-pub(crate) struct ParamList(HashMap<Cow<'static, str>, Cow<'static, str>>);
+pub struct ParamList(HashMap<Cow<'static, str>, Cow<'static, str>>);
 
 impl ParamList {
-    pub(crate) fn new() -> Self {
+    /// Creates a new, empty `ParamList`.
+    pub fn new() -> Self {
         Self(HashMap::new())
     }
 
-    pub(crate) fn extended_tweets(self) -> Self {
+    /// Adds the `tweet_mode=extended` parameter to this `ParamList`. Not including this parameter
+    /// will cause tweets to be loaded with legacy parameters, and a potentially-truncated `text`
+    /// if the tweet is longer than 140 characters.
+    pub fn extended_tweets(self) -> Self {
         self.add_param("tweet_mode", "extended")
     }
 
-    ///Convenience function to add a key/value parameter to a `ParamList`.
-    pub(crate) fn add_param(
+    /// Adds the given key/value parameter to this `ParamList`.
+    pub fn add_param(
         mut self,
         key: impl Into<Cow<'static, str>>,
         value: impl Into<Cow<'static, str>>,
@@ -125,8 +130,8 @@ impl ParamList {
         self
     }
 
-    ///Convenience function to add a key/value parameter to a `ParamList`.
-    pub(crate) fn add_opt_param(
+    /// Adds the given key/value parameter to this `ParamList` only if the given value is `Some`.
+    pub fn add_opt_param(
         self,
         key: impl Into<Cow<'static, str>>,
         value: Option<impl Into<Cow<'static, str>>>,
@@ -137,8 +142,9 @@ impl ParamList {
         }
     }
 
-    ///Convenience function to add a key/value parameter to a `ParamList` without moving.
-    pub(crate) fn add_param_ref(
+    /// Adds the given key/value to this `ParamList` by mutating it in place, rather than consuming
+    /// it as in `add_param`.
+    pub fn add_param_ref(
         &mut self,
         key: impl Into<Cow<'static, str>>,
         value: impl Into<Cow<'static, str>>,
@@ -146,14 +152,18 @@ impl ParamList {
         self.0.insert(key.into(), value.into());
     }
 
-    pub(crate) fn add_name_param(self, id: user::UserID) -> Self {
+    /// Adds the given `UserID` as a parameter to this `ParamList` by adding either a `user_id` or
+    /// `screen_name` parameter as appropriate.
+    pub fn add_name_param(self, id: user::UserID) -> Self {
         match id {
             user::UserID::ID(id) => self.add_param("user_id", id.to_string()),
             user::UserID::ScreenName(name) => self.add_param("screen_name", name),
         }
     }
 
-    pub(crate) fn add_list_param(mut self, list: list::ListID) -> Self {
+    /// Adds the given `ListID` as a parameter to this `ParamList` by adding either an owner/slug
+    /// pair or a `list_id`, as appropriate.
+    pub fn add_list_param(mut self, list: list::ListID) -> Self {
         match list {
             list::ListID::Slug(owner, name) => {
                 match owner {
