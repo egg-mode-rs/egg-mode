@@ -3,6 +3,36 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 //! Raw access to request- and response-building primitives used internally by egg-mode.
+//!
+//! The functions and types exposed in this module allow you to access Twitter API functions that
+//! aren't currently wrapped by egg-mode, or to provide parameters to Twitter that egg-mode doesn't
+//! currently use. These functions also allow you to have more power in how you process the data
+//! returned by Twitter. In return, much more knowledge of the Twitter API is required to
+//! effectively use these functions.
+//!
+//! The functions in this module can be divided into two categories: assembling a request, and
+//! executing it to get a response. Some wrapper types in egg-mode operate directly on requests, or
+//! create their own, so constructors for those types are also exposed here.
+//!
+//! The functions that create `Request`s (or that assemble a type that creates its own `Requests`)
+//! all require a `Token`, like the rest of egg-mode, which lets them properly create the
+//! corresponding OAuth signature for the call. They also take a `ParamList` instance, which is
+//! used to store parameters to the API call. These correspond to the parameters listed on the API
+//! Reference page for the given endpoint you would like to call.
+//!
+//! Once you have a `Request`, you can hand it to the `response_*` functions in this module to
+//! process it. Which one you select depends on how much processing you want egg-mode to do with
+//! the response.
+//!
+//! * At the most hands-off end, there's `response_future`, which is a small wrapper that just
+//!   starts the request and hands off the `ResponseFuture` from `hyper` to give you the most power
+//!   over handling the response data.
+//! * In the middle, there's `response_raw_bytes`, which wraps the `ResponseFuture` to return the
+//!   headers and response body after inspecting the rate-limit headers and response code, and
+//!   after inspecting the response to see whether it returned error data from Twitter.
+//! * Finally there's `response_json`, which picks up from `response_raw_bytes` to parse the
+//!   response as JSON and deserialize it into the target type, alongside the rate-limit
+//!   information from the response headers.
 
 use hyper::{Body, Request};
 
