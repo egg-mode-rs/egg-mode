@@ -103,7 +103,28 @@ use crate::{error, list, user};
 pub type Headers = HeaderMap<HeaderValue>;
 pub type CowStr = Cow<'static, str>;
 
+// n.b. this type is re-exported in the `raw` module - these docs are public!
 /// Represents a list of parameters to a Twitter API call.
+///
+/// This type is a wrapper around a `HashMap<Cow<'static, str>, Cow<'static, str>>` to collect a
+/// set of parameter key/value pairs. These are then used to assemble and sign a Twitter API
+/// request. The `Cow` type is used to avoid having to allocate a `String` if a string literal is
+/// used for a parameter. All the functions that add parameters to this `ParamList` accept `impl
+/// Into<Cow<'static, str>>`, meaning that either a string literal or an owned `String` may be
+/// used.
+///
+/// Most of the functions to add parameters follow a builder pattern, so that you can assemble a
+/// `ParamList` in a single statement:
+///
+/// ```
+/// use egg_mode::raw::ParamList;
+///
+/// // If you were looking up the user `@rustlang` with `GET users/show`, you might assemble a
+/// // ParamList like this...
+/// let params = ParamList::new()
+///     .extended_tweets()
+///     .add_name_param("rustlang".into());
+/// ```
 #[derive(Debug, Clone, Default, derive_more::Deref, derive_more::DerefMut, derive_more::From)]
 pub struct ParamList(HashMap<Cow<'static, str>, Cow<'static, str>>);
 
@@ -131,6 +152,10 @@ impl ParamList {
     }
 
     /// Adds the given key/value parameter to this `ParamList` only if the given value is `Some`.
+    ///
+    /// This can be a convenient wrapper to use in case you may or may not want to include
+    /// something based on some condition. If the given value is `None`, then the `ParamList` is
+    /// returned unmodified.
     pub fn add_opt_param(
         self,
         key: impl Into<Cow<'static, str>>,
@@ -161,8 +186,8 @@ impl ParamList {
         }
     }
 
-    /// Adds the given `ListID` as a parameter to this `ParamList` by adding either an owner/slug
-    /// pair or a `list_id`, as appropriate.
+    /// Adds the given `ListID` as a parameter to this `ParamList` by adding either an
+    /// `owner_id`/`owner_screen_name` and `slug` pair, or a `list_id`, as appropriate.
     pub fn add_list_param(mut self, list: list::ListID) -> Self {
         match list {
             list::ListID::Slug(owner, name) => {
