@@ -80,6 +80,20 @@ pub use crate::auth::post as request_post;
 pub use crate::auth::post_json as request_post_json;
 
 /// Assemble a GET request and convert it to a `Timeline` of tweets.
+///
+/// An endpoint wrapped by `tweet::Timeline` returns data as an array of Tweets. In addition, they
+/// also take parameters `since_id` and `max_id` to filter the earliest and latest Tweet returned
+/// (respectively), as well as a `count` parameter to limit the number of Tweets returned at once.
+/// The `Timeline` struct sets these parameters itself; you should not need to hand them to this
+/// function. These parameters are manipulated through the `older()` and `newer()` functions, as
+/// well as the `with_page_size()` function.
+///
+/// In addition, the `Timeline` struct also adds `tweet_mode=extended` and
+/// `include_ext_alt_text=true` when sending a request, to fill in the data from extended Tweets
+/// and media alt-text when returned from Twitter.
+///
+/// If you do not need to send additional parameters other than these mentioned, you can pass
+/// `None` for the `params` to make the `Timeline` manage the parameters itself.
 pub fn request_as_tweet_timeline(
     url: &'static str,
     token: &Token,
@@ -89,6 +103,16 @@ pub fn request_as_tweet_timeline(
 }
 
 /// Assemble a GET request and convert it to a `Timeline` of direct messages.
+///
+/// An endpoint wrapped by `direct::Timeline` returns data as an array of Tweets. In addition, they
+/// also take parameters `since_id` and `max_id` to filter the earliest and latest Tweet returned
+/// (respectively), as well as a `count` parameter to limit the number of Tweets returned at once.
+/// The `Timeline` struct sets these parameters itself; you should not need to hand them to this
+/// function. These parameters are manipulated through the `older()` and `newer()` functions, as
+/// well as the `with_page_size()` function.
+///
+/// If you do not need to send additional parameters other than these mentioned, you can pass
+/// `None` for the `params` to make the `Timeline` manage the parameters itself.
 pub fn request_as_dm_timeline(
     url: &'static str,
     token: &Token,
@@ -98,6 +122,36 @@ pub fn request_as_dm_timeline(
 }
 
 /// Assemble a GET request and convert it to a `CursorIter`.
+///
+/// A `CursorIter` is a wrapper around an endpoint that returns data in the following structure:
+///
+/// ```json
+/// {
+///   "previous_cursor": int,
+///   "previous_cursor_str": "string",
+///   "next_cursor": int,
+///   "next_cursor_str": "string",
+///   "<data>": [ ... ]
+/// }
+/// ```
+///
+/// Where `<data>` is named something relevant to the endpoint, and contains an array of objects.
+/// `CursorIter` expects to be able to deserialize this response into a type that implements the
+/// [`Cursor`] trait to expose these fields. (The cursor struct is the type parameter of
+/// `CursorIter` itself.) It uses these fields to set the `cursor` parameter to the given endpoint.
+/// It also sets the `count` parameter with the given `page_size`, if present. (Some cursor
+/// endpoints do not support setting a page size; an example of such an endpoint is `GET
+/// friendships/incoming`.)
+///
+/// [`Cursor`]: ../cursor/trait.Cursor.html
+///
+/// An example of a Twitter API endpoint that exposes a cursor interface is [`GET friends/list`].
+///
+/// [`GET friends/list`]: https://developer.twitter.com/en/docs/accounts-and-users/follow-search-get-users/api-reference/get-friends-list
+///
+/// If you can supply a Cursor type (or use one of the ones in the `cursor` module), `CursorIter`
+/// will wrap the responses into a `Stream` interface that automatically fetches the next page of
+/// results on-demand.
 pub fn request_as_cursor_iter<T: cursor::Cursor + serde::de::DeserializeOwned>(
     url: &'static str,
     token: &Token,
@@ -117,6 +171,9 @@ pub use crate::common::request_with_json_response as response_json;
 /// statuses/sample`. If you know that the messages returned by the stream you're using will look
 /// the same as `StreamMessage`, this can be a convenient way to customize a stream if you need to
 /// use other endpoints or options not available to `StreamBuilder`.
+///
+/// Since the `TwitterStream` type doesn't need to provide additional parameters to the request, it
+/// can take a signed, completed request as its constructor.
 pub fn response_as_stream(req: Request<Body>) -> TwitterStream {
     TwitterStream::new(req)
 }
