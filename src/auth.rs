@@ -43,8 +43,30 @@ struct TwitterOAuth {
     signature: Option<String>,
     timestamp: u64,
     token: Option<String>,
-    callback: Option<String>,
-    verifier: Option<String>,
+    addon: OAuthAddOn,
+}
+
+#[derive(Clone, Debug)]
+enum OAuthAddOn {
+    Callback(String),
+    Verifier(String),
+    None,
+}
+
+impl OAuthAddOn {
+    fn as_callback(&self) -> Option<&str> {
+        match self {
+            OAuthAddOn::Callback(c) => Some(c),
+            _ => None,
+        }
+    }
+
+    fn as_verifier(&self) -> Option<&str> {
+        match self {
+            OAuthAddOn::Verifier(v) => Some(v),
+            _ => None,
+        }
+    }
 }
 
 impl fmt::Display for TwitterOAuth {
@@ -79,12 +101,14 @@ impl fmt::Display for TwitterOAuth {
 
         write!(f, ", oauth_version=\"{}\"", "1.0")?;
 
-        if let Some(ref callback) = self.callback {
-            write!(f, ", oauth_callback=\"{}\"", percent_encode(callback))?;
-        }
-
-        if let Some(ref verifier) = self.verifier {
-            write!(f, ", oauth_verifier=\"{}\"", percent_encode(verifier))?;
+        match self.addon {
+            OAuthAddOn::Callback(ref callback) => {
+                write!(f, ", oauth_callback=\"{}\"", percent_encode(callback))?;
+            }
+            OAuthAddOn::Verifier(ref verifier) => {
+                write!(f, ", oauth_verifier=\"{}\"", percent_encode(verifier))?;
+            }
+            OAuthAddOn::None => (),
         }
 
         Ok(())
@@ -333,8 +357,8 @@ fn sign(
             .add_param("oauth_timestamp", format!("{}", header.timestamp.clone()))
             .add_param("oauth_version", "1.0")
             .add_opt_param("oauth_token", header.token.clone())
-            .add_opt_param("oauth_callback", header.callback.clone())
-            .add_opt_param("oauth_verifier", header.verifier.clone());
+            .add_opt_param("oauth_callback", header.addon.as_callback().map(|s| s.to_string()))
+            .add_opt_param("oauth_verifier", header.addon.as_verifier().map(|s| s.to_string()));
 
         let mut query = sig_params
             .iter()
@@ -375,8 +399,7 @@ fn get_header(
     uri: &str,
     con_token: &KeyPair,
     access_token: Option<&KeyPair>,
-    callback: Option<String>,
-    verifier: Option<String>,
+    addon: OAuthAddOn,
     params: Option<&ParamList>,
 ) -> TwitterOAuth {
     let now_s = match SystemTime::now().duration_since(UNIX_EPOCH) {
@@ -395,8 +418,7 @@ fn get_header(
         signature: None,
         timestamp: now_s,
         token: access_token.map(|tok| tok.key.to_string()),
-        callback: callback,
-        verifier: verifier,
+        addon,
     };
 
     sign(header, method, uri, params, con_token, access_token)
@@ -437,8 +459,7 @@ pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body
                 uri,
                 con_token,
                 Some(access_token),
-                None,
-                None,
+                OAuthAddOn::None,
                 params,
             );
             request.header(AUTHORIZATION, header.to_string())
@@ -480,8 +501,7 @@ pub fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Bod
                 uri,
                 con_token,
                 Some(access_token),
-                None,
-                None,
+                OAuthAddOn::None,
                 params,
             );
 
@@ -516,8 +536,7 @@ pub fn post_json<B: serde::Serialize>(uri: &str, token: &Token, body: B) -> Requ
                 uri,
                 con_token,
                 Some(access_token),
-                None,
-                None,
+                OAuthAddOn::None,
                 None,
             );
 
@@ -586,8 +605,7 @@ pub async fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) ->
         links::auth::REQUEST_TOKEN,
         con_token,
         None,
-        Some(callback.into()),
-        None,
+        OAuthAddOn::Callback(callback.into()),
         None,
     );
 
@@ -765,8 +783,7 @@ pub async fn access_token<S: Into<String>>(
         links::auth::ACCESS_TOKEN,
         &con_token,
         Some(request_token),
-        None,
-        Some(verifier.into()),
+        OAuthAddOn::Verifier(verifier.into()),
         None,
     );
     let request = Request::post(links::auth::ACCESS_TOKEN)
