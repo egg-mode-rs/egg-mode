@@ -38,11 +38,11 @@ fn percent_encode(src: &str) -> PercentEncode {
 ///optional so a structured header can be passed to `sign()` for signature.
 #[derive(Clone, Debug)]
 struct TwitterOAuth {
-    consumer_key: String,
+    consumer_key: KeyPair,
     nonce: String,
     signature: Option<String>,
     timestamp: u64,
-    token: Option<String>,
+    token: Option<KeyPair>,
     addon: OAuthAddOn,
 }
 
@@ -78,7 +78,7 @@ impl fmt::Display for TwitterOAuth {
         write!(
             f,
             "oauth_consumer_key=\"{}\"",
-            percent_encode(&self.consumer_key)
+            percent_encode(&self.consumer_key.key)
         )?;
 
         write!(f, ", oauth_nonce=\"{}\"", percent_encode(&self.nonce))?;
@@ -96,7 +96,7 @@ impl fmt::Display for TwitterOAuth {
         write!(f, ", oauth_timestamp=\"{}\"", self.timestamp)?;
 
         if let Some(ref token) = self.token {
-            write!(f, ", oauth_token=\"{}\"", percent_encode(token))?;
+            write!(f, ", oauth_token=\"{}\"", percent_encode(&token.key))?;
         }
 
         write!(f, ", oauth_version=\"{}\"", "1.0")?;
@@ -344,19 +344,17 @@ fn sign(
     method: Method,
     uri: &str,
     params: Option<&ParamList>,
-    con_token: &KeyPair,
-    access_token: Option<&KeyPair>,
 ) -> TwitterOAuth {
     let query_string = {
         let sig_params = params
             .cloned()
             .unwrap_or_default()
-            .add_param("oauth_consumer_key", header.consumer_key.clone())
+            .add_param("oauth_consumer_key", header.consumer_key.key.clone())
             .add_param("oauth_nonce", header.nonce.clone())
             .add_param("oauth_signature_method", "HMAC-SHA1")
             .add_param("oauth_timestamp", format!("{}", header.timestamp.clone()))
             .add_param("oauth_version", "1.0")
-            .add_opt_param("oauth_token", header.token.clone())
+            .add_opt_param("oauth_token", header.token.clone().map(|k| k.key))
             .add_opt_param("oauth_callback", header.addon.as_callback().map(|s| s.to_string()))
             .add_opt_param("oauth_verifier", header.addon.as_verifier().map(|s| s.to_string()));
 
@@ -377,8 +375,8 @@ fn sign(
     );
     let key = format!(
         "{}&{}",
-        percent_encode(&con_token.secret),
-        percent_encode(&access_token.unwrap_or(&KeyPair::new("", "")).secret)
+        percent_encode(&header.consumer_key.secret),
+        percent_encode(&header.token.as_ref().unwrap_or(&KeyPair::new("", "")).secret)
     );
 
     // TODO check if key is correct length? Can this fail?
@@ -413,15 +411,15 @@ fn get_header(
         .take(32)
         .collect::<String>();
     let header = TwitterOAuth {
-        consumer_key: con_token.key.to_string(),
+        consumer_key: con_token.clone(),
         nonce,
         signature: None,
         timestamp: now_s,
-        token: access_token.map(|tok| tok.key.to_string()),
+        token: access_token.cloned(),
         addon,
     };
 
-    sign(header, method, uri, params, con_token, access_token)
+    sign(header, method, uri, params)
 }
 
 fn bearer_request(con_token: &KeyPair) -> String {
