@@ -47,6 +47,11 @@ struct TwitterOAuth {
 }
 
 impl TwitterOAuth {
+    /// Creates an empty `TwitterOAuth` header with a new `timestamp` and `nonce`.
+    ///
+    /// **Note**: This should only be used as part of another constructor that populates the tokens!
+    /// Attempting to sign a request with an empty consumer and access token will result in an
+    /// invalid request.
     fn empty() -> TwitterOAuth {
         let timestamp = match SystemTime::now().duration_since(UNIX_EPOCH) {
             Ok(dur) => dur,
@@ -68,6 +73,8 @@ impl TwitterOAuth {
         }
     }
 
+    /// Creates a new `TwitterOAuth` header with the consumer key and token filled from the given
+    /// `Token`.
     fn from_token(token: Token) -> TwitterOAuth {
         match token {
             Token::Access { consumer, access } => {
@@ -79,6 +86,10 @@ impl TwitterOAuth {
         }
     }
 
+    /// Creates a new `TwitterOAuth` header with the given keys. The `token` is optional
+    /// specifically for when you're generating a request token; otherwise it should be the request
+    /// token (for when you're generating an access token) or an access token (for when you're
+    /// requesting a regular API function).
     fn from_keys(consumer_key: KeyPair, token: Option<KeyPair>) -> TwitterOAuth {
         TwitterOAuth {
             consumer_key,
@@ -87,6 +98,10 @@ impl TwitterOAuth {
         }
     }
 
+    /// Adds the given callback to this `TwitterOAuth` header.
+    ///
+    /// Note that the `callback` and `verifier` parameters are mutually exclusive. If you call this
+    /// function after setting a verifier with `with_verifier`, it will overwrite the verifier.
     fn with_callback(self, callback: String) -> TwitterOAuth {
         TwitterOAuth {
             addon: OAuthAddOn::Callback(callback),
@@ -94,6 +109,10 @@ impl TwitterOAuth {
         }
     }
 
+    /// Adds the given verifier to this `TwitterOAuth` header.
+    ///
+    /// Note that the `callback` and `verifier` parameters are mutually exclusive. If you call this
+    /// function after setting a callback with `with_callback`, it will overwrite the callback.
     fn with_verifier(self, verifier: String) -> TwitterOAuth {
         TwitterOAuth {
             addon: OAuthAddOn::Verifier(verifier),
@@ -101,6 +120,8 @@ impl TwitterOAuth {
         }
     }
 
+    /// Uses the parameters in this `TwitterOAuth` instance to generate a signature for the given
+    /// request, saving it into this instance.
     fn sign_request(&mut self, method: Method, uri: &str, params: Option<&ParamList>) {
         let query_string = {
             let sig_params = params
@@ -144,14 +165,20 @@ impl TwitterOAuth {
     }
 }
 
+/// Represents an "addon" to an OAuth header.
 #[derive(Clone, Debug)]
 enum OAuthAddOn {
+    /// An `oauth_callback` parameter, used when generating a request token.
     Callback(String),
+    /// An `oauth_verifier` parameter, used when generating an access token.
     Verifier(String),
+    /// Neither an `oauth_callback` nor an `oauth_verifier` parameter are present in this header.
+    /// This is the default used when signing a regular API request.
     None,
 }
 
 impl OAuthAddOn {
+    /// Returns the `oauth_callback` parameter, if present.
     fn as_callback(&self) -> Option<&str> {
         match self {
             OAuthAddOn::Callback(c) => Some(c),
@@ -159,6 +186,7 @@ impl OAuthAddOn {
         }
     }
 
+    /// Returns the `oauth_verifier` parameter, if present.
     fn as_verifier(&self) -> Option<&str> {
         match self {
             OAuthAddOn::Verifier(v) => Some(v),
@@ -167,6 +195,8 @@ impl OAuthAddOn {
     }
 }
 
+/// The `Display` impl for `TwitterOAuth` formats it as an `Authorization` header for an HTTP
+/// request.
 impl fmt::Display for TwitterOAuth {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // authorization scheme
