@@ -31,19 +31,23 @@ fn percent_encode(src: &str) -> PercentEncode {
     utf8_percent_encode(src, &*ENCODER)
 }
 
-///OAuth header set given to Twitter calls.
-///
-///Since different authorization/authentication calls have various parameters that go into this
-///header, they're optionally placed at the end of this header.  On the other hand, `signature` is
-///optional so a structured header can be passed to `sign()` for signature.
+/// OAuth header set given to Twitter calls.
 #[derive(Clone, Debug)]
 struct TwitterOAuth {
+    /// The consumer key that represents the app making the API request.
     consumer_key: KeyPair,
-    nonce: String,
-    signature: Option<String>,
-    timestamp: u64,
+    /// The token that represents the user authorizing the request (or the access request
+    /// representing a user authorizing the app).
     token: Option<KeyPair>,
+    /// A random token representing the request itself. Used to de-duplicate requests on Twitter's
+    /// end.
+    nonce: String,
+    /// A Unix timestamp for when the request was created.
+    timestamp: u64,
+    /// A callback or verifier parameter, if necessary.
     addon: OAuthAddOn,
+    /// The result of signing a request with the other parameters.
+    signature: Option<String>,
 }
 
 impl TwitterOAuth {
@@ -65,11 +69,11 @@ impl TwitterOAuth {
             .collect::<String>();
         TwitterOAuth {
             consumer_key: KeyPair::empty(),
-            nonce,
-            signature: None,
-            timestamp,
             token: None,
+            nonce,
+            timestamp,
             addon: OAuthAddOn::None,
+            signature: None,
         }
     }
 
