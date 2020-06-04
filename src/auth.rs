@@ -74,19 +74,6 @@ impl TwitterOAuth {
         }
     }
 
-    /// Creates a new `TwitterOAuth` header with the consumer key and token filled from the given
-    /// `Token`.
-    fn from_token(token: Token) -> TwitterOAuth {
-        match token {
-            Token::Access { consumer, access } => {
-                TwitterOAuth::from_keys(consumer, Some(access))
-            }
-            _ => {
-                panic!("TwitterOAuth::from_token can only be called with an access token");
-            }
-        }
-    }
-
     /// Creates a new `TwitterOAuth` header with the given keys. The `token` is optional
     /// specifically for when you're generating a request token; otherwise it should be the request
     /// token (for when you're generating an access token) or an access token (for when you're
@@ -257,6 +244,37 @@ impl fmt::Display for SignedHeader {
 /// Formats an Authorization header as a Bearer scheme with the given token.
 fn bearer(token: &str) -> String {
     format!("Bearer {}", token)
+}
+
+enum AuthHeader {
+    AccessToken(TwitterOAuth),
+    Bearer(String),
+}
+
+impl From<Token> for AuthHeader {
+    fn from(token: Token) -> AuthHeader {
+        match token {
+            Token::Access { consumer, access } => {
+                AuthHeader::AccessToken(TwitterOAuth::from_keys(consumer, Some(access)))
+            }
+            Token::Bearer(b) => {
+                AuthHeader::Bearer(b)
+            }
+        }
+    }
+}
+
+impl AuthHeader {
+    fn sign_request(self, method: Method, uri: &str, params: Option<&ParamList>) -> String {
+        match self {
+            AuthHeader::AccessToken(oauth) => {
+                oauth.sign_request(method, uri, params).to_string()
+            }
+            AuthHeader::Bearer(b) => {
+                bearer(&b)
+            }
+        }
+    }
 }
 
 /// A key/secret pair representing an OAuth token.
@@ -508,15 +526,9 @@ pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body
         uri.to_string()
     };
 
-    let request = Request::get(full_url);
-    let request = match *token {
-        Token::Access { .. } => {
-            let header = TwitterOAuth::from_token(token.clone())
-                .sign_request(Method::GET, uri, params);
-            request.header(AUTHORIZATION, header.to_string())
-        }
-        Token::Bearer(ref token) => request.header(AUTHORIZATION, bearer(token)),
-    };
+    let request = Request::get(full_url)
+        .header(AUTHORIZATION,
+                AuthHeader::from(token.clone()).sign_request(Method::GET, uri, params));
 
     request.body(Body::empty()).unwrap()
 }
@@ -540,16 +552,11 @@ pub fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Bod
         Body::empty()
     };
 
-    let request = Request::post(uri).header(CONTENT_TYPE, content);
-
-    let request = match *token {
-        Token::Access { .. } => {
-            let header = TwitterOAuth::from_token(token.clone())
-                .sign_request(Method::POST, uri, params);
-            request.header(AUTHORIZATION, header.to_string())
-        }
-        Token::Bearer(ref token) => request.header(AUTHORIZATION, bearer(token)),
-    };
+    let request =
+        Request::post(uri)
+            .header(CONTENT_TYPE, content)
+            .header(AUTHORIZATION,
+                    AuthHeader::from(token.clone()).sign_request(Method::POST, uri, params));
 
     request.body(body).unwrap()
 }
@@ -565,16 +572,11 @@ pub fn post_json<B: serde::Serialize>(uri: &str, token: &Token, body: B) -> Requ
     let content = "application/json; charset=UTF-8";
     let body = Body::from(serde_json::to_string(&body).unwrap()); // TODO rewrite
 
-    let request = Request::post(uri).header(CONTENT_TYPE, content);
-
-    let request = match *token {
-        Token::Access { .. } => {
-            let header = TwitterOAuth::from_token(token.clone())
-                .sign_request(Method::POST, uri, None);
-            request.header(AUTHORIZATION, header.to_string())
-        }
-        Token::Bearer(ref token) => request.header(AUTHORIZATION, bearer(token)),
-    };
+    let request =
+        Request::post(uri)
+            .header(CONTENT_TYPE, content)
+            .header(AUTHORIZATION,
+                    AuthHeader::from(token.clone()).sign_request(Method::POST, uri, None));
 
     request.body(body).unwrap()
 }
