@@ -31,7 +31,7 @@ fn percent_encode(src: &str) -> PercentEncode {
     utf8_percent_encode(src, &*ENCODER)
 }
 
-/// OAuth header set given to Twitter calls.
+/// OAuth header set used to create an OAuth signature.
 #[derive(Clone, Debug)]
 struct TwitterOAuth {
     /// The consumer key that represents the app making the API request.
@@ -46,8 +46,6 @@ struct TwitterOAuth {
     timestamp: u64,
     /// A callback or verifier parameter, if necessary.
     addon: OAuthAddOn,
-    /// The result of signing a request with the other parameters.
-    signature: Option<String>,
 }
 
 impl TwitterOAuth {
@@ -73,7 +71,6 @@ impl TwitterOAuth {
             nonce,
             timestamp,
             addon: OAuthAddOn::None,
-            signature: None,
         }
     }
 
@@ -125,8 +122,8 @@ impl TwitterOAuth {
     }
 
     /// Uses the parameters in this `TwitterOAuth` instance to generate a signature for the given
-    /// request, saving it into this instance.
-    fn sign_request(&mut self, method: Method, uri: &str, params: Option<&ParamList>) {
+    /// request, returning it as a `SignedHeader`.
+    fn sign_request(self, method: Method, uri: &str, params: Option<&ParamList>) -> SignedHeader {
         let query_string = {
             let sig_params = params
                 .cloned()
@@ -165,7 +162,10 @@ impl TwitterOAuth {
         let mut digest = Hmac::<Sha1>::new_varkey(key.as_bytes()).expect("Wrong key length");
         digest.input(base_str.as_bytes());
 
-        self.signature = Some(base64::encode(&digest.result().code()));
+        SignedHeader {
+            params: self,
+            signature: base64::encode(&digest.result().code()),
+        }
     }
 }
 
@@ -199,9 +199,18 @@ impl OAuthAddOn {
     }
 }
 
-/// The `Display` impl for `TwitterOAuth` formats it as an `Authorization` header for an HTTP
+/// A set of `TwitterOAuth` parameters combined with a request signature, ready to be attached to a
 /// request.
-impl fmt::Display for TwitterOAuth {
+struct SignedHeader {
+    /// The OAuth parameters used to create the signature.
+    params: TwitterOAuth,
+    /// The signature for an associated request.
+    signature: String,
+}
+
+/// The `Display` impl for `SignedHeader` formats it as an `Authorization` header for an HTTP
+/// request.
+impl fmt::Display for SignedHeader {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // authorization scheme
         write!(f, "OAuth ")?;
@@ -210,14 +219,12 @@ impl fmt::Display for TwitterOAuth {
         write!(
             f,
             "oauth_consumer_key=\"{}\"",
-            percent_encode(&self.consumer_key.key)
+            percent_encode(&self.params.consumer_key.key)
         )?;
 
-        write!(f, ", oauth_nonce=\"{}\"", percent_encode(&self.nonce))?;
+        write!(f, ", oauth_nonce=\"{}\"", percent_encode(&self.params.nonce))?;
 
-        if let Some(ref signature) = self.signature {
-            write!(f, ", oauth_signature=\"{}\"", percent_encode(signature))?;
-        }
+        write!(f, ", oauth_signature=\"{}\"", percent_encode(&self.signature))?;
 
         write!(
             f,
@@ -225,15 +232,15 @@ impl fmt::Display for TwitterOAuth {
             percent_encode("HMAC-SHA1")
         )?;
 
-        write!(f, ", oauth_timestamp=\"{}\"", self.timestamp)?;
+        write!(f, ", oauth_timestamp=\"{}\"", self.params.timestamp)?;
 
-        if let Some(ref token) = self.token {
+        if let Some(ref token) = self.params.token {
             write!(f, ", oauth_token=\"{}\"", percent_encode(&token.key))?;
         }
 
         write!(f, ", oauth_version=\"{}\"", "1.0")?;
 
-        match self.addon {
+        match self.params.addon {
             OAuthAddOn::Callback(ref callback) => {
                 write!(f, ", oauth_callback=\"{}\"", percent_encode(callback))?;
             }
@@ -504,8 +511,8 @@ pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body
     let request = Request::get(full_url);
     let request = match *token {
         Token::Access { .. } => {
-            let mut header = TwitterOAuth::from_token(token.clone());
-            header.sign_request(Method::GET, uri, params);
+            let header = TwitterOAuth::from_token(token.clone())
+                .sign_request(Method::GET, uri, params);
             request.header(AUTHORIZATION, header.to_string())
         }
         Token::Bearer(ref token) => request.header(AUTHORIZATION, bearer(token)),
@@ -537,8 +544,8 @@ pub fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Bod
 
     let request = match *token {
         Token::Access { .. } => {
-            let mut header = TwitterOAuth::from_token(token.clone());
-            header.sign_request(Method::POST, uri, params);
+            let header = TwitterOAuth::from_token(token.clone())
+                .sign_request(Method::POST, uri, params);
             request.header(AUTHORIZATION, header.to_string())
         }
         Token::Bearer(ref token) => request.header(AUTHORIZATION, bearer(token)),
@@ -562,8 +569,8 @@ pub fn post_json<B: serde::Serialize>(uri: &str, token: &Token, body: B) -> Requ
 
     let request = match *token {
         Token::Access { .. } => {
-            let mut header = TwitterOAuth::from_token(token.clone());
-            header.sign_request(Method::POST, uri, None);
+            let header = TwitterOAuth::from_token(token.clone())
+                .sign_request(Method::POST, uri, None);
             request.header(AUTHORIZATION, header.to_string())
         }
         Token::Bearer(ref token) => request.header(AUTHORIZATION, bearer(token)),
@@ -624,9 +631,9 @@ pub fn post_json<B: serde::Serialize>(uri: &str, token: &Token, body: B) -> Requ
 /// # }
 /// ```
 pub async fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Result<KeyPair> {
-    let mut header = TwitterOAuth::from_keys(con_token.clone(), None)
-        .with_callback(callback.into());
-    header.sign_request(Method::POST, links::auth::REQUEST_TOKEN, None);
+    let header = TwitterOAuth::from_keys(con_token.clone(), None)
+        .with_callback(callback.into())
+        .sign_request(Method::POST, links::auth::REQUEST_TOKEN, None);
 
     let request = Request::post(links::auth::REQUEST_TOKEN)
         .header(AUTHORIZATION, header.to_string())
@@ -797,9 +804,9 @@ pub async fn access_token<S: Into<String>>(
     request_token: &KeyPair,
     verifier: S,
 ) -> Result<(Token, u64, String)> {
-    let mut header = TwitterOAuth::from_keys(con_token.clone(), Some(request_token.clone()))
-        .with_verifier(verifier.into());
-    header.sign_request(Method::POST, links::auth::ACCESS_TOKEN, None);
+    let header = TwitterOAuth::from_keys(con_token.clone(), Some(request_token.clone()))
+        .with_verifier(verifier.into())
+        .sign_request(Method::POST, links::auth::ACCESS_TOKEN, None);
 
     let request = Request::post(links::auth::ACCESS_TOKEN)
         .header(AUTHORIZATION, header.to_string())
