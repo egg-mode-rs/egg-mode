@@ -46,6 +46,86 @@ struct TwitterOAuth {
     addon: OAuthAddOn,
 }
 
+impl TwitterOAuth {
+    fn empty() -> TwitterOAuth {
+        let timestamp = match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(dur) => dur,
+            Err(err) => err.duration(),
+        }
+        .as_secs();
+        let mut rng = rand::thread_rng();
+        let nonce = ::std::iter::repeat(())
+            .map(|()| rng.sample(rand::distributions::Alphanumeric))
+            .take(32)
+            .collect::<String>();
+        TwitterOAuth {
+            consumer_key: KeyPair::empty(),
+            nonce,
+            signature: None,
+            timestamp,
+            token: None,
+            addon: OAuthAddOn::None,
+        }
+    }
+
+    fn from_keys(consumer_key: KeyPair, token: Option<KeyPair>) -> TwitterOAuth {
+        TwitterOAuth {
+            consumer_key,
+            token,
+            ..TwitterOAuth::empty()
+        }
+    }
+
+    fn with_addon(self, addon: OAuthAddOn) -> TwitterOAuth {
+        TwitterOAuth {
+            addon,
+            ..self
+        }
+    }
+
+    fn sign_request(&mut self, method: Method, uri: &str, params: Option<&ParamList>) {
+        let query_string = {
+            let sig_params = params
+                .cloned()
+                .unwrap_or_default()
+                .add_param("oauth_consumer_key", self.consumer_key.key.clone())
+                .add_param("oauth_nonce", self.nonce.clone())
+                .add_param("oauth_signature_method", "HMAC-SHA1")
+                .add_param("oauth_timestamp", format!("{}", self.timestamp.clone()))
+                .add_param("oauth_version", "1.0")
+                .add_opt_param("oauth_token", self.token.clone().map(|k| k.key))
+                .add_opt_param("oauth_callback", self.addon.as_callback().map(|s| s.to_string()))
+                .add_opt_param("oauth_verifier", self.addon.as_verifier().map(|s| s.to_string()));
+
+            let mut query = sig_params
+                .iter()
+                .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
+                .collect::<Vec<_>>();
+            query.sort();
+
+            query.join("&")
+        };
+
+        let base_str = format!(
+            "{}&{}&{}",
+            percent_encode(method.as_str()),
+            percent_encode(uri),
+            percent_encode(&query_string)
+        );
+        let key = format!(
+            "{}&{}",
+            percent_encode(&self.consumer_key.secret),
+            percent_encode(&self.token.as_ref().unwrap_or(&KeyPair::new("", "")).secret)
+        );
+
+        // TODO check if key is correct length? Can this fail?
+        let mut digest = Hmac::<Sha1>::new_varkey(key.as_bytes()).expect("Wrong key length");
+        digest.input(base_str.as_bytes());
+
+        self.signature = Some(base64::encode(&digest.result().code()));
+    }
+}
+
 #[derive(Clone, Debug)]
 enum OAuthAddOn {
     Callback(String),
@@ -155,6 +235,14 @@ impl KeyPair {
         KeyPair {
             key: key.into(),
             secret: secret.into(),
+        }
+    }
+
+    /// Internal function to create an empty KeyPair. Not meant to be used from user code.
+    fn empty() -> KeyPair {
+        KeyPair {
+            key: "".into(),
+            secret: "".into(),
         }
     }
 }
@@ -337,60 +425,6 @@ pub enum Token {
     Bearer(String),
 }
 
-///With the given OAuth header and method parameters, create an OAuth signature and return the
-///header with the signature inline.
-fn sign(
-    header: TwitterOAuth,
-    method: Method,
-    uri: &str,
-    params: Option<&ParamList>,
-) -> TwitterOAuth {
-    let query_string = {
-        let sig_params = params
-            .cloned()
-            .unwrap_or_default()
-            .add_param("oauth_consumer_key", header.consumer_key.key.clone())
-            .add_param("oauth_nonce", header.nonce.clone())
-            .add_param("oauth_signature_method", "HMAC-SHA1")
-            .add_param("oauth_timestamp", format!("{}", header.timestamp.clone()))
-            .add_param("oauth_version", "1.0")
-            .add_opt_param("oauth_token", header.token.clone().map(|k| k.key))
-            .add_opt_param("oauth_callback", header.addon.as_callback().map(|s| s.to_string()))
-            .add_opt_param("oauth_verifier", header.addon.as_verifier().map(|s| s.to_string()));
-
-        let mut query = sig_params
-            .iter()
-            .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
-            .collect::<Vec<_>>();
-        query.sort();
-
-        query.join("&")
-    };
-
-    let base_str = format!(
-        "{}&{}&{}",
-        percent_encode(method.as_str()),
-        percent_encode(uri),
-        percent_encode(&query_string)
-    );
-    let key = format!(
-        "{}&{}",
-        percent_encode(&header.consumer_key.secret),
-        percent_encode(&header.token.as_ref().unwrap_or(&KeyPair::new("", "")).secret)
-    );
-
-    // TODO check if key is correct length? Can this fail?
-    let mut digest = Hmac::<Sha1>::new_varkey(key.as_bytes()).expect("Wrong key length");
-    digest.input(base_str.as_bytes());
-
-    let signature = Some(base64::encode(&digest.result().code()));
-
-    TwitterOAuth {
-        signature,
-        ..header
-    }
-}
-
 ///With the given method parameters, return a signed OAuth header.
 fn get_header(
     method: Method,
@@ -400,26 +434,12 @@ fn get_header(
     addon: OAuthAddOn,
     params: Option<&ParamList>,
 ) -> TwitterOAuth {
-    let now_s = match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(dur) => dur,
-        Err(err) => err.duration(),
-    }
-    .as_secs();
-    let mut rng = rand::thread_rng();
-    let nonce = ::std::iter::repeat(())
-        .map(|()| rng.sample(rand::distributions::Alphanumeric))
-        .take(32)
-        .collect::<String>();
-    let header = TwitterOAuth {
-        consumer_key: con_token.clone(),
-        nonce,
-        signature: None,
-        timestamp: now_s,
-        token: access_token.cloned(),
-        addon,
-    };
+    let mut header = TwitterOAuth::from_keys(con_token.clone(), access_token.cloned())
+        .with_addon(addon);
 
-    sign(header, method, uri, params)
+    header.sign_request(method, uri, params);
+
+    header
 }
 
 fn bearer_request(con_token: &KeyPair) -> String {
