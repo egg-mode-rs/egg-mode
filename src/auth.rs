@@ -285,6 +285,16 @@ impl AuthHeader {
     }
 }
 
+/// Creates a basic `Authorization` header based on the given consumer token.
+///
+/// The authorization created by this function can only be used with requests to generate or
+/// invalidate a bearer token. Using this authorization with any other endpoint will result in an
+/// invalid request.
+fn bearer_request(con_token: &KeyPair) -> String {
+    let text = format!("{}:{}", con_token.key, con_token.secret);
+    format!("Basic {}", base64::encode(&text))
+}
+
 /// A key/secret pair representing an OAuth token.
 ///
 /// This struct is used as part of the authentication process. You'll need to manually create at
@@ -508,11 +518,6 @@ pub enum Token {
     ///An OAuth Bearer token indicating the request is coming from the application itself, not a
     ///particular user.
     Bearer(String),
-}
-
-fn bearer_request(con_token: &KeyPair) -> String {
-    let text = format!("{}:{}", con_token.key, con_token.secret);
-    format!("Basic {}", base64::encode(&text))
 }
 
 // n.b. this function is re-exported in the `raw` module - these docs are public!
