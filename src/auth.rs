@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 //! Types and methods used to authenticate calls to Twitter.
 //!
 //! This module is meant to be internal, since the OAuth mechanisms are fairly specific to Twitter.
