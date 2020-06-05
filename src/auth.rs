@@ -241,11 +241,6 @@ impl fmt::Display for SignedHeader {
     }
 }
 
-/// Formats an Authorization header as a Bearer scheme with the given token.
-fn bearer(token: &str) -> String {
-    format!("Bearer {}", token)
-}
-
 enum AuthHeader {
     AccessToken(TwitterOAuth),
     Bearer(String),
@@ -271,7 +266,7 @@ impl AuthHeader {
                 oauth.sign_request(method, uri, params).to_string()
             }
             AuthHeader::Bearer(b) => {
-                bearer(&b)
+                format!("Bearer {}", b)
             }
         }
     }
