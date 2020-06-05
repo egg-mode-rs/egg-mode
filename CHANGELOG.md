@@ -8,6 +8,12 @@
   - New type `ParamList` to represent a list of parameters to an API call
   - New `raw` example showing how to pull the raw JSON from fetching a tweet
 
+### Changed
+- The repository has moved! Egg-mode's new home is now at `egg-mode-rs/egg-mode`
+- The official documentation links have moved to Docs.rs
+- egg-mode's custom `Future`s now implement `Send`: https://github.com/egg-mode-rs/egg-mode/pull/87
+  - Thanks @kuretchi for the report and PR!
+
 ## [0.14.0]
 
 This release has a lot of important changes!
