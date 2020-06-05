@@ -23,7 +23,17 @@ use crate::{
     links,
 };
 
-//the encode sets in the url crate don't quite match what twitter wants, so i'll make up my own
+/// Percent-encodes the given string based on the Twitter API specification.
+///
+/// Twitter bases its encoding scheme on RFC 3986, Section 2.1. They describe the process in full
+/// [in their documentation][twitter-percent], but the process can be summarized by saying that
+/// every *byte* that is not an ASCII number or letter, or the ASCII characters `-`, `.`, `_`, or
+/// `~` must be replaced with a percent sign (`%`) and the byte value in hexadecimal.
+///
+/// [twitter-percent]: https://developer.twitter.com/en/docs/basics/authentication/oauth-1-0a/percent-encoding-parameters
+///
+/// When this function was originally implemented, the `percent_encoding` crate did not have an
+/// encoding set that matched this, so it was recreated here.
 fn percent_encode(src: &str) -> PercentEncode {
     lazy_static::lazy_static! {
         static ref ENCODER: AsciiSet = percent_encoding::NON_ALPHANUMERIC.remove(b'-').remove(b'.').remove(b'_').remove(b'~');
