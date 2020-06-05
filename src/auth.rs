@@ -407,8 +407,13 @@ fn bearer_request(con_token: &KeyPair) -> String {
     format!("Basic {}", base64::encode(&text))
 }
 
+// n.b. this function is re-exported in the `raw` module - these docs are public!
 /// Assemble a signed GET request to the given URL with the given parameters.
-pub(crate) fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
+///
+/// The given parameters, if present, will be appended to the given `uri` as a percent-encoded
+/// query string. If the given `token` is not a Bearer token, the parameters will also be used to
+/// create the OAuth signature.
+pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
     let full_url = if let Some(p) = params {
         let query = p
             .iter()
@@ -444,8 +449,13 @@ pub(crate) fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Reque
     request.body(Body::empty()).unwrap()
 }
 
+// n.b. this function is re-exported in the `raw` module - these docs are public!
 /// Assemble a signed POST request to the given URL with the given parameters.
-pub(crate) fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
+///
+/// The given parameters, if present, will be percent-encoded and included in the POST body
+/// formatted with a content-type of `application/x-www-form-urlencoded`. If the given `token` is
+/// not a Bearer token, the parameters will also be used to create the OAuth signature.
+pub fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
     let content = "application/x-www-form-urlencoded";
     let body = if let Some(p) = params {
         Body::from(
@@ -483,7 +493,13 @@ pub(crate) fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Requ
     request.body(body).unwrap()
 }
 
+// n.b. this function is re-exported in the `raw` module - these docs are public!
 /// Assemble a signed POST request to the given URL with the given JSON body.
+///
+/// This method of building requests allows you to use endpoints that require a request body of
+/// plain text or JSON, like `POST media/metadata/create`. Note that this function does not encode
+/// its parameters into the OAuth signature, so take care if the endpoint you're using lists
+/// parameters as part of its specification.
 pub fn post_json<B: serde::Serialize>(uri: &str, token: &Token, body: B) -> Request<Body> {
     let content = "application/json; charset=UTF-8";
     let body = Body::from(serde_json::to_string(&body).unwrap()); // TODO rewrite

@@ -27,7 +27,7 @@
 //! `add_param` is a basic function that turns its arguments into `Cow<'static, str>`, then inserts them
 //! as a parameter into the given `ParamList`.
 //!
-//! `add_name_param` provides some special handling for the `UserID` enum, since Twitter always
+//! `add_user_param` provides some special handling for the `UserID` enum, since Twitter always
 //! handles user parameters the same way: either as a `"user_id"` parameter with the ID, or as a
 //! `"screen_name"` parameter with the screen name. Since that's also how the `UserID` enum is laid
 //! out, this just puts the right parameter into the given `ParamList`.
@@ -99,24 +99,53 @@ mod response;
 pub use crate::common::response::*;
 use crate::{error, list, user};
 
+// n.b. this type alias is re-exported in the `raw` module - these docs are public!
+/// A set of headers returned with a response.
 pub type Headers = HeaderMap<HeaderValue>;
-pub(crate) type CowStr = Cow<'static, str>;
+pub type CowStr = Cow<'static, str>;
 
-///Convenience type used to hold parameters to an API call.
+// n.b. this type is re-exported in the `raw` module - these docs are public!
+/// Represents a list of parameters to a Twitter API call.
+///
+/// This type is a wrapper around a `HashMap<Cow<'static, str>, Cow<'static, str>>` to collect a
+/// set of parameter key/value pairs. These are then used to assemble and sign a Twitter API
+/// request. The `Cow` type is used to avoid having to allocate a `String` if a string literal is
+/// used for a parameter. All the functions that add parameters to this `ParamList` accept `impl
+/// Into<Cow<'static, str>>`, meaning that either a string literal or an owned `String` may be
+/// used.
+///
+/// Most of the functions to add parameters follow a builder pattern, so that you can assemble a
+/// `ParamList` in a single statement:
+///
+/// ```
+/// use egg_mode::raw::ParamList;
+///
+/// // If you were looking up the user `@rustlang` with `GET users/show`, you might assemble a
+/// // ParamList like this...
+/// let params = ParamList::new()
+///     .extended_tweets()
+///     .add_user_param("rustlang".into());
+/// ```
 #[derive(Debug, Clone, Default, derive_more::Deref, derive_more::DerefMut, derive_more::From)]
-pub(crate) struct ParamList(HashMap<Cow<'static, str>, Cow<'static, str>>);
+pub struct ParamList(HashMap<Cow<'static, str>, Cow<'static, str>>);
 
 impl ParamList {
-    pub(crate) fn new() -> Self {
+    /// Creates a new, empty `ParamList`.
+    pub fn new() -> Self {
         Self(HashMap::new())
     }
 
-    pub(crate) fn extended_tweets(self) -> Self {
+    /// Adds the `tweet_mode=extended` parameter to this `ParamList`. Not including this parameter
+    /// will cause tweets to be loaded with legacy parameters, and a potentially-truncated `text`
+    /// if the tweet is longer than 140 characters. The `Deserialize` impl for `Tweet`s (or
+    /// anything that directly or indirectly includes a `Tweet`) expects the extended tweet format
+    /// enabled by this function.
+    pub fn extended_tweets(self) -> Self {
         self.add_param("tweet_mode", "extended")
     }
 
-    ///Convenience function to add a key/value parameter to a `ParamList`.
-    pub(crate) fn add_param(
+    /// Adds the given key/value parameter to this `ParamList`.
+    pub fn add_param(
         mut self,
         key: impl Into<Cow<'static, str>>,
         value: impl Into<Cow<'static, str>>,
@@ -125,8 +154,12 @@ impl ParamList {
         self
     }
 
-    ///Convenience function to add a key/value parameter to a `ParamList`.
-    pub(crate) fn add_opt_param(
+    /// Adds the given key/value parameter to this `ParamList` only if the given value is `Some`.
+    ///
+    /// This can be a convenient wrapper to use in case you may or may not want to include
+    /// something based on some condition. If the given value is `None`, then the `ParamList` is
+    /// returned unmodified.
+    pub fn add_opt_param(
         self,
         key: impl Into<Cow<'static, str>>,
         value: Option<impl Into<Cow<'static, str>>>,
@@ -137,8 +170,9 @@ impl ParamList {
         }
     }
 
-    ///Convenience function to add a key/value parameter to a `ParamList` without moving.
-    pub(crate) fn add_param_ref(
+    /// Adds the given key/value to this `ParamList` by mutating it in place, rather than consuming
+    /// it as in `add_param`.
+    pub fn add_param_ref(
         &mut self,
         key: impl Into<Cow<'static, str>>,
         value: impl Into<Cow<'static, str>>,
@@ -146,14 +180,18 @@ impl ParamList {
         self.0.insert(key.into(), value.into());
     }
 
-    pub(crate) fn add_name_param(self, id: user::UserID) -> Self {
+    /// Adds the given `UserID` as a parameter to this `ParamList` by adding either a `user_id` or
+    /// `screen_name` parameter as appropriate.
+    pub fn add_user_param(self, id: user::UserID) -> Self {
         match id {
             user::UserID::ID(id) => self.add_param("user_id", id.to_string()),
             user::UserID::ScreenName(name) => self.add_param("screen_name", name),
         }
     }
 
-    pub(crate) fn add_list_param(mut self, list: list::ListID) -> Self {
+    /// Adds the given `ListID` as a parameter to this `ParamList` by adding either an
+    /// `owner_id`/`owner_screen_name` and `slug` pair, or a `list_id`, as appropriate.
+    pub fn add_list_param(mut self, list: list::ListID) -> Self {
         match list {
             list::ListID::Slug(owner, name) => {
                 match owner {
