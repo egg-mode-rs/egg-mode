@@ -1,5 +1,13 @@
 # Changelog for egg-mode
 
+## Pending
+
+### Added
+- New module `raw`, for binding APIs that egg-mode doesn't wrap
+  - Various `request_*` and `response_*` functions to assemble and execute signed API requests
+  - New type `ParamList` to represent a list of parameters to an API call
+  - New `raw` example showing how to pull the raw JSON from fetching a tweet
+
 ## [0.14.0]
 
 This release has a lot of important changes!
