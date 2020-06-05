@@ -27,7 +27,7 @@
 //! `add_param` is a basic function that turns its arguments into `Cow<'static, str>`, then inserts them
 //! as a parameter into the given `ParamList`.
 //!
-//! `add_name_param` provides some special handling for the `UserID` enum, since Twitter always
+//! `add_user_param` provides some special handling for the `UserID` enum, since Twitter always
 //! handles user parameters the same way: either as a `"user_id"` parameter with the ID, or as a
 //! `"screen_name"` parameter with the screen name. Since that's also how the `UserID` enum is laid
 //! out, this just puts the right parameter into the given `ParamList`.
@@ -124,7 +124,7 @@ pub type CowStr = Cow<'static, str>;
 /// // ParamList like this...
 /// let params = ParamList::new()
 ///     .extended_tweets()
-///     .add_name_param("rustlang".into());
+///     .add_user_param("rustlang".into());
 /// ```
 #[derive(Debug, Clone, Default, derive_more::Deref, derive_more::DerefMut, derive_more::From)]
 pub struct ParamList(HashMap<Cow<'static, str>, Cow<'static, str>>);
@@ -182,7 +182,7 @@ impl ParamList {
 
     /// Adds the given `UserID` as a parameter to this `ParamList` by adding either a `user_id` or
     /// `screen_name` parameter as appropriate.
-    pub fn add_name_param(self, id: user::UserID) -> Self {
+    pub fn add_user_param(self, id: user::UserID) -> Self {
         match id {
             user::UserID::ID(id) => self.add_param("user_id", id.to_string()),
             user::UserID::ScreenName(name) => self.add_param("screen_name", name),
