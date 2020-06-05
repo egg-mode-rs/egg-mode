@@ -99,6 +99,7 @@ mod response;
 pub use crate::common::response::*;
 use crate::{error, list, user};
 
+// n.b. this type alias is re-exported in the `raw` module - these docs are public!
 /// A set of headers returned with a response.
 pub type Headers = HeaderMap<HeaderValue>;
 pub type CowStr = Cow<'static, str>;
@@ -136,7 +137,9 @@ impl ParamList {
 
     /// Adds the `tweet_mode=extended` parameter to this `ParamList`. Not including this parameter
     /// will cause tweets to be loaded with legacy parameters, and a potentially-truncated `text`
-    /// if the tweet is longer than 140 characters.
+    /// if the tweet is longer than 140 characters. The `Deserialize` impl for `Tweet`s (or
+    /// anything that directly or indirectly includes a `Tweet`) expects the extended tweet format
+    /// enabled by this function.
     pub fn extended_tweets(self) -> Self {
         self.add_param("tweet_mode", "extended")
     }

@@ -44,6 +44,7 @@ fn rate_limit_reset(headers: &Headers) -> Result<Option<i32>> {
     rate_limit(headers, X_RATE_LIMIT_RESET)
 }
 
+// n.b. this type is re-exported at the crate root - these docs are public!
 ///A helper struct to wrap response data with accompanying rate limit information.
 ///
 ///This is returned by any function that calls a rate-limited method on Twitter, to allow for
@@ -83,6 +84,7 @@ impl<T> Response<T> {
     }
 }
 
+// n.b. this function is re-exported in the `raw` module - these docs are public!
 /// Converts the given request into a raw `ResponseFuture` from hyper.
 pub fn get_response(request: Request<Body>) -> ResponseFuture {
     let connector = HttpsConnector::new();
@@ -90,6 +92,7 @@ pub fn get_response(request: Request<Body>) -> ResponseFuture {
     client.request(request)
 }
 
+// n.b. this function is re-exported in the `raw` module - these docs are public!
 /// Loads the given request, parses the headers and response for potential errors given by Twitter,
 /// and returns the headers and raw bytes returned from the response.
 pub async fn raw_request(request: Request<Body>) -> Result<(Headers, Vec<u8>)> {
@@ -113,6 +116,7 @@ pub async fn raw_request(request: Request<Body>) -> Result<(Headers, Vec<u8>)> {
     Ok((parts.headers, body))
 }
 
+// n.b. this function is re-exported in the `raw` module - these docs are public!
 /// Loads the given request and parses the response as JSON into the given type, including
 /// rate-limit headers.
 pub async fn request_with_json_response<T: DeserializeOwned>(
