@@ -20,7 +20,7 @@
 //! part of the API call. This also means that the URL you give to the request functions should be
 //! the base URL, with no parameters.
 //!
-//! [`Token`]: ../enum.Token.html
+//! [`Token`]: ../auth/enum.Token.html
 //! [`ParamList`]: struct.ParamList.html
 //!
 //! There are three basic request functions, based on how the endpoint expects to be called:
