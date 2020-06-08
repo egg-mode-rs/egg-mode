@@ -56,7 +56,7 @@ use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use serde_json;
 
-use crate::auth::{self, Token};
+use crate::auth::Token;
 use crate::common::*;
 use crate::tweet::Tweet;
 use crate::{error, links};
@@ -468,7 +468,7 @@ impl StreamBuilder {
             params.add_param_ref("locations", locs);
         }
 
-        let req = auth::post(self.url, token, Some(&params));
+        let req = post(self.url, token, Some(&params));
 
         TwitterStream::new(req)
     }
@@ -489,7 +489,7 @@ pub fn filter() -> StreamBuilder {
 /// [`StreamBuilder`]: struct.StreamBuilder.html
 /// [`filter`]: fn.filter.html
 pub fn sample(token: &Token) -> TwitterStream {
-    let req = auth::get(links::stream::SAMPLE, token, None);
+    let req = get(links::stream::SAMPLE, token, None);
     TwitterStream::new(req)
 }
 

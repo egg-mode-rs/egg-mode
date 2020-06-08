@@ -85,7 +85,7 @@ where
         .add_param("user_id", id_param)
         .add_param("screen_name", name_param);
 
-    let req = auth::post(links::users::LOOKUP, token, Some(&params));
+    let req = post(links::users::LOOKUP, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -96,7 +96,7 @@ pub async fn show<T: Into<UserID>>(acct: T, token: &auth::Token) -> Result<Respo
         .extended_tweets()
         .add_user_param(acct.into());
 
-    let req = auth::get(links::users::SHOW, token, Some(&params));
+    let req = get(links::users::SHOW, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -105,7 +105,7 @@ pub async fn show<T: Into<UserID>>(acct: T, token: &auth::Token) -> Result<Respo
 ///
 /// Use `update_follow` to enable/disable viewing retweets from a specific user.
 pub async fn friends_no_retweets(token: &auth::Token) -> Result<Response<Vec<u64>>> {
-    let req = auth::get(links::users::FRIENDS_NO_RETWEETS, token, None);
+    let req = get(links::users::FRIENDS_NO_RETWEETS, token, None);
 
     request_with_json_response(req).await
 }
@@ -125,7 +125,7 @@ where
         UserID::ScreenName(name) => params.add_param_ref("target_screen_name", name),
     };
 
-    let req = auth::get(links::users::FRIENDSHIP_SHOW, token, Some(&params));
+    let req = get(links::users::FRIENDSHIP_SHOW, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -145,7 +145,7 @@ where
         .add_param("user_id", id_param)
         .add_param("screen_name", name_param);
 
-    let req = auth::get(links::users::FRIENDSHIP_LOOKUP, token, Some(&params));
+    let req = get(links::users::FRIENDSHIP_LOOKUP, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -304,7 +304,7 @@ pub async fn follow<T: Into<UserID>>(
         .extended_tweets()
         .add_user_param(acct.into())
         .add_param("follow", notifications.to_string());
-    let req = auth::post(links::users::FOLLOW, token, Some(&params));
+    let req = post(links::users::FOLLOW, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -321,7 +321,7 @@ pub async fn unfollow<T: Into<UserID>>(
     let params = ParamList::new()
         .extended_tweets()
         .add_user_param(acct.into());
-    let req = auth::post(links::users::UNFOLLOW, token, Some(&params));
+    let req = post(links::users::UNFOLLOW, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -344,7 +344,7 @@ where
         .add_user_param(acct.into())
         .add_opt_param("device", notifications.map(|v| v.to_string()))
         .add_opt_param("retweets", retweets.map(|v| v.to_string()));
-    let req = auth::post(links::users::FRIENDSHIP_UPDATE, token, Some(&params));
+    let req = post(links::users::FRIENDSHIP_UPDATE, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -355,7 +355,7 @@ pub async fn block<T: Into<UserID>>(acct: T, token: &auth::Token) -> Result<Resp
     let params = ParamList::new()
         .extended_tweets()
         .add_user_param(acct.into());
-    let req = auth::post(links::users::BLOCK, token, Some(&params));
+    let req = post(links::users::BLOCK, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -369,7 +369,7 @@ pub async fn report_spam<T: Into<UserID>>(
     let params = ParamList::new()
         .extended_tweets()
         .add_user_param(acct.into());
-    let req = auth::post(links::users::REPORT_SPAM, token, Some(&params));
+    let req = post(links::users::REPORT_SPAM, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -383,7 +383,7 @@ pub async fn unblock<T: Into<UserID>>(
     let params = ParamList::new()
         .extended_tweets()
         .add_user_param(acct.into());
-    let req = auth::post(links::users::UNBLOCK, token, Some(&params));
+    let req = post(links::users::UNBLOCK, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -394,7 +394,7 @@ pub async fn mute<T: Into<UserID>>(acct: T, token: &auth::Token) -> Result<Respo
     let params = ParamList::new()
         .extended_tweets()
         .add_user_param(acct.into());
-    let req = auth::post(links::users::MUTE, token, Some(&params));
+    let req = post(links::users::MUTE, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -408,6 +408,6 @@ pub async fn unmute<T: Into<UserID>>(
     let params = ParamList::new()
         .extended_tweets()
         .add_user_param(acct.into());
-    let req = auth::post(links::users::UNMUTE, token, Some(&params));
+    let req = post(links::users::UNMUTE, token, Some(&params));
     request_with_json_response(req).await
 }

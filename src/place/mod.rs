@@ -204,7 +204,7 @@ impl GeocodeBuilder {
                 }),
             );
 
-        let req = auth::get(links::place::REVERSE_GEOCODE, token, Some(&params));
+        let req = get(links::place::REVERSE_GEOCODE, token, Some(&params));
         request_with_json_response(req).await
     }
 }
@@ -329,7 +329,7 @@ impl SearchBuilder {
             }
         }
 
-        let req = auth::get(links::place::SEARCH, token, Some(&params));
+        let req = get(links::place::SEARCH, token, Some(&params));
         request_with_json_response(req).await
     }
 }

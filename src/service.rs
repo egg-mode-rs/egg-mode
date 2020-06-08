@@ -36,7 +36,7 @@ use crate::{auth, entities, links};
 ///While the official home of Twitter's TOS is <https://twitter.com/tos>, this allows you to obtain a
 ///plain-text copy of it to display in your application.
 pub async fn terms(token: &auth::Token) -> Result<Response<String>> {
-    let req = auth::get(links::service::TERMS, token, None);
+    let req = get(links::service::TERMS, token, None);
 
     let ret = request_with_json_response::<serde_json::Value>(req).await?;
 
@@ -54,7 +54,7 @@ pub async fn terms(token: &auth::Token) -> Result<Response<String>> {
 ///While the official home of Twitter's Privacy Policy is <https://twitter.com/privacy>, this allows
 ///you to obtain a plain-text copy of it to display in your application.
 pub async fn privacy(token: &auth::Token) -> Result<Response<String>> {
-    let req = auth::get(links::service::PRIVACY, token, None);
+    let req = get(links::service::PRIVACY, token, None);
 
     let ret = request_with_json_response::<serde_json::Value>(req).await?;
 
@@ -78,7 +78,7 @@ pub async fn privacy(token: &auth::Token) -> Result<Response<String>> {
 ///
 ///[`Configuration`]: struct.Configuration.html
 pub async fn config(token: &auth::Token) -> Result<Response<Configuration>> {
-    let req = auth::get(links::service::CONFIG, token, None);
+    let req = get(links::service::CONFIG, token, None);
     request_with_json_response(req).await
 }
 
@@ -90,7 +90,7 @@ pub async fn config(token: &auth::Token) -> Result<Response<Configuration>> {
 ///
 ///[`RateLimitStatus`]: struct.RateLimitStatus.html
 pub async fn rate_limit_status(token: &auth::Token) -> Result<Response<RateLimitStatus>> {
-    let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
+    let req = get(links::service::RATE_LIMIT_STATUS, token, None);
     request_with_json_response(req).await
 }
 
@@ -99,7 +99,7 @@ pub async fn rate_limit_status(token: &auth::Token) -> Result<Response<RateLimit
 ///associated enums.
 #[doc(hidden)]
 pub async fn rate_limit_status_raw(token: &auth::Token) -> Result<Response<serde_json::Value>> {
-    let req = auth::get(links::service::RATE_LIMIT_STATUS, token, None);
+    let req = get(links::service::RATE_LIMIT_STATUS, token, None);
     request_with_json_response(req).await
 }
 

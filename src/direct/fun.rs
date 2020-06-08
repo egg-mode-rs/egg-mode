@@ -11,7 +11,7 @@ use super::*;
 ///Lookup a single DM by its numeric ID.
 pub async fn show(id: u64, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
     let params = ParamList::default().add_param("id", id.to_string());
-    let req = auth::get(links::direct::SHOW, token, Some(&params));
+    let req = get(links::direct::SHOW, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -43,7 +43,7 @@ pub async fn send<T: Into<UserID>>(
         .add_user_param(to.into())
         .add_param("text", text);
 
-    let req = auth::post(links::direct::SEND, token, Some(&params));
+    let req = post(links::direct::SEND, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -56,7 +56,7 @@ pub async fn send<T: Into<UserID>>(
 ///message.
 pub async fn delete(id: u64, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
     let params = ParamList::new().add_param("id", id.to_string());
-    let req = auth::post(links::direct::DELETE, token, Some(&params));
+    let req = post(links::direct::DELETE, token, Some(&params));
     request_with_json_response(req).await
 }
 

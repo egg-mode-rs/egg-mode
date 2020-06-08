@@ -96,6 +96,8 @@ use serde::{Deserialize, Deserializer};
 
 mod response;
 
+pub use crate::auth::raw::{get, post, post_json};
+
 pub use crate::common::response::*;
 use crate::{error, list, user};
 

@@ -20,7 +20,7 @@ use crate::{
     links,
 };
 
-mod raw;
+pub(crate) mod raw;
 
 use raw::*;
 
@@ -247,80 +247,6 @@ pub enum Token {
     ///An OAuth Bearer token indicating the request is coming from the application itself, not a
     ///particular user.
     Bearer(String),
-}
-
-// n.b. this function is re-exported in the `raw` module - these docs are public!
-/// Assemble a signed GET request to the given URL with the given parameters.
-///
-/// The given parameters, if present, will be appended to the given `uri` as a percent-encoded
-/// query string. If the given `token` is not a Bearer token, the parameters will also be used to
-/// create the OAuth signature.
-pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
-    let full_url = if let Some(p) = params {
-        let query = p
-            .iter()
-            .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
-            .collect::<Vec<_>>()
-            .join("&");
-
-        format!("{}?{}", uri, query)
-    } else {
-        uri.to_string()
-    };
-
-    let request = Request::get(full_url)
-        .header(AUTHORIZATION,
-                AuthHeader::from(token.clone()).sign_request(Method::GET, uri, params));
-
-    request.body(Body::empty()).unwrap()
-}
-
-// n.b. this function is re-exported in the `raw` module - these docs are public!
-/// Assemble a signed POST request to the given URL with the given parameters.
-///
-/// The given parameters, if present, will be percent-encoded and included in the POST body
-/// formatted with a content-type of `application/x-www-form-urlencoded`. If the given `token` is
-/// not a Bearer token, the parameters will also be used to create the OAuth signature.
-pub fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
-    let content = "application/x-www-form-urlencoded";
-    let body = if let Some(p) = params {
-        Body::from(
-            p.iter()
-                .map(|(k, v)| format!("{}={}", k, percent_encode(v)))
-                .collect::<Vec<_>>()
-                .join("&"),
-        )
-    } else {
-        Body::empty()
-    };
-
-    let request =
-        Request::post(uri)
-            .header(CONTENT_TYPE, content)
-            .header(AUTHORIZATION,
-                    AuthHeader::from(token.clone()).sign_request(Method::POST, uri, params));
-
-    request.body(body).unwrap()
-}
-
-// n.b. this function is re-exported in the `raw` module - these docs are public!
-/// Assemble a signed POST request to the given URL with the given JSON body.
-///
-/// This method of building requests allows you to use endpoints that require a request body of
-/// plain text or JSON, like `POST media/metadata/create`. Note that this function does not encode
-/// its parameters into the OAuth signature, so take care if the endpoint you're using lists
-/// parameters as part of its specification.
-pub fn post_json<B: serde::Serialize>(uri: &str, token: &Token, body: B) -> Request<Body> {
-    let content = "application/json; charset=UTF-8";
-    let body = Body::from(serde_json::to_string(&body).unwrap()); // TODO rewrite
-
-    let request =
-        Request::post(uri)
-            .header(CONTENT_TYPE, content)
-            .header(AUTHORIZATION,
-                    AuthHeader::from(token.clone()).sign_request(Method::POST, uri, None));
-
-    request.body(body).unwrap()
 }
 
 /// With the given consumer KeyPair, ask Twitter for a request KeyPair that can be used to request

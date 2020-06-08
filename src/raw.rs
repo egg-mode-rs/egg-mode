@@ -75,9 +75,9 @@ use crate::direct::Timeline as DMTimeline;
 pub use crate::common::ParamList;
 pub use crate::common::Headers;
 
-pub use crate::auth::get as request_get;
-pub use crate::auth::post as request_post;
-pub use crate::auth::post_json as request_post_json;
+pub use crate::auth::raw::get as request_get;
+pub use crate::auth::raw::post as request_post;
+pub use crate::auth::raw::post_json as request_post_json;
 
 /// Assemble a GET request and convert it to a `Timeline` of tweets.
 ///

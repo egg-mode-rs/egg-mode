@@ -329,7 +329,7 @@ impl Timeline {
             .add_opt_param("since_id", since_id.map(|v| v.to_string()))
             .add_opt_param("max_id", max_id.map(|v| v.to_string()));
 
-        auth::get(self.link, &self.token, Some(&params))
+        get(self.link, &self.token, Some(&params))
     }
 
     ///With the returned slice of DMs, set the min_id and max_id on self.
