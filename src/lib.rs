@@ -136,7 +136,7 @@
 
 #[macro_use]
 mod common;
-mod auth;
+pub mod auth;
 pub mod cursor;
 pub mod direct;
 pub mod entities;
@@ -152,8 +152,5 @@ pub mod stream;
 pub mod tweet;
 pub mod user;
 
-pub use crate::auth::{
-    access_token, authenticate_url, authorize_url, bearer_token, invalidate_bearer, request_token,
-    verify_tokens, KeyPair, Token,
-};
+pub use crate::auth::{Token, KeyPair};
 pub use crate::common::Response;

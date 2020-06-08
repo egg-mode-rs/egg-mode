@@ -4,9 +4,9 @@
 
 //! Types and methods used to authenticate calls to Twitter.
 //!
-//! This module is meant to be internal, since the OAuth mechanisms are fairly specific to Twitter.
-//! Any relevant items for obtaining a Token are re-exported in the crate root. As such, the
-//! authentication overview is written on the Token type, rather than in this module docs.
+//! # Authenticating Requests With Twitter
+//!
+//! TODO: copy/rework docs from `Token`
 
 use std::borrow::Cow;
 
