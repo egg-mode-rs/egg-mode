@@ -340,7 +340,7 @@ pub enum Token {
 /// # }
 /// ```
 pub async fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Result<KeyPair> {
-    let header = TwitterOAuth::from_keys(con_token.clone(), None)
+    let header = OAuthParams::from_keys(con_token.clone(), None)
         .with_callback(callback.into())
         .sign_request(Method::POST, links::auth::REQUEST_TOKEN, None);
 
@@ -513,7 +513,7 @@ pub async fn access_token<S: Into<String>>(
     request_token: &KeyPair,
     verifier: S,
 ) -> Result<(Token, u64, String)> {
-    let header = TwitterOAuth::from_keys(con_token.clone(), Some(request_token.clone()))
+    let header = OAuthParams::from_keys(con_token.clone(), Some(request_token.clone()))
         .with_verifier(verifier.into())
         .sign_request(Method::POST, links::auth::ACCESS_TOKEN, None);
 

@@ -39,7 +39,7 @@ pub fn percent_encode(src: &str) -> PercentEncode {
 
 /// OAuth header set used to create an OAuth signature.
 #[derive(Clone, Debug)]
-pub struct TwitterOAuth {
+pub struct OAuthParams {
     /// The consumer key that represents the app making the API request.
     consumer_key: KeyPair,
     /// The token that represents the user authorizing the request (or the access request
@@ -54,13 +54,13 @@ pub struct TwitterOAuth {
     addon: OAuthAddOn,
 }
 
-impl TwitterOAuth {
-    /// Creates an empty `TwitterOAuth` header with a new `timestamp` and `nonce`.
+impl OAuthParams {
+    /// Creates an empty `OAuthParams` header with a new `timestamp` and `nonce`.
     ///
     /// **Note**: This should only be used as part of another constructor that populates the tokens!
     /// Attempting to sign a request with an empty consumer and access token will result in an
     /// invalid request.
-    fn empty() -> TwitterOAuth {
+    fn empty() -> OAuthParams {
         let timestamp = match SystemTime::now().duration_since(UNIX_EPOCH) {
             Ok(dur) => dur,
             Err(err) => err.duration(),
@@ -71,7 +71,7 @@ impl TwitterOAuth {
             .map(|()| rng.sample(rand::distributions::Alphanumeric))
             .take(32)
             .collect::<String>();
-        TwitterOAuth {
+        OAuthParams {
             consumer_key: KeyPair::empty(),
             token: None,
             nonce,
@@ -80,41 +80,41 @@ impl TwitterOAuth {
         }
     }
 
-    /// Creates a new `TwitterOAuth` header with the given keys. The `token` is optional
+    /// Creates a new `OAuthParams` header with the given keys. The `token` is optional
     /// specifically for when you're generating a request token; otherwise it should be the request
     /// token (for when you're generating an access token) or an access token (for when you're
     /// requesting a regular API function).
-    pub fn from_keys(consumer_key: KeyPair, token: Option<KeyPair>) -> TwitterOAuth {
-        TwitterOAuth {
+    pub fn from_keys(consumer_key: KeyPair, token: Option<KeyPair>) -> OAuthParams {
+        OAuthParams {
             consumer_key,
             token,
-            ..TwitterOAuth::empty()
+            ..OAuthParams::empty()
         }
     }
 
-    /// Adds the given callback to this `TwitterOAuth` header.
+    /// Adds the given callback to this `OAuthParams` header.
     ///
     /// Note that the `callback` and `verifier` parameters are mutually exclusive. If you call this
     /// function after setting a verifier with `with_verifier`, it will overwrite the verifier.
-    pub fn with_callback(self, callback: String) -> TwitterOAuth {
-        TwitterOAuth {
+    pub fn with_callback(self, callback: String) -> OAuthParams {
+        OAuthParams {
             addon: OAuthAddOn::Callback(callback),
             ..self
         }
     }
 
-    /// Adds the given verifier to this `TwitterOAuth` header.
+    /// Adds the given verifier to this `OAuthParams` header.
     ///
     /// Note that the `callback` and `verifier` parameters are mutually exclusive. If you call this
     /// function after setting a callback with `with_callback`, it will overwrite the callback.
-    pub fn with_verifier(self, verifier: String) -> TwitterOAuth {
-        TwitterOAuth {
+    pub fn with_verifier(self, verifier: String) -> OAuthParams {
+        OAuthParams {
             addon: OAuthAddOn::Verifier(verifier),
             ..self
         }
     }
 
-    /// Uses the parameters in this `TwitterOAuth` instance to generate a signature for the given
+    /// Uses the parameters in this `OAuthParams` instance to generate a signature for the given
     /// request, returning it as a `SignedHeader`.
     pub(crate) fn sign_request(self, method: Method, uri: &str, params: Option<&ParamList>) -> SignedHeader {
         let query_string = {
@@ -192,11 +192,11 @@ impl OAuthAddOn {
     }
 }
 
-/// A set of `TwitterOAuth` parameters combined with a request signature, ready to be attached to a
+/// A set of `OAuthParams` parameters combined with a request signature, ready to be attached to a
 /// request.
 pub struct SignedHeader {
     /// The OAuth parameters used to create the signature.
-    params: TwitterOAuth,
+    params: OAuthParams,
     /// The signature for an associated request.
     signature: String,
 }
@@ -254,7 +254,7 @@ impl fmt::Display for SignedHeader {
 /// to match on the structure of a `Token` and instead just focus on signing the request.
 pub enum AuthHeader {
     /// A set of OAuth parameters based on a consumer/access token combo.
-    AccessToken(TwitterOAuth),
+    AccessToken(OAuthParams),
     /// A Bearer token.
     Bearer(String),
 }
@@ -263,7 +263,7 @@ impl From<Token> for AuthHeader {
     fn from(token: Token) -> AuthHeader {
         match token {
             Token::Access { consumer, access } => {
-                AuthHeader::AccessToken(TwitterOAuth::from_keys(consumer, Some(access)))
+                AuthHeader::AccessToken(OAuthParams::from_keys(consumer, Some(access)))
             }
             Token::Bearer(b) => {
                 AuthHeader::Bearer(b)
