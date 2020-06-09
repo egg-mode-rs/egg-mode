@@ -185,6 +185,7 @@ use std::borrow::Cow;
 
 use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
 use hyper::{Body, Method, Request};
+use serde::{Serialize, Deserialize};
 use serde_json;
 
 use crate::common::*;
@@ -216,7 +217,7 @@ use raw::*;
 /// ```rust
 /// let con_token = egg_mode::KeyPair::new("consumer key", "consumer token");
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KeyPair {
     ///A key used to identify an application or user.
     pub key: Cow<'static, str>,
@@ -270,7 +271,7 @@ impl KeyPair {
 ///
 /// [apps]: https://developer.twitter.com/en/apps
 /// [invalidate]: fn.invalidate_bearer.html
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Token {
     /// An OAuth Access token indicating the request is coming from a specific user.
     Access {
