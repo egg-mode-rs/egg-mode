@@ -51,7 +51,7 @@
 //!
 //! And... that's it! This Bearer token can be cached and saved for future use. It will not expire
 //! until you ask Twitter to [invalidate] the token for you. Otherwise, this token can be used the
-//! same way as [access tokens] below, but with the restrictions mentioned earlier.
+//! same way as access tokens below, but with the restrictions mentioned earlier.
 //!
 //! [invalidate]: fn.invalidate_bearer.html
 //!
@@ -75,7 +75,7 @@
 //! them, viewing protected accounts they follow, and other actions that only make sense from the
 //! perspective from a specific user. Because of the two-fold nature of making sure your requests
 //! are signed from your specific *app* and from that specific *user*, the authentication process
-//! for access tokens is fairly complicated.
+//! for access tokens is relatively complicated.
 //!
 //! The process to get an access token for a specific user (with this library) has three basic
 //! steps:
@@ -109,16 +109,19 @@
 //! The second question informs *where* you send the user to authorize your app. Using the "Sign In
 //! With Twitter" flow, your app could be able to transparently request another access token
 //! without the user needing to accept the connection every time. This is ideal for websites where
-//! a "Sign In With Twitter" button could replace a regular login button, instead using a user's
-//! Twitter account in place for regular username/password credentials. To be able to use the "Sign
-//! In With Twitter" flow, you must first enable it for your app on Twitter's Application Manager.
-//! Then, for Step 2 of the authentication process, send the user to an [authenticate] URL.
+//! a "Sign In With Twitter" button could replace a regular login button, using a user's Twitter
+//! account in place for regular username/password credentials. To be able to use the "Sign In With
+//! Twitter" flow, you must first enable it for your app on Twitter's Application Manager.  Then,
+//! for Step 2 of the authentication process, send the user to an [authenticate] URL. If you don't
+//! need or want to use the "Sign In With Twitter" process, send the user to an [authorize] URL
+//! instead.
 //!
 //! The primary difference between the different URLs for Step 2 is that an [authenticate] URL
 //! allows the above behavior, whereas an [authorize] URL does not require the extra setting in the
 //! app manager and always requires the user to re-authorize the app every time they're sent
-//! through the authentication process. As access tokens can be cached indefinitely until the app's
-//! access is revoked, this is not necessarily as onerous as it sounds.
+//! through the authentication process. Since access tokens can be cached and reused indefinitely
+//! until the app's access is revoked, you only really need to send the user through the
+//! authentication process once.
 //!
 //! The end result of Step 2 is that your app receives a "verifier" to vouch for the user's
 //! acceptance of your app. With PIN-Based Authorization, the user receives a PIN from Twitter that
@@ -485,7 +488,7 @@ pub fn authenticate_url(request_token: &KeyPair) -> String {
 /// [Authorize]: fn.authorize_url.html
 /// [Authenticate]: fn.authenticate_url.html
 ///
-/// # Access Token: Combine the app and user authentication
+/// # Access Token: Confirm the authentication with Twitter
 ///
 /// This is the final step in authenticating a user account to use your app. With this method, you
 /// combine the consumer `KeyPair` that represents your app, the [request token] that represents

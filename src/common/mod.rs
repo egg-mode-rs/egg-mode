@@ -65,6 +65,11 @@
 //! `std::cmp::{min,max}` require `Ord` and `min_opt` won't reach for the None if it's there,
 //! unlike the derived `PartialOrd` which considers None to be less than Some.
 //!
+//! ## Authentication functions
+//!
+//! The functions `get`, `post`, and `post_json` are re-exported here to keep people from having to
+//! qualify them from `auth::raw`.
+//!
 //! ## `Response`
 //!
 //! Also in its own module, `Response` is a public structure that contains rate-limit information
