@@ -57,10 +57,10 @@ fn rate_limit_reset(headers: &Headers) -> Result<Option<i32>> {
     Debug, Deserialize, derive_more::Constructor, derive_more::Deref, derive_more::DerefMut,
 )]
 pub struct Response<T> {
-    /// Latest rate lime status
+    /// The latest rate-limit information returned with the request.
     #[serde(flatten)]
     pub rate_limit_status: RateLimit,
-    ///The decoded response from the request.
+    /// The decoded response from the request.
     #[deref]
     #[deref_mut]
     #[serde(default)]
@@ -131,13 +131,31 @@ pub async fn request_with_json_response<T: DeserializeOwned>(
     })
 }
 
+// n.b. this type is exported at the crate root - these docs are public!
+/// Rate limit information returned with a `Response`.
+///
+/// With every API call, Twitter returns information about how many times you're allowed to call
+/// that endpoint, and at what point your limit refreshes and allows you to call it more. These are
+/// normally passed through the response headers, and egg-mode reads for these headers when a
+/// function returns a `Response<T>`. If the headers are absent for a given request, the field will
+/// be `-1`.
+///
+/// Rate limits are tracked separately based on the kind of `Token` you're using. For Bearer tokens
+/// using Application-only authentication, the rate limit is based on your application as a whole,
+/// regardless of how many instances are using that token. For Access tokens, the rate limit is
+/// broken down by-user, so more-active users will not use up the rate limit for less-active ones.
+///
+/// For more information about rate-limiting, see [Twitter's documentation about rate
+/// limits][rate-limit].
+///
+/// [rate-limit]: https://developer.twitter.com/en/docs/basics/rate-limiting
 #[derive(Copy, Clone, Debug, Deserialize)]
 pub struct RateLimit {
-    ///The rate limit ceiling for the given request.
+    /// The rate limit ceiling for the given request.
     pub limit: i32,
-    ///The number of requests left for the 15-minute window.
+    /// The number of requests left for the 15-minute window.
     pub remaining: i32,
-    ///The UTC Unix timestamp at which the rate window resets.
+    /// The UTC Unix timestamp at which the rate window resets.
     pub reset: i32,
 }
 
