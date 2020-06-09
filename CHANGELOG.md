@@ -9,10 +9,16 @@
   - New `raw` example showing how to pull the raw JSON from fetching a tweet
 
 ### Changed
-- The repository has moved! Egg-mode's new home is now at `egg-mode-rs/egg-mode`
+- The repository has moved! egg-mode's new home is now at `egg-mode-rs/egg-mode`
 - The official documentation links have moved to Docs.rs
 - egg-mode's custom `Future`s now implement `Send`: https://github.com/egg-mode-rs/egg-mode/pull/87
   - Thanks @kuretchi for the report and PR!
+- Authentication types and functions are now located in a freshly-refactored and -exposed `auth`
+  module
+  - This is a **breaking change** since all the auth functions are no longer exported from the crate
+    root
+  - The authentication documentation has been tweaked and moved around
+- `Token` and `KeyPair` now implement `Serialize` and `Deserialize`
 
 ## [0.14.0]
 
