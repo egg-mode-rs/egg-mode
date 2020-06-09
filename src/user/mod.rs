@@ -521,7 +521,7 @@ impl UserSearch {
             .add_param("page", self.page_num.to_string())
             .add_param("count", self.page_size.to_string());
 
-        let req = auth::get(links::users::SEARCH, &self.token, Some(&params));
+        let req = get(links::users::SEARCH, &self.token, Some(&params));
         request_with_json_response(req)
     }
 

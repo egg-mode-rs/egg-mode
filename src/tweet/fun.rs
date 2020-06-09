@@ -19,7 +19,7 @@ pub async fn show(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
         .add_param("id", id.to_string())
         .add_param("include_my_retweet", "true")
         .add_param("include_ext_alt_text", "true");
-    let req = auth::get(links::statuses::SHOW, token, Some(&params));
+    let req = get(links::statuses::SHOW, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -39,7 +39,7 @@ pub async fn retweets_of(id: u64, count: u32, token: &auth::Token) -> Result<Res
     );
 
     let url = format!("{}/{}.json", links::statuses::RETWEETS_OF_STEM, id);
-    let req = auth::get(&url, token, Some(&params));
+    let req = get(&url, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -74,7 +74,7 @@ pub async fn lookup<I: IntoIterator<Item = u64>>(
         .add_param("id", id_param)
         .add_param("include_ext_alt_text", "true");
 
-    let req = auth::post(links::statuses::LOOKUP, token, Some(&params));
+    let req = post(links::statuses::LOOKUP, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -102,7 +102,7 @@ pub async fn lookup_map<I: IntoIterator<Item = u64>>(
         .add_param("map", "true")
         .add_param("include_ext_alt_text", "true");
 
-    let req = auth::post(links::statuses::LOOKUP, token, Some(&params));
+    let req = post(links::statuses::LOOKUP, token, Some(&params));
     let parsed = request_with_json_response::<serde_json::Value>(req).await?;
     let mut map = HashMap::new();
 
@@ -204,7 +204,7 @@ pub fn liked_by<T: Into<UserID>>(acct: T, token: &auth::Token) -> Timeline {
 pub async fn retweet(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
     let params = ParamList::new().extended_tweets();
     let url = format!("{}/{}.json", links::statuses::RETWEET_STEM, id);
-    let req = auth::post(&url, token, Some(&params));
+    let req = post(&url, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -217,7 +217,7 @@ pub async fn retweet(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
 pub async fn unretweet(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
     let params = ParamList::new().extended_tweets();
     let url = format!("{}/{}.json", links::statuses::UNRETWEET_STEM, id);
-    let req = auth::post(&url, token, Some(&params));
+    let req = post(&url, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -228,7 +228,7 @@ pub async fn like(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
     let params = ParamList::new()
         .extended_tweets()
         .add_param("id", id.to_string());
-    let req = auth::post(links::statuses::LIKE, token, Some(&params));
+    let req = post(links::statuses::LIKE, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -239,7 +239,7 @@ pub async fn unlike(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
     let params = ParamList::new()
         .extended_tweets()
         .add_param("id", id.to_string());
-    let req = auth::post(links::statuses::UNLIKE, token, Some(&params));
+    let req = post(links::statuses::UNLIKE, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -249,6 +249,6 @@ pub async fn unlike(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
 pub async fn delete(id: u64, token: &auth::Token) -> Result<Response<Tweet>> {
     let params = ParamList::new().extended_tweets();
     let url = format!("{}/{}.json", links::statuses::DELETE_STEM, id);
-    let req = auth::post(&url, token, Some(&params));
+    let req = post(&url, token, Some(&params));
     request_with_json_response(req).await
 }

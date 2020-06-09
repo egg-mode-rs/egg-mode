@@ -197,7 +197,7 @@ impl SearchBuilder {
                 }),
             );
 
-        let req = auth::get(links::statuses::SEARCH, token, Some(&params));
+        let req = get(links::statuses::SEARCH, token, Some(&params));
         let mut resp = request_with_json_response::<SearchResult>(req).await?;
 
         resp.response.params = Some(params);
@@ -269,7 +269,7 @@ impl SearchResult {
             params.remove("max_id");
         }
 
-        let req = auth::get(links::statuses::SEARCH, token, Some(&params));
+        let req = get(links::statuses::SEARCH, token, Some(&params));
         let mut resp = request_with_json_response::<SearchResult>(req).await?;
 
         resp.response.params = Some(params);
@@ -288,7 +288,7 @@ impl SearchResult {
             params.remove("since_id");
         }
 
-        let req = auth::get(links::statuses::SEARCH, token, Some(&params));
+        let req = get(links::statuses::SEARCH, token, Some(&params));
         let mut resp = request_with_json_response::<SearchResult>(req).await?;
 
         resp.response.params = Some(params);

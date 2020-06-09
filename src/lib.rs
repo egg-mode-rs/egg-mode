@@ -17,18 +17,21 @@
 //! There are a couple prerequisites to using egg-mode, which its examples also assume:
 //!
 //! * All methods that hit the twitter API are `async` and should be awaited with the `.await` syntax.
-//!   All such calls return a result type with the `Error` enum as their Error value.
+//!   All such calls return a result type with the [`Error`] enum as their Error value.
 //!   The resulting future must be executed on a `tokio` executor.
 //!   For more information, check out the [Rust `async` book][rust-futures] and the
 //!   [Tokio documentation guides][].
 //!
 //! * Twitter tracks API use through "tokens" which are managed by Twitter and processed separately
-//!   for each "authenticated user" you wish to connect to your app. egg-mode's [Token]
-//!   documentation describes how you can obtain one of these, but each example outside of the
-//!   authentication documentation brings in a `Token` "offscreen", to avoid distracting from the
-//!   rest of the example.
+//!   for each "authenticated user" you wish to connect to your app. egg-mode represents these
+//!   through the [`Token`] type, which each function that connects to the API uses to authenticate
+//!   the call.  egg-mode's [authentication overview][auth] describes how you can obtain one of
+//!   these, but each example outside of the authentication documentation brings in a `Token`
+//!   "offscreen", to avoid distracting from the rest of the example.
 //!
-//! [Token]: enum.Token.html
+//! [`Token`]: auth/enum.Token.html
+//! [auth]: auth/index.html
+//! [`Error`]: error/enum.Error.html
 //! [tokio]: https://tokio.rs
 //! [rust-futures]: https://rust-lang.github.io/async-book/
 //! [Tokio documentation guides]: https://tokio.rs/docs/overview
@@ -76,11 +79,13 @@
 //!
 //! [`Response`]: struct.Response.html
 //!
-//! ## Authentication
+//! ## `Token`
 //!
-//! The remaining types and methods are explained as part of the [authentication overview][Token],
-//! with the exception of `verify_tokens`, which is a simple method to ensure a given token is
-//! still valid.
+//! While the complete process of authenticating with Twitter involves functions and types in [the
+//! `auth` module][auth], the [`Token`] type is central enough to the operation of egg-mode that
+//! it's re-exported at the crate root. The inner [`KeyPair`] type is also re-exported here, to aid
+//! existing code that used the type, and to aid the authentication process, which requires
+//! manually creating one at the very beginning.
 //!
 //! # Modules
 //!
@@ -93,6 +98,9 @@
 //! These could be considered the "core" actions within the Twitter API that egg-mode has made
 //! available.
 //!
+//! * `auth`: This module contains all the functions required to fully authenticate with Twitter.
+//!   The module docs contain the complete overview of how to use egg-mode to properly sign your
+//!   API calls so that Twitter will accept them.
 //! * `tweet`: This module lets you act on tweets. Here you can find actions to load a user's
 //!   timeline, post a new tweet, or like and retweet individual posts.
 //! * `user`: This module lets you act on users, be it by following or unfollowing them, loading
@@ -136,7 +144,7 @@
 
 #[macro_use]
 mod common;
-mod auth;
+pub mod auth;
 pub mod cursor;
 pub mod direct;
 pub mod entities;
@@ -152,8 +160,5 @@ pub mod stream;
 pub mod tweet;
 pub mod user;
 
-pub use crate::auth::{
-    access_token, authenticate_url, authorize_url, bearer_token, invalidate_bearer, request_token,
-    verify_tokens, KeyPair, Token,
-};
+pub use crate::auth::{Token, KeyPair};
 pub use crate::common::Response;

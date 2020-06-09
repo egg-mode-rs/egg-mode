@@ -225,7 +225,7 @@ pub async fn upload_media(
         .add_param("total_bytes", data.len().to_string())
         .add_param("media_type", media_type.to_string())
         .add_param("media_category", media_category.to_string());
-    let req = auth::post(links::media::UPLOAD, &token, Some(&params));
+    let req = post(links::media::UPLOAD, &token, Some(&params));
     let media = request_with_json_response::<RawMedia>(req).await?.response;
 
     // divide into 1MB chunks
@@ -235,7 +235,7 @@ pub async fn upload_media(
             .add_param("media_id", media.id.clone())
             .add_param("media_data", base64::encode(chunk))
             .add_param("segment_index", ix.to_string());
-        let req = auth::post(links::media::UPLOAD, token, Some(&params));
+        let req = post(links::media::UPLOAD, token, Some(&params));
         // This request has no response (upon success)
         raw_request(req).await?;
     }
@@ -243,7 +243,7 @@ pub async fn upload_media(
     let params = ParamList::new()
         .add_param("command", "FINALIZE")
         .add_param("media_id", media.id.clone());
-    let req = auth::post(links::media::UPLOAD, token, Some(&params));
+    let req = post(links::media::UPLOAD, token, Some(&params));
     Ok(request_with_json_response::<RawMedia>(req)
         .await?
         .response
@@ -255,7 +255,7 @@ pub async fn get_status(media_id: MediaId, token: &auth::Token) -> error::Result
     let params = ParamList::new()
         .add_param("command", "STATUS")
         .add_param("media_id", media_id.0);
-    let req = auth::get(links::media::UPLOAD, token, Some(&params));
+    let req = get(links::media::UPLOAD, token, Some(&params));
     Ok(request_with_json_response::<RawMedia>(req)
         .await?
         .response
@@ -275,7 +275,7 @@ pub async fn set_metadata(
             "text": alt_text
         }
     });
-    let req = auth::post_json(links::media::METADATA, &token, payload);
+    let req = post_json(links::media::METADATA, &token, payload);
     raw_request(req).await?;
     Ok(())
 }

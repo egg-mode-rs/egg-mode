@@ -227,7 +227,7 @@ impl ListUpdate {
             )
             .add_opt_param("description", self.desc);
 
-        let req = auth::post(links::lists::UPDATE, token, Some(&params));
+        let req = post(links::lists::UPDATE, token, Some(&params));
         request_with_json_response(req).await
     }
 }

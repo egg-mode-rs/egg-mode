@@ -293,7 +293,7 @@ where
             .add_param("cursor", self.next_cursor.to_string())
             .add_opt_param("count", self.page_size.map_string());
 
-        let req = auth::get(self.link, &self.token, Some(&params));
+        let req = get(self.link, &self.token, Some(&params));
         request_with_json_response(req)
     }
 

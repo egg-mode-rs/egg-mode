@@ -562,7 +562,7 @@ impl Timeline {
             .add_opt_param("since_id", since_id.map(|v| v.to_string()))
             .add_opt_param("max_id", max_id.map(|v| v.to_string()));
 
-        auth::get(self.link, &self.token, Some(&params))
+        get(self.link, &self.token, Some(&params))
     }
 
     ///Helper builder function to set the page size.
@@ -879,7 +879,7 @@ impl DraftTweet {
             params.add_param_ref("media_ids", media);
         }
 
-        let req = auth::post(links::statuses::UPDATE, token, Some(&params));
+        let req = post(links::statuses::UPDATE, token, Some(&params));
         request_with_json_response(req).await
     }
 }

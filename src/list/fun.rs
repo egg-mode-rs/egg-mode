@@ -41,7 +41,7 @@ pub async fn list<'id, T: Into<UserID>>(
         .add_user_param(user.into())
         .add_param("reverse", owned_first.to_string());
 
-    let req = auth::get(links::lists::LIST, token, Some(&params));
+    let req = get(links::lists::LIST, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -68,7 +68,7 @@ pub fn ownerships<T: Into<UserID>>(user: T, token: &auth::Token) -> CursorIter<L
 pub async fn show(list: ListID, token: &auth::Token) -> Result<Response<List>> {
     let params = ParamList::new().add_list_param(list);
 
-    let req = auth::get(links::lists::SHOW, token, Some(&params));
+    let req = get(links::lists::SHOW, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -103,7 +103,7 @@ pub async fn is_subscribed<'id, T: Into<UserID>>(
         .add_list_param(list)
         .add_user_param(user.into());
 
-    let req = auth::get(links::lists::IS_SUBSCRIBER, token, Some(&params));
+    let req = get(links::lists::IS_SUBSCRIBER, token, Some(&params));
 
     let out = request_with_json_response::<TwitterUser>(req).await;
 
@@ -134,7 +134,7 @@ pub async fn is_member<'id, T: Into<UserID>>(
         .add_list_param(list)
         .add_user_param(user.into());
 
-    let req = auth::get(links::lists::IS_MEMBER, token, Some(&params));
+    let req = get(links::lists::IS_MEMBER, token, Some(&params));
     let out = request_with_json_response::<TwitterUser>(req).await;
 
     match out {
@@ -182,7 +182,7 @@ pub async fn add_member<'id, T: Into<UserID>>(
         .add_list_param(list)
         .add_user_param(user.into());
 
-    let req = auth::post(links::lists::ADD, token, Some(&params));
+    let req = post(links::lists::ADD, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -229,7 +229,7 @@ where
             },
         );
 
-    let req = auth::post(links::lists::ADD_LIST, token, Some(&params));
+    let req = post(links::lists::ADD_LIST, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -244,7 +244,7 @@ pub async fn remove_member<'id, T: Into<UserID>>(
         .add_list_param(list)
         .add_user_param(user.into());
 
-    let req = auth::post(links::lists::REMOVE_MEMBER, token, Some(&params));
+    let req = post(links::lists::REMOVE_MEMBER, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -290,7 +290,7 @@ where
             },
         );
 
-    let req = auth::post(links::lists::REMOVE_LIST, token, Some(&params));
+    let req = post(links::lists::REMOVE_LIST, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -311,7 +311,7 @@ pub async fn create(
         .add_param("mode", if public { "public" } else { "private" })
         .add_opt_param("description", desc);
 
-    let req = auth::post(links::lists::CREATE, token, Some(&params));
+    let req = post(links::lists::CREATE, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -322,7 +322,7 @@ pub async fn create(
 pub async fn delete(list: ListID, token: &auth::Token) -> Result<Response<List>> {
     let params = ParamList::new().add_list_param(list);
 
-    let req = auth::post(links::lists::DELETE, token, Some(&params));
+    let req = post(links::lists::DELETE, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -334,7 +334,7 @@ pub async fn delete(list: ListID, token: &auth::Token) -> Result<Response<List>>
 pub async fn subscribe(list: ListID, token: &auth::Token) -> Result<Response<List>> {
     let params = ParamList::new().add_list_param(list);
 
-    let req = auth::post(links::lists::SUBSCRIBE, token, Some(&params));
+    let req = post(links::lists::SUBSCRIBE, token, Some(&params));
 
     request_with_json_response(req).await
 }
@@ -343,7 +343,7 @@ pub async fn subscribe(list: ListID, token: &auth::Token) -> Result<Response<Lis
 pub async fn unsubscribe(list: ListID, token: &auth::Token) -> Result<Response<List>> {
     let params = ParamList::new().add_list_param(list);
 
-    let req = auth::post(links::lists::UNSUBSCRIBE, token, Some(&params));
+    let req = post(links::lists::UNSUBSCRIBE, token, Some(&params));
 
     request_with_json_response(req).await
 }
