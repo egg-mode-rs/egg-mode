@@ -4,6 +4,8 @@
 
 //! Internal mechanisms for the `auth` module.
 
+use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::fmt;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -155,9 +157,32 @@ impl OAuthParams {
         let mut digest = Hmac::<Sha1>::new_varkey(key.as_bytes()).expect("Wrong key length");
         digest.input(base_str.as_bytes());
 
+        let mut params: BTreeMap<&'static str, Cow<'static, str>> = BTreeMap::new();
+        params.insert("oauth_signature_method", "HMAC-SHA1".into());
+        params.insert("oauth_version", "1.0".into());
+
+        params.insert("oauth_consumer_key", self.consumer_key.key);
+        if let Some(token) = self.token {
+            params.insert("oauth_token", token.key);
+        }
+
+        params.insert("oauth_nonce", self.nonce.into());
+        params.insert("oauth_timestamp", self.timestamp.to_string().into());
+
+        match self.addon {
+            OAuthAddOn::Callback(c) => {
+                params.insert("oauth_callback", c.into());
+            }
+            OAuthAddOn::Verifier(v) => {
+                params.insert("oauth_verifier", v.into());
+            }
+            OAuthAddOn::None => (),
+        }
+
+        params.insert("oauth_signature", base64::encode(&digest.result().code()).into());
+
         SignedHeader {
-            params: self,
-            signature: base64::encode(&digest.result().code()),
+            params,
         }
     }
 }
@@ -196,9 +221,7 @@ impl OAuthAddOn {
 /// request.
 pub struct SignedHeader {
     /// The OAuth parameters used to create the signature.
-    params: OAuthParams,
-    /// The signature for an associated request.
-    signature: String,
+    params: BTreeMap<&'static str, Cow<'static, str>>,
 }
 
 /// The `Display` impl for `SignedHeader` formats it as an `Authorization` header for an HTTP
@@ -209,38 +232,16 @@ impl fmt::Display for SignedHeader {
         write!(f, "OAuth ")?;
 
         // authorization data
-        write!(
-            f,
-            "oauth_consumer_key=\"{}\"",
-            percent_encode(&self.params.consumer_key.key)
-        )?;
 
-        write!(f, ", oauth_nonce=\"{}\"", percent_encode(&self.params.nonce))?;
-
-        write!(f, ", oauth_signature=\"{}\"", percent_encode(&self.signature))?;
-
-        write!(
-            f,
-            ", oauth_signature_method=\"{}\"",
-            percent_encode("HMAC-SHA1")
-        )?;
-
-        write!(f, ", oauth_timestamp=\"{}\"", self.params.timestamp)?;
-
-        if let Some(ref token) = self.params.token {
-            write!(f, ", oauth_token=\"{}\"", percent_encode(&token.key))?;
-        }
-
-        write!(f, ", oauth_version=\"{}\"", "1.0")?;
-
-        match self.params.addon {
-            OAuthAddOn::Callback(ref callback) => {
-                write!(f, ", oauth_callback=\"{}\"", percent_encode(callback))?;
+        let mut first = true;
+        for (k, v) in &self.params {
+            if first {
+                first = false;
+            } else {
+                write!(f, ", ")?;
             }
-            OAuthAddOn::Verifier(ref verifier) => {
-                write!(f, ", oauth_verifier=\"{}\"", percent_encode(verifier))?;
-            }
-            OAuthAddOn::None => (),
+
+            write!(f, "{}=\"{}\"", k, percent_encode(v))?;
         }
 
         Ok(())
