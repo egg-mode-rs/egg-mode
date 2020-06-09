@@ -14,7 +14,7 @@ async fn main() -> Result<()> {
     let con_token = egg_mode::KeyPair::new(con_key, con_secret);
 
     println!("Pulling up the bearer token...");
-    let token = egg_mode::bearer_token(&con_token).await?;
+    let token = egg_mode::auth::bearer_token(&con_token).await?;
 
     println!("Pulling up a user timeline...");
     let timeline =
