@@ -20,7 +20,11 @@ use crate::common::*;
 
 use super::{Token, KeyPair};
 
+// n.b. this type is exported in `raw::auth` - these docs are public!
 /// Builder struct to assemble and sign an API request.
+///
+/// For more information about how to use this type and about building requests manually, see [the
+/// module docs](index.html).
 pub struct RequestBuilder<'a> {
     base_uri: &'a str,
     method: Method,

@@ -62,6 +62,13 @@
 //! these endpoints, you can use these functions to get the same experience as the existing
 //! wrappers in egg-mode. See the documentation for these functions to see their assumptions and
 //! requirements.
+//!
+//! If you need the ability to assemble a request in a way that `request_get`, `request_post`, or
+//! `request_post_json` don't allow, the `RequestBuilder` type available in the `auth` submodule
+//! provides the lowest-level control over how a request is built and signed. For more information,
+//! see the [`auth`] module.
+//!
+//! [`auth`]: auth/index.html
 
 use hyper::{Body, Request};
 
@@ -176,4 +183,62 @@ pub use crate::common::request_with_json_response as response_json;
 /// can take a signed, completed request as its constructor.
 pub fn response_as_stream(req: Request<Body>) -> TwitterStream {
     TwitterStream::new(req)
+}
+
+/// Facilities to manually assemble signed requests.
+///
+/// In case you need to do things that aren't available in the `raw` module, the `RequestBuilder`
+/// included here allows you to go deeper into the internals of egg-mode. All of the authentication
+/// internals are implemented in terms of `RequestBuilder`, meaning you can fully recreate them
+/// using your own parsing logic for the output.
+///
+/// `RequestBuilder` is designed to allow for easily creating an OAuth signature from the
+/// parameters to an API endpoint, and so they collect `ParamList` instances just like the
+/// functions in the `raw` module. However, there is also a way to manually set the request body
+/// outside of the `ParamList` struct, for endpoints like `POST media/metadata/create` or `POST
+/// oauth2/token` which require specific body formats.
+///
+/// True to its name, all the methods on `RequestBuilder` are meant to be used in a builder
+/// pattern. To begin, you need to have the URL you wish to access and the HTTP Method you would
+/// like to use. Then you can build up the query string and request body, and accumulate the
+/// parameters used in the OAuth signature. Finally, to finish building the request, you need to
+/// provide what kind of authorization you would like to use. Since there are several ways to
+/// authorize a call to Twitter, there are several options available:
+///
+/// * For [OAuth 1.0a], you can specify the keys individually in `request_keys`, or provide a
+///   complete `Token` using `request_token`.
+/// * For [OAuth 2.0 Bearer Token][bearer], you can provide the Bearer token using `request_token`.
+/// * For [Basic authentication][basic] used with Enterprise APIs and when requesting a Bearer
+///   token, you can provide the credentials as a `KeyPair` in `request_consumer_bearer`.
+///
+/// [OAuth 1.0a]: https://developer.twitter.com/en/docs/basics/authentication/oauth-1-0a
+/// [bearer]: https://developer.twitter.com/en/docs/basics/authentication/oauth-2-0
+/// [basic]: https://developer.twitter.com/en/docs/basics/authentication/basic-auth
+///
+/// For example, if you were using this type to request a specific Tweet:
+///
+/// ```rust,no_run
+/// use egg_mode::raw::auth::{RequestBuilder, Method};
+/// use egg_mode::raw::{ParamList, response_json};
+/// use egg_mode::Response;
+///
+/// # #[tokio::main]
+/// # async fn main() {
+/// # let token: egg_mode::Token = unimplemented!();
+/// let params = ParamList::new()
+///     .extended_tweets()
+///     .add_param("id", 1261253754969640960u64.to_string());
+/// let request = RequestBuilder::new(Method::GET, "https://api.twitter.com/1.1/statuses/show.json")
+///     .with_query_params(&params)
+///     .request_token(&token);
+/// let json: Response<serde_json::Value> = response_json(request).await.unwrap();
+/// # }
+/// ```
+///
+/// For more information, see the functions available on `RequestBuilder`.
+pub mod auth {
+    pub use crate::auth::raw::RequestBuilder;
+
+    #[doc(no_inline)]
+    pub use hyper::Method;
 }
