@@ -187,28 +187,6 @@ impl OAuthParams {
         }
     }
 
-    /// Adds the given callback to this `OAuthParams` header.
-    ///
-    /// Note that the `callback` and `verifier` parameters are mutually exclusive. If you call this
-    /// function after setting a verifier with `with_verifier`, it will overwrite the verifier.
-    pub fn with_callback(self, callback: String) -> OAuthParams {
-        OAuthParams {
-            addon: OAuthAddOn::Callback(callback),
-            ..self
-        }
-    }
-
-    /// Adds the given verifier to this `OAuthParams` header.
-    ///
-    /// Note that the `callback` and `verifier` parameters are mutually exclusive. If you call this
-    /// function after setting a callback with `with_callback`, it will overwrite the callback.
-    pub fn with_verifier(self, verifier: String) -> OAuthParams {
-        OAuthParams {
-            addon: OAuthAddOn::Verifier(verifier),
-            ..self
-        }
-    }
-
     /// Adds the given callback or verifier to this `OAuthParams` header.
     fn with_addon(self, addon: OAuthAddOn) -> OAuthParams {
         OAuthParams {
