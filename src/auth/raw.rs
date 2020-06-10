@@ -406,23 +406,11 @@ pub fn bearer_request(con_token: &KeyPair) -> String {
 /// query string. If the given `token` is not a Bearer token, the parameters will also be used to
 /// create the OAuth signature.
 pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
-    let full_url = if let Some(p) = params {
-        let query = p
-            .iter()
-            .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
-            .collect::<Vec<_>>()
-            .join("&");
-
-        format!("{}?{}", uri, query)
-    } else {
-        uri.to_string()
-    };
-
-    let request = Request::get(full_url)
-        .header(AUTHORIZATION,
-                AuthHeader::from(token.clone()).sign_request(Method::GET, uri, params));
-
-    request.body(Body::empty()).unwrap()
+    let mut request = RequestBuilder::new(Method::GET, uri);
+    if let Some(params) = params {
+        request = request.with_query_params(params);
+    }
+    request.request_token(token)
 }
 
 // n.b. this function is re-exported in the `raw` module - these docs are public!
@@ -432,25 +420,11 @@ pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body
 /// formatted with a content-type of `application/x-www-form-urlencoded`. If the given `token` is
 /// not a Bearer token, the parameters will also be used to create the OAuth signature.
 pub fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
-    let content = "application/x-www-form-urlencoded";
-    let body = if let Some(p) = params {
-        Body::from(
-            p.iter()
-                .map(|(k, v)| format!("{}={}", k, percent_encode(v)))
-                .collect::<Vec<_>>()
-                .join("&"),
-        )
-    } else {
-        Body::empty()
-    };
-
-    let request =
-        Request::post(uri)
-            .header(CONTENT_TYPE, content)
-            .header(AUTHORIZATION,
-                    AuthHeader::from(token.clone()).sign_request(Method::POST, uri, params));
-
-    request.body(body).unwrap()
+    let mut request = RequestBuilder::new(Method::POST, uri);
+    if let Some(params) = params {
+        request = request.with_body_params(params);
+    }
+    request.request_token(token)
 }
 
 // n.b. this function is re-exported in the `raw` module - these docs are public!
@@ -461,16 +435,9 @@ pub fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Bod
 /// its parameters into the OAuth signature, so take care if the endpoint you're using lists
 /// parameters as part of its specification.
 pub fn post_json<B: serde::Serialize>(uri: &str, token: &Token, body: B) -> Request<Body> {
-    let content = "application/json; charset=UTF-8";
-    let body = Body::from(serde_json::to_string(&body).unwrap()); // TODO rewrite
-
-    let request =
-        Request::post(uri)
-            .header(CONTENT_TYPE, content)
-            .header(AUTHORIZATION,
-                    AuthHeader::from(token.clone()).sign_request(Method::POST, uri, None));
-
-    request.body(body).unwrap()
+    RequestBuilder::new(Method::POST, uri)
+        .with_body_json(body)
+        .request_token(token)
 }
 
 #[cfg(test)]
