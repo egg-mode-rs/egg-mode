@@ -134,7 +134,7 @@ impl<'a> RequestBuilder<'a> {
 
 /// OAuth header set used to create an OAuth signature.
 #[derive(Clone, Debug)]
-pub struct OAuthParams {
+struct OAuthParams {
     /// The consumer key that represents the app making the API request.
     consumer_key: KeyPair,
     /// The token that represents the user authorizing the request (or the access request
@@ -179,7 +179,7 @@ impl OAuthParams {
     /// specifically for when you're generating a request token; otherwise it should be the request
     /// token (for when you're generating an access token) or an access token (for when you're
     /// requesting a regular API function).
-    pub fn from_keys(consumer_key: KeyPair, token: Option<KeyPair>) -> OAuthParams {
+    fn from_keys(consumer_key: KeyPair, token: Option<KeyPair>) -> OAuthParams {
         OAuthParams {
             consumer_key,
             token,
@@ -197,7 +197,7 @@ impl OAuthParams {
 
     /// Uses the parameters in this `OAuthParams` instance to generate a signature for the given
     /// request, returning it as a `SignedHeader`.
-    pub(crate) fn sign_request(self, method: Method, uri: &str, params: Option<&ParamList>) -> SignedHeader {
+    fn sign_request(self, method: Method, uri: &str, params: Option<&ParamList>) -> SignedHeader {
         let query_string = {
             let sig_params = params
                 .cloned()
@@ -268,7 +268,7 @@ impl OAuthParams {
 
 /// Represents an "addon" to an OAuth header.
 #[derive(Clone, Debug)]
-pub enum OAuthAddOn {
+enum OAuthAddOn {
     /// An `oauth_callback` parameter, used when generating a request token.
     Callback(String),
     /// An `oauth_verifier` parameter, used when generating an access token.
@@ -298,7 +298,7 @@ impl OAuthAddOn {
 
 /// A set of `OAuthParams` parameters combined with a request signature, ready to be attached to a
 /// request.
-pub struct SignedHeader {
+struct SignedHeader {
     /// The OAuth parameters used to create the signature.
     params: BTreeMap<&'static str, Cow<'static, str>>,
 }
@@ -332,7 +332,7 @@ impl fmt::Display for SignedHeader {
 /// The authorization created by this function can only be used with requests to generate or
 /// invalidate a bearer token. Using this authorization with any other endpoint will result in an
 /// invalid request.
-pub fn bearer_request(con_token: &KeyPair) -> String {
+fn bearer_request(con_token: &KeyPair) -> String {
     let text = format!("{}:{}", con_token.key, con_token.secret);
     format!("Basic {}", base64::encode(&text))
 }
