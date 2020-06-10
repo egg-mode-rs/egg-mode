@@ -20,6 +20,7 @@ use crate::common::*;
 
 use super::{Token, KeyPair};
 
+/// Builder struct to assemble and sign an API request.
 pub struct RequestBuilder<'a> {
     base_uri: &'a str,
     method: Method,
@@ -30,6 +31,7 @@ pub struct RequestBuilder<'a> {
 }
 
 impl<'a> RequestBuilder<'a> {
+    /// Creates a new `RequestBuilder` with the given HTTP method and base URL.
     pub fn new(method: Method, base_uri: &'a str) -> Self {
         RequestBuilder {
             base_uri,
@@ -41,6 +43,16 @@ impl<'a> RequestBuilder<'a> {
         }
     }
 
+    /// Adds the given parameters as a query string. Parameters given this way will be included in
+    /// the OAuth signature.
+    ///
+    /// Note that functions that take a `ParamList` accumulate parameters as part of the OAuth
+    /// signature. If you call both `with_query_params` and `with_body_params`, both sets of
+    /// parameters will be used as part of the OAuth signature.
+    ///
+    /// On the other hand, the query string is not cumulative. If you call `with_query_params`
+    /// multiple times, only the last set of parameters will actually be considered part of the
+    /// query string.
     pub fn with_query_params(self, params: &ParamList) -> Self {
         let total_params = if let Some(mut my_params) = self.params {
             my_params.combine(params.clone());
@@ -55,6 +67,16 @@ impl<'a> RequestBuilder<'a> {
         }
     }
 
+    /// Adds the given params as a request body, formatted as `application/x-www-form-urlencoded`.
+    /// Parameters given this way will be included in the OAuth signature.
+    ///
+    /// Note that functions that take a `ParamList` accumulate parameters as part of the OAuth
+    /// signature. If you call both `with_query_params` and `with_body_params`, both sets of
+    /// parameters will be used as part of the OAuth signature.
+    ///
+    /// Note that the functions that specify a request body each overwrite the body. For example,
+    /// if you specify `with_body_params` and also `with_body_json`, only the one you call last
+    /// will be sent with the request.
     pub fn with_body_params(self, params: &ParamList) -> Self {
         let total_params = if let Some(mut my_params) = self.params {
             my_params.combine(params.clone());
@@ -69,10 +91,22 @@ impl<'a> RequestBuilder<'a> {
         }
     }
 
+    /// Includes the given data as the request body, formatted as JSON. Data given this way will
+    /// *not* be included in the OAuth signature.
+    ///
+    /// Note that the functions that specify a request body each overwrite the body. For example,
+    /// if you specify `with_body_params` and also `with_body_json`, only the one you call last
+    /// will be sent with the request.
     pub fn with_body_json(self, body: impl serde::Serialize) -> Self {
         self.with_body(serde_json::to_string(&body).unwrap(), "application/json; charset=UTF-8")
     }
 
+    /// Includes the given data as the request body, with the given content type. Data given this
+    /// way will *not* be included in the OAuth signature.
+    ///
+    /// Note that the functions that specify a request body each overwrite the body. For example,
+    /// if you specify `with_body_params` and also `with_body`, only the one you call last will be
+    /// sent with the request.
     pub fn with_body(self, body: impl Into<Body>, content: &'static str) -> Self {
         RequestBuilder {
             body: Some((body.into(), content)),
@@ -80,6 +114,10 @@ impl<'a> RequestBuilder<'a> {
         }
     }
 
+    /// Includes the given OAuth Callback into the OAuth parameters.
+    ///
+    /// Note that `oauth_callback` and `oauth_verifier` are mutually exclusive. If you specify both
+    /// on the same request, only the last one will be sent.
     pub fn oauth_callback(self, callback: impl Into<String>) -> Self {
         RequestBuilder {
             addon: OAuthAddOn::Callback(callback.into()),
@@ -87,6 +125,10 @@ impl<'a> RequestBuilder<'a> {
         }
     }
 
+    /// Includes the given OAuth Verifier into the OAuth parameters.
+    ///
+    /// Note that `oauth_callback` and `oauth_verifier` are mutually exclusive. If you specify both
+    /// on the same request, only the last one will be sent.
     pub fn oauth_verifier(self, verifier: impl Into<String>) -> Self {
         RequestBuilder {
             addon: OAuthAddOn::Verifier(verifier.into()),
@@ -94,6 +136,11 @@ impl<'a> RequestBuilder<'a> {
         }
     }
 
+    /// Formats this `RequestBuilder` into a complete `Request`, signing it with the given keys.
+    ///
+    /// While the `token` parameter is an Option here, it should only be `None` when generating a
+    /// request token; all other calls must have two sets of keys (or be authenticated in a
+    /// different way, i.e. a Bearer token).
     pub fn request_keys(self, consumer_key: &KeyPair, token: Option<&KeyPair>) -> Request<Body> {
         let oauth = OAuthParams::from_keys(consumer_key.clone(), token.cloned())
             .with_addon(self.addon.clone())
@@ -101,6 +148,13 @@ impl<'a> RequestBuilder<'a> {
         self.request_authorization(oauth.to_string())
     }
 
+    /// Formats this `RequestBuilder` into a complete `Request`, signing it with the given token.
+    ///
+    /// If the given `Token` is an Access token, the request will be signed using OAuth 1.0a, using
+    /// the given URI, HTTP method, and parameters to create a signature.
+    ///
+    /// If the given `Token` is a Bearer token, the request will be authenticated using OAuth 2.0,
+    /// specifying the given Bearer token as authorization.
     pub fn request_token(self, token: &Token) -> Request<Body> {
         match token {
             Token::Access { consumer, access } => self.request_keys(consumer, Some(access)),
@@ -108,10 +162,24 @@ impl<'a> RequestBuilder<'a> {
         }
     }
 
+    /// Formats this `RequestBuilder` into a complete `Request`, with an Authorization header
+    /// formatted using HTTP Basic authentication using the given consumer key, as expected by the
+    /// `POST oauth2/token` endpoint.
+    ///
+    /// This Authorization should only be used when requesting a Bearer token; other requests need
+    /// to be signed with multiple keys (as with `request_keys` or giving an Access token to
+    /// `request_token`) or with a proper Bearer token given to `request_token`.
+    ///
+    /// This authorization can also be used to access Enterprise API endpoints that require Basic
+    /// authentication, using a `KeyPair` with the email address and password that would ordinarily
+    /// be used to access the Enterprise API Console.
     pub fn request_consumer_bearer(self, consumer_key: &KeyPair) -> Request<Body> {
         self.request_authorization(bearer_request(consumer_key))
     }
 
+    /// Assembles the final `Request` with the given Authorization header. This is private to
+    /// require that a well-formed header is constructed given, as constructed from the other
+    /// `request_*` methods.
     fn request_authorization(self, authorization: String) -> Request<Body> {
         let full_url = if let Some(query) = self.query {
             format!("{}?{}", self.base_uri, query)
