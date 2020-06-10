@@ -215,6 +215,22 @@ impl ParamList {
             list::ListID::ID(id) => self.add_param("list_id", id.to_string()),
         }
     }
+
+    /// Merge the parameters from the given `ParamList` into this one.
+    pub(crate) fn combine(&mut self, other: ParamList) {
+        self.0.extend(other.0);
+    }
+
+    /// Renders this `ParamList` as an `application/x-www-form-urlencoded` string.
+    ///
+    /// The key/value pairs are printed as `key1=value1&key2=value2`, with all keys and values
+    /// being percent-encoded according to Twitter's requirements.
+    pub fn to_urlencoded(&self) -> String {
+        self.0.iter()
+            .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
+            .collect::<Vec<_>>()
+            .join("&")
+    }
 }
 
 // Helper trait to stringify the contents of an Option

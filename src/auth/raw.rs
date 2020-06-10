@@ -20,6 +20,113 @@ use crate::common::*;
 
 use super::{Token, KeyPair};
 
+pub struct RequestBuilder<'a> {
+    base_uri: &'a str,
+    method: Method,
+    params: Option<ParamList>,
+    query: Option<String>,
+    body: Option<(Body, &'static str)>,
+    addon: OAuthAddOn,
+}
+
+impl<'a> RequestBuilder<'a> {
+    pub fn new(method: Method, base_uri: &'a str) -> Self {
+        RequestBuilder {
+            base_uri,
+            method,
+            params: None,
+            query: None,
+            body: None,
+            addon: OAuthAddOn::None,
+        }
+    }
+
+    pub fn with_query_params(self, params: &ParamList) -> Self {
+        let total_params = if let Some(mut my_params) = self.params {
+            my_params.combine(params.clone());
+            my_params
+        } else {
+            params.clone()
+        };
+        RequestBuilder {
+            query: Some(params.to_urlencoded()),
+            params: Some(total_params),
+            ..self
+        }
+    }
+
+    pub fn with_body_params(self, params: &ParamList) -> Self {
+        let total_params = if let Some(mut my_params) = self.params {
+            my_params.combine(params.clone());
+            my_params
+        } else {
+            params.clone()
+        };
+        RequestBuilder {
+            body: Some((Body::from(params.to_urlencoded()), "application/x-www-form-urlencoded")),
+            params: Some(total_params),
+            ..self
+        }
+    }
+
+    pub fn with_body_json(self, body: impl serde::Serialize) -> Self {
+        self.with_body(serde_json::to_string(&body).unwrap(), "application/json; charset=UTF-8")
+    }
+
+    pub fn with_body(self, body: impl Into<Body>, content: &'static str) -> Self {
+        RequestBuilder {
+            body: Some((body.into(), content)),
+            ..self
+        }
+    }
+
+    pub fn oauth_callback(self, callback: impl Into<String>) -> Self {
+        RequestBuilder {
+            addon: OAuthAddOn::Callback(callback.into()),
+            ..self
+        }
+    }
+
+    pub fn oauth_verifier(self, verifier: impl Into<String>) -> Self {
+        RequestBuilder {
+            addon: OAuthAddOn::Verifier(verifier.into()),
+            ..self
+        }
+    }
+
+    pub fn request_keys(self, consumer_key: &KeyPair, token: Option<&KeyPair>) -> Request<Body> {
+        let oauth = OAuthParams::from_keys(consumer_key.clone(), token.cloned())
+            .with_addon(self.addon.clone())
+            .sign_request(self.method.clone(), self.base_uri, self.params.as_ref());
+        self.request_authorization(oauth.to_string())
+    }
+
+    pub fn request_token(self, token: &Token) -> Request<Body> {
+        match token {
+            Token::Access { consumer, access } => self.request_keys(consumer, Some(access)),
+            Token::Bearer(bearer) => self.request_authorization(format!("Bearer {}", bearer)),
+        }
+    }
+
+    fn request_authorization(self, authorization: String) -> Request<Body> {
+        let full_url = if let Some(query) = self.query {
+            format!("{}?{}", self.base_uri, query)
+        } else {
+            self.base_uri.to_string()
+        };
+        let request = Request::builder()
+            .method(self.method)
+            .uri(full_url)
+            .header(AUTHORIZATION, authorization);
+
+        if let Some((body, content)) = self.body {
+            request.header(CONTENT_TYPE, content)
+                .body(body).unwrap()
+        } else {
+            request.body(Body::empty()).unwrap()
+        }
+    }
+}
 
 /// OAuth header set used to create an OAuth signature.
 #[derive(Clone, Debug)]
@@ -94,6 +201,14 @@ impl OAuthParams {
     pub fn with_verifier(self, verifier: String) -> OAuthParams {
         OAuthParams {
             addon: OAuthAddOn::Verifier(verifier),
+            ..self
+        }
+    }
+
+    /// Adds the given callback or verifier to this `OAuthParams` header.
+    fn with_addon(self, addon: OAuthAddOn) -> OAuthParams {
+        OAuthParams {
+            addon,
             ..self
         }
     }
