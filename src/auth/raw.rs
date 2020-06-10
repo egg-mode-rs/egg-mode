@@ -357,3 +357,19 @@ pub fn post_json<B: serde::Serialize>(uri: &str, token: &Token, body: B) -> Requ
 
     request.body(body).unwrap()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::bearer_request;
+
+    #[test]
+    fn bearer_header() {
+        let con_key = "xvz1evFS4wEEPTGEFPHBog";
+        let con_secret = "L8qq9PZyRg6ieKGEKhZolGC0vJWLw8iEJ88DRdyOg";
+        let con_token = super::KeyPair::new(con_key, con_secret);
+
+        let output = bearer_request(&con_token);
+
+        assert_eq!(output, "Basic eHZ6MWV2RlM0d0VFUFRHRUZQSEJvZzpMOHFxOVBaeVJnNmllS0dFS2hab2xHQzB2SldMdzhpRUo4OERSZHlPZw==");
+    }
+}
