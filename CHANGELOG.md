@@ -8,6 +8,12 @@
   - New type `ParamList` to represent a list of parameters to an API call
   - New `raw` example showing how to pull the raw JSON from fetching a tweet
 - `RateLimit` is now an exposed type with its own docs
+- The optional dependency `hyper-rustls` has been upgraded to 0.20, and two new egg-mode crate
+  features were added to affect how it loads root certificates: `rustls` will use
+  `rustls-native-certs` to load certificates from the operating system, while `rustls_webpki` will
+  use the `webpki-roots` crate to compile in Mozilla's root certificates for use by `rustls`.
+  - This is a **breaking change** if you were using the previous `hyper-rustls` feature, since the
+    crate is now loaded without default features by itself
 
 ### Changed
 - The repository has moved! egg-mode's new home is now at `egg-mode-rs/egg-mode`
