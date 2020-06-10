@@ -349,50 +349,6 @@ impl fmt::Display for SignedHeader {
     }
 }
 
-/// An abstracted set of authorization credentials.
-///
-/// This enum is constructed from a `Token` and either constructs an OAuth signature or a Bearer
-/// signature based on what kind of token is given. This allows the `auth` entry points to not need
-/// to match on the structure of a `Token` and instead just focus on signing the request.
-pub enum AuthHeader {
-    /// A set of OAuth parameters based on a consumer/access token combo.
-    AccessToken(OAuthParams),
-    /// A Bearer token.
-    Bearer(String),
-}
-
-impl From<Token> for AuthHeader {
-    fn from(token: Token) -> AuthHeader {
-        match token {
-            Token::Access { consumer, access } => {
-                AuthHeader::AccessToken(OAuthParams::from_keys(consumer, Some(access)))
-            }
-            Token::Bearer(b) => {
-                AuthHeader::Bearer(b)
-            }
-        }
-    }
-}
-
-impl AuthHeader {
-    /// With the given parameters, create an `Authorization` header that matches the `Token` that
-    /// was used to create this `AuthHeader`. The resulting string can be passed as an
-    /// `Authorization` header to an API request.
-    ///
-    /// If the source `Token` was a bearer token, this function ignores the parameters and gives a
-    /// Bearer authorization based on the original token.
-    pub(crate) fn sign_request(self, method: Method, uri: &str, params: Option<&ParamList>) -> String {
-        match self {
-            AuthHeader::AccessToken(oauth) => {
-                oauth.sign_request(method, uri, params).to_string()
-            }
-            AuthHeader::Bearer(b) => {
-                format!("Bearer {}", b)
-            }
-        }
-    }
-}
-
 /// Creates a basic `Authorization` header based on the given consumer token.
 ///
 /// The authorization created by this function can only be used with requests to generate or
