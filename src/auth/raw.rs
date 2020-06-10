@@ -13,7 +13,6 @@ use base64;
 use hmac::{Hmac, Mac};
 use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
 use hyper::{Body, Method, Request};
-use percent_encoding::{utf8_percent_encode, AsciiSet, PercentEncode};
 use rand::{self, Rng};
 use sha1::Sha1;
 
@@ -21,23 +20,6 @@ use crate::common::*;
 
 use super::{Token, KeyPair};
 
-/// Percent-encodes the given string based on the Twitter API specification.
-///
-/// Twitter bases its encoding scheme on RFC 3986, Section 2.1. They describe the process in full
-/// [in their documentation][twitter-percent], but the process can be summarized by saying that
-/// every *byte* that is not an ASCII number or letter, or the ASCII characters `-`, `.`, `_`, or
-/// `~` must be replaced with a percent sign (`%`) and the byte value in hexadecimal.
-///
-/// [twitter-percent]: https://developer.twitter.com/en/docs/basics/authentication/oauth-1-0a/percent-encoding-parameters
-///
-/// When this function was originally implemented, the `percent_encoding` crate did not have an
-/// encoding set that matched this, so it was recreated here.
-pub fn percent_encode(src: &str) -> PercentEncode {
-    lazy_static::lazy_static! {
-        static ref ENCODER: AsciiSet = percent_encoding::NON_ALPHANUMERIC.remove(b'-').remove(b'.').remove(b'_').remove(b'~');
-    }
-    utf8_percent_encode(src, &*ENCODER)
-}
 
 /// OAuth header set used to create an OAuth signature.
 #[derive(Clone, Debug)]
