@@ -198,7 +198,7 @@ use crate::{
 
 pub(crate) mod raw;
 
-use raw::*;
+use raw::RequestBuilder;
 
 /// A key/secret pair representing the app that is sending a request or an authorization from a user.
 ///
