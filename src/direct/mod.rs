@@ -42,6 +42,13 @@
 //! * `send`
 //! * `delete`
 
+#![deprecated(
+    since = "0.15",
+    note =
+        "the direct message endpoints used in this module are no longer in service, \
+        and this module has not been migrated over to the DM Events API"
+)]
+
 use std::collections::HashMap;
 use std::future::Future;
 use std::mem;
