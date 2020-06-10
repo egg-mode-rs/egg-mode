@@ -108,6 +108,10 @@ impl<'a> RequestBuilder<'a> {
         }
     }
 
+    pub fn request_consumer_bearer(self, consumer_key: &KeyPair) -> Request<Body> {
+        self.request_authorization(bearer_request(consumer_key))
+    }
+
     fn request_authorization(self, authorization: String) -> Request<Body> {
         let full_url = if let Some(query) = self.query {
             format!("{}?{}", self.base_uri, query)
