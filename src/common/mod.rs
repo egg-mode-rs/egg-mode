@@ -96,6 +96,7 @@ use std::pin::Pin;
 use chrono::{self, TimeZone};
 use hyper::header::{HeaderMap, HeaderValue};
 use mime;
+use percent_encoding::{utf8_percent_encode, AsciiSet, PercentEncode};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 
@@ -213,6 +214,22 @@ impl ParamList {
             }
             list::ListID::ID(id) => self.add_param("list_id", id.to_string()),
         }
+    }
+
+    /// Merge the parameters from the given `ParamList` into this one.
+    pub(crate) fn combine(&mut self, other: ParamList) {
+        self.0.extend(other.0);
+    }
+
+    /// Renders this `ParamList` as an `application/x-www-form-urlencoded` string.
+    ///
+    /// The key/value pairs are printed as `key1=value1&key2=value2`, with all keys and values
+    /// being percent-encoded according to Twitter's requirements.
+    pub fn to_urlencoded(&self) -> String {
+        self.0.iter()
+            .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
+            .collect::<Vec<_>>()
+            .join("&")
     }
 }
 
@@ -368,6 +385,24 @@ where
 {
     let str = String::deserialize(ser)?;
     str.parse().map_err(|e| D::Error::custom(e))
+}
+
+/// Percent-encodes the given string based on the Twitter API specification.
+///
+/// Twitter bases its encoding scheme on RFC 3986, Section 2.1. They describe the process in full
+/// [in their documentation][twitter-percent], but the process can be summarized by saying that
+/// every *byte* that is not an ASCII number or letter, or the ASCII characters `-`, `.`, `_`, or
+/// `~` must be replaced with a percent sign (`%`) and the byte value in hexadecimal.
+///
+/// [twitter-percent]: https://developer.twitter.com/en/docs/basics/authentication/oauth-1-0a/percent-encoding-parameters
+///
+/// When this function was originally implemented, the `percent_encoding` crate did not have an
+/// encoding set that matched this, so it was recreated here.
+pub fn percent_encode(src: &str) -> PercentEncode {
+    lazy_static::lazy_static! {
+        static ref ENCODER: AsciiSet = percent_encoding::NON_ALPHANUMERIC.remove(b'-').remove(b'.').remove(b'_').remove(b'~');
+    }
+    utf8_percent_encode(src, &*ENCODER)
 }
 
 #[cfg(test)]

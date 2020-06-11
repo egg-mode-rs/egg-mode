@@ -7,6 +7,8 @@
   - Various `request_*` and `response_*` functions to assemble and execute signed API requests
   - New type `ParamList` to represent a list of parameters to an API call
   - New `raw` example showing how to pull the raw JSON from fetching a tweet
+  - Sub-module `raw::auth` containing a generic `RequestBuilder` for purposes that `raw` itself
+    doesn't enable
 - `RateLimit` is now an exposed type with its own docs
 
 ### Changed

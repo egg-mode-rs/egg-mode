@@ -186,8 +186,7 @@
 
 use std::borrow::Cow;
 
-use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
-use hyper::{Body, Method, Request};
+use hyper::Method;
 use serde::{Serialize, Deserialize};
 use serde_json;
 
@@ -199,7 +198,7 @@ use crate::{
 
 pub(crate) mod raw;
 
-use raw::*;
+use raw::RequestBuilder;
 
 /// A key/secret pair representing the app that is sending a request or an authorization from a user.
 ///
@@ -340,14 +339,9 @@ pub enum Token {
 /// # }
 /// ```
 pub async fn request_token<S: Into<String>>(con_token: &KeyPair, callback: S) -> Result<KeyPair> {
-    let header = OAuthParams::from_keys(con_token.clone(), None)
-        .with_callback(callback.into())
-        .sign_request(Method::POST, links::auth::REQUEST_TOKEN, None);
-
-    let request = Request::post(links::auth::REQUEST_TOKEN)
-        .header(AUTHORIZATION, header.to_string())
-        .body(Body::empty())
-        .unwrap();
+    let request = RequestBuilder::new(Method::POST, links::auth::REQUEST_TOKEN)
+        .oauth_callback(callback.into())
+        .request_keys(con_token, None);
 
     let (_, body) = raw_request(request).await?;
 
@@ -513,14 +507,9 @@ pub async fn access_token<S: Into<String>>(
     request_token: &KeyPair,
     verifier: S,
 ) -> Result<(Token, u64, String)> {
-    let header = OAuthParams::from_keys(con_token.clone(), Some(request_token.clone()))
-        .with_verifier(verifier.into())
-        .sign_request(Method::POST, links::auth::ACCESS_TOKEN, None);
-
-    let request = Request::post(links::auth::ACCESS_TOKEN)
-        .header(AUTHORIZATION, header.to_string())
-        .body(Body::empty())
-        .unwrap();
+    let request = RequestBuilder::new(Method::POST, links::auth::ACCESS_TOKEN)
+        .oauth_verifier(verifier.into())
+        .request_keys(&con_token, Some(request_token));
 
     let (_headers, urlencoded) = raw_request(request).await?;
     let urlencoded = std::str::from_utf8(&urlencoded).map_err(|_| {
@@ -597,12 +586,9 @@ pub async fn access_token<S: Into<String>>(
 pub async fn bearer_token(con_token: &KeyPair) -> Result<Token> {
     let content = "application/x-www-form-urlencoded;charset=UTF-8";
 
-    let auth_header = bearer_request(con_token);
-    let request = Request::post(links::auth::BEARER_TOKEN)
-        .header(AUTHORIZATION, auth_header)
-        .header(CONTENT_TYPE, content)
-        .body(Body::from("grant_type=client_credentials"))
-        .unwrap();
+    let request = RequestBuilder::new(Method::POST, links::auth::BEARER_TOKEN)
+        .with_body("grant_type=client_credentials", content)
+        .request_consumer_bearer(con_token);
 
     let decoded = request_with_json_response::<serde_json::Value>(request).await?;
     let result = decoded
@@ -634,13 +620,9 @@ pub async fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> Result<Tok
 
     let content = "application/x-www-form-urlencoded;charset=UTF-8";
 
-    let auth_header = bearer_request(con_token);
-    let body = Body::from(format!("access_token={}", token));
-    let request = Request::post(links::auth::INVALIDATE_BEARER)
-        .header(AUTHORIZATION, auth_header)
-        .header(CONTENT_TYPE, content)
-        .body(body)
-        .unwrap();
+    let request = RequestBuilder::new(Method::POST, links::auth::INVALIDATE_BEARER)
+        .with_body(format!("access_token={}", token), content)
+        .request_consumer_bearer(con_token);
 
     let decoded = request_with_json_response::<serde_json::Value>(request).await?;
     let result = decoded
@@ -659,20 +641,4 @@ pub async fn invalidate_bearer(con_token: &KeyPair, token: &Token) -> Result<Tok
 pub async fn verify_tokens(token: &Token) -> Result<Response<crate::user::TwitterUser>> {
     let req = get(links::auth::VERIFY_CREDENTIALS, token, None);
     request_with_json_response(req).await
-}
-
-#[cfg(test)]
-mod tests {
-    use super::bearer_request;
-
-    #[test]
-    fn bearer_header() {
-        let con_key = "xvz1evFS4wEEPTGEFPHBog";
-        let con_secret = "L8qq9PZyRg6ieKGEKhZolGC0vJWLw8iEJ88DRdyOg";
-        let con_token = super::KeyPair::new(con_key, con_secret);
-
-        let output = bearer_request(&con_token);
-
-        assert_eq!(output, "Basic eHZ6MWV2RlM0d0VFUFRHRUZQSEJvZzpMOHFxOVBaeVJnNmllS0dFS2hab2xHQzB2SldMdzhpRUo4OERSZHlPZw==");
-    }
 }

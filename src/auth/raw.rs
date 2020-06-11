@@ -13,7 +13,6 @@ use base64;
 use hmac::{Hmac, Mac};
 use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
 use hyper::{Body, Method, Request};
-use percent_encoding::{utf8_percent_encode, AsciiSet, PercentEncode};
 use rand::{self, Rng};
 use sha1::Sha1;
 
@@ -21,27 +20,193 @@ use crate::common::*;
 
 use super::{Token, KeyPair};
 
-/// Percent-encodes the given string based on the Twitter API specification.
+// n.b. this type is exported in `raw::auth` - these docs are public!
+/// Builder struct to assemble and sign an API request.
 ///
-/// Twitter bases its encoding scheme on RFC 3986, Section 2.1. They describe the process in full
-/// [in their documentation][twitter-percent], but the process can be summarized by saying that
-/// every *byte* that is not an ASCII number or letter, or the ASCII characters `-`, `.`, `_`, or
-/// `~` must be replaced with a percent sign (`%`) and the byte value in hexadecimal.
-///
-/// [twitter-percent]: https://developer.twitter.com/en/docs/basics/authentication/oauth-1-0a/percent-encoding-parameters
-///
-/// When this function was originally implemented, the `percent_encoding` crate did not have an
-/// encoding set that matched this, so it was recreated here.
-pub fn percent_encode(src: &str) -> PercentEncode {
-    lazy_static::lazy_static! {
-        static ref ENCODER: AsciiSet = percent_encoding::NON_ALPHANUMERIC.remove(b'-').remove(b'.').remove(b'_').remove(b'~');
+/// For more information about how to use this type and about building requests manually, see [the
+/// module docs](index.html).
+pub struct RequestBuilder<'a> {
+    base_uri: &'a str,
+    method: Method,
+    params: Option<ParamList>,
+    query: Option<String>,
+    body: Option<(Body, &'static str)>,
+    addon: OAuthAddOn,
+}
+
+impl<'a> RequestBuilder<'a> {
+    /// Creates a new `RequestBuilder` with the given HTTP method and base URL.
+    pub fn new(method: Method, base_uri: &'a str) -> Self {
+        RequestBuilder {
+            base_uri,
+            method,
+            params: None,
+            query: None,
+            body: None,
+            addon: OAuthAddOn::None,
+        }
     }
-    utf8_percent_encode(src, &*ENCODER)
+
+    /// Adds the given parameters as a query string. Parameters given this way will be included in
+    /// the OAuth signature.
+    ///
+    /// Note that functions that take a `ParamList` accumulate parameters as part of the OAuth
+    /// signature. If you call both `with_query_params` and `with_body_params`, both sets of
+    /// parameters will be used as part of the OAuth signature.
+    ///
+    /// On the other hand, the query string is not cumulative. If you call `with_query_params`
+    /// multiple times, only the last set of parameters will actually be considered part of the
+    /// query string.
+    pub fn with_query_params(self, params: &ParamList) -> Self {
+        let total_params = if let Some(mut my_params) = self.params {
+            my_params.combine(params.clone());
+            my_params
+        } else {
+            params.clone()
+        };
+        RequestBuilder {
+            query: Some(params.to_urlencoded()),
+            params: Some(total_params),
+            ..self
+        }
+    }
+
+    /// Adds the given params as a request body, formatted as `application/x-www-form-urlencoded`.
+    /// Parameters given this way will be included in the OAuth signature.
+    ///
+    /// Note that functions that take a `ParamList` accumulate parameters as part of the OAuth
+    /// signature. If you call both `with_query_params` and `with_body_params`, both sets of
+    /// parameters will be used as part of the OAuth signature.
+    ///
+    /// Note that the functions that specify a request body each overwrite the body. For example,
+    /// if you specify `with_body_params` and also `with_body_json`, only the one you call last
+    /// will be sent with the request.
+    pub fn with_body_params(self, params: &ParamList) -> Self {
+        let total_params = if let Some(mut my_params) = self.params {
+            my_params.combine(params.clone());
+            my_params
+        } else {
+            params.clone()
+        };
+        RequestBuilder {
+            body: Some((Body::from(params.to_urlencoded()), "application/x-www-form-urlencoded")),
+            params: Some(total_params),
+            ..self
+        }
+    }
+
+    /// Includes the given data as the request body, formatted as JSON. Data given this way will
+    /// *not* be included in the OAuth signature.
+    ///
+    /// Note that the functions that specify a request body each overwrite the body. For example,
+    /// if you specify `with_body_params` and also `with_body_json`, only the one you call last
+    /// will be sent with the request.
+    pub fn with_body_json(self, body: impl serde::Serialize) -> Self {
+        self.with_body(serde_json::to_string(&body).unwrap(), "application/json; charset=UTF-8")
+    }
+
+    /// Includes the given data as the request body, with the given content type. Data given this
+    /// way will *not* be included in the OAuth signature.
+    ///
+    /// Note that the functions that specify a request body each overwrite the body. For example,
+    /// if you specify `with_body_params` and also `with_body`, only the one you call last will be
+    /// sent with the request.
+    pub fn with_body(self, body: impl Into<Body>, content: &'static str) -> Self {
+        RequestBuilder {
+            body: Some((body.into(), content)),
+            ..self
+        }
+    }
+
+    /// Includes the given OAuth Callback into the OAuth parameters.
+    ///
+    /// Note that `oauth_callback` and `oauth_verifier` are mutually exclusive. If you specify both
+    /// on the same request, only the last one will be sent.
+    pub fn oauth_callback(self, callback: impl Into<String>) -> Self {
+        RequestBuilder {
+            addon: OAuthAddOn::Callback(callback.into()),
+            ..self
+        }
+    }
+
+    /// Includes the given OAuth Verifier into the OAuth parameters.
+    ///
+    /// Note that `oauth_callback` and `oauth_verifier` are mutually exclusive. If you specify both
+    /// on the same request, only the last one will be sent.
+    pub fn oauth_verifier(self, verifier: impl Into<String>) -> Self {
+        RequestBuilder {
+            addon: OAuthAddOn::Verifier(verifier.into()),
+            ..self
+        }
+    }
+
+    /// Formats this `RequestBuilder` into a complete `Request`, signing it with the given keys.
+    ///
+    /// While the `token` parameter is an Option here, it should only be `None` when generating a
+    /// request token; all other calls must have two sets of keys (or be authenticated in a
+    /// different way, i.e. a Bearer token).
+    pub fn request_keys(self, consumer_key: &KeyPair, token: Option<&KeyPair>) -> Request<Body> {
+        let oauth = OAuthParams::from_keys(consumer_key.clone(), token.cloned())
+            .with_addon(self.addon.clone())
+            .sign_request(self.method.clone(), self.base_uri, self.params.as_ref());
+        self.request_authorization(oauth.to_string())
+    }
+
+    /// Formats this `RequestBuilder` into a complete `Request`, signing it with the given token.
+    ///
+    /// If the given `Token` is an Access token, the request will be signed using OAuth 1.0a, using
+    /// the given URI, HTTP method, and parameters to create a signature.
+    ///
+    /// If the given `Token` is a Bearer token, the request will be authenticated using OAuth 2.0,
+    /// specifying the given Bearer token as authorization.
+    pub fn request_token(self, token: &Token) -> Request<Body> {
+        match token {
+            Token::Access { consumer, access } => self.request_keys(consumer, Some(access)),
+            Token::Bearer(bearer) => self.request_authorization(format!("Bearer {}", bearer)),
+        }
+    }
+
+    /// Formats this `RequestBuilder` into a complete `Request`, with an Authorization header
+    /// formatted using HTTP Basic authentication using the given consumer key, as expected by the
+    /// `POST oauth2/token` endpoint.
+    ///
+    /// This Authorization should only be used when requesting a Bearer token; other requests need
+    /// to be signed with multiple keys (as with `request_keys` or giving an Access token to
+    /// `request_token`) or with a proper Bearer token given to `request_token`.
+    ///
+    /// This authorization can also be used to access Enterprise API endpoints that require Basic
+    /// authentication, using a `KeyPair` with the email address and password that would ordinarily
+    /// be used to access the Enterprise API Console.
+    pub fn request_consumer_bearer(self, consumer_key: &KeyPair) -> Request<Body> {
+        self.request_authorization(bearer_request(consumer_key))
+    }
+
+    /// Assembles the final `Request` with the given Authorization header. This is private to
+    /// require that a well-formed header is constructed given, as constructed from the other
+    /// `request_*` methods.
+    fn request_authorization(self, authorization: String) -> Request<Body> {
+        let full_url = if let Some(query) = self.query {
+            format!("{}?{}", self.base_uri, query)
+        } else {
+            self.base_uri.to_string()
+        };
+        let request = Request::builder()
+            .method(self.method)
+            .uri(full_url)
+            .header(AUTHORIZATION, authorization);
+
+        if let Some((body, content)) = self.body {
+            request.header(CONTENT_TYPE, content)
+                .body(body).unwrap()
+        } else {
+            request.body(Body::empty()).unwrap()
+        }
+    }
 }
 
 /// OAuth header set used to create an OAuth signature.
 #[derive(Clone, Debug)]
-pub struct OAuthParams {
+struct OAuthParams {
     /// The consumer key that represents the app making the API request.
     consumer_key: KeyPair,
     /// The token that represents the user authorizing the request (or the access request
@@ -86,7 +251,7 @@ impl OAuthParams {
     /// specifically for when you're generating a request token; otherwise it should be the request
     /// token (for when you're generating an access token) or an access token (for when you're
     /// requesting a regular API function).
-    pub fn from_keys(consumer_key: KeyPair, token: Option<KeyPair>) -> OAuthParams {
+    fn from_keys(consumer_key: KeyPair, token: Option<KeyPair>) -> OAuthParams {
         OAuthParams {
             consumer_key,
             token,
@@ -94,31 +259,17 @@ impl OAuthParams {
         }
     }
 
-    /// Adds the given callback to this `OAuthParams` header.
-    ///
-    /// Note that the `callback` and `verifier` parameters are mutually exclusive. If you call this
-    /// function after setting a verifier with `with_verifier`, it will overwrite the verifier.
-    pub fn with_callback(self, callback: String) -> OAuthParams {
+    /// Adds the given callback or verifier to this `OAuthParams` header.
+    fn with_addon(self, addon: OAuthAddOn) -> OAuthParams {
         OAuthParams {
-            addon: OAuthAddOn::Callback(callback),
-            ..self
-        }
-    }
-
-    /// Adds the given verifier to this `OAuthParams` header.
-    ///
-    /// Note that the `callback` and `verifier` parameters are mutually exclusive. If you call this
-    /// function after setting a callback with `with_callback`, it will overwrite the callback.
-    pub fn with_verifier(self, verifier: String) -> OAuthParams {
-        OAuthParams {
-            addon: OAuthAddOn::Verifier(verifier),
+            addon,
             ..self
         }
     }
 
     /// Uses the parameters in this `OAuthParams` instance to generate a signature for the given
     /// request, returning it as a `SignedHeader`.
-    pub(crate) fn sign_request(self, method: Method, uri: &str, params: Option<&ParamList>) -> SignedHeader {
+    fn sign_request(self, method: Method, uri: &str, params: Option<&ParamList>) -> SignedHeader {
         let query_string = {
             let sig_params = params
                 .cloned()
@@ -189,7 +340,7 @@ impl OAuthParams {
 
 /// Represents an "addon" to an OAuth header.
 #[derive(Clone, Debug)]
-pub enum OAuthAddOn {
+enum OAuthAddOn {
     /// An `oauth_callback` parameter, used when generating a request token.
     Callback(String),
     /// An `oauth_verifier` parameter, used when generating an access token.
@@ -219,7 +370,7 @@ impl OAuthAddOn {
 
 /// A set of `OAuthParams` parameters combined with a request signature, ready to be attached to a
 /// request.
-pub struct SignedHeader {
+struct SignedHeader {
     /// The OAuth parameters used to create the signature.
     params: BTreeMap<&'static str, Cow<'static, str>>,
 }
@@ -248,56 +399,12 @@ impl fmt::Display for SignedHeader {
     }
 }
 
-/// An abstracted set of authorization credentials.
-///
-/// This enum is constructed from a `Token` and either constructs an OAuth signature or a Bearer
-/// signature based on what kind of token is given. This allows the `auth` entry points to not need
-/// to match on the structure of a `Token` and instead just focus on signing the request.
-pub enum AuthHeader {
-    /// A set of OAuth parameters based on a consumer/access token combo.
-    AccessToken(OAuthParams),
-    /// A Bearer token.
-    Bearer(String),
-}
-
-impl From<Token> for AuthHeader {
-    fn from(token: Token) -> AuthHeader {
-        match token {
-            Token::Access { consumer, access } => {
-                AuthHeader::AccessToken(OAuthParams::from_keys(consumer, Some(access)))
-            }
-            Token::Bearer(b) => {
-                AuthHeader::Bearer(b)
-            }
-        }
-    }
-}
-
-impl AuthHeader {
-    /// With the given parameters, create an `Authorization` header that matches the `Token` that
-    /// was used to create this `AuthHeader`. The resulting string can be passed as an
-    /// `Authorization` header to an API request.
-    ///
-    /// If the source `Token` was a bearer token, this function ignores the parameters and gives a
-    /// Bearer authorization based on the original token.
-    pub(crate) fn sign_request(self, method: Method, uri: &str, params: Option<&ParamList>) -> String {
-        match self {
-            AuthHeader::AccessToken(oauth) => {
-                oauth.sign_request(method, uri, params).to_string()
-            }
-            AuthHeader::Bearer(b) => {
-                format!("Bearer {}", b)
-            }
-        }
-    }
-}
-
 /// Creates a basic `Authorization` header based on the given consumer token.
 ///
 /// The authorization created by this function can only be used with requests to generate or
 /// invalidate a bearer token. Using this authorization with any other endpoint will result in an
 /// invalid request.
-pub fn bearer_request(con_token: &KeyPair) -> String {
+fn bearer_request(con_token: &KeyPair) -> String {
     let text = format!("{}:{}", con_token.key, con_token.secret);
     format!("Basic {}", base64::encode(&text))
 }
@@ -309,23 +416,11 @@ pub fn bearer_request(con_token: &KeyPair) -> String {
 /// query string. If the given `token` is not a Bearer token, the parameters will also be used to
 /// create the OAuth signature.
 pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
-    let full_url = if let Some(p) = params {
-        let query = p
-            .iter()
-            .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
-            .collect::<Vec<_>>()
-            .join("&");
-
-        format!("{}?{}", uri, query)
-    } else {
-        uri.to_string()
-    };
-
-    let request = Request::get(full_url)
-        .header(AUTHORIZATION,
-                AuthHeader::from(token.clone()).sign_request(Method::GET, uri, params));
-
-    request.body(Body::empty()).unwrap()
+    let mut request = RequestBuilder::new(Method::GET, uri);
+    if let Some(params) = params {
+        request = request.with_query_params(params);
+    }
+    request.request_token(token)
 }
 
 // n.b. this function is re-exported in the `raw` module - these docs are public!
@@ -335,25 +430,11 @@ pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body
 /// formatted with a content-type of `application/x-www-form-urlencoded`. If the given `token` is
 /// not a Bearer token, the parameters will also be used to create the OAuth signature.
 pub fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
-    let content = "application/x-www-form-urlencoded";
-    let body = if let Some(p) = params {
-        Body::from(
-            p.iter()
-                .map(|(k, v)| format!("{}={}", k, percent_encode(v)))
-                .collect::<Vec<_>>()
-                .join("&"),
-        )
-    } else {
-        Body::empty()
-    };
-
-    let request =
-        Request::post(uri)
-            .header(CONTENT_TYPE, content)
-            .header(AUTHORIZATION,
-                    AuthHeader::from(token.clone()).sign_request(Method::POST, uri, params));
-
-    request.body(body).unwrap()
+    let mut request = RequestBuilder::new(Method::POST, uri);
+    if let Some(params) = params {
+        request = request.with_body_params(params);
+    }
+    request.request_token(token)
 }
 
 // n.b. this function is re-exported in the `raw` module - these docs are public!
@@ -364,14 +445,23 @@ pub fn post(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Bod
 /// its parameters into the OAuth signature, so take care if the endpoint you're using lists
 /// parameters as part of its specification.
 pub fn post_json<B: serde::Serialize>(uri: &str, token: &Token, body: B) -> Request<Body> {
-    let content = "application/json; charset=UTF-8";
-    let body = Body::from(serde_json::to_string(&body).unwrap()); // TODO rewrite
+    RequestBuilder::new(Method::POST, uri)
+        .with_body_json(body)
+        .request_token(token)
+}
 
-    let request =
-        Request::post(uri)
-            .header(CONTENT_TYPE, content)
-            .header(AUTHORIZATION,
-                    AuthHeader::from(token.clone()).sign_request(Method::POST, uri, None));
+#[cfg(test)]
+mod tests {
+    use super::bearer_request;
 
-    request.body(body).unwrap()
+    #[test]
+    fn bearer_header() {
+        let con_key = "xvz1evFS4wEEPTGEFPHBog";
+        let con_secret = "L8qq9PZyRg6ieKGEKhZolGC0vJWLw8iEJ88DRdyOg";
+        let con_token = super::KeyPair::new(con_key, con_secret);
+
+        let output = bearer_request(&con_token);
+
+        assert_eq!(output, "Basic eHZ6MWV2RlM0d0VFUFRHRUZQSEJvZzpMOHFxOVBaeVJnNmllS0dFS2hab2xHQzB2SldMdzhpRUo4OERSZHlPZw==");
+    }
 }
