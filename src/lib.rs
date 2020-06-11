@@ -62,6 +62,25 @@
 //! # }
 //! ```
 //!
+//! # Crate features
+//!
+//! While all of egg-mode's features are available by default, it allows you to configure how it
+//! connects to Twitter and how it uses HTTPS. The crate's Cargo features are the following:
+//!
+//! * `native_tls`: On by default. With this feature on, egg-mode uses `native-tls` to access your
+//!   operating system's native TLS functionality to access Twitter.
+//! * `rustls`: Off by default. With this feature on, egg-mode instead uses the `rustls` TLS stack
+//!   to access Twitter. `rustls` will still use your operating system's native root certificates
+//!   to verify the connection.
+//! * `rustls_webpki`: Off by default. With this feature on, egg-mode will also use `rustls` to
+//!   connect, but it will also use the `webpki-roots` crate to include a set of compiled-in root
+//!   certificates to verify the connection, instead of using your operating system's root
+//!   certificates.
+//!
+//! Keep in mind that these features are mutually exclusive - if you enable more than one, a
+//! compile error will result. If you need to use `rustls` or `rustls_webpki`, remember to set
+//! `default-features = false` in your Cargo.toml.
+//!
 //! # Types and Functions
 //!
 //! All of the main content of egg-mode is in submodules, but there are a few things here in the
