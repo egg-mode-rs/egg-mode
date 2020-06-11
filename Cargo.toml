@@ -11,9 +11,6 @@ license = "MPL-2.0"
 readme = "README.md"
 edition = "2018"
 
-[badges]
-# TODO add badge once https://github.com/rust-lang/crates.io/pull/1838 is merged
-
 [dependencies]
 base64 = "0.11"
 chrono = { version = "0.4", features = ["serde"] }
