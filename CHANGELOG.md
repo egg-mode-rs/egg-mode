@@ -1,6 +1,6 @@
 # Changelog for egg-mode
 
-## Pending
+## [0.15.0] - 2020-06-11
 
 ### Added
 - New module `raw`, for binding APIs that egg-mode doesn't wrap
@@ -29,7 +29,7 @@
   - The authentication documentation has been tweaked and moved around
 - `Token` and `KeyPair` now implement `Serialize` and `Deserialize`
 
-## [0.14.0]
+## [0.14.0] - 2020-04-11
 
 This release has a lot of important changes!
 

@@ -11,7 +11,8 @@ interact with the Twitter API. Parts of this library are added as a convenience 
 mechanisms; for example, cursored lists of users and tweets can be used as an iterator in addition
 to being able to manually load a page at a time.
 
-From `v0.14`, egg-mode uses the `async/await` syntax and therefore requires Rust **v1.39.0+**.
+Starting in version `v0.14`, egg-mode uses the `async/await` syntax and therefore requires Rust
+**v1.39.0+**.
 
 [TODO.md]: https://github.com/egg-mode-rs/egg-mode/blob/master/TODO.md
 
@@ -26,14 +27,24 @@ To start using this library, put the following into your Cargo.toml:
 
 ```TOML
 [dependencies]
-egg-mode = "0.14.0"
+egg-mode = "0.15"
 ```
 
 By default, `egg-mode` uses `native-tls` for encryption, but also supports `rustls`.
 This may be helpful if you wish to avoid linking against `OpenSSL`.
 To enable, modify your `Cargo.toml` entry:
+
 ```
-egg-mode = { version = "0.14", features = ["hyper-rustls"], default-features = false }
+egg-mode = { version = "0.15", features = ["rustls"], default-features = false }
+```
+
+If you also want to avoid using the root certificates on your operating system, the feature
+`rustls_webpki` can be used instead to enable `rustls` and compile the Mozilla root certificates
+into the final binary, bypassing the operating system's root certificates. To use this feature, put
+this in your `Cargo.toml` instead:
+
+```
+egg-mode = { version = "0.15", features = ["rustls_webpki"], default-features = false }
 ```
 
 See available methods and tips to get started in the [Documentation][].
