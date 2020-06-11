@@ -10,7 +10,7 @@ use std::fmt;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use base64;
-use hmac::{Hmac, Mac};
+use hmac::{Hmac, Mac, NewMac};
 use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
 use hyper::{Body, Method, Request};
 use rand::{self, Rng};
@@ -306,7 +306,7 @@ impl OAuthParams {
 
         // TODO check if key is correct length? Can this fail?
         let mut digest = Hmac::<Sha1>::new_varkey(key.as_bytes()).expect("Wrong key length");
-        digest.input(base_str.as_bytes());
+        digest.update(base_str.as_bytes());
 
         let mut params: BTreeMap<&'static str, Cow<'static, str>> = BTreeMap::new();
         params.insert("oauth_signature_method", "HMAC-SHA1".into());
@@ -330,7 +330,7 @@ impl OAuthParams {
             OAuthAddOn::None => (),
         }
 
-        params.insert("oauth_signature", base64::encode(&digest.result().code()).into());
+        params.insert("oauth_signature", base64::encode(&digest.finalize().into_bytes()).into());
 
         SignedHeader {
             params,
