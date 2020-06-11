@@ -77,7 +77,6 @@ use crate::cursor;
 use crate::stream::TwitterStream;
 
 use crate::tweet::Timeline as TweetTimeline;
-use crate::direct::Timeline as DMTimeline;
 
 pub use crate::common::ParamList;
 pub use crate::common::Headers;
@@ -107,25 +106,6 @@ pub fn request_as_tweet_timeline(
     params: Option<ParamList>
 ) -> TweetTimeline {
     TweetTimeline::new(url, params, token)
-}
-
-/// Assemble a GET request and convert it to a `Timeline` of direct messages.
-///
-/// An endpoint wrapped by `direct::Timeline` returns data as an array of Tweets. In addition, they
-/// also take parameters `since_id` and `max_id` to filter the earliest and latest Tweet returned
-/// (respectively), as well as a `count` parameter to limit the number of Tweets returned at once.
-/// The `Timeline` struct sets these parameters itself; you should not need to hand them to this
-/// function. These parameters are manipulated through the `older()` and `newer()` functions, as
-/// well as the `with_page_size()` function.
-///
-/// If you do not need to send additional parameters other than these mentioned, you can pass
-/// `None` for the `params` to make the `Timeline` manage the parameters itself.
-pub fn request_as_dm_timeline(
-    url: &'static str,
-    token: &Token,
-    params: Option<ParamList>
-) -> DMTimeline {
-    DMTimeline::new(url, params, token)
 }
 
 /// Assemble a GET request and convert it to a `CursorIter`.
