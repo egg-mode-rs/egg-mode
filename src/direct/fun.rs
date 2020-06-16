@@ -3,6 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::common::*;
+
+use std::convert::TryInto;
+
 use crate::user::UserID;
 use crate::{auth, links};
 
@@ -12,9 +15,8 @@ use super::*;
 pub async fn show(id: u64, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
     let params = ParamList::default().add_param("id", id.to_string());
     let req = get(links::direct::SHOW, token, Some(&params));
-    let mut resp: Response<serde_json::Value> = request_with_json_response(req).await?;
-    let dm = serde_json::from_value(resp.response["event"].take())?;
-    Ok(Response::map(resp, |_| dm))
+    let resp: Response<raw::SingleEvent> = request_with_json_response(req).await?;
+    Response::try_map(resp, |ev| ev.try_into())
 }
 
 /////Create a `Timeline` struct to navigate the direct messages received by the authenticated user.

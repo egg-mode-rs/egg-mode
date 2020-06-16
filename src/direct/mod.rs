@@ -11,6 +11,7 @@
 //! TODO: i'm in the process of rewriting this module, so things are gonna change here real fast
 
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::future::Future;
 use std::mem;
 
@@ -21,6 +22,7 @@ use serde::{Deserialize, Deserializer};
 
 use crate::common::*;
 use crate::{auth, entities, error, user};
+use crate::tweet::TweetSource;
 
 mod fun;
 mod raw;
@@ -50,32 +52,24 @@ pub struct DirectMessage {
     pub quick_reply_response: Option<String>,
     /// The ID of the user who sent the DM.
     pub sender_id: u64,
+    /// The app that sent this direct message.
+    pub source_app: TweetSource,
     /// The ID of the user who received the DM.
     pub recipient_id: u64,
 }
 
-impl<'de> Deserialize<'de> for DirectMessage {
-    fn deserialize<D>(deser: D) -> Result<DirectMessage, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let mut raw = raw::RawDirectMessage::deserialize(deser)?;
+impl TryFrom<raw::SingleEvent> for DirectMessage {
+    type Error = error::Error;
 
-        for entity in &mut raw.entities.hashtags {
-            codepoints_to_bytes(&mut entity.range, &raw.text);
-        }
-        for entity in &mut raw.entities.symbols {
-            codepoints_to_bytes(&mut entity.range, &raw.text);
-        }
-        for entity in &mut raw.entities.urls {
-            codepoints_to_bytes(&mut entity.range, &raw.text);
-        }
-        for entity in &mut raw.entities.user_mentions {
-            codepoints_to_bytes(&mut entity.range, &raw.text);
-        }
-        if let Some(ref mut media) = raw.attachment {
-            codepoints_to_bytes(&mut media.range, &raw.text);
-        }
+    fn try_from(ev: raw::SingleEvent) -> error::Result<DirectMessage> {
+        let raw::SingleEvent { event, apps } = ev;
+        let mut raw: raw::RawDirectMessage = event.as_message_create().into();
+        raw.translate_indices();
+        let source_app = if let Some(app) = apps.get(&raw.source_app_id).cloned() {
+            app
+        } else {
+            return Err(error::Error::InvalidResponse("no app information for this DM", None));
+        };
 
         Ok(DirectMessage {
             id: raw.id,
@@ -85,12 +79,37 @@ impl<'de> Deserialize<'de> for DirectMessage {
             attachment: raw.attachment,
             ctas: raw.ctas,
             sender_id: raw.sender_id,
+            source_app,
             recipient_id: raw.recipient_id,
             quick_replies: raw.quick_replies,
             quick_reply_response: raw.quick_reply_response,
         })
     }
 }
+
+// impl<'de> Deserialize<'de> for DirectMessage {
+//     fn deserialize<D>(deser: D) -> Result<DirectMessage, D::Error>
+//     where
+//         D: Deserializer<'de>,
+//     {
+//         let mut raw = raw::RawDirectMessage::deserialize(deser)?;
+
+//         raw.translate_indices();
+
+//         Ok(DirectMessage {
+//             id: raw.id,
+//             created_at: raw.created_at,
+//             text: raw.text,
+//             entities: raw.entities,
+//             attachment: raw.attachment,
+//             ctas: raw.ctas,
+//             sender_id: raw.sender_id,
+//             recipient_id: raw.recipient_id,
+//             quick_replies: raw.quick_replies,
+//             quick_reply_response: raw.quick_reply_response,
+//         })
+//     }
+// }
 
 /// Container for URL, hashtag, and mention information associated with a direct message.
 ///

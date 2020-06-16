@@ -4,10 +4,13 @@
 
 use crate::common::*;
 
+use std::collections::HashMap;
+
 use chrono;
 use serde::Deserialize;
 
 use crate::entities::MediaEntity;
+use crate::tweet::TweetSource;
 
 use super::{DMEntities, Cta, QuickReply};
 
@@ -30,8 +33,29 @@ pub struct RawDirectMessage {
     pub quick_reply_response: Option<String>,
     ///The ID of the user who sent the DM.
     pub sender_id: u64,
+    pub source_app_id: String,
     ///The ID of the user who received the DM.
     pub recipient_id: u64,
+}
+
+impl RawDirectMessage {
+    pub fn translate_indices(&mut self) {
+        for entity in &mut self.entities.hashtags {
+            codepoints_to_bytes(&mut entity.range, &self.text);
+        }
+        for entity in &mut self.entities.symbols {
+            codepoints_to_bytes(&mut entity.range, &self.text);
+        }
+        for entity in &mut self.entities.urls {
+            codepoints_to_bytes(&mut entity.range, &self.text);
+        }
+        for entity in &mut self.entities.user_mentions {
+            codepoints_to_bytes(&mut entity.range, &self.text);
+        }
+        if let Some(ref mut media) = self.attachment {
+            codepoints_to_bytes(&mut media.range, &self.text);
+        }
+    }
 }
 
 // DMs received from twitter are structured as events in their activity API, which means they have
@@ -42,13 +66,14 @@ impl From<DMEvent> for RawDirectMessage {
     fn from(ev: DMEvent) -> RawDirectMessage {
         use chrono::TimeZone;
         RawDirectMessage {
-            id: ev.id,
-            created_at: chrono::Utc.timestamp_millis(ev.created_at),
+            id: ev.ev.id,
+            created_at: chrono::Utc.timestamp_millis(ev.ev.created_timestamp),
             text: ev.message_create.message_data.text,
             entities: ev.message_create.message_data.entities,
             attachment: ev.message_create.message_data.attachment.map(|a| a.media),
             ctas: ev.message_create.message_data.ctas,
             sender_id: ev.message_create.sender_id,
+            source_app_id: ev.message_create.source_app_id,
             recipient_id: ev.message_create.target.recipient_id,
             quick_replies: ev.message_create.message_data.quick_reply.map(|q| q.options),
             quick_reply_response: ev.message_create.message_data.quick_reply_response.map(|q| q.metadata),
@@ -57,12 +82,44 @@ impl From<DMEvent> for RawDirectMessage {
 }
 
 #[derive(Deserialize)]
-struct DMEvent {
+pub struct SingleEvent {
+    pub event: EventType,
+    pub apps: HashMap<String, TweetSource>,
+}
+
+#[derive(Deserialize)]
+pub struct EventCursor {
+    pub events: Vec<EventType>,
+    pub apps: HashMap<String, TweetSource>,
+    pub next_cursor: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(tag="type")]
+#[serde(rename_all="snake_case")]
+pub enum EventType {
+    MessageCreate(DMEvent),
+}
+
+impl EventType {
+    pub fn as_message_create(self) -> DMEvent {
+        let EventType::MessageCreate(ev) = self;
+        ev
+    }
+}
+
+#[derive(Deserialize)]
+struct EventCommon {
     #[serde(deserialize_with = "deser_from_string")]
     id: u64,
     #[serde(deserialize_with = "deser_from_string")]
-    #[serde(rename = "created_timestamp")]
-    created_at: i64,
+    created_timestamp: i64,
+}
+
+#[derive(Deserialize)]
+pub struct DMEvent {
+    #[serde(flatten)]
+    ev: EventCommon,
     message_create: MessageCreateEvent,
 }
 
@@ -71,6 +128,7 @@ struct MessageCreateEvent {
     message_data: MessageData,
     #[serde(deserialize_with = "deser_from_string")]
     sender_id: u64,
+    source_app_id: String,
     target: MessageTarget,
 }
 

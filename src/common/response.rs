@@ -82,6 +82,22 @@ impl<T> Response<T> {
             response: fun(src.response),
         }
     }
+
+    ///Attempt to convert a `Response<T>` into a `Response<U>` by running its contained response
+    ///through the given function, preserving its rate-limit information. If the conversion
+    ///function fails, an error is returned instead.
+    ///
+    ///Note that this is not a member function, so as to not conflict with potential methods on the
+    ///contained `T`.
+    pub fn try_map<F, U>(src: Response<T>, fun: F) -> Result<Response<U>>
+    where
+        F: FnOnce(T) -> Result<U>
+    {
+        Ok(Response {
+            rate_limit_status: src.rate_limit_status,
+            response: fun(src.response)?,
+        })
+    }
 }
 
 // n.b. this function is re-exported in the `raw` module - these docs are public!
