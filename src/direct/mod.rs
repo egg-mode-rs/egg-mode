@@ -40,6 +40,14 @@ pub struct DirectMessage {
     pub entities: DMEntities,
     /// An image, gif, or video attachment, if present.
     pub attachment: Option<entities::MediaEntity>,
+    /// A list of "call to action" buttons attached to the DM, if present.
+    pub ctas: Option<Vec<Cta>>,
+    /// A list of "Quick Replies" sent with this message to request structured input from the other
+    /// user.
+    pub quick_replies: Option<Vec<QuickReply>>,
+    /// The `metadata` accompanying a Quick Reply, if the other user selected a Quick Reply for
+    /// their response.
+    pub quick_reply_response: Option<String>,
     /// The ID of the user who sent the DM.
     pub sender_id: u64,
     /// The ID of the user who received the DM.
@@ -75,8 +83,11 @@ impl<'de> Deserialize<'de> for DirectMessage {
             text: raw.text,
             entities: raw.entities,
             attachment: raw.attachment,
+            ctas: raw.ctas,
             sender_id: raw.sender_id,
             recipient_id: raw.recipient_id,
+            quick_replies: raw.quick_replies,
+            quick_reply_response: raw.quick_reply_response,
         })
     }
 }
@@ -101,6 +112,30 @@ pub struct DMEntities {
     pub urls: Vec<entities::UrlEntity>,
     /// Collection of user mentions parsed from the DM.
     pub user_mentions: Vec<entities::MentionEntity>,
+}
+
+/// A "call to action" added as a button to a direct message.
+#[derive(Debug, Deserialize)]
+pub struct Cta {
+    /// The label shown to the user for the CTA.
+    pub label: String,
+    /// The `t.co` URL that the user should navigate to if they click this CTA.
+    pub tco_url: String,
+    /// The URL given for the CTA, that could be displayed if needed.
+    pub url: String,
+}
+
+/// A Quick Reply attached to a message to request structured input from a user.
+#[derive(Debug, Deserialize)]
+pub struct QuickReply {
+    /// The label shown to the user. When the user selects this Quick Reply, the label will be sent
+    /// as the `text` of the reply message.
+    pub label: String,
+    /// An optional description that accompanies a Quick Reply.
+    pub description: Option<String>,
+    /// Metadata that accompanies this Quick Reply. Metadata is not shown to the user, but is
+    /// available in the `quick_reply_response` when the user selects it.
+    pub metadata: String,
 }
 
 ///// Helper struct to navigate collections of direct messages by requesting DMs older or newer than

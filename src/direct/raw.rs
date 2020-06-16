@@ -9,7 +9,7 @@ use serde::Deserialize;
 
 use crate::entities::MediaEntity;
 
-use super::DMEntities;
+use super::{DMEntities, Cta, QuickReply};
 
 #[derive(Debug, Deserialize)]
 #[serde(from = "DMEvent")]
@@ -24,6 +24,10 @@ pub struct RawDirectMessage {
     pub entities: DMEntities,
     ///Media attached to the DM, if present.
     pub attachment: Option<MediaEntity>,
+    ///A list of "call to action" buttons, if present.
+    pub ctas: Option<Vec<Cta>>,
+    pub quick_replies: Option<Vec<QuickReply>>,
+    pub quick_reply_response: Option<String>,
     ///The ID of the user who sent the DM.
     pub sender_id: u64,
     ///The ID of the user who received the DM.
@@ -43,8 +47,11 @@ impl From<DMEvent> for RawDirectMessage {
             text: ev.message_create.message_data.text,
             entities: ev.message_create.message_data.entities,
             attachment: ev.message_create.message_data.attachment.map(|a| a.media),
+            ctas: ev.message_create.message_data.ctas,
             sender_id: ev.message_create.sender_id,
             recipient_id: ev.message_create.target.recipient_id,
+            quick_replies: ev.message_create.message_data.quick_reply.map(|q| q.options),
+            quick_reply_response: ev.message_create.message_data.quick_reply_response.map(|q| q.metadata),
         }
     }
 }
@@ -69,14 +76,27 @@ struct MessageCreateEvent {
 
 #[derive(Deserialize)]
 struct MessageData {
+    ctas: Option<Vec<Cta>>,
     attachment: Option<MessageAttachment>,
     entities: DMEntities,
+    quick_reply: Option<RawQuickReply>,
+    quick_reply_response: Option<QuickReplyResponse>,
     text: String,
 }
 
 #[derive(Deserialize)]
 struct MessageAttachment {
     media: MediaEntity,
+}
+
+#[derive(Deserialize)]
+struct RawQuickReply {
+    options: Vec<QuickReply>,
+}
+
+#[derive(Deserialize)]
+struct QuickReplyResponse {
+    metadata: String,
 }
 
 #[derive(Deserialize)]
