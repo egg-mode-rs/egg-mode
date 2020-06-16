@@ -387,6 +387,16 @@ where
     str.parse().map_err(|e| D::Error::custom(e))
 }
 
+pub fn deser_from_string<'de, D, T>(ser: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T: std::str::FromStr,
+    <T as std::str::FromStr>::Err: std::fmt::Display,
+{
+    let str = String::deserialize(ser)?;
+    str.parse().map_err(|e| D::Error::custom(e))
+}
+
 /// Percent-encodes the given string based on the Twitter API specification.
 ///
 /// Twitter bases its encoding scheme on RFC 3986, Section 2.1. They describe the process in full
