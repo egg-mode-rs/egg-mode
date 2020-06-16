@@ -23,29 +23,6 @@ pub fn list(token: &auth::Token) -> Timeline {
     Timeline::new(links::direct::LIST, token.clone())
 }
 
-/////Send a new direct message to the given user.
-/////
-/////The recipient must allow DMs from the authenticated user for this to be successful. In practice,
-/////this means that the recipient must either follow the authenticated user, or they must have the
-/////"allow DMs from anyone" setting enabled. As the latter setting has no visibility on the API,
-/////there may be situations where you can't verify the recipient's ability to receive the requested
-/////DM beforehand.
-/////
-/////Upon successfully sending the DM, the message will be returned.
-//pub async fn send<T: Into<UserID>>(
-//    to: T,
-//    text: CowStr,
-//    token: &auth::Token,
-//) -> Result<Response<DirectMessage>, error::Error> {
-//    let params = ParamList::new()
-//        .add_user_param(to.into())
-//        .add_param("text", text);
-
-//    let req = post(links::direct::SEND, token, Some(&params));
-
-//    request_with_json_response(req).await
-//}
-
 /////Delete the direct message with the given ID.
 /////
 /////The authenticated user must be the sender of this DM for this call to be successful.

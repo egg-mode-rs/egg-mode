@@ -106,12 +106,14 @@ impl From<DMEvent> for RawDirectMessage {
 #[derive(Deserialize)]
 pub struct SingleEvent {
     pub event: EventType,
+    #[serde(default)]
     pub apps: HashMap<String, TweetSource>,
 }
 
 #[derive(Deserialize)]
 pub struct EventCursor {
     pub events: Vec<EventType>,
+    #[serde(default)]
     pub apps: HashMap<String, TweetSource>,
     pub next_cursor: Option<String>,
 }

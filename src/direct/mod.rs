@@ -10,6 +10,7 @@
 //!
 //! TODO: i'm in the process of rewriting this module, so things are gonna change here real fast
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::future::Future;
@@ -21,7 +22,7 @@ use hyper::{Body, Request};
 use serde::Deserialize;
 
 use crate::common::*;
-use crate::{auth, entities, error};
+use crate::{auth, entities, error, links};
 use crate::tweet::TweetSource;
 
 mod fun;
@@ -285,3 +286,50 @@ impl Timeline {
 ///
 /// [`Timeline`]: struct.Timeline.html
 pub type DMConversations = HashMap<u64, Vec<DirectMessage>>;
+
+/// Represents a direct message before it is sent.
+///
+/// The recipient must allow DMs from the authenticated user for this to be successful. In
+/// practice, this means that the recipient must either follow the authenticated user, or they must
+/// have the "allow DMs from anyone" setting enabled. As the latter setting has no visibility on
+/// the API, there may be situations where you can't verify the recipient's ability to receive the
+/// requested DM beforehand.
+pub struct DraftMessage {
+    text: Cow<'static, str>,
+    recipient: u64,
+}
+
+impl DraftMessage {
+    /// Creates a new `DraftMessage` with the given text, to be sent to the given recipient.
+    pub fn new(text: impl Into<Cow<'static, str>>, recipient: u64) -> DraftMessage {
+        DraftMessage {
+            text: text.into(),
+            recipient,
+        }
+    }
+
+    /// Sends this direct message using the given `Token`.
+    ///
+    /// If the message was successfully sent, this function will return the `DirectMessage` that
+    /// was just sent.
+    pub async fn send(self, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
+        let mut message_data = serde_json::json!({
+            "text": self.text
+        });
+
+        let message = serde_json::json!({
+            "event": {
+                "type": "message_create",
+                "message_create": {
+                    "target": {
+                        "recipient_id": self.recipient
+                    },
+                    "message_data": message_data
+                }
+            }
+        });
+        let req = post_json(links::direct::SEND, token, message);
+        let resp: Response<raw::SingleEvent> = request_with_json_response(req).await?;
+        Response::try_map(resp, |ev| ev.try_into())
+    }
+}
