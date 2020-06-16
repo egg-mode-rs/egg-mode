@@ -10,9 +10,10 @@ use chrono;
 use serde::Deserialize;
 
 use crate::entities::MediaEntity;
+use crate::error;
 use crate::tweet::TweetSource;
 
-use super::{DMEntities, Cta, QuickReply};
+use super::{DMEntities, Cta, QuickReply, DirectMessage};
 
 #[derive(Debug, Deserialize)]
 #[serde(from = "DMEvent")]
@@ -33,7 +34,7 @@ pub struct RawDirectMessage {
     pub quick_reply_response: Option<String>,
     ///The ID of the user who sent the DM.
     pub sender_id: u64,
-    pub source_app_id: String,
+    pub source_app_id: Option<String>,
     ///The ID of the user who received the DM.
     pub recipient_id: u64,
 }
@@ -55,6 +56,27 @@ impl RawDirectMessage {
         if let Some(ref mut media) = self.attachment {
             codepoints_to_bytes(&mut media.range, &self.text);
         }
+    }
+
+    pub fn into_dm(mut self, apps: &HashMap<String, TweetSource>)
+        -> error::Result<DirectMessage>
+    {
+        self.translate_indices();
+        let source_app = self.source_app_id.and_then(|id| apps.get(&id).cloned());
+
+        Ok(DirectMessage {
+            id: self.id,
+            created_at: self.created_at,
+            text: self.text,
+            entities: self.entities,
+            attachment: self.attachment,
+            ctas: self.ctas,
+            sender_id: self.sender_id,
+            source_app,
+            recipient_id: self.recipient_id,
+            quick_replies: self.quick_replies,
+            quick_reply_response: self.quick_reply_response,
+        })
     }
 }
 
@@ -128,7 +150,7 @@ struct MessageCreateEvent {
     message_data: MessageData,
     #[serde(deserialize_with = "deser_from_string")]
     sender_id: u64,
-    source_app_id: String,
+    source_app_id: Option<String>,
     target: MessageTarget,
 }
 

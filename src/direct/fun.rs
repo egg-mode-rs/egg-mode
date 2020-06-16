@@ -19,6 +19,13 @@ pub async fn show(id: u64, token: &auth::Token) -> Result<Response<DirectMessage
     Response::try_map(resp, |ev| ev.try_into())
 }
 
+/// Load the first page of the list of direct messages sent and received by the authorized user.
+pub async fn list(token: &auth::Token) -> Result<Response<Vec<DirectMessage>>, error::Error> {
+    let req = get(links::direct::LIST, token, None);
+    let resp: Response<raw::EventCursor> = request_with_json_response(req).await?;
+    Response::try_map(resp, |evs| evs.try_into())
+}
+
 /////Create a `Timeline` struct to navigate the direct messages received by the authenticated user.
 //pub fn received(token: &auth::Token) -> Timeline {
 //    Timeline::new(links::direct::RECEIVED, None, token)

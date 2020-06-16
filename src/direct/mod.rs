@@ -53,7 +53,10 @@ pub struct DirectMessage {
     /// The ID of the user who sent the DM.
     pub sender_id: u64,
     /// The app that sent this direct message.
-    pub source_app: TweetSource,
+    ///
+    /// Source app information is only available for messages sent by the authorized user. For
+    /// received messages written by other users, this field will be `None`.
+    pub source_app: Option<TweetSource>,
     /// The ID of the user who received the DM.
     pub recipient_id: u64,
 }
@@ -63,27 +66,24 @@ impl TryFrom<raw::SingleEvent> for DirectMessage {
 
     fn try_from(ev: raw::SingleEvent) -> error::Result<DirectMessage> {
         let raw::SingleEvent { event, apps } = ev;
-        let mut raw: raw::RawDirectMessage = event.as_message_create().into();
-        raw.translate_indices();
-        let source_app = if let Some(app) = apps.get(&raw.source_app_id).cloned() {
-            app
-        } else {
-            return Err(error::Error::InvalidResponse("no app information for this DM", None));
-        };
+        let raw: raw::RawDirectMessage = event.as_message_create().into();
+        raw.into_dm(&apps)
+    }
+}
 
-        Ok(DirectMessage {
-            id: raw.id,
-            created_at: raw.created_at,
-            text: raw.text,
-            entities: raw.entities,
-            attachment: raw.attachment,
-            ctas: raw.ctas,
-            sender_id: raw.sender_id,
-            source_app,
-            recipient_id: raw.recipient_id,
-            quick_replies: raw.quick_replies,
-            quick_reply_response: raw.quick_reply_response,
-        })
+impl TryFrom<raw::EventCursor> for Vec<DirectMessage> {
+    type Error = error::Error;
+
+    fn try_from(evs: raw::EventCursor) -> error::Result<Vec<DirectMessage>> {
+        let raw::EventCursor { events, apps, .. } = evs;
+        let mut ret = vec![];
+
+        for ev in events {
+            let raw: raw::RawDirectMessage = ev.as_message_create().into();
+            ret.push(raw.into_dm(&apps)?);
+        }
+
+        Ok(ret)
     }
 }
 
