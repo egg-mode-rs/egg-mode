@@ -100,6 +100,32 @@ impl<T> Response<T> {
     }
 }
 
+impl<T: IntoIterator> IntoIterator for Response<T> {
+    type IntoIter = ResponseIter<T::IntoIter>;
+    type Item = Response<T::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ResponseIter {
+            it: Response::map(self, |it| it.into_iter())
+        }
+    }
+}
+
+pub struct ResponseIter<T> {
+    it: Response<T>,
+}
+
+impl<T: Iterator> Iterator for ResponseIter<T> {
+    type Item = Response<T::Item>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(Response {
+            rate_limit_status: self.it.rate_limit_status,
+            response: self.it.response.next()?,
+        })
+    }
+}
+
 // n.b. this function is re-exported in the `raw` module - these docs are public!
 /// Converts the given request into a raw `ResponseFuture` from hyper.
 pub fn get_response(request: Request<Body>) -> ResponseFuture {

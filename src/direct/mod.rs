@@ -11,12 +11,13 @@
 //! TODO: i'm in the process of rewriting this module, so things are gonna change here real fast
 
 use std::collections::HashMap;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::future::Future;
 use std::mem;
 
 use chrono;
 use futures::FutureExt;
+use futures::stream::{self, Stream, StreamExt, TryStreamExt};
 use hyper::{Body, Request};
 use serde::{Deserialize, Deserializer};
 
@@ -157,203 +158,97 @@ pub struct QuickReply {
     pub metadata: String,
 }
 
-///// Helper struct to navigate collections of direct messages by requesting DMs older or newer than
-///// certain IDs.
-/////
-///// Using a Timeline to navigate collections of DMs allows you to efficiently cursor through a
-///// collection and only load in the messages you need.
-/////
-///// To begin, call a method that returns a `Timeline`, optionally set the page size, and call
-///// `start` to load the first page of results:
-/////
-///// ```rust,no_run
-///// # use egg_mode::Token;
-///// # #[tokio::main]
-///// # async fn main() {
-///// # let token: Token = unimplemented!();
-///// let mut timeline = egg_mode::direct::received(&token)
-/////                                     .with_page_size(10);
-/////
-///// for dm in timeline.start().await.unwrap().iter() {
-/////     println!("<@{}> {}", dm.sender_screen_name, dm.text);
-///// }
-///// # }
-///// ```
-/////
-///// If you need to load the next set of messages, call `older`, which will automatically update the
-///// IDs it tracks:
-/////
-///// ```rust,no_run
-///// # use egg_mode::Token;
-///// # #[tokio::main]
-///// # async fn main() {
-///// # let token: Token = unimplemented!();
-///// # let mut timeline = egg_mode::direct::received(&token);
-///// # timeline.start().await.unwrap();
-///// for dm in timeline.older(None).await.unwrap().iter() {
-/////     println!("<@{}> {}", dm.sender_screen_name, dm.text);
-///// }
-///// # }
-///// ```
-/////
-///// ...and similarly for `newer`, which operates in a similar fashion.
-/////
-///// If you want to start afresh and reload the newest set of DMs again, you can call `start` again,
-///// which will clear the tracked IDs before loading the newest set of messages. However, if you've
-///// been storing these messages as you go, and already know the newest ID you have on hand, you can
-///// load only those messages you need like this:
-/////
-///// ```rust,no_run
-///// # use egg_mode::Token;
-///// # #[tokio::main]
-///// # async fn main() {
-///// # let token: Token = unimplemented!();
-///// let mut timeline = egg_mode::direct::received(&token)
-/////                                     .with_page_size(10);
-/////
-///// timeline.start().await.unwrap();
-/////
-///// //keep the max_id for later
-///// let reload_id = timeline.max_id.unwrap();
-/////
-///// //simulate scrolling down a little bit
-///// timeline.older(None).await.unwrap();
-///// timeline.older(None).await.unwrap();
-/////
-///// //reload the timeline with only what's new
-///// timeline.reset();
-///// timeline.older(Some(reload_id)).await.unwrap();
-///// # }
-///// ```
-/////
-///// Here, the argument to `older` means "older than what I just returned, but newer than the given
-///// ID". Since we cleared the tracked IDs with `reset`, that turns into "the newest DMs available
-///// that were sent after the given ID". The earlier invocations of `older` with `None` do not place
-///// a bound on the DMs it loads. `newer` operates in a similar fashion with its argument, saying
-///// "newer than what I just returned, but not newer than this given ID". When called like this,
-///// it's possible for these methods to return nothing, which will also clear the `Timeline`'s
-///// tracked IDs.
-/////
-///// If you want to manually pull messages between certain IDs, the baseline `call` function can do
-///// that for you. Keep in mind, though, that `call` doesn't update the `min_id` or `max_id` fields,
-///// so you'll have to set those yourself if you want to follow up with `older` or `newer`.
-//pub struct Timeline {
-//    ///The URL to request DMs from.
-//    link: &'static str,
-//    ///The token used to authenticate requests with.
-//    token: auth::Token,
-//    ///Optional set of params to include prior to adding timeline navigation parameters.
-//    params_base: Option<ParamList>,
-//    ///The maximum number of messages to return in a single call. Twitter doesn't guarantee
-//    ///returning exactly this number, as suspended or deleted content is removed after retrieving
-//    ///the initial collection of messages.
-//    pub count: i32,
-//    ///The largest/most recent DM ID returned in the last call to `start`, `older`, or `newer`.
-//    pub max_id: Option<u64>,
-//    ///The smallest/oldest DM ID returned in the last call to `start`, `older`, or `newer`.
-//    pub min_id: Option<u64>,
-//}
+/// Helper struct to navigate collections of direct messages by tracking the status of Twitter's
+/// cursor references.
+pub struct Timeline {
+    link: &'static str,
+    token: auth::Token,
+    /// The number of messages to request in a single page. The default is 20; the maximum is 50.
+    pub count: u32,
+    /// The string ID that can be used to load the next page of results. A value of `None`
+    /// indicates that either no messages have been loaded yet, or that the most recently loaded
+    /// page is the last page of messages available.
+    pub next_cursor: Option<String>,
+    /// Whether this `Timeline` has been called yet.
+    pub loaded: bool,
+}
 
-//impl Timeline {
-//    ///Clear the saved IDs on this timeline.
-//    pub fn reset(&mut self) {
-//        self.max_id = None;
-//        self.min_id = None;
-//    }
+impl Timeline {
+    pub(crate) fn new(link: &'static str, token: auth::Token) -> Timeline {
+        Timeline {
+            link,
+            token,
+            count: 20,
+            next_cursor: None,
+            loaded: false,
+        }
+    }
 
-//    ///Clear the saved IDs on this timeline, and return the most recent set of messages.
-//    pub fn start<'s>(
-//        &'s mut self,
-//    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's {
-//        self.reset();
-//        self.older(None)
-//    }
+    /// Builder function to set the page size. The default value for the page size is 20; the
+    /// maximum allowed is 50.
+    pub fn with_page_size(self, count: u32) -> Self {
+        Timeline {
+            count,
+            ..self
+        }
+    }
 
-//    ///Return the set of DMs older than the last set pulled, optionally placing a minimum DM ID to
-//    ///bound with.
-//    pub fn older<'s>(
-//        &'s mut self,
-//        since_id: Option<u64>,
-//    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's {
-//        let req = self.request(since_id, self.min_id.map(|id| id - 1));
-//        let loader = request_with_json_response(req);
-//        loader.map(
-//            move |resp: Result<Response<Vec<DirectMessage>>, error::Error>| {
-//                let resp = resp?;
-//                self.map_ids(&resp.response);
-//                Ok(resp)
-//            },
-//        )
-//    }
+    /// Clears the saved cursor information on this `Timeline`.
+    pub fn reset(&mut self) {
+        self.next_cursor = None;
+        self.loaded = false;
+    }
 
-//    ///Return the set of DMs newer than the last set pulled, optionally placing a maximum DM ID to
-//    ///bound with.
-//    pub fn newer<'s>(
-//        &'s mut self,
-//        max_id: Option<u64>,
-//    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's {
-//        let req = self.request(self.max_id, max_id);
-//        let loader = request_with_json_response(req);
-//        loader.map(
-//            move |resp: Result<Response<Vec<DirectMessage>>, error::Error>| {
-//                let resp = resp?;
-//                self.map_ids(&resp.response);
-//                Ok(resp)
-//            },
-//        )
-//    }
+    fn request(&self, cursor: Option<String>) -> Request<Body> {
+        let params = ParamList::new()
+            .add_param("count", self.count.to_string())
+            .add_opt_param("cursor", cursor);
 
-//    ///Return the set of DMs between the IDs given.
-//    ///
-//    ///Note that the range is not fully inclusive; the message ID given by `since_id` will not be
-//    ///returned, but the message with `max_id` will be returned.
-//    ///
-//    ///If the range of DMs given by the IDs would return more than `self.count`, the newest set
-//    ///of messages will be returned.
-//    pub fn call(
-//        &self,
-//        since_id: Option<u64>,
-//        max_id: Option<u64>,
-//    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> {
-//        request_with_json_response(self.request(since_id, max_id))
-//    }
+        get(self.link, &self.token, Some(&params))
+    }
 
-//    ///Helper builder function to set the page size.
-//    pub fn with_page_size(self, page_size: i32) -> Self {
-//        Timeline {
-//            count: page_size,
-//            ..self
-//        }
-//    }
+    /// Clear the saved cursor information on this timeline, then return the most recent set of
+    /// messages.
+    pub fn start<'s>(&'s mut self)
+        -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's
+    {
+        self.reset();
+        self.next_page()
+    }
 
-//    ///Helper function to construct a `Request` from the current state.
-//    fn request(&self, since_id: Option<u64>, max_id: Option<u64>) -> Request<Body> {
-//        let params = ParamList::from(self.params_base.as_ref().cloned().unwrap_or_default())
-//            .add_param("count", self.count.to_string())
-//            .add_opt_param("since_id", since_id.map(|v| v.to_string()))
-//            .add_opt_param("max_id", max_id.map(|v| v.to_string()));
+    /// Loads the next page of messages, setting the `next_cursor` to the one received from
+    /// Twitter.
+    pub fn next_page<'s>(&'s mut self)
+        -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's
+    {
+        let next_cursor = self.next_cursor.take();
+        let req = self.request(next_cursor);
+        let loader = request_with_json_response(req);
+        loader.map(
+            move |resp: Result<Response<raw::EventCursor>, error::Error>| {
+                let mut resp = resp?;
+                self.loaded = true;
+                self.next_cursor = resp.next_cursor.take();
+                Response::try_map(resp, |evs| evs.try_into())
+            }
+        )
+    }
 
-//        get(self.link, &self.token, Some(&params))
-//    }
-
-//    ///With the returned slice of DMs, set the min_id and max_id on self.
-//    fn map_ids(&mut self, resp: &[DirectMessage]) {
-//        self.max_id = resp.first().map(|status| status.id);
-//        self.min_id = resp.last().map(|status| status.id);
-//    }
-
-//    ///Create an instance of `Timeline` with the given link and tokens.
-//    pub(crate) fn new(link: &'static str, params_base: Option<ParamList>, token: &auth::Token) -> Self {
-//        Timeline {
-//            link: link,
-//            token: token.clone(),
-//            params_base: params_base,
-//            count: 20,
-//            max_id: None,
-//            min_id: None,
-//        }
-//    }
-//}
+    /// Converts this `Timeline` into a `Stream` of direct messages, which automatically loads the
+    /// next page as needed.
+    pub fn into_stream(self)
+        -> impl Stream<Item = Result<Response<DirectMessage>, error::Error>>
+    {
+        stream::try_unfold(self, |mut timeline| async move {
+            if timeline.loaded && timeline.next_cursor.is_none() {
+                Ok::<_, error::Error>(None)
+            } else {
+                let page = timeline.next_page().await?;
+                Ok(Some((page, timeline)))
+            }
+        }).map_ok(|page| stream::iter(page).map(Ok::<_, error::Error>)).try_flatten()
+    }
+}
 
 /////Wrapper around a collection of direct messages, sorted by their recipient.
 /////
