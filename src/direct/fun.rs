@@ -58,14 +58,3 @@ pub fn list(token: &auth::Token) -> Timeline {
 //    let req = post(links::direct::DELETE, token, Some(&params));
 //    request_with_json_response(req).await
 //}
-
-/////Create a `ConversationTimeline` loader that can load direct messages as a collection of
-/////pre-sorted conversations.
-/////
-/////Note that this does not load any messages; you need to call `newest` or `next` for that. See
-/////[`ConversationTimeline`] for details.
-/////
-/////[`ConversationTimeline`]: struct.ConversationTimeline.html
-//pub fn conversations(token: &auth::Token) -> ConversationTimeline {
-//    ConversationTimeline::new(token)
-//}
