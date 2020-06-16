@@ -11,7 +11,7 @@
 //! TODO: i'm in the process of rewriting this module, so things are gonna change here real fast
 
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::convert::{TryFrom, TryInto};
 use std::future::Future;
 
@@ -19,7 +19,7 @@ use chrono;
 use futures::FutureExt;
 use futures::stream::{self, Stream, StreamExt, TryStreamExt};
 use hyper::{Body, Request};
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 
 use crate::common::*;
 use crate::{auth, entities, error, links};
@@ -122,7 +122,7 @@ pub struct Cta {
 }
 
 /// A Quick Reply attached to a message to request structured input from a user.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QuickReply {
     /// The label shown to the user. When the user selects this Quick Reply, the label will be sent
     /// as the `text` of the reply message.
@@ -297,6 +297,7 @@ pub type DMConversations = HashMap<u64, Vec<DirectMessage>>;
 pub struct DraftMessage {
     text: Cow<'static, str>,
     recipient: u64,
+    quick_reply_options: VecDeque<QuickReply>,
 }
 
 impl DraftMessage {
@@ -305,7 +306,49 @@ impl DraftMessage {
         DraftMessage {
             text: text.into(),
             recipient,
+            quick_reply_options: VecDeque::new(),
         }
+    }
+
+    /// Adds an Option-type Quick Reply to this draft message.
+    ///
+    /// Quick Replies allow you to request structured input from the other user. They'll have the
+    /// opportunity to select from the options you add to the message when you send it. If they
+    /// select one of the given options, its `metadata` will be given in the response in the
+    /// `quick_reply_response` field.
+    ///
+    /// Note that while `description` is optional in this call, Twitter will not send the message
+    /// if only some of the given Quick Replies have `description` fields.
+    ///
+    /// The fields here have the following length restrictions:
+    ///
+    /// * `label` has a maximum of 36 characters, including spaces.
+    /// * `metadata` has a maximum of 1000 characters, including spaces.
+    /// * `description` has a maximum of 72 characters, including spaces.
+    ///
+    /// There is a maximum of 20 Quick Reply Options on a single Direct Message. If you try to add
+    /// more, the oldest one will be removed.
+    ///
+    /// Users can only respond to Quick Replies in the Twitter Web Client, and Twitter for
+    /// iOS/Android.
+    ///
+    /// It is not possible to respond to a Quick Reply sent to yourself, though Twitter will
+    /// register the options in the message it returns.
+    pub fn quick_reply_option(
+        mut self,
+        label: impl Into<String>,
+        metadata: impl Into<String>,
+        description: Option<String>
+    ) -> Self {
+        if self.quick_reply_options.len() == 20 {
+            self.quick_reply_options.pop_front();
+        }
+        self.quick_reply_options.push_back(QuickReply {
+            label: label.into(),
+            metadata: metadata.into(),
+            description,
+        });
+        self
     }
 
     /// Sends this direct message using the given `Token`.
@@ -316,6 +359,12 @@ impl DraftMessage {
         let mut message_data = serde_json::json!({
             "text": self.text
         });
+        if !self.quick_reply_options.is_empty() {
+            message_data.as_object_mut().unwrap().insert("quick_reply".into(), serde_json::json!({
+                "type": "options",
+                "options": self.quick_reply_options
+            }));
+        }
 
         let message = serde_json::json!({
             "event": {
