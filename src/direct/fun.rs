@@ -6,7 +6,6 @@ use crate::common::*;
 
 use std::convert::TryInto;
 
-use crate::user::UserID;
 use crate::{auth, links};
 
 use super::*;

@@ -13,16 +13,15 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::future::Future;
-use std::mem;
 
 use chrono;
 use futures::FutureExt;
 use futures::stream::{self, Stream, StreamExt, TryStreamExt};
 use hyper::{Body, Request};
-use serde::{Deserialize, Deserializer};
+use serde::Deserialize;
 
 use crate::common::*;
-use crate::{auth, entities, error, user};
+use crate::{auth, entities, error};
 use crate::tweet::TweetSource;
 
 mod fun;
@@ -87,30 +86,6 @@ impl TryFrom<raw::EventCursor> for Vec<DirectMessage> {
         Ok(ret)
     }
 }
-
-// impl<'de> Deserialize<'de> for DirectMessage {
-//     fn deserialize<D>(deser: D) -> Result<DirectMessage, D::Error>
-//     where
-//         D: Deserializer<'de>,
-//     {
-//         let mut raw = raw::RawDirectMessage::deserialize(deser)?;
-
-//         raw.translate_indices();
-
-//         Ok(DirectMessage {
-//             id: raw.id,
-//             created_at: raw.created_at,
-//             text: raw.text,
-//             entities: raw.entities,
-//             attachment: raw.attachment,
-//             ctas: raw.ctas,
-//             sender_id: raw.sender_id,
-//             recipient_id: raw.recipient_id,
-//             quick_replies: raw.quick_replies,
-//             quick_reply_response: raw.quick_reply_response,
-//         })
-//     }
-// }
 
 /// Container for URL, hashtag, and mention information associated with a direct message.
 ///

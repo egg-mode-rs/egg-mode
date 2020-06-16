@@ -327,47 +327,6 @@ where
     }
 }
 
-pub fn merge_by<Iter, Fun>(left: Iter, right: Iter, comp: Fun) -> MergeBy<Iter::IntoIter, Fun>
-where
-    Iter: IntoIterator,
-    Fun: FnMut(&Iter::Item, &Iter::Item) -> bool,
-{
-    MergeBy {
-        left: left.into_iter().peekable(),
-        right: right.into_iter().peekable(),
-        comp: comp,
-        fused: None,
-    }
-}
-
-pub fn max_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
-    match (left, right) {
-        (Some(left), Some(right)) => {
-            if left >= right {
-                Some(left)
-            } else {
-                Some(right)
-            }
-        }
-        (left, None) => left,
-        (None, right) => right,
-    }
-}
-
-pub fn min_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
-    match (left, right) {
-        (Some(left), Some(right)) => {
-            if left <= right {
-                Some(left)
-            } else {
-                Some(right)
-            }
-        }
-        (left, None) => left,
-        (None, right) => right,
-    }
-}
-
 pub fn deserialize_datetime<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error>
 where
     D: Deserializer<'de>,
