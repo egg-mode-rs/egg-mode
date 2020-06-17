@@ -89,9 +89,9 @@ impl<T> Response<T> {
     ///
     ///Note that this is not a member function, so as to not conflict with potential methods on the
     ///contained `T`.
-    pub fn try_map<F, U>(src: Response<T>, fun: F) -> Result<Response<U>>
+    pub fn try_map<F, U, E>(src: Response<T>, fun: F) -> std::result::Result<Response<U>, E>
     where
-        F: FnOnce(T) -> Result<U>
+        F: FnOnce(T) -> std::result::Result<U, E>
     {
         Ok(Response {
             rate_limit_status: src.rate_limit_status,
