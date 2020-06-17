@@ -121,6 +121,12 @@ pub struct Cta {
     pub url: String,
 }
 
+/// A version of `Cta` without `tco_url` to be used in `DraftMessage`.
+struct DraftCta {
+    label: String,
+    url: String,
+}
+
 /// A Quick Reply attached to a message to request structured input from a user.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QuickReply {
@@ -298,6 +304,7 @@ pub struct DraftMessage {
     text: Cow<'static, str>,
     recipient: u64,
     quick_reply_options: VecDeque<QuickReply>,
+    cta_buttons: VecDeque<DraftCta>,
 }
 
 impl DraftMessage {
@@ -307,6 +314,7 @@ impl DraftMessage {
             text: text.into(),
             recipient,
             quick_reply_options: VecDeque::new(),
+            cta_buttons: VecDeque::new(),
         }
     }
 
@@ -351,6 +359,32 @@ impl DraftMessage {
         self
     }
 
+    /// Adds a "Call To Action" button to the message.
+    ///
+    /// Buttons allow you to add up to three links to a message. These links act as an extension to
+    /// the message rather than embedding the URLs into the message text itself. If a [Web Intent
+    /// link] is used as the URL, they can also be used to bounce users back into the Twitter UI to
+    /// perform some action.
+    ///
+    /// [Web Intent link]: https://developer.twitter.com/en/docs/twitter-for-websites/web-intents/overview
+    ///
+    /// The `label` has a length limit of 36 characters.
+    ///
+    /// There is a maximum of 3 CTA Buttons on a single Direct Message. If you try to add more, the
+    /// oldest one will be removed.
+    pub fn cta_button(mut self, label: impl Into<String>, url: impl Into<String>) -> Self {
+        if self.cta_buttons.is_empty() {
+            self.cta_buttons.reserve_exact(3);
+        } else if self.cta_buttons.len() == 3 {
+            self.cta_buttons.pop_front();
+        }
+        self.cta_buttons.push_back(DraftCta {
+            label: label.into(),
+            url: url.into(),
+        });
+        self
+    }
+
     /// Sends this direct message using the given `Token`.
     ///
     /// If the message was successfully sent, this function will return the `DirectMessage` that
@@ -364,6 +398,15 @@ impl DraftMessage {
                 "type": "options",
                 "options": self.quick_reply_options
             }));
+        }
+        if !self.cta_buttons.is_empty() {
+            message_data.as_object_mut().unwrap().insert("ctas".into(),
+                self.cta_buttons.into_iter().map(|b| serde_json::json!({
+                    "type": "web_url",
+                    "label": b.label,
+                    "url": b.url,
+                })).collect::<Vec<_>>().into()
+            );
         }
 
         let message = serde_json::json!({
