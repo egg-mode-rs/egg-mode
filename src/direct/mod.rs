@@ -22,7 +22,7 @@ use hyper::{Body, Request};
 use serde::{Serialize, Deserialize};
 
 use crate::common::*;
-use crate::{auth, entities, error, links};
+use crate::{auth, entities, error, links, media};
 use crate::tweet::TweetSource;
 
 mod fun;
@@ -305,6 +305,7 @@ pub struct DraftMessage {
     recipient: u64,
     quick_reply_options: VecDeque<QuickReply>,
     cta_buttons: VecDeque<DraftCta>,
+    media_attachment: Option<media::MediaId>,
 }
 
 impl DraftMessage {
@@ -315,6 +316,7 @@ impl DraftMessage {
             recipient,
             quick_reply_options: VecDeque::new(),
             cta_buttons: VecDeque::new(),
+            media_attachment: None,
         }
     }
 
@@ -385,6 +387,21 @@ impl DraftMessage {
         self
     }
 
+    /// Add the given media to this message.
+    ///
+    /// The `MediaId` needs to have been uploaded via [`media::upload_media_for_dm`]. Twitter
+    /// requires DM-specific media categories for media that will be attached to Direct Messages.
+    /// In addition, there's an extra setting available for media attached to Direct Messages. For
+    /// more information, see the documentation for `upload_media_for_dm`.
+    ///
+    /// [`media::upload_media_for_dm`]: ../media/fn.upload_media_for_dm.html
+    pub fn attach_media(self, media_id: media::MediaId) -> Self {
+        DraftMessage {
+            media_attachment: Some(media_id),
+            ..self
+        }
+    }
+
     /// Sends this direct message using the given `Token`.
     ///
     /// If the message was successfully sent, this function will return the `DirectMessage` that
@@ -407,6 +424,14 @@ impl DraftMessage {
                     "url": b.url,
                 })).collect::<Vec<_>>().into()
             );
+        }
+        if let Some(media_id) = self.media_attachment {
+            message_data.as_object_mut().unwrap().insert("attachment".into(), serde_json::json!({
+                "type": "media",
+                "media": {
+                    "id": media_id.0
+                }
+            }));
         }
 
         let message = serde_json::json!({
