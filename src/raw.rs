@@ -82,6 +82,7 @@ pub use crate::common::ParamList;
 pub use crate::common::Headers;
 
 pub use crate::auth::raw::get as request_get;
+pub use crate::auth::raw::delete as request_delete;
 pub use crate::auth::raw::post as request_post;
 pub use crate::auth::raw::post_json as request_post_json;
 

@@ -111,7 +111,7 @@ pub mod direct {
     pub const SHOW: &'static str = "https://api.twitter.com/1.1/direct_messages/events/show.json";
     pub const LIST: &'static str = "https://api.twitter.com/1.1/direct_messages/events/list.json";
     pub const SEND: &'static str = "https://api.twitter.com/1.1/direct_messages/events/new.json";
-    pub const DELETE: &'static str = "https://api.twitter.com/1.1/direct_messages/destroy.json";
+    pub const DELETE: &'static str = "https://api.twitter.com/1.1/direct_messages/events/destroy.json";
 }
 
 pub mod service {

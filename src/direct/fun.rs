@@ -4,7 +4,7 @@
 
 use crate::common::*;
 
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
 use crate::{auth, links};
 
@@ -23,14 +23,22 @@ pub fn list(token: &auth::Token) -> Timeline {
     Timeline::new(links::direct::LIST, token.clone())
 }
 
-/////Delete the direct message with the given ID.
-/////
-/////The authenticated user must be the sender of this DM for this call to be successful.
-/////
-/////On a successful deletion, the future returned by this function yields the freshly-deleted
-/////message.
-//pub async fn delete(id: u64, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
-//    let params = ParamList::new().add_param("id", id.to_string());
-//    let req = post(links::direct::DELETE, token, Some(&params));
-//    request_with_json_response(req).await
-//}
+/// Delete the direct message with the given ID.
+///
+/// The authenticated user must be the sender of this DM for this call to be successful.
+///
+/// This function will only delete the DM for the user - other users who have received the message
+/// will still see it.
+///
+/// Twitter does not return anything upon a successful deletion, so this function will return an
+/// empty `Response` upon success.
+pub async fn delete(id: u64, token: &auth::Token) -> Result<Response<()>, error::Error> {
+    let params = ParamList::new().add_param("id", id.to_string());
+    let req = auth::raw::delete(links::direct::DELETE, token, Some(&params));
+    let (headers, _) = raw_request(req).await?;
+    let rate_limit_status = RateLimit::try_from(&headers)?;
+    Ok(Response {
+        rate_limit_status,
+        response: (),
+    })
+}
