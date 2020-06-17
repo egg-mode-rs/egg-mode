@@ -1,5 +1,33 @@
 # Changelog for egg-mode
 
+## Pending
+
+### Changed
+- The `direct` module has been overhauled to switch it over to the DM Events API
+  - `sent` and `received` have been merged into `list`, to match the endpoint
+  - `send` has been changed into the `DraftMessage` type, to reflect the new capabilities
+    - A new function `media::upload_media_for_dm` is available to upload media specifically for a
+      Direct Message
+  - The `DirectMessage` type no longer contains sender/recipient info other than IDs, as they're no
+    longer returned by Twitter
+    - However, it does contain new fields to reflect the new capabilities
+    - The new types `QuickReply` and `Cta` have been introduced to express those respective
+      capabilities
+  - `delete` no longer returns any information on success, as Twitter no longer returns anything
+    itself
+  - `conversations` and `ConversationsTimeline` have been removed, since the biggest work they did
+    is now done by Twitter
+    - They've been replaced by `into_conversations` on the new `Timeline` type
+    - The `conversations` example has been updated to demonstrate the new API
+  - This is technically a **breaking change**, but the old DMs stuff hasn't worked since 2018 so it
+    was already broken without this change
+
+### Added
+- New function `raw::request_delete` which is like `request_get`, but sends a DELETE request instead
+- New function `Response::try_map`, to change the type of a `Response` using a fallible conversion
+- `Response` now implements `IntoIterator` if its contained type does
+  - A new type `ResponseIter` has been introduced to contain this iterator
+
 ## [0.15.0] - 2020-06-11
 
 ### Added
