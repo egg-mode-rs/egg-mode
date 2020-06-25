@@ -18,7 +18,12 @@ pub async fn show(id: u64, token: &auth::Token) -> Result<Response<DirectMessage
     Response::try_map(resp, |ev| ev.try_into())
 }
 
-/// Load the first page of the list of direct messages sent and received by the authorized user.
+/// Load the list of direct messages sent and received by the authorized user.
+///
+/// This function will only return the messages sent and received in the last 30 days. For more
+/// information, see the docs for [`Timeline`].
+///
+/// [`Timeline`]: struct.Timeline.html
 pub fn list(token: &auth::Token) -> Timeline {
     Timeline::new(links::direct::LIST, token.clone())
 }

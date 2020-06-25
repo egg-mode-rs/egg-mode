@@ -8,7 +8,28 @@
 //! access. Your app must be configured to have "read, write, and direct message" access to use any
 //! function in this module, even the read-only ones.
 //!
-//! TODO: i'm in the process of rewriting this module, so things are gonna change here real fast
+//! In some sense, DMs are simpler than Tweets, because there are fewer ways to interact with them
+//! and less metadata stored with them. However, there are also separate DM-specific capabilities
+//! that are available, to allow users to create a structured conversation for things like
+//! customer-service, interactive storytelling, etc. The extra DM-specific facilities are
+//! documented in their respective builder functions on `DraftMessage`.
+//!
+//! ## Types
+//!
+//! * `DirectMessage`: The primary representation of a DM as retrieved from Twitter. Contains the
+//!   types `DMEntities`/`Cta`/`QuickReply` as fields.
+//! * `Timeline`: Returned by `list`, this is how you load a user's Direct Messages. Contains
+//!   adapters to consume the collection as a `Stream` or to load it into a `DMConversations`
+//!   collection.
+//! * `DraftMessage`: As DMs have many optional parameters when creating them, this builder struct
+//!   allows you to build up a DM before sending it.
+//!
+//! ## Functions
+//!
+//! * `list`: This creates a `Timeline` struct to load a user's Direct Messages.
+//! * `show`: This allows you to load a single DM from its ID.
+//! * `delete`: This allows you to delete a DM from a user's own views. Note that it will not
+//!   delete it entirely from the system; the recipient will still have a copy of the message.
 
 use std::borrow::Cow;
 use std::collections::{HashMap, VecDeque};
@@ -30,6 +51,7 @@ mod raw;
 
 pub use self::fun::*;
 
+// TODO is this enough? i'm not sure if i want a field-by-field breakdown like with Tweet
 /// Represents a single direct message.
 #[derive(Debug)]
 pub struct DirectMessage {
@@ -45,13 +67,21 @@ pub struct DirectMessage {
     pub attachment: Option<entities::MediaEntity>,
     /// A list of "call to action" buttons attached to the DM, if present.
     pub ctas: Option<Vec<Cta>>,
-    /// A list of "Quick Replies" sent with this message to request structured input from the other
-    /// user.
+    /// A list of "Quick Replies" sent with this message to request structured input from the
+    /// recipient.
+    ///
+    /// Note that there is no way to select a Quick Reply as a response in the public API; a
+    /// `quick_reply_response` can only be populated if the Quick Reply was selected in the Twitter
+    /// Web Client, or Twitter for iOS/Android.
     pub quick_replies: Option<Vec<QuickReply>>,
-    /// The `metadata` accompanying a Quick Reply, if the other user selected a Quick Reply for
-    /// their response.
+    /// The `metadata` accompanying a Quick Reply, if the sender selected a Quick Reply for their
+    /// response.
     pub quick_reply_response: Option<String>,
     /// The ID of the user who sent the DM.
+    ///
+    /// To load full user information for the sender or recipient, use `user::show`. Note that
+    /// Twitter may show a message with a user that doesn't exist if that user has been suspended
+    /// or has deleted their account.
     pub sender_id: u64,
     /// The app that sent this direct message.
     ///
@@ -59,6 +89,10 @@ pub struct DirectMessage {
     /// received messages written by other users, this field will be `None`.
     pub source_app: Option<TweetSource>,
     /// The ID of the user who received the DM.
+    ///
+    /// To load full user information for the sender or recipient, use `user::show`. Note that
+    /// Twitter may show a message with a user that doesn't exist if that user has been suspended
+    /// or has deleted their account.
     pub recipient_id: u64,
 }
 
@@ -111,6 +145,11 @@ pub struct DMEntities {
 }
 
 /// A "call to action" added as a button to a direct message.
+///
+/// Buttons allow you to attach additional URLs as "calls to action" for the recipient of the
+/// message. For more information, see the `cta_button` function on [`DraftMessage`].
+///
+/// [`DraftMessage`]: struct.DraftMessage.html
 #[derive(Debug, Deserialize)]
 pub struct Cta {
     /// The label shown to the user for the CTA.
@@ -128,6 +167,11 @@ struct DraftCta {
 }
 
 /// A Quick Reply attached to a message to request structured input from a user.
+///
+/// For more information about Quick Replies, see the `quick_reply_option` function on
+/// [`DraftMessage`].
+///
+/// [`DraftMessage`]: struct.DraftMessage.html
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QuickReply {
     /// The label shown to the user. When the user selects this Quick Reply, the label will be sent
@@ -142,6 +186,55 @@ pub struct QuickReply {
 
 /// Helper struct to navigate collections of direct messages by tracking the status of Twitter's
 /// cursor references.
+///
+/// The API of the Direct Message `Timeline` differs from the Tweet `Timeline`, in that Twitter
+/// returns a "cursor" ID instead of paging through results by asking for messages before or after
+/// a certain ID. It's not a strict `CursorIter`, though, in that there is no "previous cursor"
+/// ID given by Twitter; messages are loaded one-way, from newest to oldest.
+///
+/// To start using a `Timeline`, call `list` to set one up. Before starting, you can call
+/// `with_page_size` to set how many messages to ask for at once. Then use `start` and `next_page`
+/// to load messages one page at a time.
+///
+/// ```no_run
+/// # #[tokio::main]
+/// # async fn main() {
+/// # let token: egg_mode::Token = unimplemented!();
+/// let timeline = egg_mode::direct::list(&token).with_page_size(50);
+/// let mut messages = timeline.start().await.unwrap();
+///
+/// while timeline.next_cursor.is_some() {
+///     let next_page = timeline.next_page().await.unwrap();
+///     messages.extend(next_page.response);
+/// }
+/// # }
+/// ```
+///
+/// An adapter is provided which converts a `Timeline` into a `futures::stream::Stream` which
+/// yields one message at a time and lazily loads each page as needed. As the stream's `Item` is a
+/// `Result` which can express the error caused by loading the next page, it also implements
+/// `futures::stream::TryStream` as well. The previous example can also be expressed like this:
+///
+/// ```no_run
+/// use egg_mode::Response;
+/// use egg_mode::direct::DirectMessage;
+/// use futures::stream::TryStreamExt;
+/// # #[tokio::main]
+/// # async fn main() {
+/// # let token: egg_mode::Token = unimplemented!();
+/// let timeline = egg_mode::direct::list(&token).with_page_size(50);
+/// let messages = timeline.into_stream()
+///                        .try_collect::<Vec<Response<DirectMessage>>>()
+///                        .await
+///                        .unwrap();
+/// # }
+/// ```
+///
+/// In addition, an adapter is available which loads all available messages and sorts them into
+/// "conversations" between the authenticated user and other users. The `into_conversations`
+/// adapter loads all available messages and returns a [`DMConversations`] map after sorting them.
+///
+/// [`DMConversations`]: type.DMConversations.html
 pub struct Timeline {
     link: &'static str,
     token: auth::Token,
@@ -240,15 +333,14 @@ impl Timeline {
     /// sorts them into a set of threads by matching them against which user the authenticated user
     /// is messaging.
     pub async fn into_conversations(self) -> Result<DMConversations, error::Error> {
+        // TODO: i need to make try_collect stop short (instead of returning an error) on
+        // rate-limit errors
         let dms: Vec<DirectMessage> = self.into_stream().map_ok(|r| r.response).try_collect().await?;
         let mut conversations = HashMap::new();
         let me_id = if let Some(dm) = dms.first() {
             if dm.source_app.is_some() {
                 // since the source app info is only populated when the authenticated user sent the
                 // message, we know that this message was sent by the authenticated user
-                //
-                // TODO: is this a valid assumption? i can see this shooting me in the foot in the
-                // future
                 dm.sender_id
             } else {
                 dm.recipient_id
@@ -287,7 +379,8 @@ impl Timeline {
 /// Wrapper around a collection of direct messages, sorted by their recipient.
 ///
 /// The mapping exposed here is from a User ID to a listing of direct messages between the
-/// authenticated user and that user. It's returned by the `into_conversations` adapter on
+/// authenticated user and that user. Messages sent from the authenticated user to themself are
+/// sorted under the user's own ID. This map is returned by the `into_conversations` adapter on
 /// [`Timeline`].
 ///
 /// [`Timeline`]: struct.Timeline.html
@@ -295,11 +388,32 @@ pub type DMConversations = HashMap<u64, Vec<DirectMessage>>;
 
 /// Represents a direct message before it is sent.
 ///
-/// The recipient must allow DMs from the authenticated user for this to be successful. In
-/// practice, this means that the recipient must either follow the authenticated user, or they must
-/// have the "allow DMs from anyone" setting enabled. As the latter setting has no visibility on
-/// the API, there may be situations where you can't verify the recipient's ability to receive the
-/// requested DM beforehand.
+/// Because there are several optional items you can add to a DM, this struct allows you to add or
+/// skip them using a builder-style struct, much like with `DraftTweet`.
+///
+/// To begin drafting a direct message, start by calling `new` with the message text and the User
+/// ID of the recipient:
+///
+/// ```no_run
+/// use egg_mode::direct::DraftMessage;
+///
+/// # let recipient: egg_mode::user::TwitterUser = unimplemented!();
+/// let message = DraftMessage::new("hey, what's up?", recipient.id);
+/// ```
+///
+/// As-is, the draft won't do anything until you call `send` to send it:
+///
+/// ```no_run
+/// # #[tokio::main]
+/// # async fn main() {
+/// # let message: egg_mode::direct::DraftMessage = unimplemented!();
+/// # let token: egg_mode::Token = unimplemented!();
+/// message.send(&token).await.unwrap();
+/// # }
+/// ```
+///
+/// In between creating the draft and sending it, you can use any of the other adapter functions to
+/// add other information to the message. See the documentation for those functions for details.
 pub struct DraftMessage {
     text: Cow<'static, str>,
     recipient: u64,
@@ -403,6 +517,12 @@ impl DraftMessage {
     }
 
     /// Sends this direct message using the given `Token`.
+    ///
+    /// The recipient must allow DMs from the authenticated user for this to be successful. In
+    /// practice, this means that the recipient must either follow the authenticated user, or they must
+    /// have the "allow DMs from anyone" setting enabled. As the latter setting has no visibility on
+    /// the API, there may be situations where you can't verify the recipient's ability to receive the
+    /// requested DM beforehand.
     ///
     /// If the message was successfully sent, this function will return the `DirectMessage` that
     /// was just sent.
