@@ -44,6 +44,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::common::*;
 use crate::{auth, entities, error, links, media};
+use crate::user::{self, UserID};
 use crate::tweet::TweetSource;
 
 mod fun;
@@ -425,7 +426,7 @@ pub type DMConversations = HashMap<u64, Vec<DirectMessage>>;
 /// add other information to the message. See the documentation for those functions for details.
 pub struct DraftMessage {
     text: Cow<'static, str>,
-    recipient: u64,
+    recipient: UserID,
     quick_reply_options: VecDeque<QuickReply>,
     cta_buttons: VecDeque<DraftCta>,
     media_attachment: Option<media::MediaId>,
@@ -433,10 +434,15 @@ pub struct DraftMessage {
 
 impl DraftMessage {
     /// Creates a new `DraftMessage` with the given text, to be sent to the given recipient.
-    pub fn new(text: impl Into<Cow<'static, str>>, recipient: u64) -> DraftMessage {
+    ///
+    /// Note that while this accepts a `UserID`, Twitter only accepts a numeric ID to denote the
+    /// recipient. If you pass this function a string Screen Name, a separate user lookup will
+    /// occur when you `send` this message. To avoid this extra lookup, use a numeric ID (or the
+    /// `UserID::ID` variant of `UserID`) when creating a `DraftMessage`.
+    pub fn new(text: impl Into<Cow<'static, str>>, recipient: impl Into<UserID>) -> DraftMessage {
         DraftMessage {
             text: text.into(),
-            recipient,
+            recipient: recipient.into(),
             quick_reply_options: VecDeque::new(),
             cta_buttons: VecDeque::new(),
             media_attachment: None,
@@ -536,6 +542,13 @@ impl DraftMessage {
     /// If the message was successfully sent, this function will return the `DirectMessage` that
     /// was just sent.
     pub async fn send(self, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
+        let recipient_id = match self.recipient {
+            UserID::ID(id) => id,
+            UserID::ScreenName(name) => {
+                let user = user::show(name, token).await?;
+                user.id
+            }
+        };
         let mut message_data = serde_json::json!({
             "text": self.text
         });
@@ -568,7 +581,7 @@ impl DraftMessage {
                 "type": "message_create",
                 "message_create": {
                     "target": {
-                        "recipient_id": self.recipient
+                        "recipient_id": recipient_id
                     },
                     "message_data": message_data
                 }
