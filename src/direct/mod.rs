@@ -332,10 +332,19 @@ impl Timeline {
     /// user and a specific other user. This function first pulls all the available messages, then
     /// sorts them into a set of threads by matching them against which user the authenticated user
     /// is messaging.
-    pub async fn into_conversations(self) -> Result<DMConversations, error::Error> {
-        // TODO: i need to make try_collect stop short (instead of returning an error) on
-        // rate-limit errors
-        let dms: Vec<DirectMessage> = self.into_stream().map_ok(|r| r.response).try_collect().await?;
+    ///
+    /// If there are more messages available than can be loaded without hitting the rate limit (15
+    /// calls to the `list` endpoint per 15 minutes), then this function will stop once it receives
+    /// a rate-limit error and sort the messages it received.
+    pub async fn into_conversations(mut self) -> Result<DMConversations, error::Error> {
+        let mut dms: Vec<DirectMessage> = vec![];
+        while !self.loaded || self.next_cursor.is_some() {
+            match self.next_page().await {
+                Ok(page) => dms.extend(page.into_iter().map(|r| r.response)),
+                Err(error::Error::RateLimit(_)) => break,
+                Err(e) => return Err(e),
+            }
+        }
         let mut conversations = HashMap::new();
         let me_id = if let Some(dm) = dms.first() {
             if dm.source_app.is_some() {
