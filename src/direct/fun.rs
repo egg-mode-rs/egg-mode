@@ -83,3 +83,39 @@ pub async fn mark_read(
         response: (),
     })
 }
+
+/// Displays a visual typing indicator for the recipient.
+///
+/// The typing indicator will display for 3 seconds or until the authenticated user sends a message
+/// to the recipient, whichever comes first.
+///
+/// Twitter warns that sending this request for every typing event will likely quickly come across
+/// rate limits (1000 requests per 15 minutes). Instead, they recommend capturing these input
+/// events and limiting API requests to some slower rate based on the behavior of your users and
+/// the Twitter rate limit constraints.
+///
+/// Note that while this function accepts any `UserID`, the underlying Twitter API call only
+/// accepts a numeric ID for the sender. If you pass a string Screen Name to this function, a
+/// separate user lookup will occur prior to sending the read receipt. To avoid this extra lookup,
+/// pass a numeric ID (or the `UserID::ID` variant of `UserID`) to this function.
+pub async fn indicate_typing(
+    recipient: impl Into<UserID>,
+    token: &auth::Token,
+) -> Result<Response<()>, error::Error> {
+    let recipient_id = match recipient.into() {
+        UserID::ID(id) => id,
+        UserID::ScreenName(name) => {
+            let user = user::show(name, token).await?;
+            user.id
+        }
+    };
+
+    let params = ParamList::new().add_param("recipient_id", recipient_id.to_string());
+    let req = post(links::direct::INDICATE_TYPING, token, Some(&params));
+    let (headers, _) = raw_request(req).await?;
+    let rate_limit_status = RateLimit::try_from(&headers)?;
+    Ok(Response {
+        rate_limit_status,
+        response: (),
+    })
+}

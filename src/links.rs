@@ -113,6 +113,7 @@ pub mod direct {
     pub const SEND: &'static str = "https://api.twitter.com/1.1/direct_messages/events/new.json";
     pub const DELETE: &'static str = "https://api.twitter.com/1.1/direct_messages/events/destroy.json";
     pub const MARK_READ: &'static str = "https://api.twitter.com/1.1/direct_messages/mark_read.json";
+    pub const INDICATE_TYPING: &'static str = "https://api.twitter.com/1.1/direct_messages/indicate_typing.json";
 }
 
 pub mod service {
