@@ -15,32 +15,61 @@ use crate::tweet::TweetSource;
 
 use super::{DMEntities, Cta, QuickReply, DirectMessage};
 
+// n.b. all of the types in this module are re-exported in `raw::types::direct` - these docs are
+// public!
+
+/// Minimally-processed form of `DirectMessage`, prior to changing byte indices or loading
+/// source-app information.
+///
+/// The `RawDirectMessage` type is used in the process of converting from `EventCursor` or
+/// `SingleEvent` into a `DirectMessage`. They can be directly loaded from a `DMEvent` struct, but
+/// require a mapping of source-app IDs to convert fully into a `DirectMessage`. By giving this
+/// mapping to the `into_dm` function, you can convert a `RawDirectMessage` into the final
+/// `DirectMessage` type.
+///
+/// Another way `RawDirectMessage` differs from `DirectMessage` is how its entities are stored.
+/// Twitter returns entity information based on *codepoint* indices, whereas Rust Strings are
+/// indexed using *byte* indices. egg-mode translates these indices for you when returning a
+/// processed type, but that translation has not occurred when a `RawDirectMessage` has been
+/// created. The `translate_indices` function can be used to perform this translation if the
+/// `RawDirectMessage` is being used directly. The `into_dm` conversion function also performs this
+/// translation before returning the final `DirectMessage`.
 #[derive(Debug, Deserialize)]
 #[serde(from = "DMEvent")]
 pub struct RawDirectMessage {
-    ///Numeric ID for this DM.
+    /// Numeric ID for this DM.
     pub id: u64,
-    ///UTC timestamp from when this DM was created.
+    /// UTC timestamp from when this DM was created.
     pub created_at: chrono::DateTime<chrono::Utc>,
-    ///The text of the DM.
+    /// The text of the DM.
     pub text: String,
-    ///Link, hashtag, and user mention information parsed out of the DM.
+    /// Link, hashtag, and user mention information parsed out of the DM.
     pub entities: DMEntities,
-    ///Media attached to the DM, if present.
+    /// Media attached to the DM, if present.
     pub attachment: Option<MediaEntity>,
-    ///A list of "call to action" buttons, if present.
+    /// A list of "call to action" buttons, if present.
     pub ctas: Option<Vec<Cta>>,
+    /// A list of "quick reply" options, if present.
     pub quick_replies: Option<Vec<QuickReply>>,
+    /// The `metadata` associated with the Quick Reply chosen by the sender, if present.
     pub quick_reply_response: Option<String>,
-    ///The ID of the user who sent the DM.
+    /// The ID of the user who sent the DM.
     pub sender_id: u64,
+    /// The string ID associated with the app used to send the DM, if sent by the authenticated
+    /// user.
     pub source_app_id: Option<String>,
-    ///The ID of the user who received the DM.
+    /// The ID of the user who received the DM.
     pub recipient_id: u64,
 }
 
 impl RawDirectMessage {
+    /// Translates the codepoint-based indices in this `RawDirectMessage`'s entities into
+    /// byte-based ones.
+    ///
+    /// Note that `into_dm` also performs this conversion, so if you're ultimately planning to
+    /// convert this into a `DirectMessage`, you shouldn't need to call this function directly.
     pub fn translate_indices(&mut self) {
+        // TODO: keep track of whether this has been done already, to prevent double-translations
         for entity in &mut self.entities.hashtags {
             codepoints_to_bytes(&mut entity.range, &self.text);
         }
@@ -58,6 +87,14 @@ impl RawDirectMessage {
         }
     }
 
+    /// Converts this `RawDirectMessage` into a `DirectMessage`, using the given source-app
+    /// mapping.
+    ///
+    /// If the ID given in `source_app` is not present in the `apps` mapping, the source-app
+    /// information is discarded.
+    ///
+    /// This conversion also calls `translate_indices` before constructing the `DirectMessage`.
+    // TODO: this doesn't actually need to return a Result any more
     pub fn into_dm(mut self, apps: &HashMap<String, TweetSource>)
         -> error::Result<DirectMessage>
     {
@@ -78,6 +115,8 @@ impl RawDirectMessage {
             quick_reply_response: self.quick_reply_response,
         })
     }
+
+    // TODO: provide a conversion that drops source-app information?
 }
 
 // DMs received from twitter are structured as events in their activity API, which means they have
@@ -103,80 +142,128 @@ impl From<DMEvent> for RawDirectMessage {
     }
 }
 
+/// Single direct message event.
 #[derive(Deserialize)]
 pub struct SingleEvent {
+    /// Information about the event.
     pub event: EventType,
+    /// Mapping of source app ID to information about the app, if this message was sent by the
+    /// authenticated user.
     #[serde(default)]
     pub apps: HashMap<String, TweetSource>,
 }
 
+/// Listing of direct message events, represented as a cursored page within a larger data set.
 #[derive(Deserialize)]
 pub struct EventCursor {
+    /// The list of events contained on this page.
     pub events: Vec<EventType>,
+    /// The mapping of source app IDs to information about the app, if messages on this page were
+    /// sent by the authenticated user.
     #[serde(default)]
     pub apps: HashMap<String, TweetSource>,
+    /// String ID for the next page of message events, if more exist.
     pub next_cursor: Option<String>,
 }
 
+/// Wrapper enum to represent a `DMEvent` in the Account Activity API.
+///
+/// As direct messages are part of the Account Activity API, they are presented as an event type in
+/// a broader event envelope. This enum mainly encapsulates the requirement that direct messages
+/// are returned as the `message_create` event type with the proper data structure.
 #[derive(Deserialize)]
 #[serde(tag="type")]
 #[serde(rename_all="snake_case")]
 pub enum EventType {
+    /// A `message_create` event, representing a direct message.
     MessageCreate(DMEvent),
 }
 
 impl EventType {
+    /// Returns the inner `DMEvent` structure from the `message_create` event.
     pub fn as_message_create(self) -> DMEvent {
         let EventType::MessageCreate(ev) = self;
         ev
     }
 }
 
+/// The root `message_create` event, representing a direct message.
 #[derive(Deserialize)]
 pub struct DMEvent {
+    /// Numeric ID for the direct message.
     #[serde(deserialize_with = "deser_from_string")]
-    id: u64,
+    pub id: u64,
+    /// UTC Unix timestamp for when the message was sent, encoded as the number of milliseconds
+    /// since the Unix epoch.
     #[serde(deserialize_with = "deser_from_string")]
-    created_timestamp: i64,
-    message_create: MessageCreateEvent,
+    pub created_timestamp: i64,
+    /// Message data for this event.
+    pub message_create: MessageCreateEvent,
 }
 
+/// The `message_create` data of a `DMEvent`, containing information about the direct message.
 #[derive(Deserialize)]
-struct MessageCreateEvent {
-    message_data: MessageData,
+pub struct MessageCreateEvent {
+    /// The `message_data` portion of this event.
+    pub message_data: MessageData,
     #[serde(deserialize_with = "deser_from_string")]
-    sender_id: u64,
-    source_app_id: Option<String>,
-    target: MessageTarget,
+    /// The numeric User ID of the sender.
+    pub sender_id: u64,
+    /// The string ID of the app used to send the message, if it was sent by the authenticated
+    /// user.
+    pub source_app_id: Option<String>,
+    /// Information about the recipient of the message.
+    pub target: MessageTarget,
 }
 
+/// The `message_data` portion of a `DMEvent`, containing the bulk of information about a direct
+/// message.
 #[derive(Deserialize)]
-struct MessageData {
-    ctas: Option<Vec<Cta>>,
-    attachment: Option<MessageAttachment>,
-    entities: DMEntities,
-    quick_reply: Option<RawQuickReply>,
-    quick_reply_response: Option<QuickReplyResponse>,
-    text: String,
+pub struct MessageData {
+    /// A list of "call to action" buttons, if present.
+    pub ctas: Option<Vec<Cta>>,
+    /// Information about attached media, if present.
+    pub attachment: Option<MessageAttachment>,
+    /// Information about URL, hashtag, or user-mention entities used in the message.
+    pub entities: DMEntities,
+    /// Information about Quick Reply options, if present.
+    pub quick_reply: Option<RawQuickReply>,
+    /// Information about a selected Quick Reply option, if the sender selected one.
+    pub quick_reply_response: Option<QuickReplyResponse>,
+    /// The message text.
+    pub text: String,
 }
 
+/// Represents attached media information from within a `DMEvent`.
 #[derive(Deserialize)]
-struct MessageAttachment {
-    media: MediaEntity,
+pub struct MessageAttachment {
+    /// Information about the attached media.
+    ///
+    /// Note that the indices used within the `MediaEntity` are received from Twitter using
+    /// codepoint-based indexing. Using the indices from within this type directly without
+    /// translating them may result in string-slicing errors or panics unless you translate the
+    /// indices or use `char_indices` and `enumerate` yourself to ensure proper use of the indices.
+    pub media: MediaEntity,
 }
 
+/// Represents a list of Quick Reply options from within a `DMEvent`.
 #[derive(Deserialize)]
-struct RawQuickReply {
-    options: Vec<QuickReply>,
+pub struct RawQuickReply {
+    /// The list of Quick Reply options sent with this message.
+    pub options: Vec<QuickReply>,
 }
 
+/// Represents the `metadata` from a selected Quick Reply from within a `DMEvent`.
 #[derive(Deserialize)]
-struct QuickReplyResponse {
-    metadata: String,
+pub struct QuickReplyResponse {
+    /// The `metadata` field for the Quick Reply option the sender selected.
+    pub metadata: String,
 }
 
+/// Represents the message target from within a `DMEvent`.
 #[derive(Deserialize)]
-struct MessageTarget {
+pub struct MessageTarget {
     #[serde(deserialize_with = "deser_from_string")]
-    recipient_id: u64,
+    /// The numeric user ID of the recipient of the message.
+    pub recipient_id: u64,
 }

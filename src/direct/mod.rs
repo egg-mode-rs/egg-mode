@@ -48,7 +48,7 @@ use crate::user::{self, UserID};
 use crate::tweet::TweetSource;
 
 mod fun;
-mod raw;
+pub(crate) mod raw;
 
 pub use self::fun::*;
 

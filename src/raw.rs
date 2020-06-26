@@ -223,3 +223,12 @@ pub mod auth {
     #[doc(no_inline)]
     pub use hyper::Method;
 }
+
+/// Types that can be used for deserialization from the raw API.
+///
+/// In cases where the types in egg-mode do not directly implement `Deserialize`, types are
+/// available here that represent the data sent "across the wire", which can be converted into
+/// regular egg-mode types. See the individual module docs for details.
+pub mod types {
+    pub mod direct;
+}
