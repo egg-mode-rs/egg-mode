@@ -14,9 +14,12 @@
 //! converted from JSON returned from Twitter. The types `SingleEvent` and `EventCursor` match the
 //! data sent for the `show` and `list` endpoints, respectively, and can thus be deserialized
 //! directly from those responses. These types implement the `TryFrom` trait to be converted into a
-//! single `DirectMessage` or a `Vec<DirectMessage>`, respectively. The other types in this module
-//! represent sub-structures of these event types, and are either contained within those types, or
-//! (in the case of `RawDirectMessage`) is converted from one of these other types during
-//! deserialization.
+//! single `DirectMessage` or a `Vec<DirectMessage>`, respectively.
+//!
+//! The `RawDirectMessage` type represents a minimally-processed version of the `message_create`
+//! event data sent by Twitter. It's contained within the `EventType` enum, which abstracts the
+//! fact that the event data structure allows for other types of events. As egg-mode only loads
+//! direct messages using these types, it only serves to ensure that the proper data is received by
+//! Twitter.
 
 pub use crate::direct::raw::*;

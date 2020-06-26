@@ -102,7 +102,7 @@ impl TryFrom<raw::SingleEvent> for DirectMessage {
 
     fn try_from(ev: raw::SingleEvent) -> error::Result<DirectMessage> {
         let raw::SingleEvent { event, apps } = ev;
-        let raw: raw::RawDirectMessage = event.as_message_create().into();
+        let raw: raw::RawDirectMessage = event.as_raw_dm();
         raw.into_dm(&apps)
     }
 }
@@ -115,7 +115,7 @@ impl TryFrom<raw::EventCursor> for Vec<DirectMessage> {
         let mut ret = vec![];
 
         for ev in events {
-            let raw: raw::RawDirectMessage = ev.as_message_create().into();
+            let raw: raw::RawDirectMessage = ev.as_raw_dm();
             ret.push(raw.into_dm(&apps)?);
         }
 

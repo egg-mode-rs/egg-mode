@@ -176,94 +176,98 @@ pub struct EventCursor {
 #[serde(rename_all="snake_case")]
 pub enum EventType {
     /// A `message_create` event, representing a direct message.
-    MessageCreate(DMEvent),
+    ///
+    /// The `message_create` event structure is flattened into a `RawDirectMessage` when
+    /// deserializing. It should be combined with the `apps` map in a `SingleEvent` or
+    /// `EventCursor` when converting into a `DirectMessage`.
+    MessageCreate(RawDirectMessage),
 }
 
 impl EventType {
-    /// Returns the inner `DMEvent` structure from the `message_create` event.
-    pub fn as_message_create(self) -> DMEvent {
-        let EventType::MessageCreate(ev) = self;
-        ev
+    /// Returns the inner `RawDirectMessage` structure from the `message_create` event.
+    pub fn as_raw_dm(self) -> RawDirectMessage {
+        let EventType::MessageCreate(dm) = self;
+        dm
     }
 }
 
 /// The root `message_create` event, representing a direct message.
 #[derive(Deserialize)]
-pub struct DMEvent {
+struct DMEvent {
     /// Numeric ID for the direct message.
     #[serde(deserialize_with = "deser_from_string")]
-    pub id: u64,
+    id: u64,
     /// UTC Unix timestamp for when the message was sent, encoded as the number of milliseconds
     /// since the Unix epoch.
     #[serde(deserialize_with = "deser_from_string")]
-    pub created_timestamp: i64,
+    created_timestamp: i64,
     /// Message data for this event.
-    pub message_create: MessageCreateEvent,
+    message_create: MessageCreateEvent,
 }
 
 /// The `message_create` data of a `DMEvent`, containing information about the direct message.
 #[derive(Deserialize)]
-pub struct MessageCreateEvent {
+struct MessageCreateEvent {
     /// The `message_data` portion of this event.
-    pub message_data: MessageData,
+    message_data: MessageData,
     #[serde(deserialize_with = "deser_from_string")]
     /// The numeric User ID of the sender.
-    pub sender_id: u64,
+    sender_id: u64,
     /// The string ID of the app used to send the message, if it was sent by the authenticated
     /// user.
-    pub source_app_id: Option<String>,
+    source_app_id: Option<String>,
     /// Information about the recipient of the message.
-    pub target: MessageTarget,
+    target: MessageTarget,
 }
 
 /// The `message_data` portion of a `DMEvent`, containing the bulk of information about a direct
 /// message.
 #[derive(Deserialize)]
-pub struct MessageData {
+struct MessageData {
     /// A list of "call to action" buttons, if present.
-    pub ctas: Option<Vec<Cta>>,
+    ctas: Option<Vec<Cta>>,
     /// Information about attached media, if present.
-    pub attachment: Option<MessageAttachment>,
+    attachment: Option<MessageAttachment>,
     /// Information about URL, hashtag, or user-mention entities used in the message.
-    pub entities: DMEntities,
+    entities: DMEntities,
     /// Information about Quick Reply options, if present.
-    pub quick_reply: Option<RawQuickReply>,
+    quick_reply: Option<RawQuickReply>,
     /// Information about a selected Quick Reply option, if the sender selected one.
-    pub quick_reply_response: Option<QuickReplyResponse>,
+    quick_reply_response: Option<QuickReplyResponse>,
     /// The message text.
-    pub text: String,
+    text: String,
 }
 
 /// Represents attached media information from within a `DMEvent`.
 #[derive(Deserialize)]
-pub struct MessageAttachment {
+struct MessageAttachment {
     /// Information about the attached media.
     ///
     /// Note that the indices used within the `MediaEntity` are received from Twitter using
     /// codepoint-based indexing. Using the indices from within this type directly without
     /// translating them may result in string-slicing errors or panics unless you translate the
     /// indices or use `char_indices` and `enumerate` yourself to ensure proper use of the indices.
-    pub media: MediaEntity,
+    media: MediaEntity,
 }
 
 /// Represents a list of Quick Reply options from within a `DMEvent`.
 #[derive(Deserialize)]
-pub struct RawQuickReply {
+struct RawQuickReply {
     /// The list of Quick Reply options sent with this message.
-    pub options: Vec<QuickReply>,
+    options: Vec<QuickReply>,
 }
 
 /// Represents the `metadata` from a selected Quick Reply from within a `DMEvent`.
 #[derive(Deserialize)]
-pub struct QuickReplyResponse {
+struct QuickReplyResponse {
     /// The `metadata` field for the Quick Reply option the sender selected.
-    pub metadata: String,
+    metadata: String,
 }
 
 /// Represents the message target from within a `DMEvent`.
 #[derive(Deserialize)]
-pub struct MessageTarget {
+struct MessageTarget {
     #[serde(deserialize_with = "deser_from_string")]
     /// The numeric user ID of the recipient of the message.
-    pub recipient_id: u64,
+    recipient_id: u64,
 }
