@@ -10,7 +10,6 @@ use chrono;
 use serde::Deserialize;
 
 use crate::entities::MediaEntity;
-use crate::error;
 use crate::tweet::TweetSource;
 
 use super::{DMEntities, Cta, QuickReply, DirectMessage};
@@ -101,14 +100,12 @@ impl RawDirectMessage {
     /// information is discarded.
     ///
     /// This conversion also calls `translate_indices` before constructing the `DirectMessage`.
-    // TODO: this doesn't actually need to return a Result any more
-    pub fn into_dm(mut self, apps: &HashMap<String, TweetSource>)
-        -> error::Result<DirectMessage>
+    pub fn into_dm(mut self, apps: &HashMap<String, TweetSource>) -> DirectMessage
     {
         self.translate_indices();
         let source_app = self.source_app_id.and_then(|id| apps.get(&id).cloned());
 
-        Ok(DirectMessage {
+        DirectMessage {
             id: self.id,
             created_at: self.created_at,
             text: self.text,
@@ -120,7 +117,7 @@ impl RawDirectMessage {
             recipient_id: self.recipient_id,
             quick_replies: self.quick_replies,
             quick_reply_response: self.quick_reply_response,
-        })
+        }
     }
 
     // TODO: provide a conversion that drops source-app information?

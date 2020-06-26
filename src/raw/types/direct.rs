@@ -13,8 +13,8 @@
 //! All of the types in this module implement the `Deserialize` trait from serde, and can thus be
 //! converted from JSON returned from Twitter. The types `SingleEvent` and `EventCursor` match the
 //! data sent for the `show` and `list` endpoints, respectively, and can thus be deserialized
-//! directly from those responses. These types implement the `TryFrom` trait to be converted into a
-//! single `DirectMessage` or a `Vec<DirectMessage>`, respectively.
+//! directly from those responses. These types can then be used with implementations of the `From`
+//! trait to be converted into a single `DirectMessage` or a `Vec<DirectMessage>`, respectively.
 //!
 //! The `RawDirectMessage` type represents a minimally-processed version of the `message_create`
 //! event data sent by Twitter. It's contained within the `EventType` enum, which abstracts the

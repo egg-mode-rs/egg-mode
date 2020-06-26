@@ -33,7 +33,6 @@
 
 use std::borrow::Cow;
 use std::collections::{HashMap, VecDeque};
-use std::convert::{TryFrom, TryInto};
 use std::future::Future;
 
 use chrono;
@@ -97,29 +96,25 @@ pub struct DirectMessage {
     pub recipient_id: u64,
 }
 
-impl TryFrom<raw::SingleEvent> for DirectMessage {
-    type Error = error::Error;
-
-    fn try_from(ev: raw::SingleEvent) -> error::Result<DirectMessage> {
+impl From<raw::SingleEvent> for DirectMessage {
+    fn from(ev: raw::SingleEvent) -> DirectMessage {
         let raw::SingleEvent { event, apps } = ev;
         let raw: raw::RawDirectMessage = event.as_raw_dm();
         raw.into_dm(&apps)
     }
 }
 
-impl TryFrom<raw::EventCursor> for Vec<DirectMessage> {
-    type Error = error::Error;
-
-    fn try_from(evs: raw::EventCursor) -> error::Result<Vec<DirectMessage>> {
+impl From<raw::EventCursor> for Vec<DirectMessage> {
+    fn from(evs: raw::EventCursor) -> Vec<DirectMessage> {
         let raw::EventCursor { events, apps, .. } = evs;
         let mut ret = vec![];
 
         for ev in events {
             let raw: raw::RawDirectMessage = ev.as_raw_dm();
-            ret.push(raw.into_dm(&apps)?);
+            ret.push(raw.into_dm(&apps));
         }
 
-        Ok(ret)
+        ret
     }
 }
 
@@ -305,7 +300,7 @@ impl Timeline {
                 let mut resp = resp?;
                 self.loaded = true;
                 self.next_cursor = resp.next_cursor.take();
-                Response::try_map(resp, |evs| evs.try_into())
+                Ok(Response::map(resp, |evs| evs.into()))
             }
         )
     }
@@ -589,6 +584,6 @@ impl DraftMessage {
         });
         let req = post_json(links::direct::SEND, token, message);
         let resp: Response<raw::SingleEvent> = request_with_json_response(req).await?;
-        Response::try_map(resp, |ev| ev.try_into())
+        Ok(Response::map(resp, |ev| ev.into()))
     }
 }

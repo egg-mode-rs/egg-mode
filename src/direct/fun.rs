@@ -4,7 +4,7 @@
 
 use crate::common::*;
 
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use crate::{auth, links};
 use crate::user::{self, UserID};
@@ -16,7 +16,7 @@ pub async fn show(id: u64, token: &auth::Token) -> Result<Response<DirectMessage
     let params = ParamList::default().add_param("id", id.to_string());
     let req = get(links::direct::SHOW, token, Some(&params));
     let resp: Response<raw::SingleEvent> = request_with_json_response(req).await?;
-    Response::try_map(resp, |ev| ev.try_into())
+    Ok(Response::map(resp, |ev| ev.into()))
 }
 
 /// Load the list of direct messages sent and received by the authorized user.
