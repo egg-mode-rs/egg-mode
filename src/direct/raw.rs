@@ -88,8 +88,8 @@ impl From<DMEvent> for RawDirectMessage {
     fn from(ev: DMEvent) -> RawDirectMessage {
         use chrono::TimeZone;
         RawDirectMessage {
-            id: ev.ev.id,
-            created_at: chrono::Utc.timestamp_millis(ev.ev.created_timestamp),
+            id: ev.id,
+            created_at: chrono::Utc.timestamp_millis(ev.created_timestamp),
             text: ev.message_create.message_data.text,
             entities: ev.message_create.message_data.entities,
             attachment: ev.message_create.message_data.attachment.map(|a| a.media),
@@ -133,17 +133,11 @@ impl EventType {
 }
 
 #[derive(Deserialize)]
-struct EventCommon {
+pub struct DMEvent {
     #[serde(deserialize_with = "deser_from_string")]
     id: u64,
     #[serde(deserialize_with = "deser_from_string")]
     created_timestamp: i64,
-}
-
-#[derive(Deserialize)]
-pub struct DMEvent {
-    #[serde(flatten)]
-    ev: EventCommon,
     message_create: MessageCreateEvent,
 }
 
