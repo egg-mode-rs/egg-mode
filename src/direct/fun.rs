@@ -7,6 +7,7 @@ use crate::common::*;
 use std::convert::{TryFrom, TryInto};
 
 use crate::{auth, links};
+use crate::user::{self, UserID};
 
 use super::*;
 
@@ -40,6 +41,41 @@ pub fn list(token: &auth::Token) -> Timeline {
 pub async fn delete(id: u64, token: &auth::Token) -> Result<Response<()>, error::Error> {
     let params = ParamList::new().add_param("id", id.to_string());
     let req = auth::raw::delete(links::direct::DELETE, token, Some(&params));
+    let (headers, _) = raw_request(req).await?;
+    let rate_limit_status = RateLimit::try_from(&headers)?;
+    Ok(Response {
+        rate_limit_status,
+        response: (),
+    })
+}
+
+/// Marks the given message as read in the sender's interface.
+///
+/// This function sends a read receipt for the given message ID, marking it and all messages before
+/// it as read. The Twitter Web Client and other first-party Twitter clients can display an
+/// indicator to show the last message that was read.  This function can also be used to clear an
+/// "unread" indicator in these clients for the message.
+///
+/// Note that while this function accepts any `UserID`, the underlying Twitter API call only
+/// accepts a numeric ID for the sender. If you pass a string Screen Name to this function, a
+/// separate user lookup will occur prior to sending the read receipt. To avoid this extra lookup,
+/// pass a numeric ID (or the `UserID::ID` variant of `UserID`) to this function.
+pub async fn mark_read(
+    id: u64,
+    sender: impl Into<UserID>,
+    token: &auth::Token,
+) -> Result<Response<()>, error::Error> {
+    let recipient_id = match sender.into() {
+        UserID::ID(id) => id,
+        UserID::ScreenName(name) => {
+            let user = user::show(name, token).await?;
+            user.id
+        }
+    };
+    let params = ParamList::new()
+        .add_param("last_read_event_id", id.to_string())
+        .add_param("recipient_id", recipient_id.to_string());
+    let req = post(links::direct::MARK_READ, token, Some(&params));
     let (headers, _) = raw_request(req).await?;
     let rate_limit_status = RateLimit::try_from(&headers)?;
     Ok(Response {
