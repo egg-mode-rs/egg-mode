@@ -24,6 +24,8 @@
 
 ### Added
 - New function `raw::request_delete` which is like `request_get`, but sends a DELETE request instead
+- New module `raw::types::direct`, containing raw `Deserialize`able types used with the Direct
+  Message API
 - New function `Response::try_map`, to change the type of a `Response` using a fallible conversion
 - `Response` now implements `IntoIterator` if its contained type does
   - A new type `ResponseIter` has been introduced to contain this iterator
