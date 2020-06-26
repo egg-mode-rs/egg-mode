@@ -60,6 +60,7 @@ pub struct RawDirectMessage {
     pub source_app_id: Option<String>,
     /// The ID of the user who received the DM.
     pub recipient_id: u64,
+    translated: bool,
 }
 
 impl RawDirectMessage {
@@ -68,22 +69,28 @@ impl RawDirectMessage {
     ///
     /// Note that `into_dm` also performs this conversion, so if you're ultimately planning to
     /// convert this into a `DirectMessage`, you shouldn't need to call this function directly.
+    /// `RawDirectMessage` tracks whether this translation has occured, so if you need to access
+    /// the fields before converting, the final conversion won't double-translate and leave you
+    /// with invalid indices.
     pub fn translate_indices(&mut self) {
-        // TODO: keep track of whether this has been done already, to prevent double-translations
-        for entity in &mut self.entities.hashtags {
-            codepoints_to_bytes(&mut entity.range, &self.text);
-        }
-        for entity in &mut self.entities.symbols {
-            codepoints_to_bytes(&mut entity.range, &self.text);
-        }
-        for entity in &mut self.entities.urls {
-            codepoints_to_bytes(&mut entity.range, &self.text);
-        }
-        for entity in &mut self.entities.user_mentions {
-            codepoints_to_bytes(&mut entity.range, &self.text);
-        }
-        if let Some(ref mut media) = self.attachment {
-            codepoints_to_bytes(&mut media.range, &self.text);
+        if !self.translated {
+            self.translated = true;
+
+            for entity in &mut self.entities.hashtags {
+                codepoints_to_bytes(&mut entity.range, &self.text);
+            }
+            for entity in &mut self.entities.symbols {
+                codepoints_to_bytes(&mut entity.range, &self.text);
+            }
+            for entity in &mut self.entities.urls {
+                codepoints_to_bytes(&mut entity.range, &self.text);
+            }
+            for entity in &mut self.entities.user_mentions {
+                codepoints_to_bytes(&mut entity.range, &self.text);
+            }
+            if let Some(ref mut media) = self.attachment {
+                codepoints_to_bytes(&mut media.range, &self.text);
+            }
         }
     }
 
@@ -138,6 +145,7 @@ impl From<DMEvent> for RawDirectMessage {
             recipient_id: ev.message_create.target.recipient_id,
             quick_replies: ev.message_create.message_data.quick_reply.map(|q| q.options),
             quick_reply_response: ev.message_create.message_data.quick_reply_response.map(|q| q.metadata),
+            translated: false,
         }
     }
 }
