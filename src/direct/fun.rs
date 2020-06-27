@@ -4,8 +4,6 @@
 
 use crate::common::*;
 
-use std::convert::TryFrom;
-
 use crate::{auth, links};
 use crate::user::{self, UserID};
 
@@ -41,12 +39,7 @@ pub fn list(token: &auth::Token) -> Timeline {
 pub async fn delete(id: u64, token: &auth::Token) -> Result<Response<()>, error::Error> {
     let params = ParamList::new().add_param("id", id.to_string());
     let req = auth::raw::delete(links::direct::DELETE, token, Some(&params));
-    let (headers, _) = raw_request(req).await?;
-    let rate_limit_status = RateLimit::try_from(&headers)?;
-    Ok(Response {
-        rate_limit_status,
-        response: (),
-    })
+    request_with_empty_response(req).await
 }
 
 /// Marks the given message as read in the sender's interface.
@@ -76,12 +69,7 @@ pub async fn mark_read(
         .add_param("last_read_event_id", id.to_string())
         .add_param("recipient_id", recipient_id.to_string());
     let req = post(links::direct::MARK_READ, token, Some(&params));
-    let (headers, _) = raw_request(req).await?;
-    let rate_limit_status = RateLimit::try_from(&headers)?;
-    Ok(Response {
-        rate_limit_status,
-        response: (),
-    })
+    request_with_empty_response(req).await
 }
 
 /// Displays a visual typing indicator for the recipient.
@@ -112,10 +100,5 @@ pub async fn indicate_typing(
 
     let params = ParamList::new().add_param("recipient_id", recipient_id.to_string());
     let req = post(links::direct::INDICATE_TYPING, token, Some(&params));
-    let (headers, _) = raw_request(req).await?;
-    let rate_limit_status = RateLimit::try_from(&headers)?;
-    Ok(Response {
-        rate_limit_status,
-        response: (),
-    })
+    request_with_empty_response(req).await
 }

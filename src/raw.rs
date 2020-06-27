@@ -152,6 +152,7 @@ pub fn request_as_cursor_iter<T: cursor::Cursor + serde::de::DeserializeOwned>(
 pub use crate::common::get_response as response_future;
 pub use crate::common::raw_request as response_raw_bytes;
 pub use crate::common::request_with_json_response as response_json;
+pub use crate::common::request_with_empty_response as response_empty;
 
 /// Converts the given request into a `TwitterStream`.
 ///

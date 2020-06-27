@@ -181,6 +181,18 @@ pub async fn raw_request(request: Request<Body>) -> Result<(Headers, Vec<u8>)> {
 }
 
 // n.b. this function is re-exported in the `raw` module - these docs are public!
+/// Loads the given request and discards the response body after parsing it for rate-limit and
+/// error information, returning the rate-limit information from the headers.
+pub async fn request_with_empty_response(request: Request<Body>) -> Result<Response<()>> {
+    let (headers, _) = raw_request(request).await?;
+    let rate_limit_status = RateLimit::try_from(&headers)?;
+    Ok(Response {
+        rate_limit_status,
+        response: (),
+    })
+}
+
+// n.b. this function is re-exported in the `raw` module - these docs are public!
 /// Loads the given request and parses the response as JSON into the given type, including
 /// rate-limit headers.
 pub async fn request_with_json_response<T: DeserializeOwned>(
