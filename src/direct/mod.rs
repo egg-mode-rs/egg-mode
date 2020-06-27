@@ -30,6 +30,10 @@
 //! * `show`: This allows you to load a single DM from its ID.
 //! * `delete`: This allows you to delete a DM from a user's own views. Note that it will not
 //!   delete it entirely from the system; the recipient will still have a copy of the message.
+//! * `mark_read`: This sends a read receipt for a given message to a given user. This also has the
+//!   effect of clearing the message's "unread" status for the authenticated user.
+//! * `indicate_typing`: This sends a typing indicator to a given user, to indicate that the
+//!   authenticated user is typing or thinking of a response.
 
 use std::borrow::Cow;
 use std::collections::{HashMap, VecDeque};
