@@ -111,6 +111,11 @@ impl<T: IntoIterator> IntoIterator for Response<T> {
     }
 }
 
+/// Iterator wrapper around a `Response`.
+///
+/// This type is returned by `Response`'s `IntoIterator` implementation. It uses the `IntoIterator`
+/// implementation of the contained `T`, and copies the rate-limit information to yield individual
+/// `Response<T::Item>` instances.
 pub struct ResponseIter<T> {
     it: Response<T>,
 }
