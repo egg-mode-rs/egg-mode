@@ -82,6 +82,7 @@ pub use crate::common::ParamList;
 pub use crate::common::Headers;
 
 pub use crate::auth::raw::get as request_get;
+pub use crate::auth::raw::delete as request_delete;
 pub use crate::auth::raw::post as request_post;
 pub use crate::auth::raw::post_json as request_post_json;
 
@@ -151,6 +152,7 @@ pub fn request_as_cursor_iter<T: cursor::Cursor + serde::de::DeserializeOwned>(
 pub use crate::common::get_response as response_future;
 pub use crate::common::raw_request as response_raw_bytes;
 pub use crate::common::request_with_json_response as response_json;
+pub use crate::common::request_with_empty_response as response_empty;
 
 /// Converts the given request into a `TwitterStream`.
 ///
@@ -221,4 +223,13 @@ pub mod auth {
 
     #[doc(no_inline)]
     pub use hyper::Method;
+}
+
+/// Types that can be used for deserialization from the raw API.
+///
+/// In cases where the types in egg-mode do not directly implement `Deserialize`, types are
+/// available here that represent the data sent "across the wire", which can be converted into
+/// regular egg-mode types. See the individual module docs for details.
+pub mod types {
+    pub mod direct;
 }

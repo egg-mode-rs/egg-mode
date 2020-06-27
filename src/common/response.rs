@@ -82,6 +82,70 @@ impl<T> Response<T> {
             response: fun(src.response),
         }
     }
+
+    ///Attempt to convert a `Response<T>` into a `Response<U>` by running its contained response
+    ///through the given function, preserving its rate-limit information. If the conversion
+    ///function fails, an error is returned instead.
+    ///
+    ///Note that this is not a member function, so as to not conflict with potential methods on the
+    ///contained `T`.
+    pub fn try_map<F, U, E>(src: Response<T>, fun: F) -> std::result::Result<Response<U>, E>
+    where
+        F: FnOnce(T) -> std::result::Result<U, E>
+    {
+        Ok(Response {
+            rate_limit_status: src.rate_limit_status,
+            response: fun(src.response)?,
+        })
+    }
+
+    /// Converts a `Response<T>` into a `Response<U>` using the `Into` trait.
+    ///
+    /// This is implemented as a type function instead of the `From`/`Into` trait due to
+    /// implementation conflicts with the `From<T> for T` implementation in the standard library.
+    /// It is also implemented as a function directly on the `Response` type instead of as a member
+    /// function to not clash with the `into()` function that would be available on the contained
+    /// `T`.
+    pub fn into<U>(src: Self) -> Response<U>
+    where
+        T: Into<U>,
+    {
+        Response {
+            rate_limit_status: src.rate_limit_status,
+            response: src.response.into(),
+        }
+    }
+}
+
+impl<T: IntoIterator> IntoIterator for Response<T> {
+    type IntoIter = ResponseIter<T::IntoIter>;
+    type Item = Response<T::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ResponseIter {
+            it: Response::map(self, |it| it.into_iter())
+        }
+    }
+}
+
+/// Iterator wrapper around a `Response`.
+///
+/// This type is returned by `Response`'s `IntoIterator` implementation. It uses the `IntoIterator`
+/// implementation of the contained `T`, and copies the rate-limit information to yield individual
+/// `Response<T::Item>` instances.
+pub struct ResponseIter<T> {
+    it: Response<T>,
+}
+
+impl<T: Iterator> Iterator for ResponseIter<T> {
+    type Item = Response<T::Item>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(Response {
+            rate_limit_status: self.it.rate_limit_status,
+            response: self.it.response.next()?,
+        })
+    }
 }
 
 // n.b. this function is re-exported in the `raw` module - these docs are public!
@@ -114,6 +178,18 @@ pub async fn raw_request(request: Request<Body>) -> Result<(Headers, Vec<u8>)> {
         return Err(BadStatus(parts.status));
     }
     Ok((parts.headers, body))
+}
+
+// n.b. this function is re-exported in the `raw` module - these docs are public!
+/// Loads the given request and discards the response body after parsing it for rate-limit and
+/// error information, returning the rate-limit information from the headers.
+pub async fn request_with_empty_response(request: Request<Body>) -> Result<Response<()>> {
+    let (headers, _) = raw_request(request).await?;
+    let rate_limit_status = RateLimit::try_from(&headers)?;
+    Ok(Response {
+        rate_limit_status,
+        response: (),
+    })
 }
 
 // n.b. this function is re-exported in the `raw` module - these docs are public!

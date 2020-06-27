@@ -424,6 +424,20 @@ pub fn get(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body
 }
 
 // n.b. this function is re-exported in the `raw` module - these docs are public!
+/// Assemble a signed DELETE request to the given URL with the given parameters.
+///
+/// The given parameters, if present, will be appended to the given `uri` as a percent-encoded
+/// query string. If the given `token` is not a Bearer token, the parameters will also be used to
+/// create the OAuth signature.
+pub fn delete(uri: &str, token: &Token, params: Option<&ParamList>) -> Request<Body> {
+    let mut request = RequestBuilder::new(Method::DELETE, uri);
+    if let Some(params) = params {
+        request = request.with_query_params(params);
+    }
+    request.request_token(token)
+}
+
+// n.b. this function is re-exported in the `raw` module - these docs are public!
 /// Assemble a signed POST request to the given URL with the given parameters.
 ///
 /// The given parameters, if present, will be percent-encoded and included in the POST body

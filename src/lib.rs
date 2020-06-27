@@ -180,4 +180,4 @@ pub mod tweet;
 pub mod user;
 
 pub use crate::auth::{Token, KeyPair};
-pub use crate::common::{Response, RateLimit};
+pub use crate::common::{Response, ResponseIter, RateLimit};

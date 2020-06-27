@@ -8,536 +8,586 @@
 //! access. Your app must be configured to have "read, write, and direct message" access to use any
 //! function in this module, even the read-only ones.
 //!
-//! Although the Twitter website and official apps display DMs as threads between the authenticated
-//! user and specific other users, the API does not expose them like this. Separate calls to
-//! `received` and `sent` are necessary to fully reconstruct a DM thread. You can partition on
-//! `sender_id`/`receiver_id` and sort by their `created_at` to weave the streams together.
+//! In some sense, DMs are simpler than Tweets, because there are fewer ways to interact with them
+//! and less metadata stored with them. However, there are also separate DM-specific capabilities
+//! that are available, to allow users to create a structured conversation for things like
+//! customer-service, interactive storytelling, etc. The extra DM-specific facilities are
+//! documented in their respective builder functions on `DraftMessage`.
 //!
 //! ## Types
 //!
-//! * `DirectMessage`/`DMEntities`: A single DM and its associated entities. The `DMEntities`
-//!   struct contains information about URLs, user mentions, and hashtags in the DM.
-//! * `Timeline`: Effectively the same as `tweet::Timeline`, but gives out `DirectMessage`s
-//!   instead.  Returned by functions that traverse collections of DMs.
-//! * `ConversationTimeline`/`DMConversations`: This struct and alias are part of the
-//!   "conversations" wrapper for loading direct messages into per-recipient threads.
+//! * `DirectMessage`: The primary representation of a DM as retrieved from Twitter. Contains the
+//!   types `DMEntities`/`Cta`/`QuickReply` as fields.
+//! * `Timeline`: Returned by `list`, this is how you load a user's Direct Messages. Contains
+//!   adapters to consume the collection as a `Stream` or to load it into a `DMConversations`
+//!   collection.
+//! * `DraftMessage`: As DMs have many optional parameters when creating them, this builder struct
+//!   allows you to build up a DM before sending it.
 //!
 //! ## Functions
 //!
-//! ### Lookup
-//!
-//! These functions pull a user's DMs for viewing. `sent` and `received` can be cursored with
-//! sub-views like with tweets, so they return a `Timeline` instance that can be navigated at will.
-//!
-//! * `sent`
-//! * `received`
-//! * `show`
-//! * `conversations`
-//!
-//! ### Actions
-//!
-//! These functions are your basic write access to DMs. As a DM does not carry as much metadata as
-//! a tweet, the `send` action does not go through a builder struct like with `DraftTweet`.
-//!
-//! * `send`
-//! * `delete`
+//! * `list`: This creates a `Timeline` struct to load a user's Direct Messages.
+//! * `show`: This allows you to load a single DM from its ID.
+//! * `delete`: This allows you to delete a DM from a user's own views. Note that it will not
+//!   delete it entirely from the system; the recipient will still have a copy of the message.
+//! * `mark_read`: This sends a read receipt for a given message to a given user. This also has the
+//!   effect of clearing the message's "unread" status for the authenticated user.
+//! * `indicate_typing`: This sends a typing indicator to a given user, to indicate that the
+//!   authenticated user is typing or thinking of a response.
 
-#![deprecated(
-    since = "0.15",
-    note =
-        "the direct message endpoints used in this module are no longer in service, \
-        and this module has not been migrated over to the DM Events API"
-)]
-
-use std::collections::HashMap;
+use std::borrow::Cow;
+use std::collections::{HashMap, VecDeque};
 use std::future::Future;
-use std::mem;
 
 use chrono;
 use futures::FutureExt;
+use futures::stream::{self, Stream, StreamExt, TryStreamExt};
 use hyper::{Body, Request};
-use serde::{Deserialize, Deserializer};
+use serde::{Serialize, Deserialize};
 
 use crate::common::*;
-use crate::{auth, entities, error, user};
+use crate::{auth, entities, error, links, media};
+use crate::user::{self, UserID};
+use crate::tweet::TweetSource;
 
 mod fun;
-mod raw;
+pub(crate) mod raw;
 
 pub use self::fun::*;
 
-///Represents a single direct message.
-///
-///As a DM has far less metadata than a regular tweet, the structure consequently contains far
-///fewer fields. The basic fields are `id`, `text`, `entities`, and `created_at`; everything else
-///either refers to the sender or receiver in some manner.
+// TODO is this enough? i'm not sure if i want a field-by-field breakdown like with Tweet
+/// Represents a single direct message.
 #[derive(Debug)]
 pub struct DirectMessage {
-    ///Numeric ID for this DM.
+    /// Numeric ID for this DM.
     pub id: u64,
-    ///UTC timestamp from when this DM was created.
+    /// UTC timestamp from when this DM was created.
     pub created_at: chrono::DateTime<chrono::Utc>,
-    ///The text of the DM.
+    /// The text of the DM.
     pub text: String,
-    ///Link, hashtag, and user mention information parsed out of the DM.
+    /// Link, hashtag, and user mention information parsed out of the DM.
     pub entities: DMEntities,
-    ///The screen name of the user who sent the DM.
-    pub sender_screen_name: String,
-    ///The ID of the user who sent the DM.
+    /// An image, gif, or video attachment, if present.
+    pub attachment: Option<entities::MediaEntity>,
+    /// A list of "call to action" buttons attached to the DM, if present.
+    pub ctas: Option<Vec<Cta>>,
+    /// A list of "Quick Replies" sent with this message to request structured input from the
+    /// recipient.
+    ///
+    /// Note that there is no way to select a Quick Reply as a response in the public API; a
+    /// `quick_reply_response` can only be populated if the Quick Reply was selected in the Twitter
+    /// Web Client, or Twitter for iOS/Android.
+    pub quick_replies: Option<Vec<QuickReply>>,
+    /// The `metadata` accompanying a Quick Reply, if the sender selected a Quick Reply for their
+    /// response.
+    pub quick_reply_response: Option<String>,
+    /// The ID of the user who sent the DM.
+    ///
+    /// To load full user information for the sender or recipient, use `user::show`. Note that
+    /// Twitter may show a message with a user that doesn't exist if that user has been suspended
+    /// or has deleted their account.
     pub sender_id: u64,
-    ///Full information of the user who sent the DM.
-    pub sender: Box<user::TwitterUser>,
-    ///The screen name of the user who received the DM.
-    pub recipient_screen_name: String,
-    ///The ID of the user who received the DM.
+    /// The app that sent this direct message.
+    ///
+    /// Source app information is only available for messages sent by the authorized user. For
+    /// received messages written by other users, this field will be `None`.
+    pub source_app: Option<TweetSource>,
+    /// The ID of the user who received the DM.
+    ///
+    /// To load full user information for the sender or recipient, use `user::show`. Note that
+    /// Twitter may show a message with a user that doesn't exist if that user has been suspended
+    /// or has deleted their account.
     pub recipient_id: u64,
-    ///Full information for the user who received the DM.
-    pub recipient: Box<user::TwitterUser>,
 }
 
-impl<'de> Deserialize<'de> for DirectMessage {
-    fn deserialize<D>(deser: D) -> Result<DirectMessage, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let mut raw = raw::RawDirectMessage::deserialize(deser)?;
-
-        for entity in &mut raw.entities.hashtags {
-            codepoints_to_bytes(&mut entity.range, &raw.text);
-        }
-        for entity in &mut raw.entities.symbols {
-            codepoints_to_bytes(&mut entity.range, &raw.text);
-        }
-        for entity in &mut raw.entities.urls {
-            codepoints_to_bytes(&mut entity.range, &raw.text);
-        }
-        for entity in &mut raw.entities.user_mentions {
-            codepoints_to_bytes(&mut entity.range, &raw.text);
-        }
-        if let Some(ref mut media) = raw.entities.media {
-            for entity in media.iter_mut() {
-                codepoints_to_bytes(&mut entity.range, &raw.text);
-            }
-        }
-
-        Ok(DirectMessage {
-            id: raw.id,
-            created_at: raw.created_at,
-            text: raw.text,
-            entities: raw.entities,
-            sender_screen_name: raw.sender_screen_name,
-            sender_id: raw.sender_id,
-            sender: raw.sender,
-            recipient_screen_name: raw.recipient_screen_name,
-            recipient_id: raw.recipient_id,
-            recipient: raw.recipient,
-        })
+impl From<raw::SingleEvent> for DirectMessage {
+    fn from(ev: raw::SingleEvent) -> DirectMessage {
+        let raw::SingleEvent { event, apps } = ev;
+        let raw: raw::RawDirectMessage = event.as_raw_dm();
+        raw.into_dm(&apps)
     }
 }
 
-///Container for URL, hashtag, mention, and media information associated with a direct message.
-///
-///As far as entities are concerned, a DM can contain nearly everything a tweet can. The only thing
-///that isn't present here is the "extended media" that would be on the tweet's `extended_entities`
-///field. A user can attach a single picture to a DM via the Twitter website or official apps, so
-///if that is present, it will be available in `media`. (Note that the functionality to send
-///pictures through a DM is unavailable on the public API; only viewing them is possible.)
-///
-///For all other fields, if the message contains no hashtags, financial symbols ("cashtags"),
-///links, or mentions, those corresponding fields will still be present, just empty.
-#[derive(Debug, Deserialize)]
-pub struct DMEntities {
-    ///Collection of hashtags parsed from the DM.
-    pub hashtags: Vec<entities::HashtagEntity>,
-    ///Collection of financial symbols, or "cashtags", parsed from the DM.
-    pub symbols: Vec<entities::HashtagEntity>,
-    ///Collection of URLs parsed from the DM.
-    pub urls: Vec<entities::UrlEntity>,
-    ///Collection of user mentions parsed from the DM.
-    pub user_mentions: Vec<entities::MentionEntity>,
-    ///If the message contains any attached media, this contains a collection of media information
-    ///from it.
-    pub media: Option<Vec<entities::MediaEntity>>,
+impl From<raw::EventCursor> for Vec<DirectMessage> {
+    fn from(evs: raw::EventCursor) -> Vec<DirectMessage> {
+        let raw::EventCursor { events, apps, .. } = evs;
+        let mut ret = vec![];
+
+        for ev in events {
+            let raw: raw::RawDirectMessage = ev.as_raw_dm();
+            ret.push(raw.into_dm(&apps));
+        }
+
+        ret
+    }
 }
 
-/// Helper struct to navigate collections of direct messages by requesting DMs older or newer than
-/// certain IDs.
+/// Container for URL, hashtag, and mention information associated with a direct message.
 ///
-/// Using a Timeline to navigate collections of DMs allows you to efficiently cursor through a
-/// collection and only load in the messages you need.
+/// As far as entities are concerned, a DM can contain nearly everything a tweet can. The only
+/// thing that isn't present here is the "extended media" that would be on the tweet's
+/// `extended_entities` field. A user can attach a single picture to a DM, but if that is present,
+/// it will be available in the `attachments` field of the original `DirectMessage` struct and not
+/// in the entities.
 ///
-/// To begin, call a method that returns a `Timeline`, optionally set the page size, and call
-/// `start` to load the first page of results:
+/// For all other fields, if the message contains no hashtags, financial symbols ("cashtags"),
+/// links, or mentions, those corresponding fields will be empty.
+#[derive(Debug, Deserialize)]
+pub struct DMEntities {
+    /// Collection of hashtags parsed from the DM.
+    pub hashtags: Vec<entities::HashtagEntity>,
+    /// Collection of financial symbols, or "cashtags", parsed from the DM.
+    pub symbols: Vec<entities::HashtagEntity>,
+    /// Collection of URLs parsed from the DM.
+    pub urls: Vec<entities::UrlEntity>,
+    /// Collection of user mentions parsed from the DM.
+    pub user_mentions: Vec<entities::MentionEntity>,
+}
+
+/// A "call to action" added as a button to a direct message.
 ///
-/// ```rust,no_run
-/// # use egg_mode::Token;
+/// Buttons allow you to attach additional URLs as "calls to action" for the recipient of the
+/// message. For more information, see the `cta_button` function on [`DraftMessage`].
+///
+/// [`DraftMessage`]: struct.DraftMessage.html
+#[derive(Debug, Deserialize)]
+pub struct Cta {
+    /// The label shown to the user for the CTA.
+    pub label: String,
+    /// The `t.co` URL that the user should navigate to if they click this CTA.
+    pub tco_url: String,
+    /// The URL given for the CTA, that could be displayed if needed.
+    pub url: String,
+}
+
+/// A version of `Cta` without `tco_url` to be used in `DraftMessage`.
+struct DraftCta {
+    label: String,
+    url: String,
+}
+
+/// A Quick Reply attached to a message to request structured input from a user.
+///
+/// For more information about Quick Replies, see the `quick_reply_option` function on
+/// [`DraftMessage`].
+///
+/// [`DraftMessage`]: struct.DraftMessage.html
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QuickReply {
+    /// The label shown to the user. When the user selects this Quick Reply, the label will be sent
+    /// as the `text` of the reply message.
+    pub label: String,
+    /// An optional description that accompanies a Quick Reply.
+    pub description: Option<String>,
+    /// Metadata that accompanies this Quick Reply. Metadata is not shown to the user, but is
+    /// available in the `quick_reply_response` when the user selects it.
+    pub metadata: String,
+}
+
+/// Helper struct to navigate collections of direct messages by tracking the status of Twitter's
+/// cursor references.
+///
+/// The API of the Direct Message `Timeline` differs from the Tweet `Timeline`, in that Twitter
+/// returns a "cursor" ID instead of paging through results by asking for messages before or after
+/// a certain ID. It's not a strict `CursorIter`, though, in that there is no "previous cursor"
+/// ID given by Twitter; messages are loaded one-way, from newest to oldest.
+///
+/// To start using a `Timeline`, call `list` to set one up. Before starting, you can call
+/// `with_page_size` to set how many messages to ask for at once. Then use `start` and `next_page`
+/// to load messages one page at a time.
+///
+/// ```no_run
 /// # #[tokio::main]
 /// # async fn main() {
-/// # let token: Token = unimplemented!();
-/// let mut timeline = egg_mode::direct::received(&token)
-///                                     .with_page_size(10);
+/// # let token: egg_mode::Token = unimplemented!();
+/// let timeline = egg_mode::direct::list(&token).with_page_size(50);
+/// let mut messages = timeline.start().await.unwrap();
 ///
-/// for dm in timeline.start().await.unwrap().iter() {
-///     println!("<@{}> {}", dm.sender_screen_name, dm.text);
+/// while timeline.next_cursor.is_some() {
+///     let next_page = timeline.next_page().await.unwrap();
+///     messages.extend(next_page.response);
 /// }
 /// # }
 /// ```
 ///
-/// If you need to load the next set of messages, call `older`, which will automatically update the
-/// IDs it tracks:
+/// An adapter is provided which converts a `Timeline` into a `futures::stream::Stream` which
+/// yields one message at a time and lazily loads each page as needed. As the stream's `Item` is a
+/// `Result` which can express the error caused by loading the next page, it also implements
+/// `futures::stream::TryStream` as well. The previous example can also be expressed like this:
 ///
-/// ```rust,no_run
-/// # use egg_mode::Token;
+/// ```no_run
+/// use egg_mode::Response;
+/// use egg_mode::direct::DirectMessage;
+/// use futures::stream::TryStreamExt;
 /// # #[tokio::main]
 /// # async fn main() {
-/// # let token: Token = unimplemented!();
-/// # let mut timeline = egg_mode::direct::received(&token);
-/// # timeline.start().await.unwrap();
-/// for dm in timeline.older(None).await.unwrap().iter() {
-///     println!("<@{}> {}", dm.sender_screen_name, dm.text);
-/// }
+/// # let token: egg_mode::Token = unimplemented!();
+/// let timeline = egg_mode::direct::list(&token).with_page_size(50);
+/// let messages = timeline.into_stream()
+///                        .try_collect::<Vec<Response<DirectMessage>>>()
+///                        .await
+///                        .unwrap();
 /// # }
 /// ```
 ///
-/// ...and similarly for `newer`, which operates in a similar fashion.
+/// In addition, an adapter is available which loads all available messages and sorts them into
+/// "conversations" between the authenticated user and other users. The `into_conversations`
+/// adapter loads all available messages and returns a [`DMConversations`] map after sorting them.
 ///
-/// If you want to start afresh and reload the newest set of DMs again, you can call `start` again,
-/// which will clear the tracked IDs before loading the newest set of messages. However, if you've
-/// been storing these messages as you go, and already know the newest ID you have on hand, you can
-/// load only those messages you need like this:
-///
-/// ```rust,no_run
-/// # use egg_mode::Token;
-/// # #[tokio::main]
-/// # async fn main() {
-/// # let token: Token = unimplemented!();
-/// let mut timeline = egg_mode::direct::received(&token)
-///                                     .with_page_size(10);
-///
-/// timeline.start().await.unwrap();
-///
-/// //keep the max_id for later
-/// let reload_id = timeline.max_id.unwrap();
-///
-/// //simulate scrolling down a little bit
-/// timeline.older(None).await.unwrap();
-/// timeline.older(None).await.unwrap();
-///
-/// //reload the timeline with only what's new
-/// timeline.reset();
-/// timeline.older(Some(reload_id)).await.unwrap();
-/// # }
-/// ```
-///
-/// Here, the argument to `older` means "older than what I just returned, but newer than the given
-/// ID". Since we cleared the tracked IDs with `reset`, that turns into "the newest DMs available
-/// that were sent after the given ID". The earlier invocations of `older` with `None` do not place
-/// a bound on the DMs it loads. `newer` operates in a similar fashion with its argument, saying
-/// "newer than what I just returned, but not newer than this given ID". When called like this,
-/// it's possible for these methods to return nothing, which will also clear the `Timeline`'s
-/// tracked IDs.
-///
-/// If you want to manually pull messages between certain IDs, the baseline `call` function can do
-/// that for you. Keep in mind, though, that `call` doesn't update the `min_id` or `max_id` fields,
-/// so you'll have to set those yourself if you want to follow up with `older` or `newer`.
+/// [`DMConversations`]: type.DMConversations.html
 pub struct Timeline {
-    ///The URL to request DMs from.
     link: &'static str,
-    ///The token used to authenticate requests with.
     token: auth::Token,
-    ///Optional set of params to include prior to adding timeline navigation parameters.
-    params_base: Option<ParamList>,
-    ///The maximum number of messages to return in a single call. Twitter doesn't guarantee
-    ///returning exactly this number, as suspended or deleted content is removed after retrieving
-    ///the initial collection of messages.
-    pub count: i32,
-    ///The largest/most recent DM ID returned in the last call to `start`, `older`, or `newer`.
-    pub max_id: Option<u64>,
-    ///The smallest/oldest DM ID returned in the last call to `start`, `older`, or `newer`.
-    pub min_id: Option<u64>,
+    /// The number of messages to request in a single page. The default is 20; the maximum is 50.
+    pub count: u32,
+    /// The string ID that can be used to load the next page of results. A value of `None`
+    /// indicates that either no messages have been loaded yet, or that the most recently loaded
+    /// page is the last page of messages available.
+    pub next_cursor: Option<String>,
+    /// Whether this `Timeline` has been called yet.
+    pub loaded: bool,
 }
 
 impl Timeline {
-    ///Clear the saved IDs on this timeline.
-    pub fn reset(&mut self) {
-        self.max_id = None;
-        self.min_id = None;
-    }
-
-    ///Clear the saved IDs on this timeline, and return the most recent set of messages.
-    pub fn start<'s>(
-        &'s mut self,
-    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's {
-        self.reset();
-        self.older(None)
-    }
-
-    ///Return the set of DMs older than the last set pulled, optionally placing a minimum DM ID to
-    ///bound with.
-    pub fn older<'s>(
-        &'s mut self,
-        since_id: Option<u64>,
-    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's {
-        let req = self.request(since_id, self.min_id.map(|id| id - 1));
-        let loader = request_with_json_response(req);
-        loader.map(
-            move |resp: Result<Response<Vec<DirectMessage>>, error::Error>| {
-                let resp = resp?;
-                self.map_ids(&resp.response);
-                Ok(resp)
-            },
-        )
-    }
-
-    ///Return the set of DMs newer than the last set pulled, optionally placing a maximum DM ID to
-    ///bound with.
-    pub fn newer<'s>(
-        &'s mut self,
-        max_id: Option<u64>,
-    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's {
-        let req = self.request(self.max_id, max_id);
-        let loader = request_with_json_response(req);
-        loader.map(
-            move |resp: Result<Response<Vec<DirectMessage>>, error::Error>| {
-                let resp = resp?;
-                self.map_ids(&resp.response);
-                Ok(resp)
-            },
-        )
-    }
-
-    ///Return the set of DMs between the IDs given.
-    ///
-    ///Note that the range is not fully inclusive; the message ID given by `since_id` will not be
-    ///returned, but the message with `max_id` will be returned.
-    ///
-    ///If the range of DMs given by the IDs would return more than `self.count`, the newest set
-    ///of messages will be returned.
-    pub fn call(
-        &self,
-        since_id: Option<u64>,
-        max_id: Option<u64>,
-    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> {
-        request_with_json_response(self.request(since_id, max_id))
-    }
-
-    ///Helper builder function to set the page size.
-    pub fn with_page_size(self, page_size: i32) -> Self {
+    pub(crate) fn new(link: &'static str, token: auth::Token) -> Timeline {
         Timeline {
-            count: page_size,
+            link,
+            token,
+            count: 20,
+            next_cursor: None,
+            loaded: false,
+        }
+    }
+
+    /// Builder function to set the page size. The default value for the page size is 20; the
+    /// maximum allowed is 50.
+    pub fn with_page_size(self, count: u32) -> Self {
+        Timeline {
+            count,
             ..self
         }
     }
 
-    ///Helper function to construct a `Request` from the current state.
-    fn request(&self, since_id: Option<u64>, max_id: Option<u64>) -> Request<Body> {
-        let params = ParamList::from(self.params_base.as_ref().cloned().unwrap_or_default())
+    /// Clears the saved cursor information on this `Timeline`.
+    pub fn reset(&mut self) {
+        self.next_cursor = None;
+        self.loaded = false;
+    }
+
+    fn request(&self, cursor: Option<String>) -> Request<Body> {
+        let params = ParamList::new()
             .add_param("count", self.count.to_string())
-            .add_opt_param("since_id", since_id.map(|v| v.to_string()))
-            .add_opt_param("max_id", max_id.map(|v| v.to_string()));
+            .add_opt_param("cursor", cursor);
 
         get(self.link, &self.token, Some(&params))
     }
 
-    ///With the returned slice of DMs, set the min_id and max_id on self.
-    fn map_ids(&mut self, resp: &[DirectMessage]) {
-        self.max_id = resp.first().map(|status| status.id);
-        self.min_id = resp.last().map(|status| status.id);
+    /// Clear the saved cursor information on this timeline, then return the most recent set of
+    /// messages.
+    pub fn start<'s>(&'s mut self)
+        -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's
+    {
+        self.reset();
+        self.next_page()
     }
 
-    ///Create an instance of `Timeline` with the given link and tokens.
-    pub(crate) fn new(link: &'static str, params_base: Option<ParamList>, token: &auth::Token) -> Self {
-        Timeline {
-            link: link,
-            token: token.clone(),
-            params_base: params_base,
-            count: 20,
-            max_id: None,
-            min_id: None,
+    /// Loads the next page of messages, setting the `next_cursor` to the one received from
+    /// Twitter.
+    pub fn next_page<'s>(&'s mut self)
+        -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's
+    {
+        let next_cursor = self.next_cursor.take();
+        let req = self.request(next_cursor);
+        let loader = request_with_json_response(req);
+        loader.map(
+            move |resp: Result<Response<raw::EventCursor>, error::Error>| {
+                let mut resp = resp?;
+                self.loaded = true;
+                self.next_cursor = resp.next_cursor.take();
+                Ok(Response::into(resp))
+            }
+        )
+    }
+
+    /// Converts this `Timeline` into a `Stream` of direct messages, which automatically loads the
+    /// next page as needed.
+    pub fn into_stream(self)
+        -> impl Stream<Item = Result<Response<DirectMessage>, error::Error>>
+    {
+        stream::try_unfold(self, |mut timeline| async move {
+            if timeline.loaded && timeline.next_cursor.is_none() {
+                Ok::<_, error::Error>(None)
+            } else {
+                let page = timeline.next_page().await?;
+                Ok(Some((page, timeline)))
+            }
+        }).map_ok(|page| stream::iter(page).map(Ok::<_, error::Error>)).try_flatten()
+    }
+
+    /// Loads all the direct messages from this `Timeline` and sorts them into a `DMConversations`
+    /// map.
+    ///
+    /// This adapter is a convenient way to sort all of a user's messages (from the last 30 days)
+    /// into a familiar user-interface pattern of a list of conversations between the authenticated
+    /// user and a specific other user. This function first pulls all the available messages, then
+    /// sorts them into a set of threads by matching them against which user the authenticated user
+    /// is messaging.
+    ///
+    /// If there are more messages available than can be loaded without hitting the rate limit (15
+    /// calls to the `list` endpoint per 15 minutes), then this function will stop once it receives
+    /// a rate-limit error and sort the messages it received.
+    pub async fn into_conversations(mut self) -> Result<DMConversations, error::Error> {
+        let mut dms: Vec<DirectMessage> = vec![];
+        while !self.loaded || self.next_cursor.is_some() {
+            match self.next_page().await {
+                Ok(page) => dms.extend(page.into_iter().map(|r| r.response)),
+                Err(error::Error::RateLimit(_)) => break,
+                Err(e) => return Err(e),
+            }
         }
-    }
-}
-
-///Wrapper around a collection of direct messages, sorted by their recipient.
-///
-///The mapping exposed here is from a User ID to a listing of direct messages between the
-///authenticated user and that user. For more information, see the docs for [`ConversationTimeline`].
-///
-///[`ConversationTimeline`]: struct.ConversationTimeline.html
-pub type DMConversations = HashMap<u64, Vec<DirectMessage>>;
-
-///Load the given set of conversations into this set.
-fn merge(this: &mut DMConversations, conversations: DMConversations) {
-    for (id, convo) in conversations {
-        let messages = this.entry(id).or_insert(Vec::new());
-        let cap = convo.len() + messages.len();
-        let old_convo = mem::replace(messages, Vec::with_capacity(cap));
-
-        //ASSUMPTION: these conversation threads are disjoint
-        if old_convo.first().map(|m| m.id).unwrap_or(0) > convo.first().map(|m| m.id).unwrap_or(0) {
-            messages.extend(old_convo);
-            messages.extend(convo);
+        let mut conversations = HashMap::new();
+        let me_id = if let Some(dm) = dms.first() {
+            if dm.source_app.is_some() {
+                // since the source app info is only populated when the authenticated user sent the
+                // message, we know that this message was sent by the authenticated user
+                dm.sender_id
+            } else {
+                dm.recipient_id
+            }
         } else {
-            messages.extend(convo);
-            messages.extend(old_convo);
+            // no messages, nothing to sort
+            return Ok(conversations);
+        };
+
+        for dm in dms {
+            let entry = match (dm.sender_id == me_id, dm.recipient_id == me_id) {
+                (true, true) => {
+                    // if the sender and recipient are the same - and they match the authenticated
+                    // user - then it's the listing of "messages to self"
+                    conversations.entry(me_id).or_default()
+                }
+                (true, false) => {
+                    conversations.entry(dm.recipient_id).or_default()
+                }
+                (false, true) => {
+                    conversations.entry(dm.sender_id).or_default()
+                }
+                (false, false) => {
+                    return Err(error::Error::InvalidResponse(
+                            "messages activity contains disjoint conversations",
+                            None));
+                }
+            };
+            entry.push(dm);
         }
+
+        Ok(conversations)
     }
 }
 
-/// Helper struct to load both sent and received direct messages, pre-sorting them into
-/// conversations by their recipient.
+/// Wrapper around a collection of direct messages, sorted by their recipient.
 ///
-/// This timeline loader is meant to get around a limitation of the direct message API endpoints:
-/// Twitter only gives endpoints to load all the messages *sent* by the authenticated user, or all
-/// the messages *received* by the authenticated user. However, the common user interface for DMs
-/// is to separate them by the other account in the conversation. This loader is a higher-level
-/// wrapper over the direct `sent` and `received` calls to achieve this interface without library
-/// users having to implement it themselves.
-///
-/// Much like [`Timeline`], simply receiving a `ConversationTimeline` from `conversations` does not
-/// load any messages on its own. This is to allow setting the page size before loading the first
-/// batch of messages.
+/// The mapping exposed here is from a User ID to a listing of direct messages between the
+/// authenticated user and that user. Messages sent from the authenticated user to themself are
+/// sorted under the user's own ID. This map is returned by the `into_conversations` adapter on
+/// [`Timeline`].
 ///
 /// [`Timeline`]: struct.Timeline.html
+pub type DMConversations = HashMap<u64, Vec<DirectMessage>>;
+
+/// Represents a direct message before it is sent.
 ///
-/// `ConversationTimeline` keeps a cache of all the messages its loaded, and updates this during
-/// calls to Twitter. Any calls on this timeline that generate a `ConversationFuture` will take
-/// ownership of the `ConversationTimeline` so that it can update this cache. The Future will
-/// return the `ConversationTimeline` on success. To view the current cache, use the
-/// `conversations` field.
+/// Because there are several optional items you can add to a DM, this struct allows you to add or
+/// skip them using a builder-style struct, much like with `DraftTweet`.
 ///
-/// There are two methods to load messages, and they operate by extending the cache by loading
-/// messages either older or newer than the extent of the cache.
+/// To begin drafting a direct message, start by calling `new` with the message text and the User
+/// ID of the recipient:
 ///
-/// **NOTE**: Twitter has different API limitations for sent versus received messages. You can only
-/// load the most recent 200 *received* messages through the public API, but you can load up to 800
-/// *sent* messages. This can create some strange user-interface if a user has some old
-/// conversations, as they can only see their own side of the conversation this way. If you'd like
-/// to load as many messages as possible, both API endpoints have a per-call limit of 200. Setting
-/// the page size to 200 prior to loading messages allows you to use one function call to load a
-/// fairly-complete view of the user's conversations.
+/// ```no_run
+/// use egg_mode::direct::DraftMessage;
 ///
-/// # Example
+/// # let recipient: egg_mode::user::TwitterUser = unimplemented!();
+/// let message = DraftMessage::new("hey, what's up?", recipient.id);
+/// ```
 ///
-/// ```rust,no_run
-/// # use egg_mode::Token;
+/// As-is, the draft won't do anything until you call `send` to send it:
+///
+/// ```no_run
 /// # #[tokio::main]
 /// # async fn main() {
-/// # let token: Token = unimplemented!();
-/// let mut conversations = egg_mode::direct::conversations(&token);
-///
-/// // newest() and oldest() consume the Timeline and give it back on success, so assign it back
-/// // when it's done
-/// conversations = conversations.newest().await.unwrap();
-///
-/// for (id, convo) in &conversations.conversations {
-///     let user = egg_mode::user::show(*id, &token).await.unwrap();
-///     println!("Conversation with @{}", user.screen_name);
-///     for msg in convo {
-///         println!("<@{}> {}", msg.sender_screen_name, msg.text);
-///     }
-/// }
+/// # let message: egg_mode::direct::DraftMessage = unimplemented!();
+/// # let token: egg_mode::Token = unimplemented!();
+/// message.send(&token).await.unwrap();
 /// # }
 /// ```
-pub struct ConversationTimeline {
-    sent: Timeline,
-    received: Timeline,
-    ///The message ID of the most recent sent message in the current conversation set.
-    pub last_sent: Option<u64>,
-    ///The message ID of the most recent received message in the current conversation set.
-    pub last_received: Option<u64>,
-    ///The message ID of the oldest sent message in the current conversation set.
-    pub first_sent: Option<u64>,
-    ///The message ID of the oldest received message in the current conversation set.
-    pub first_received: Option<u64>,
-    ///The number of messages loaded per API call.
-    pub count: u32,
-    ///The conversation threads that have been loaded so far.
-    pub conversations: DMConversations,
+///
+/// In between creating the draft and sending it, you can use any of the other adapter functions to
+/// add other information to the message. See the documentation for those functions for details.
+pub struct DraftMessage {
+    text: Cow<'static, str>,
+    recipient: UserID,
+    quick_reply_options: VecDeque<QuickReply>,
+    cta_buttons: VecDeque<DraftCta>,
+    media_attachment: Option<media::MediaId>,
 }
 
-impl ConversationTimeline {
-    fn new(token: &auth::Token) -> ConversationTimeline {
-        ConversationTimeline {
-            sent: sent(token),
-            received: received(token),
-            last_sent: None,
-            last_received: None,
-            first_sent: None,
-            first_received: None,
-            count: 20,
-            conversations: HashMap::new(),
+impl DraftMessage {
+    /// Creates a new `DraftMessage` with the given text, to be sent to the given recipient.
+    ///
+    /// Note that while this accepts a `UserID`, Twitter only accepts a numeric ID to denote the
+    /// recipient. If you pass this function a string Screen Name, a separate user lookup will
+    /// occur when you `send` this message. To avoid this extra lookup, use a numeric ID (or the
+    /// `UserID::ID` variant of `UserID`) when creating a `DraftMessage`.
+    pub fn new(text: impl Into<Cow<'static, str>>, recipient: impl Into<UserID>) -> DraftMessage {
+        DraftMessage {
+            text: text.into(),
+            recipient: recipient.into(),
+            quick_reply_options: VecDeque::new(),
+            cta_buttons: VecDeque::new(),
+            media_attachment: None,
         }
     }
 
-    fn merge(&mut self, sent: Vec<DirectMessage>, received: Vec<DirectMessage>) {
-        self.last_sent = max_opt(self.last_sent, sent.first().map(|m| m.id));
-        self.last_received = max_opt(self.last_received, received.first().map(|m| m.id));
-        self.first_sent = min_opt(self.first_sent, sent.last().map(|m| m.id));
-        self.first_received = min_opt(self.first_received, received.last().map(|m| m.id));
-
-        let sender = sent.first().map(|m| m.sender_id);
-        let receiver = received.first().map(|m| m.recipient_id);
-
-        if let Some(me_id) = sender.or(receiver) {
-            let mut new_convo = HashMap::new();
-
-            for msg in merge_by(sent, received, |left, right| left.id > right.id) {
-                let recipient = if msg.sender_id == me_id {
-                    msg.recipient_id
-                } else {
-                    msg.sender_id
-                };
-
-                let thread = new_convo.entry(recipient).or_insert(Vec::new());
-                thread.push(msg);
-            }
-
-            merge(&mut self.conversations, new_convo);
+    /// Adds an Option-type Quick Reply to this draft message.
+    ///
+    /// Quick Replies allow you to request structured input from the other user. They'll have the
+    /// opportunity to select from the options you add to the message when you send it. If they
+    /// select one of the given options, its `metadata` will be given in the response in the
+    /// `quick_reply_response` field.
+    ///
+    /// Note that while `description` is optional in this call, Twitter will not send the message
+    /// if only some of the given Quick Replies have `description` fields.
+    ///
+    /// The fields here have the following length restrictions:
+    ///
+    /// * `label` has a maximum of 36 characters, including spaces.
+    /// * `metadata` has a maximum of 1000 characters, including spaces.
+    /// * `description` has a maximum of 72 characters, including spaces.
+    ///
+    /// There is a maximum of 20 Quick Reply Options on a single Direct Message. If you try to add
+    /// more, the oldest one will be removed.
+    ///
+    /// Users can only respond to Quick Replies in the Twitter Web Client, and Twitter for
+    /// iOS/Android.
+    ///
+    /// It is not possible to respond to a Quick Reply sent to yourself, though Twitter will
+    /// register the options in the message it returns.
+    pub fn quick_reply_option(
+        mut self,
+        label: impl Into<String>,
+        metadata: impl Into<String>,
+        description: Option<String>
+    ) -> Self {
+        if self.quick_reply_options.len() == 20 {
+            self.quick_reply_options.pop_front();
         }
+        self.quick_reply_options.push_back(QuickReply {
+            label: label.into(),
+            metadata: metadata.into(),
+            description,
+        });
+        self
     }
 
-    ///Builder function to set the number of messages pulled in a single request.
-    pub fn with_page_size(self, page_size: u32) -> ConversationTimeline {
-        ConversationTimeline {
-            count: page_size,
+    /// Adds a "Call To Action" button to the message.
+    ///
+    /// Buttons allow you to add up to three links to a message. These links act as an extension to
+    /// the message rather than embedding the URLs into the message text itself. If a [Web Intent
+    /// link] is used as the URL, they can also be used to bounce users back into the Twitter UI to
+    /// perform some action.
+    ///
+    /// [Web Intent link]: https://developer.twitter.com/en/docs/twitter-for-websites/web-intents/overview
+    ///
+    /// The `label` has a length limit of 36 characters.
+    ///
+    /// There is a maximum of 3 CTA Buttons on a single Direct Message. If you try to add more, the
+    /// oldest one will be removed.
+    pub fn cta_button(mut self, label: impl Into<String>, url: impl Into<String>) -> Self {
+        if self.cta_buttons.is_empty() {
+            self.cta_buttons.reserve_exact(3);
+        } else if self.cta_buttons.len() == 3 {
+            self.cta_buttons.pop_front();
+        }
+        self.cta_buttons.push_back(DraftCta {
+            label: label.into(),
+            url: url.into(),
+        });
+        self
+    }
+
+    /// Add the given media to this message.
+    ///
+    /// The `MediaId` needs to have been uploaded via [`media::upload_media_for_dm`]. Twitter
+    /// requires DM-specific media categories for media that will be attached to Direct Messages.
+    /// In addition, there's an extra setting available for media attached to Direct Messages. For
+    /// more information, see the documentation for `upload_media_for_dm`.
+    ///
+    /// [`media::upload_media_for_dm`]: ../media/fn.upload_media_for_dm.html
+    pub fn attach_media(self, media_id: media::MediaId) -> Self {
+        DraftMessage {
+            media_attachment: Some(media_id),
             ..self
         }
     }
 
-    ///Load messages newer than the currently-loaded set, or the newset set if no messages have
-    ///been loaded yet. The complete conversation set can be viewed from the `ConversationTimeline`
-    ///after it is finished loading.
-    pub async fn newest(self) -> Result<ConversationTimeline, error::Error> {
-        let sent = self.sent.call(self.last_sent, None);
-        let received = self.received.call(self.last_received, None);
+    /// Sends this direct message using the given `Token`.
+    ///
+    /// The recipient must allow DMs from the authenticated user for this to be successful. In
+    /// practice, this means that the recipient must either follow the authenticated user, or they must
+    /// have the "allow DMs from anyone" setting enabled. As the latter setting has no visibility on
+    /// the API, there may be situations where you can't verify the recipient's ability to receive the
+    /// requested DM beforehand.
+    ///
+    /// If the message was successfully sent, this function will return the `DirectMessage` that
+    /// was just sent.
+    pub async fn send(self, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
+        let recipient_id = match self.recipient {
+            UserID::ID(id) => id,
+            UserID::ScreenName(name) => {
+                let user = user::show(name, token).await?;
+                user.id
+            }
+        };
+        let mut message_data = serde_json::json!({
+            "text": self.text
+        });
+        if !self.quick_reply_options.is_empty() {
+            message_data.as_object_mut().unwrap().insert("quick_reply".into(), serde_json::json!({
+                "type": "options",
+                "options": self.quick_reply_options
+            }));
+        }
+        if !self.cta_buttons.is_empty() {
+            message_data.as_object_mut().unwrap().insert("ctas".into(),
+                self.cta_buttons.into_iter().map(|b| serde_json::json!({
+                    "type": "web_url",
+                    "label": b.label,
+                    "url": b.url,
+                })).collect::<Vec<_>>().into()
+            );
+        }
+        if let Some(media_id) = self.media_attachment {
+            message_data.as_object_mut().unwrap().insert("attachment".into(), serde_json::json!({
+                "type": "media",
+                "media": {
+                    "id": media_id.0
+                }
+            }));
+        }
 
-        self.make_future(sent, received).await
-    }
-
-    ///Load messages older than the currently-loaded set, or the newest set if no messages have
-    ///been loaded. The complete conversation set can be viewed from the `ConversationTimeline`
-    ///after it is finished loading.
-    pub fn next(self) -> impl Future<Output = Result<ConversationTimeline, error::Error>> {
-        let sent = self.sent.call(None, self.first_sent);
-        let received = self.received.call(None, self.first_received);
-
-        self.make_future(sent, received)
-    }
-
-    async fn make_future<S, R>(
-        mut self,
-        sent: S,
-        received: R,
-    ) -> Result<ConversationTimeline, error::Error>
-    where
-        S: Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>>,
-        R: Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>>,
-    {
-        let (sent, received) = futures::future::join(sent, received).await;
-        let sent = sent?;
-        let received = received?;
-        self.merge(sent.response, received.response);
-        Ok(self)
+        let message = serde_json::json!({
+            "event": {
+                "type": "message_create",
+                "message_create": {
+                    "target": {
+                        "recipient_id": recipient_id
+                    },
+                    "message_data": message_data
+                }
+            }
+        });
+        let req = post_json(links::direct::SEND, token, message);
+        let resp: Response<raw::SingleEvent> = request_with_json_response(req).await?;
+        Ok(Response::into(resp))
     }
 }

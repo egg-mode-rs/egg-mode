@@ -208,6 +208,16 @@ impl From<&mime::Mime> for MediaCategory {
     }
 }
 
+impl MediaCategory {
+    fn dm_category(&self) -> &'static str {
+        match self {
+            MediaCategory::Image => "dm_image",
+            MediaCategory::Gif => "dm_gif",
+            MediaCategory::Video => "dm_video",
+        }
+    }
+}
+
 /// Upload media to the server.
 ///
 /// The upload proceeds in 1MB chunks until completed. After completion,
@@ -226,8 +236,54 @@ pub async fn upload_media(
         .add_param("media_type", media_type.to_string())
         .add_param("media_category", media_category.to_string());
     let req = post(links::media::UPLOAD, &token, Some(&params));
+
     let media = request_with_json_response::<RawMedia>(req).await?.response;
 
+    finish_upload(media, data, token).await
+}
+
+/// Upload media to the server, for use in a Direct Message.
+///
+/// This function works the same as [`upload_media`], but uses a separate set of `media_category`
+/// values to allow the resulting media to be attached to a Direct Message.
+///
+/// Because of the private nature of DMs, a separate flag is used to allow for media to be attached
+/// to multiple messages. If the `shared` argument is set to `true`, then the resulting `MediaId`
+/// can be used in multiple messages, but the resulting URL for the upload can be accessed by
+/// anyone with the URL, rather then being private to the message. Twitter states that you must
+/// provide the user with clear notice that the media can be viewed by anyone with the URL, and get
+/// their express permission to set `shared`. Also note that even if you set `shared` to `true`,
+/// the resulting media can only be attached to messages from the same user. The default (and
+/// recommended) value for `shared` is `false`.
+///
+/// The upload proceeds in 1MB chunks until completed. After completion, be sure to check the
+/// status of the uploaded media with [`get_status`]. Twitter often needs time to post-process
+/// media before it can be attached to a message.
+pub async fn upload_media_for_dm(
+    data: &[u8],
+    media_type: &mime::Mime,
+    shared: bool,
+    token: &auth::Token
+) -> error::Result<MediaHandle> {
+    let media_category = MediaCategory::from(media_type);
+    let params = ParamList::new()
+        .add_param("command", "INIT")
+        .add_param("total_bytes", data.len().to_string())
+        .add_param("media_type", media_type.to_string())
+        .add_param("media_category", media_category.dm_category())
+        .add_param("shared", shared.to_string());
+    let req = post(links::media::UPLOAD, &token, Some(&params));
+
+    let media = request_with_json_response::<RawMedia>(req).await?.response;
+
+    finish_upload(media, data, token).await
+}
+
+async fn finish_upload(
+    media: RawMedia,
+    data: &[u8],
+    token: &auth::Token
+) -> error::Result<MediaHandle> {
     // divide into 1MB chunks
     for (ix, chunk) in data.chunks(1024 * 1024).enumerate() {
         let params = ParamList::new()

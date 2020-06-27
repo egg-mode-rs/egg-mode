@@ -327,47 +327,6 @@ where
     }
 }
 
-pub fn merge_by<Iter, Fun>(left: Iter, right: Iter, comp: Fun) -> MergeBy<Iter::IntoIter, Fun>
-where
-    Iter: IntoIterator,
-    Fun: FnMut(&Iter::Item, &Iter::Item) -> bool,
-{
-    MergeBy {
-        left: left.into_iter().peekable(),
-        right: right.into_iter().peekable(),
-        comp: comp,
-        fused: None,
-    }
-}
-
-pub fn max_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
-    match (left, right) {
-        (Some(left), Some(right)) => {
-            if left >= right {
-                Some(left)
-            } else {
-                Some(right)
-            }
-        }
-        (left, None) => left,
-        (None, right) => right,
-    }
-}
-
-pub fn min_opt<T: PartialOrd>(left: Option<T>, right: Option<T>) -> Option<T> {
-    match (left, right) {
-        (Some(left), Some(right)) => {
-            if left <= right {
-                Some(left)
-            } else {
-                Some(right)
-            }
-        }
-        (left, None) => left,
-        (None, right) => right,
-    }
-}
-
 pub fn deserialize_datetime<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error>
 where
     D: Deserializer<'de>,
@@ -382,6 +341,16 @@ where
 pub fn deserialize_mime<'de, D>(ser: D) -> Result<mime::Mime, D::Error>
 where
     D: Deserializer<'de>,
+{
+    let str = String::deserialize(ser)?;
+    str.parse().map_err(|e| D::Error::custom(e))
+}
+
+pub fn deser_from_string<'de, D, T>(ser: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T: std::str::FromStr,
+    <T as std::str::FromStr>::Err: std::fmt::Display,
 {
     let str = String::deserialize(ser)?;
     str.parse().map_err(|e| D::Error::custom(e))

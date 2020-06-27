@@ -3,70 +3,102 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::common::*;
-use crate::user::UserID;
+
 use crate::{auth, links};
+use crate::user::{self, UserID};
 
 use super::*;
 
-///Lookup a single DM by its numeric ID.
+/// Lookup a single DM by its numeric ID.
 pub async fn show(id: u64, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
     let params = ParamList::default().add_param("id", id.to_string());
     let req = get(links::direct::SHOW, token, Some(&params));
-    request_with_json_response(req).await
+    let resp: Response<raw::SingleEvent> = request_with_json_response(req).await?;
+    Ok(Response::into(resp))
 }
 
-///Create a `Timeline` struct to navigate the direct messages received by the authenticated user.
-pub fn received(token: &auth::Token) -> Timeline {
-    Timeline::new(links::direct::RECEIVED, None, token)
+/// Load the list of direct messages sent and received by the authorized user.
+///
+/// This function will only return the messages sent and received in the last 30 days. For more
+/// information, see the docs for [`Timeline`].
+///
+/// [`Timeline`]: struct.Timeline.html
+pub fn list(token: &auth::Token) -> Timeline {
+    Timeline::new(links::direct::LIST, token.clone())
 }
 
-///Create a `Timeline` struct to navigate the direct messages sent by the authenticated user.
-pub fn sent(token: &auth::Token) -> Timeline {
-    Timeline::new(links::direct::SENT, None, token)
-}
-
-///Send a new direct message to the given user.
+/// Delete the direct message with the given ID.
 ///
-///The recipient must allow DMs from the authenticated user for this to be successful. In practice,
-///this means that the recipient must either follow the authenticated user, or they must have the
-///"allow DMs from anyone" setting enabled. As the latter setting has no visibility on the API,
-///there may be situations where you can't verify the recipient's ability to receive the requested
-///DM beforehand.
+/// The authenticated user must be the sender of this DM for this call to be successful.
 ///
-///Upon successfully sending the DM, the message will be returned.
-pub async fn send<T: Into<UserID>>(
-    to: T,
-    text: CowStr,
-    token: &auth::Token,
-) -> Result<Response<DirectMessage>, error::Error> {
-    let params = ParamList::new()
-        .add_user_param(to.into())
-        .add_param("text", text);
-
-    let req = post(links::direct::SEND, token, Some(&params));
-
-    request_with_json_response(req).await
-}
-
-///Delete the direct message with the given ID.
+/// This function will only delete the DM for the user - other users who have received the message
+/// will still see it.
 ///
-///The authenticated user must be the sender of this DM for this call to be successful.
-///
-///On a successful deletion, the future returned by this function yields the freshly-deleted
-///message.
-pub async fn delete(id: u64, token: &auth::Token) -> Result<Response<DirectMessage>, error::Error> {
+/// Twitter does not return anything upon a successful deletion, so this function will return an
+/// empty `Response` upon success.
+pub async fn delete(id: u64, token: &auth::Token) -> Result<Response<()>, error::Error> {
     let params = ParamList::new().add_param("id", id.to_string());
-    let req = post(links::direct::DELETE, token, Some(&params));
-    request_with_json_response(req).await
+    let req = auth::raw::delete(links::direct::DELETE, token, Some(&params));
+    request_with_empty_response(req).await
 }
 
-///Create a `ConversationTimeline` loader that can load direct messages as a collection of
-///pre-sorted conversations.
+/// Marks the given message as read in the sender's interface.
 ///
-///Note that this does not load any messages; you need to call `newest` or `next` for that. See
-///[`ConversationTimeline`] for details.
+/// This function sends a read receipt for the given message ID, marking it and all messages before
+/// it as read. The Twitter Web Client and other first-party Twitter clients can display an
+/// indicator to show the last message that was read.  This function can also be used to clear an
+/// "unread" indicator in these clients for the message.
 ///
-///[`ConversationTimeline`]: struct.ConversationTimeline.html
-pub fn conversations(token: &auth::Token) -> ConversationTimeline {
-    ConversationTimeline::new(token)
+/// Note that while this function accepts any `UserID`, the underlying Twitter API call only
+/// accepts a numeric ID for the sender. If you pass a string Screen Name to this function, a
+/// separate user lookup will occur prior to sending the read receipt. To avoid this extra lookup,
+/// pass a numeric ID (or the `UserID::ID` variant of `UserID`) to this function.
+pub async fn mark_read(
+    id: u64,
+    sender: impl Into<UserID>,
+    token: &auth::Token,
+) -> Result<Response<()>, error::Error> {
+    let recipient_id = match sender.into() {
+        UserID::ID(id) => id,
+        UserID::ScreenName(name) => {
+            let user = user::show(name, token).await?;
+            user.id
+        }
+    };
+    let params = ParamList::new()
+        .add_param("last_read_event_id", id.to_string())
+        .add_param("recipient_id", recipient_id.to_string());
+    let req = post(links::direct::MARK_READ, token, Some(&params));
+    request_with_empty_response(req).await
+}
+
+/// Displays a visual typing indicator for the recipient.
+///
+/// The typing indicator will display for 3 seconds or until the authenticated user sends a message
+/// to the recipient, whichever comes first.
+///
+/// Twitter warns that sending this request for every typing event will likely quickly come across
+/// rate limits (1000 requests per 15 minutes). Instead, they recommend capturing these input
+/// events and limiting API requests to some slower rate based on the behavior of your users and
+/// the Twitter rate limit constraints.
+///
+/// Note that while this function accepts any `UserID`, the underlying Twitter API call only
+/// accepts a numeric ID for the sender. If you pass a string Screen Name to this function, a
+/// separate user lookup will occur prior to sending the read receipt. To avoid this extra lookup,
+/// pass a numeric ID (or the `UserID::ID` variant of `UserID`) to this function.
+pub async fn indicate_typing(
+    recipient: impl Into<UserID>,
+    token: &auth::Token,
+) -> Result<Response<()>, error::Error> {
+    let recipient_id = match recipient.into() {
+        UserID::ID(id) => id,
+        UserID::ScreenName(name) => {
+            let user = user::show(name, token).await?;
+            user.id
+        }
+    };
+
+    let params = ParamList::new().add_param("recipient_id", recipient_id.to_string());
+    let req = post(links::direct::INDICATE_TYPING, token, Some(&params));
+    request_with_empty_response(req).await
 }
