@@ -98,6 +98,23 @@ impl<T> Response<T> {
             response: fun(src.response)?,
         })
     }
+
+    /// Converts a `Response<T>` into a `Response<U>` using the `Into` trait.
+    ///
+    /// This is implemented as a type function instead of the `From`/`Into` trait due to
+    /// implementation conflicts with the `From<T> for T` implementation in the standard library.
+    /// It is also implemented as a function directly on the `Response` type instead of as a member
+    /// function to not clash with the `into()` function that would be available on the contained
+    /// `T`.
+    pub fn into<U>(src: Self) -> Response<U>
+    where
+        T: Into<U>,
+    {
+        Response {
+            rate_limit_status: src.rate_limit_status,
+            response: src.response.into(),
+        }
+    }
 }
 
 impl<T: IntoIterator> IntoIterator for Response<T> {

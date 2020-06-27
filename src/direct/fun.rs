@@ -16,7 +16,7 @@ pub async fn show(id: u64, token: &auth::Token) -> Result<Response<DirectMessage
     let params = ParamList::default().add_param("id", id.to_string());
     let req = get(links::direct::SHOW, token, Some(&params));
     let resp: Response<raw::SingleEvent> = request_with_json_response(req).await?;
-    Ok(Response::map(resp, |ev| ev.into()))
+    Ok(Response::into(resp))
 }
 
 /// Load the list of direct messages sent and received by the authorized user.

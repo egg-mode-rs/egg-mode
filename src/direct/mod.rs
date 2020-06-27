@@ -300,7 +300,7 @@ impl Timeline {
                 let mut resp = resp?;
                 self.loaded = true;
                 self.next_cursor = resp.next_cursor.take();
-                Ok(Response::map(resp, |evs| evs.into()))
+                Ok(Response::into(resp))
             }
         )
     }
@@ -584,6 +584,6 @@ impl DraftMessage {
         });
         let req = post_json(links::direct::SEND, token, message);
         let resp: Response<raw::SingleEvent> = request_with_json_response(req).await?;
-        Ok(Response::map(resp, |ev| ev.into()))
+        Ok(Response::into(resp))
     }
 }
