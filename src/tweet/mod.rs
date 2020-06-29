@@ -220,9 +220,9 @@ round_trip! { raw::RawTweet,
         ///Indicates whether this tweet is a truncated "compatibility" form of an extended tweet whose
         ///full text is longer than 280 characters.
         pub truncated: bool,
-        /////The user who posted this tweet. This field will be absent on tweets included as part of a
-        /////`TwitterUser`.
-        //pub user: Option<Box<user::TwitterUser>>,
+        ///The user who posted this tweet. This field will be absent on tweets included as part of a
+        ///`TwitterUser`.
+        pub user: Option<Box<user::TwitterUser>>,
         ///If present and `true`, indicates that this tweet has been withheld due to a DMCA complaint.
         pub withheld_copyright: bool,
         ///If present, contains two-letter country codes indicating where this tweet is being withheld.
@@ -297,7 +297,7 @@ impl TryFrom<raw::RawTweet> for Tweet {
             retweeted_status: raw.retweeted_status,
             source: raw.source,
             truncated: raw.truncated,
-            // user: raw.user,
+            user: raw.user,
             withheld_copyright: raw.withheld_copyright,
             withheld_in_countries: raw.withheld_in_countries,
             withheld_scope: raw.withheld_scope,

@@ -146,10 +146,13 @@ macro_rules! round_trip {
         }
 
         #[allow(unused_qualifications)]
-        impl std::convert::TryFrom<SerEnum> for $struct_name {
-            type Error = crate::error::Error;
+        impl std::convert::TryFrom<SerEnum> for $struct_name
+        where
+            $struct_name: std::convert::TryFrom<$raw_name>,
+        {
+            type Error = <$struct_name as std::convert::TryFrom<$raw_name>>::Error;
 
-            fn try_from(src: SerEnum) -> crate::error::Result<$struct_name> {
+            fn try_from(src: SerEnum) -> std::result::Result<$struct_name, Self::Error> {
                 use std::convert::TryInto;
 
                 match src {
