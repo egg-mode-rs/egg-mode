@@ -108,6 +108,49 @@ pub use crate::auth::raw::{get, post, post_json};
 pub use crate::common::response::*;
 use crate::{error, list, user};
 
+/// Macro to create a `Serialize`/`Deserialize` implementation allowing for deserialization via the
+/// given "raw" struct or via a "round-trip" using the type's own serialization.
+///
+/// This macro takes two arguments: the name of a "raw" type, and a public struct definition. The
+/// given struct must implement `From` or `TryFrom` for the given raw type. In return, it derives
+/// `Serialize` and `Deserialize` for the struct, and creates a handful of helper types to modify
+/// the `Deserialize` implementation.
+///
+/// ## Warning
+///
+/// If you're adding this to something that should have custom (de-)serialization logic on some
+/// fields (e.g.  `DateTime`), make sure to add both the `serialize_with` and `deserialize_with`
+/// attributes to the struct definition. All the attributes are copied in to the `SerCopy` struct,
+/// so it inherits the deserialization logic that otherwise goes unused. If you don't do this, then
+/// the type will fail to "round-trip" properly and may create an error when you try to deserialize
+/// from the saved data.
+///
+/// ## Example
+///
+/// ```rust,ignore (internal-items)
+/// use crate::common::*;
+///
+/// round_trip! { raw::RawDummyStruct,
+///     /// A dummy struct to demonstrate `round_trip!`.
+///     pub struct DummyStruct {
+///         // ...
+///     }
+/// }
+///
+/// impl From<raw::RawDummyStruct> for DummyStruct {
+///     fn from(src: RawDummyStruct) -> DummyStruct {
+///         // ...
+///     }
+/// }
+/// ```
+///
+/// ## Implementation
+///
+/// This macro abuses the `#[serde(untagged)]` enum representation to allow it to deserialize via
+/// the existing "raw" type, or the generated "SerCopy" struct which is a field-for-field copy of
+/// the original struct. This way, either representation can be used to load the struct without the
+/// overhead of loading it all into a `serde_json::Value` first to manually decode into either
+/// type.
 macro_rules! round_trip {
     ( $raw_name:path,
       $(#[$outer_attr:meta])*
