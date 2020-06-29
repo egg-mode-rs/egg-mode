@@ -163,6 +163,30 @@ macro_rules! round_trip {
             $v $f: $t
         ),+ }
 
+        impl $struct_name {
+            /// Returns the string representation of an error from loading JSON from Twitter, if
+            /// applicable.
+            ///
+            /// Use this function if trying to load something from the API gave you a
+            /// deserialization error.
+            pub fn twitter_deser_error(input: serde_json::Value) -> Option<String> {
+                use crate::common::MapString;
+
+                serde_json::from_value::<$raw_name>(input).err().map_string()
+            }
+
+            /// Returns the string representation of an error from loading JSON given by
+            /// serializing this type.
+            ///
+            /// Use this function if trying to load saved JSON from saving previously-loaded data
+            /// gave you a deserialization error.
+            pub fn roundtrip_deser_error(input: serde_json::Value) -> Option<String> {
+                use crate::common::MapString;
+
+                serde_json::from_value::<SerCopy>(input).err().map_string()
+            }
+        }
+
         #[derive(serde::Deserialize)]
         struct SerCopy { $(
             $(#[$attr])*
