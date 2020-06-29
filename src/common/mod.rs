@@ -94,7 +94,6 @@ use std::future::Future;
 use std::iter::Peekable;
 use std::pin::Pin;
 
-use chrono::{self, TimeZone};
 use hyper::header::{HeaderMap, HeaderValue};
 use mime;
 use percent_encoding::{utf8_percent_encode, AsciiSet, PercentEncode};
@@ -427,23 +426,28 @@ where
     }
 }
 
-pub fn deserialize_datetime<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s = String::deserialize(ser)?;
-    let date = (chrono::Utc)
-        .datetime_from_str(&s, "%a %b %d %T %z %Y")
-        .map_err(|e| D::Error::custom(e))?;
-    Ok(date)
-}
+pub mod serde_datetime {
+    use serde::{Serializer, Deserialize, Deserializer};
+    use serde::de::Error;
+    use chrono::TimeZone;
 
-pub fn serialize_datetime<S>(src: &chrono::DateTime<chrono::Utc>, ser: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let out = src.format("%a %b %d %T %z %Y").to_string();
-    ser.serialize_str(&out)
+    pub fn deserialize<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(ser)?;
+        let date = (chrono::Utc)
+            .datetime_from_str(&s, "%a %b %d %T %z %Y")
+            .map_err(|e| D::Error::custom(e))?;
+        Ok(date)
+    }
+
+    pub fn serialize<S>(src: &chrono::DateTime<chrono::Utc>, ser: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        ser.collect_str(&src.format("%a %b %d %T %z %Y"))
+    }
 }
 
 pub fn deserialize_mime<'de, D>(ser: D) -> Result<mime::Mime, D::Error>

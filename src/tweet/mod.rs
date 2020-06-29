@@ -153,8 +153,7 @@ round_trip! { raw::RawTweet,
         ///If present, the location coordinate attached to the tweet, as a (latitude, longitude) pair.
         pub coordinates: Option<(f64, f64)>,
         ///UTC timestamp from when the tweet was posted.
-        #[serde(deserialize_with = "deserialize_datetime")]
-        #[serde(serialize_with = "serialize_datetime")]
+        #[serde(with = "serde_datetime")]
         pub created_at: chrono::DateTime<chrono::Utc>,
         ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
         pub current_user_retweet: Option<u64>,

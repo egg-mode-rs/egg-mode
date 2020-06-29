@@ -2,15 +2,17 @@ use crate::{place, user};
 use chrono;
 use serde::Deserialize;
 
+use crate::common::{serde_datetime};
+
 use super::{
-    deserialize_datetime, deserialize_tweet_source, ExtendedTweetEntities, FilterLevel, Tweet,
+    deserialize_tweet_source, ExtendedTweetEntities, FilterLevel, Tweet,
     TweetEntities, TweetSource,
 };
 
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct RawTweet {
     pub coordinates: Option<RawCoordinates>,
-    #[serde(deserialize_with = "deserialize_datetime")]
+    #[serde(with = "serde_datetime")]
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub current_user_retweet: Option<CurrentUserRetweet>,
     pub display_text_range: Option<(usize, usize)>,
