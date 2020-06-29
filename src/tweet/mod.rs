@@ -54,6 +54,7 @@
 //! - `user_timeline`/`liked_by`
 
 use std::borrow::Cow;
+use std::convert::TryFrom;
 use std::future::Future;
 use std::pin::Pin;
 use std::str::FromStr;
@@ -62,7 +63,6 @@ use std::task::{Context, Poll};
 use chrono;
 use hyper::{Body, Request};
 use regex::Regex;
-use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 
 use crate::common::*;
@@ -144,7 +144,8 @@ pub use self::fun::*;
 ///* `withheld_copyright`
 ///* `withheld_in_countries`
 ///* `withheld_scope`
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(try_from = "raw::RawTweet")]
 pub struct Tweet {
     //If the user has contributors enabled, this will show which accounts contributed to this
     //tweet.
@@ -233,17 +234,15 @@ pub struct Tweet {
     pub withheld_scope: Option<String>,
 }
 
-impl<'de> Deserialize<'de> for Tweet {
-    fn deserialize<D>(deser: D) -> std::result::Result<Tweet, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let mut raw = raw::RawTweet::deserialize(deser)?;
+impl TryFrom<raw::RawTweet> for Tweet {
+    type Error = error::Error;
+
+    fn try_from(mut raw: raw::RawTweet) -> Result<Tweet> {
         let text = raw
             .full_text
             .or(raw.extended_tweet.map(|xt| xt.full_text))
             .or(raw.text)
-            .ok_or_else(|| D::Error::custom("Tweet missing text field"))?;
+            .ok_or_else(|| error::Error::MissingValue("text"))?;
         let current_user_retweet = raw.current_user_retweet.map(|cur| cur.id);
 
         if let Some(ref mut range) = raw.display_text_range {
