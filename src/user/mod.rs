@@ -62,7 +62,7 @@ use std::vec::IntoIter as VecIter;
 
 use chrono;
 use futures::Stream;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize};
 
 use crate::common::*;
 use crate::{auth, entities, error, links, tweet};
@@ -160,7 +160,8 @@ impl From<String> for UserID {
 /// * `show_all_inline_media`
 /// * `time_zone`/`utc_offset`
 /// * `withheld_in_countries`/`withheld_scope`
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(from = "raw::RawTwitterUser")]
 pub struct TwitterUser {
     /// Indicates this user has an account with "contributor mode" enabled, allowing
     /// for Tweets issued by the user to be co-authored by another account. Rarely `true`.
@@ -294,13 +295,8 @@ pub struct TwitterUser {
     pub withheld_scope: Option<String>,
 }
 
-impl<'de> Deserialize<'de> for TwitterUser {
-    fn deserialize<D>(deser: D) -> Result<TwitterUser, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let mut raw = raw::RawTwitterUser::deserialize(deser)?;
-
+impl From<raw::RawTwitterUser> for TwitterUser {
+    fn from(mut raw: raw::RawTwitterUser) -> TwitterUser {
         if let Some(ref description) = raw.description {
             for entity in &mut raw.entities.description.urls {
                 codepoints_to_bytes(&mut entity.range, description);
@@ -315,7 +311,7 @@ impl<'de> Deserialize<'de> for TwitterUser {
             }
         }
 
-        Ok(TwitterUser {
+        TwitterUser {
             contributors_enabled: raw.contributors_enabled,
             created_at: raw.created_at,
             default_profile: raw.default_profile,
@@ -356,7 +352,7 @@ impl<'de> Deserialize<'de> for TwitterUser {
             verified: raw.verified,
             withheld_in_countries: raw.withheld_in_countries,
             withheld_scope: raw.withheld_scope,
-        })
+        }
     }
 }
 
