@@ -127,7 +127,14 @@ where
 
     let req = get(links::users::FRIENDSHIP_SHOW, token, Some(&params));
 
-    request_with_json_response(req).await
+    // the relationship returned by Twitter is actually contained within a `"relationship"` field,
+    // so this wrapper struct makes sure the data is loaded correctly
+    #[derive(Deserialize)]
+    struct RelationWrapper { relationship: Relationship }
+
+    let resp: Response<RelationWrapper> = request_with_json_response(req).await?;
+
+    Ok(Response::map(resp, |r| r.relationship))
 }
 
 /// Lookup the relations between the authenticated user and the given accounts.
