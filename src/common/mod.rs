@@ -52,9 +52,10 @@
 //! string. It's also an example of how function parameters are themselves patterns, because i
 //! destructure the pair right in the signature. `>_>`
 //!
-//! `deserialize_datetime` and `deserialize_mime` are glue functions to read these specific items
-//! out in a `Deserialize` implementation. Twitter always gives timestamps in the same format, so
-//! having that function here saves us from having to write the format out everywhere.
+//! `serde_datetime` and `serde_via_string` are helper modules to use with derived
+//! `Serialize`/`Deserialize` implementations. `serde_datetime` loads and saves `DateTime`s with
+//! the format Twitter uses for timestamps, and `serde_via_string` uses `Display` and `FromStr` to
+//! save a string representation of the original type.
 //!
 //! `merge_by` and its companion type `MergeBy` is a copy of the iterator adapter of the same name
 //! from itertools, because i didn't want to add another dependency onto the great towering pile
