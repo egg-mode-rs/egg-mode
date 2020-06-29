@@ -30,6 +30,10 @@
 - New function `Response::into`, to convert a `Response` using the `Into` trait
 - `Response` now implements `IntoIterator` if its contained type does
   - A new type `ResponseIter` has been introduced to contain this iterator
+- `Tweet` and `TwitterUser` now implement `Serialize`, and can be loaded either from Twitter's JSON
+  representation or from the serialized representation
+  - These types now have `twitter_deser_error` and `roundtrip_deser_error` functions to access error
+    messages from deserialization
 
 ## [0.15.0] - 2020-06-11
 
