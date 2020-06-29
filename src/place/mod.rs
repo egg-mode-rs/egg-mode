@@ -30,7 +30,7 @@ use std::collections::HashMap;
 use std::fmt;
 
 use serde::de::Error;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json;
 
 use crate::common::*;
@@ -42,7 +42,7 @@ pub use self::fun::*;
 
 // https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/geo-objects#place
 ///Represents a named location.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Place {
     ///Alphanumeric ID of the location.
     pub id: String,
@@ -53,6 +53,7 @@ pub struct Place {
     pub attributes: HashMap<String, String>,
     ///A bounding box of latitude/longitude coordinates that encloses this place.
     #[serde(deserialize_with = "deserialize_bounding_box")]
+    #[serde(serialize_with = "serialize_bounding_box")]
     pub bounding_box: Vec<(f64, f64)>,
     ///Name of the country containing this place.
     pub country: String,
@@ -366,4 +367,40 @@ where
         .and_then(|inner_arr| {
             serde_json::from_value::<Vec<(f64, f64)>>(inner_arr).map_err(|e| D::Error::custom(e))
         })
+}
+
+fn serialize_bounding_box<S>(src: &Vec<(f64, f64)>, ser: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    #[derive(Serialize)]
+    struct SerBox {
+        coordinates: Vec<(f64, f64)>,
+        #[serde(rename = "type")]
+        box_type: BoxType,
+    }
+
+    #[derive(Serialize)]
+    enum BoxType {
+        Polygon,
+        Point,
+    }
+
+    impl From<&Vec<(f64, f64)>> for SerBox {
+        fn from(src: &Vec<(f64, f64)>) -> SerBox {
+            let box_type = if src.len() == 1 {
+                BoxType::Point
+            } else {
+                BoxType::Polygon
+            };
+
+            SerBox {
+                coordinates: src.clone(),
+                box_type,
+            }
+        }
+    }
+
+    let out: SerBox = src.into();
+    out.serialize(ser)
 }

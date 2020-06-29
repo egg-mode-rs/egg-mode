@@ -188,9 +188,9 @@ round_trip! { raw::RawTweet,
         ///Can contain a language ID indicating the machine-detected language of the text, or "und" if
         ///no language could be detected.
         pub lang: Option<String>,
-        /////When present, the `Place` that this tweet is associated with (but not necessarily where it
-        /////originated from).
-        //pub place: Option<place::Place>,
+        ///When present, the `Place` that this tweet is associated with (but not necessarily where it
+        ///originated from).
+        pub place: Option<place::Place>,
         ///If the tweet has a link, indicates whether the link may contain content that could be
         ///identified as sensitive.
         pub possibly_sensitive: Option<bool>,
@@ -288,7 +288,7 @@ impl TryFrom<raw::RawTweet> for Tweet {
             in_reply_to_screen_name: raw.in_reply_to_screen_name,
             in_reply_to_status_id: raw.in_reply_to_status_id,
             lang: raw.lang,
-            // place: raw.place,
+            place: raw.place,
             possibly_sensitive: raw.possibly_sensitive,
             quoted_status_id: raw.quoted_status_id,
             quoted_status: raw.quoted_status,
