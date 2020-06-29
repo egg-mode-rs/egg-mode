@@ -89,6 +89,7 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fmt;
 use std::future::Future;
 use std::iter::Peekable;
 use std::pin::Pin;
@@ -98,7 +99,7 @@ use hyper::header::{HeaderMap, HeaderValue};
 use mime;
 use percent_encoding::{utf8_percent_encode, AsciiSet, PercentEncode};
 use serde::de::Error;
-use serde::{Deserialize, Deserializer};
+use serde::{Serializer, Deserialize, Deserializer};
 
 mod response;
 
@@ -106,6 +107,59 @@ pub use crate::auth::raw::{get, post, post_json};
 
 pub use crate::common::response::*;
 use crate::{error, list, user};
+
+macro_rules! round_trip {
+    ( $raw_name:path,
+      $(#[$outer_attr:meta])*
+      pub struct $struct_name:ident { $(
+          $(#[$attr:meta])*
+          $v:vis $f:ident : $t:ty
+      ),+ $(,)? } ) => {
+        $(#[$outer_attr])*
+        #[derive(serde::Serialize)]
+        #[derive(serde::Deserialize)]
+        #[serde(try_from = "SerEnum")]
+        pub struct $struct_name { $(
+            $(#[$attr])*
+            $v $f: $t
+        ),+ }
+
+        #[derive(serde::Deserialize)]
+        struct SerCopy { $(
+            $(#[$attr])*
+            $v $f: $t
+        ),+ }
+
+        impl From<SerCopy> for $struct_name {
+            fn from(src: SerCopy) -> $struct_name {
+                $struct_name { $(
+                    $f: src.$f
+                ),+ }
+            }
+        }
+
+        #[derive(serde::Deserialize)]
+        #[serde(untagged)]
+        enum SerEnum {
+            Raw($raw_name),
+            Ser(SerCopy),
+        }
+
+        #[allow(unused_qualifications)]
+        impl std::convert::TryFrom<SerEnum> for $struct_name {
+            type Error = crate::error::Error;
+
+            fn try_from(src: SerEnum) -> crate::error::Result<$struct_name> {
+                use std::convert::TryInto;
+
+                match src {
+                    SerEnum::Raw(raw) => raw.try_into(),
+                    SerEnum::Ser(ser) => Ok(ser.into()),
+                }
+            }
+        }
+    };
+}
 
 // n.b. this type alias is re-exported in the `raw` module - these docs are public!
 /// A set of headers returned with a response.
@@ -338,6 +392,14 @@ where
     Ok(date)
 }
 
+pub fn serialize_datetime<S>(src: &chrono::DateTime<chrono::Utc>, ser: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let out = src.format("%a %b %d %T %z %Y").to_string();
+    ser.serialize_str(&out)
+}
+
 pub fn deserialize_mime<'de, D>(ser: D) -> Result<mime::Mime, D::Error>
 where
     D: Deserializer<'de>,
@@ -354,6 +416,15 @@ where
 {
     let str = String::deserialize(ser)?;
     str.parse().map_err(|e| D::Error::custom(e))
+}
+
+pub fn ser_via_string<T, S>(src: &T, ser: S) -> Result<S::Ok, S::Error>
+where
+    T: fmt::Display,
+    S: Serializer,
+{
+    let out = src.to_string();
+    ser.serialize_str(&out)
 }
 
 /// Percent-encodes the given string based on the Twitter API specification.
