@@ -996,4 +996,15 @@ mod tests {
             Some("test alt text for the image".to_string())
         );
     }
+
+    #[test]
+    fn roundtrip_deser() {
+        let sample = load_file("sample_payloads/tweet_array.json");
+        let tweets_src: Vec<Tweet> = serde_json::from_str(&sample).unwrap();
+        let json1 = serde_json::to_value(tweets_src).unwrap();
+        let tweets_roundtrip: Vec<Tweet> = serde_json::from_value(json1.clone()).unwrap();
+        let json2 = serde_json::to_value(tweets_roundtrip).unwrap();
+
+        assert_eq!(json1, json2);
+    }
 }

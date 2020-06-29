@@ -683,3 +683,20 @@ pub enum Connection {
     #[serde(rename = "muting")]
     Muting,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::TwitterUser;
+    use crate::common::tests::load_file;
+
+    #[test]
+    fn roundtrip_deser() {
+        let sample = load_file("sample_payloads/user_array.json");
+        let users_src: Vec<TwitterUser> = serde_json::from_str(&sample).unwrap();
+        let json1 = serde_json::to_value(users_src).unwrap();
+        let users_roundtrip: Vec<TwitterUser> = serde_json::from_value(json1.clone()).unwrap();
+        let json2 = serde_json::to_value(users_roundtrip).unwrap();
+
+        assert_eq!(json1, json2);
+    }
+}

@@ -1,0 +1,5132 @@
+[
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Mon Jun 01 18:13:12 +0000 2020",
+    "display_text_range": [
+      0,
+      131
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [
+        {
+          "display_url": "twitter.com/bailfundnetwor…",
+          "expanded_url": "https://twitter.com/bailfundnetwork/status/1267324806413729792",
+          "indices": [
+            108,
+            131
+          ],
+          "url": "https://t.co/YtDnBiwEve"
+        }
+      ],
+      "user_mentions": []
+    },
+    "favorite_count": 566,
+    "favorited": false,
+    "full_text": "Rust believes that tech is and always will be political- take some time today to invest in your community.\n\nhttps://t.co/YtDnBiwEve",
+    "geo": null,
+    "id": 1267519582505512960,
+    "id_str": "1267519582505512960",
+    "in_reply_to_screen_name": "rustlang",
+    "in_reply_to_status_id": 1267519580756422659,
+    "in_reply_to_status_id_str": "1267519580756422659",
+    "in_reply_to_user_id": 165262228,
+    "in_reply_to_user_id_str": "165262228",
+    "is_quote_status": true,
+    "lang": "en",
+    "place": null,
+    "possibly_sensitive": false,
+    "quoted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Mon Jun 01 05:19:14 +0000 2020",
+      "display_text_range": [
+        0,
+        290
+      ],
+      "entities": {
+        "hashtags": [
+          {
+            "indices": [
+              278,
+              290
+            ],
+            "text": "FreeThemAll"
+          }
+        ],
+        "symbols": [],
+        "urls": [
+          {
+            "display_url": "bit.ly/protestbailfun…",
+            "expanded_url": "http://bit.ly/protestbailfunds",
+            "indices": [
+              253,
+              276
+            ],
+            "url": "https://t.co/nIBai1VIsD"
+          },
+          {
+            "display_url": "twitter.com/bailfundnetwor…",
+            "expanded_url": "https://twitter.com/bailfundnetwork/status/1266760383303319552",
+            "indices": [
+              291,
+              314
+            ],
+            "url": "https://t.co/cebOnYrGKn"
+          }
+        ],
+        "user_mentions": []
+      },
+      "favorite_count": 879,
+      "favorited": false,
+      "full_text": "JUNE 1: This continues to be the ONGOING &amp; UPDATED list of bail funds that are supporting people demanding justice across the country. Please be sure to check this thread for updates/to verify &amp; share widely.\n\nAlso available &amp; updated here: https://t.co/nIBai1VIsD\n\n#FreeThemAll https://t.co/cebOnYrGKn",
+      "geo": null,
+      "id": 1267324806413729792,
+      "id_str": "1267324806413729792",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": true,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "quoted_status_id": 1266760383303319552,
+      "quoted_status_id_str": "1266760383303319552",
+      "quoted_status_permalink": {
+        "display": "twitter.com/bailfundnetwor…",
+        "expanded": "https://twitter.com/bailfundnetwork/status/1266760383303319552",
+        "url": "https://t.co/cebOnYrGKn"
+      },
+      "retweet_count": 1221,
+      "retweeted": false,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Thu Jun 27 16:29:45 +0000 2019",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "We're a network of over 60 community bail/bond funds that free people from jail and immigration detention & fight to #EndMoneyBail and #EndDetention.",
+        "entities": {
+          "description": {
+            "urls": []
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "bit.ly/localbailfunds",
+                "expanded_url": "http://bit.ly/localbailfunds",
+                "indices": [
+                  0,
+                  23
+                ],
+                "url": "https://t.co/Fa7Bvits87"
+              }
+            ]
+          }
+        },
+        "favourites_count": 1538,
+        "follow_request_sent": false,
+        "followers_count": 8273,
+        "following": false,
+        "friends_count": 325,
+        "geo_enabled": false,
+        "has_extended_profile": false,
+        "id": 1144281673443528706,
+        "id_str": "1144281673443528706",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 30,
+        "location": "",
+        "name": "National Bail Fund Network",
+        "notifications": false,
+        "profile_background_color": "000000",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/1144281673443528706/1563294954",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1144288281884057600/8r4BZsVb_normal.png",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1144288281884057600/8r4BZsVb_normal.png",
+        "profile_link_color": "ABB8C2",
+        "profile_sidebar_border_color": "000000",
+        "profile_sidebar_fill_color": "000000",
+        "profile_text_color": "000000",
+        "profile_use_background_image": false,
+        "protected": false,
+        "screen_name": "bailfundnetwork",
+        "statuses_count": 2410,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": "https://t.co/Fa7Bvits87",
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "quoted_status_id": 1267324806413729792,
+    "quoted_status_id_str": "1267324806413729792",
+    "quoted_status_permalink": {
+      "display": "twitter.com/bailfundnetwor…",
+      "expanded": "https://twitter.com/bailfundnetwork/status/1267324806413729792",
+      "url": "https://t.co/YtDnBiwEve"
+    },
+    "retweet_count": 163,
+    "retweeted": false,
+    "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Mon Jun 01 18:13:12 +0000 2020",
+    "display_text_range": [
+      0,
+      222
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": []
+    },
+    "favorite_count": 1972,
+    "favorited": false,
+    "full_text": "In acknowledgement that taking a stand against police brutality is more important than sharing tech knowledge, this account will pause tweeting until further notice. Feel free to email the core team at: core@rust-lang.org.",
+    "geo": null,
+    "id": 1267519580756422659,
+    "id_str": "1267519580756422659",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "retweet_count": 360,
+    "retweeted": false,
+    "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Thu May 28 22:29:04 +0000 2020",
+    "display_text_range": [
+      0,
+      140
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": [
+        {
+          "id": 32832807,
+          "id_str": "32832807",
+          "indices": [
+            3,
+            15
+          ],
+          "name": "Harald Hoyer",
+          "screen_name": "haraldhoyer"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @haraldhoyer: Created a simple github actions remote runner shim in rust, which enables triggering CI runs on remote servers with the he…",
+    "geo": null,
+    "id": 1266134424036487170,
+    "id_str": "1266134424036487170",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "retweet_count": 3,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Thu May 28 22:14:17 +0000 2020",
+      "display_text_range": [
+        0,
+        187
+      ],
+      "entities": {
+        "hashtags": [
+          {
+            "indices": [
+              170,
+              175
+            ],
+            "text": "rust"
+          },
+          {
+            "indices": [
+              176,
+              183
+            ],
+            "text": "github"
+          },
+          {
+            "indices": [
+              184,
+              187
+            ],
+            "text": "CI"
+          }
+        ],
+        "symbols": [],
+        "urls": [
+          {
+            "display_url": "github.com/enarx/github-s…",
+            "expanded_url": "https://github.com/enarx/github-ssh-ci-runner",
+            "indices": [
+              134,
+              157
+            ],
+            "url": "https://t.co/jJgVSkDBXQ"
+          }
+        ],
+        "user_mentions": [
+          {
+            "id": 165262228,
+            "id_str": "165262228",
+            "indices": [
+              159,
+              168
+            ],
+            "name": "Rust Language",
+            "screen_name": "rustlang"
+          }
+        ]
+      },
+      "favorite_count": 18,
+      "favorited": false,
+      "full_text": "Created a simple github actions remote runner shim in rust, which enables triggering CI runs on remote servers with the help of ssh.\n\nhttps://t.co/jJgVSkDBXQ\n\n@rustlang  #rust #github #CI",
+      "geo": null,
+      "id": 1266130703407894534,
+      "id_str": "1266130703407894534",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "retweet_count": 3,
+      "retweeted": false,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Sat Apr 18 08:26:52 +0000 2009",
+        "default_profile": true,
+        "default_profile_image": false,
+        "description": "1999-???? @ Red Hat",
+        "entities": {
+          "description": {
+            "urls": []
+          }
+        },
+        "favourites_count": 155,
+        "follow_request_sent": false,
+        "followers_count": 112,
+        "following": false,
+        "friends_count": 126,
+        "geo_enabled": false,
+        "has_extended_profile": false,
+        "id": 32832807,
+        "id_str": "32832807",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 0,
+        "location": "Vaterstetten, Deutschland",
+        "name": "Harald Hoyer",
+        "notifications": false,
+        "profile_background_color": "C0DEED",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/32832807/1399916239",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/2201306501/me-cool-rect_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/2201306501/me-cool-rect_normal.jpg",
+        "profile_link_color": "1DA1F2",
+        "profile_sidebar_border_color": "C0DEED",
+        "profile_sidebar_fill_color": "DDEEF6",
+        "profile_text_color": "333333",
+        "profile_use_background_image": true,
+        "protected": false,
+        "screen_name": "haraldhoyer",
+        "statuses_count": 247,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": null,
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Thu May 28 22:28:59 +0000 2020",
+    "display_text_range": [
+      0,
+      131
+    ],
+    "entities": {
+      "hashtags": [
+        {
+          "indices": [
+            25,
+            30
+          ],
+          "text": "Rust"
+        }
+      ],
+      "symbols": [],
+      "urls": [
+        {
+          "display_url": "rust.libhunt.com/newsletter/205",
+          "expanded_url": "https://rust.libhunt.com/newsletter/205",
+          "indices": [
+            50,
+            73
+          ],
+          "url": "https://t.co/RzsiVwaI2Y"
+        }
+      ],
+      "user_mentions": [
+        {
+          "id": 776345944426221568,
+          "id_str": "776345944426221568",
+          "indices": [
+            3,
+            15
+          ],
+          "name": "Rust LibHunt",
+          "screen_name": "RustLibHunt"
+        },
+        {
+          "id": 128700677,
+          "id_str": "128700677",
+          "indices": [
+            84,
+            98
+          ],
+          "name": "Stack Overflow",
+          "screen_name": "StackOverflow"
+        },
+        {
+          "id": 80589255,
+          "id_str": "80589255",
+          "indices": [
+            99,
+            113
+          ],
+          "name": "Open Source Way",
+          "screen_name": "opensourceway"
+        },
+        {
+          "id": 36353475,
+          "id_str": "36353475",
+          "indices": [
+            114,
+            121
+          ],
+          "name": "Cetra",
+          "screen_name": "Cetra3"
+        },
+        {
+          "id": 165262228,
+          "id_str": "165262228",
+          "indices": [
+            122,
+            131
+          ],
+          "name": "Rust Language",
+          "screen_name": "rustlang"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @RustLibHunt: Awesome #Rust Weekly #205 is out https://t.co/RzsiVwaI2Y\nFeaturing @stackoverflow @opensourceway @cetra3 @rustlang",
+    "geo": null,
+    "id": 1266134399080415236,
+    "id_str": "1266134399080415236",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "possibly_sensitive": false,
+    "retweet_count": 8,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Thu May 28 22:02:47 +0000 2020",
+      "display_text_range": [
+        0,
+        114
+      ],
+      "entities": {
+        "hashtags": [
+          {
+            "indices": [
+              8,
+              13
+            ],
+            "text": "Rust"
+          }
+        ],
+        "symbols": [],
+        "urls": [
+          {
+            "display_url": "rust.libhunt.com/newsletter/205",
+            "expanded_url": "https://rust.libhunt.com/newsletter/205",
+            "indices": [
+              33,
+              56
+            ],
+            "url": "https://t.co/RzsiVwaI2Y"
+          }
+        ],
+        "user_mentions": [
+          {
+            "id": 128700677,
+            "id_str": "128700677",
+            "indices": [
+              67,
+              81
+            ],
+            "name": "Stack Overflow",
+            "screen_name": "StackOverflow"
+          },
+          {
+            "id": 80589255,
+            "id_str": "80589255",
+            "indices": [
+              82,
+              96
+            ],
+            "name": "Open Source Way",
+            "screen_name": "opensourceway"
+          },
+          {
+            "id": 36353475,
+            "id_str": "36353475",
+            "indices": [
+              97,
+              104
+            ],
+            "name": "Cetra",
+            "screen_name": "Cetra3"
+          },
+          {
+            "id": 165262228,
+            "id_str": "165262228",
+            "indices": [
+              105,
+              114
+            ],
+            "name": "Rust Language",
+            "screen_name": "rustlang"
+          }
+        ]
+      },
+      "favorite_count": 21,
+      "favorited": false,
+      "full_text": "Awesome #Rust Weekly #205 is out https://t.co/RzsiVwaI2Y\nFeaturing @stackoverflow @opensourceway @cetra3 @rustlang",
+      "geo": null,
+      "id": 1266127809589600256,
+      "id_str": "1266127809589600256",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "retweet_count": 8,
+      "retweeted": false,
+      "source": "<a href=\"https://www.libhunt.com\" rel=\"nofollow\">LibHunt</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Thu Sep 15 09:04:31 +0000 2016",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "Your go-to Rust Toolbox",
+        "entities": {
+          "description": {
+            "urls": []
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "rust.libhunt.com",
+                "expanded_url": "https://rust.libhunt.com",
+                "indices": [
+                  0,
+                  23
+                ],
+                "url": "https://t.co/UDWWKqrVKW"
+              }
+            ]
+          }
+        },
+        "favourites_count": 2,
+        "follow_request_sent": false,
+        "followers_count": 1184,
+        "following": false,
+        "friends_count": 963,
+        "geo_enabled": false,
+        "has_extended_profile": false,
+        "id": 776345944426221568,
+        "id_str": "776345944426221568",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 40,
+        "location": "The Internet",
+        "name": "Rust LibHunt",
+        "notifications": false,
+        "profile_background_color": "000000",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_tile": false,
+        "profile_image_url": "http://pbs.twimg.com/profile_images/776346813012074496/S7kCezGv_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/776346813012074496/S7kCezGv_normal.jpg",
+        "profile_link_color": "333333",
+        "profile_sidebar_border_color": "000000",
+        "profile_sidebar_fill_color": "000000",
+        "profile_text_color": "000000",
+        "profile_use_background_image": false,
+        "protected": false,
+        "screen_name": "RustLibHunt",
+        "statuses_count": 2224,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": "https://t.co/UDWWKqrVKW",
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Thu May 28 20:22:36 +0000 2020",
+    "display_text_range": [
+      0,
+      140
+    ],
+    "entities": {
+      "hashtags": [
+        {
+          "indices": [
+            20,
+            29
+          ],
+          "text": "rustlang"
+        }
+      ],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": [
+        {
+          "id": 14819336,
+          "id_str": "14819336",
+          "indices": [
+            3,
+            12
+          ],
+          "name": "svartalf",
+          "screen_name": "svartalf"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @svartalf: Today #rustlang nightly introduced the `unused_crate_dependencies` lint, allowing to fail build if there anything unused decl…",
+    "geo": null,
+    "id": 1266102594168131602,
+    "id_str": "1266102594168131602",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "retweet_count": 46,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Thu May 28 14:18:45 +0000 2020",
+      "display_text_range": [
+        0,
+        236
+      ],
+      "entities": {
+        "hashtags": [
+          {
+            "indices": [
+              6,
+              15
+            ],
+            "text": "rustlang"
+          }
+        ],
+        "symbols": [],
+        "urls": [
+          {
+            "display_url": "github.com/rust-lang/rust…",
+            "expanded_url": "https://github.com/rust-lang/rust/pull/72342",
+            "indices": [
+              213,
+              236
+            ],
+            "url": "https://t.co/e1z1ol82T1"
+          }
+        ],
+        "user_mentions": []
+      },
+      "favorite_count": 261,
+      "favorited": false,
+      "full_text": "Today #rustlang nightly introduced the `unused_crate_dependencies` lint, allowing to fail build if there anything unused declared in Cargo.toml dependencies:\n\nRUSTFLAGS=\"-D unused_crate_dependencies\" cargo check\n\nhttps://t.co/e1z1ol82T1",
+      "geo": null,
+      "id": 1266011029680599044,
+      "id_str": "1266011029680599044",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "retweet_count": 46,
+      "retweeted": false,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Sun May 18 09:23:08 +0000 2008",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "Software engineer, making Rust ecosystem better at the moment",
+        "entities": {
+          "description": {
+            "urls": []
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "svartalf.info",
+                "expanded_url": "http://svartalf.info",
+                "indices": [
+                  0,
+                  22
+                ],
+                "url": "http://t.co/hcXEZvThpi"
+              }
+            ]
+          }
+        },
+        "favourites_count": 238,
+        "follow_request_sent": false,
+        "followers_count": 696,
+        "following": false,
+        "friends_count": 25,
+        "geo_enabled": false,
+        "has_extended_profile": false,
+        "id": 14819336,
+        "id_str": "14819336",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 35,
+        "location": "Saint Petersburg",
+        "name": "svartalf",
+        "notifications": false,
+        "profile_background_color": "022330",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme15/bg.png",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme15/bg.png",
+        "profile_background_tile": false,
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1178188024/avatar_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1178188024/avatar_normal.jpg",
+        "profile_link_color": "0084B4",
+        "profile_sidebar_border_color": "A8C7F7",
+        "profile_sidebar_fill_color": "C0DFEC",
+        "profile_text_color": "333333",
+        "profile_use_background_image": true,
+        "protected": false,
+        "screen_name": "svartalf",
+        "statuses_count": 6980,
+        "time_zone": null,
+        "translator_type": "regular",
+        "url": "http://t.co/hcXEZvThpi",
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Thu May 28 20:22:13 +0000 2020",
+    "display_text_range": [
+      0,
+      79
+    ],
+    "entities": {
+      "hashtags": [
+        {
+          "indices": [
+            45,
+            54
+          ],
+          "text": "rustlang"
+        },
+        {
+          "indices": [
+            72,
+            77
+          ],
+          "text": "WSL2"
+        }
+      ],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": [
+        {
+          "id": 21369171,
+          "id_str": "21369171",
+          "indices": [
+            3,
+            14
+          ],
+          "name": "Chris McKenzie",
+          "screen_name": "ISuperGeek"
+        },
+        {
+          "id": 2668989936,
+          "id_str": "2668989936",
+          "indices": [
+            58,
+            68
+          ],
+          "name": "JetBrains CLion IDE",
+          "screen_name": "clion_ide"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @ISuperGeek: What is the current state of #rustlang  + @clion_ide  + #WSL2\n?",
+    "geo": null,
+    "id": 1266102498277953537,
+    "id_str": "1266102498277953537",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "retweet_count": 3,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Thu May 28 18:36:36 +0000 2020",
+      "display_text_range": [
+        0,
+        63
+      ],
+      "entities": {
+        "hashtags": [
+          {
+            "indices": [
+              29,
+              38
+            ],
+            "text": "rustlang"
+          },
+          {
+            "indices": [
+              56,
+              61
+            ],
+            "text": "WSL2"
+          }
+        ],
+        "symbols": [],
+        "urls": [],
+        "user_mentions": [
+          {
+            "id": 2668989936,
+            "id_str": "2668989936",
+            "indices": [
+              42,
+              52
+            ],
+            "name": "JetBrains CLion IDE",
+            "screen_name": "clion_ide"
+          }
+        ]
+      },
+      "favorite_count": 4,
+      "favorited": false,
+      "full_text": "What is the current state of #rustlang  + @clion_ide  + #WSL2\n?",
+      "geo": null,
+      "id": 1266075918537068545,
+      "id_str": "1266075918537068545",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "retweet_count": 3,
+      "retweeted": false,
+      "source": "<a href=\"https://about.twitter.com/products/tweetdeck\" rel=\"nofollow\">TweetDeck</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Fri Feb 20 03:17:16 +0000 2009",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "Agile developer and Objectivist living and working in downtown Seattle. I've been called the Marie Kondo of Software Engineering.",
+        "entities": {
+          "description": {
+            "urls": []
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "IExtendable.com",
+                "expanded_url": "http://IExtendable.com",
+                "indices": [
+                  0,
+                  22
+                ],
+                "url": "http://t.co/RAwguYdMle"
+              }
+            ]
+          }
+        },
+        "favourites_count": 1081,
+        "follow_request_sent": false,
+        "followers_count": 264,
+        "following": false,
+        "friends_count": 239,
+        "geo_enabled": true,
+        "has_extended_profile": false,
+        "id": 21369171,
+        "id_str": "21369171",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 20,
+        "location": "Seattle, WA",
+        "name": "Chris McKenzie",
+        "notifications": false,
+        "profile_background_color": "131516",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+        "profile_background_tile": true,
+        "profile_image_url": "http://pbs.twimg.com/profile_images/2182538624/533316_3809757809436_1442190714_33522054_1433777684_n_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/2182538624/533316_3809757809436_1442190714_33522054_1433777684_n_normal.jpg",
+        "profile_link_color": "009999",
+        "profile_sidebar_border_color": "EEEEEE",
+        "profile_sidebar_fill_color": "EFEFEF",
+        "profile_text_color": "333333",
+        "profile_use_background_image": true,
+        "protected": false,
+        "screen_name": "ISuperGeek",
+        "statuses_count": 5558,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": "http://t.co/RAwguYdMle",
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Thu May 28 20:22:08 +0000 2020",
+    "display_text_range": [
+      0,
+      139
+    ],
+    "entities": {
+      "hashtags": [
+        {
+          "indices": [
+            36,
+            41
+          ],
+          "text": "MQTT"
+        },
+        {
+          "indices": [
+            42,
+            51
+          ],
+          "text": "rustlang"
+        }
+      ],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": [
+        {
+          "id": 14785423,
+          "id_str": "14785423",
+          "indices": [
+            3,
+            16
+          ],
+          "name": "Kevin Hoffman 🦀",
+          "screen_name": "KevinHoffman"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @KevinHoffman: Anyone know which #MQTT #rustlang crate is the defacto/preferred? There's over a dozen of them and I have no real way of…",
+    "geo": null,
+    "id": 1266102478975746048,
+    "id_str": "1266102478975746048",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "retweet_count": 1,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Thu May 28 19:56:52 +0000 2020",
+      "display_text_range": [
+        0,
+        158
+      ],
+      "entities": {
+        "hashtags": [
+          {
+            "indices": [
+              18,
+              23
+            ],
+            "text": "MQTT"
+          },
+          {
+            "indices": [
+              24,
+              33
+            ],
+            "text": "rustlang"
+          }
+        ],
+        "symbols": [],
+        "urls": [],
+        "user_mentions": []
+      },
+      "favorite_count": 17,
+      "favorited": false,
+      "full_text": "Anyone know which #MQTT #rustlang crate is the defacto/preferred? There's over a dozen of them and I have no real way of telling the differences between them.",
+      "geo": null,
+      "id": 1266096121111347200,
+      "id_str": "1266096121111347200",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "retweet_count": 1,
+      "retweeted": false,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Thu May 15 12:43:26 +0000 2008",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "Author, Programming WebAssembly with Rust. I turn napkin drawings into software for @CapitalOne. Distsys nerd. Opinions my own. 中文学生。WeChat: LearnBuildTeach",
+        "entities": {
+          "description": {
+            "urls": []
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "wascc.dev",
+                "expanded_url": "http://wascc.dev",
+                "indices": [
+                  0,
+                  23
+                ],
+                "url": "https://t.co/emCh3A1ih9"
+              }
+            ]
+          }
+        },
+        "favourites_count": 43082,
+        "follow_request_sent": false,
+        "followers_count": 3120,
+        "following": false,
+        "friends_count": 1736,
+        "geo_enabled": false,
+        "has_extended_profile": false,
+        "id": 14785423,
+        "id_str": "14785423",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 174,
+        "location": "Earth, Solar System, Milky Way",
+        "name": "Kevin Hoffman 🦀",
+        "notifications": false,
+        "profile_background_color": "000000",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme9/bg.gif",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme9/bg.gif",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/14785423/1579823902",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1209591762953605121/bS2muj7o_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1209591762953605121/bS2muj7o_normal.jpg",
+        "profile_link_color": "1B95E0",
+        "profile_sidebar_border_color": "000000",
+        "profile_sidebar_fill_color": "000000",
+        "profile_text_color": "000000",
+        "profile_use_background_image": false,
+        "protected": false,
+        "screen_name": "KevinHoffman",
+        "statuses_count": 27017,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": "https://t.co/emCh3A1ih9",
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Thu May 28 20:21:23 +0000 2020",
+    "display_text_range": [
+      0,
+      140
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": [
+        {
+          "id": 770209022,
+          "id_str": "770209022",
+          "indices": [
+            3,
+            11
+          ],
+          "name": "Rüdiger Klaehn",
+          "screen_name": "klaehnr"
+        },
+        {
+          "id": 165262228,
+          "id_str": "165262228",
+          "indices": [
+            17,
+            26
+          ],
+          "name": "Rust Language",
+          "screen_name": "rustlang"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @klaehnr: Hey @rustlang twitter: is it possible to write an useful unsized type like str without using unsafe?\n\nBasically something that…",
+    "geo": null,
+    "id": 1266102288331964417,
+    "id_str": "1266102288331964417",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "retweet_count": 1,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Thu May 28 19:25:43 +0000 2020",
+      "display_text_range": [
+        0,
+        260
+      ],
+      "entities": {
+        "hashtags": [],
+        "symbols": [],
+        "urls": [],
+        "user_mentions": [
+          {
+            "id": 165262228,
+            "id_str": "165262228",
+            "indices": [
+              4,
+              13
+            ],
+            "name": "Rust Language",
+            "screen_name": "rustlang"
+          }
+        ]
+      },
+      "favorite_count": 10,
+      "favorited": false,
+      "full_text": "Hey @rustlang twitter: is it possible to write an useful unsized type like str without using unsafe?\n\nBasically something that is a refinement of a [u8], just like an utf8 byte sequence...\n\nI checked how from_utf8 works, but it delegates to from_utf8_unsafe...",
+      "geo": null,
+      "id": 1266088279860039683,
+      "id_str": "1266088279860039683",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "retweet_count": 1,
+      "retweeted": false,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Mon Aug 20 20:53:19 +0000 2012",
+        "default_profile": true,
+        "default_profile_image": false,
+        "description": "Distributed systems engineer at @Actyx, formerly spacecraft telemetry and space mission planning for @Dlr_en",
+        "entities": {
+          "description": {
+            "urls": []
+          }
+        },
+        "favourites_count": 6698,
+        "follow_request_sent": false,
+        "followers_count": 543,
+        "following": false,
+        "friends_count": 848,
+        "geo_enabled": false,
+        "has_extended_profile": false,
+        "id": 770209022,
+        "id_str": "770209022",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 21,
+        "location": "Bavaria, Germany",
+        "name": "Rüdiger Klaehn",
+        "notifications": false,
+        "profile_background_color": "C0DEED",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/770209022/1402831077",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1161295627063648256/9DrkHuEB_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1161295627063648256/9DrkHuEB_normal.jpg",
+        "profile_link_color": "1DA1F2",
+        "profile_sidebar_border_color": "C0DEED",
+        "profile_sidebar_fill_color": "DDEEF6",
+        "profile_text_color": "333333",
+        "profile_use_background_image": true,
+        "protected": false,
+        "screen_name": "klaehnr",
+        "statuses_count": 1285,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": null,
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Thu May 28 20:21:07 +0000 2020",
+    "display_text_range": [
+      0,
+      140
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": [
+        {
+          "id": 460544490,
+          "id_str": "460544490",
+          "indices": [
+            3,
+            17
+          ],
+          "name": "Recurse Center",
+          "screen_name": "recursecenter"
+        },
+        {
+          "id": 165262228,
+          "id_str": "165262228",
+          "indices": [
+            89,
+            98
+          ],
+          "name": "Rust Language",
+          "screen_name": "rustlang"
+        },
+        {
+          "id": 939915987763245056,
+          "id_str": "939915987763245056",
+          "indices": [
+            102,
+            111
+          ],
+          "name": "Wesley Aptekar-Cassels (they/them)",
+          "screen_name": "WAptekar"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": true,
+    "full_text": "RT @recursecenter: An online version of Hanabi, the collaborative card game, built using @rustlang by @WAptekar! \n\nToday's Joy of Computing…",
+    "geo": null,
+    "id": 1266102224264069120,
+    "id_str": "1266102224264069120",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "retweet_count": 10,
+    "retweeted": true,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Thu May 28 20:09:44 +0000 2020",
+      "display_text_range": [
+        0,
+        235
+      ],
+      "entities": {
+        "hashtags": [],
+        "media": [
+          {
+            "display_url": "pic.twitter.com/Njjls1cdmW",
+            "expanded_url": "https://twitter.com/recursecenter/status/1266099355695620096/photo/1",
+            "id": 1266099293972303884,
+            "id_str": "1266099293972303884",
+            "indices": [
+              236,
+              259
+            ],
+            "media_url": "http://pbs.twimg.com/media/EZIWmYuXkAwxDaB.jpg",
+            "media_url_https": "https://pbs.twimg.com/media/EZIWmYuXkAwxDaB.jpg",
+            "sizes": {
+              "large": {
+                "h": 944,
+                "resize": "fit",
+                "w": 1919
+              },
+              "medium": {
+                "h": 590,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 335,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/Njjls1cdmW"
+          }
+        ],
+        "symbols": [],
+        "urls": [
+          {
+            "display_url": "joy.recurse.com/posts/786-an-o…",
+            "expanded_url": "https://joy.recurse.com/posts/786-an-online-version-of-hanabi",
+            "indices": [
+              122,
+              145
+            ],
+            "url": "https://t.co/3xqOaYgiH7"
+          },
+          {
+            "display_url": "hanabi.site",
+            "expanded_url": "https://hanabi.site",
+            "indices": [
+              180,
+              203
+            ],
+            "url": "https://t.co/ikkWrXdVmL"
+          },
+          {
+            "display_url": "github.com/WesleyAC/hanabi",
+            "expanded_url": "https://github.com/WesleyAC/hanabi",
+            "indices": [
+              212,
+              235
+            ],
+            "url": "https://t.co/DxLWpOi40N"
+          }
+        ],
+        "user_mentions": [
+          {
+            "id": 165262228,
+            "id_str": "165262228",
+            "indices": [
+              70,
+              79
+            ],
+            "name": "Rust Language",
+            "screen_name": "rustlang"
+          },
+          {
+            "id": 939915987763245056,
+            "id_str": "939915987763245056",
+            "indices": [
+              83,
+              92
+            ],
+            "name": "Wesley Aptekar-Cassels (they/them)",
+            "screen_name": "WAptekar"
+          }
+        ]
+      },
+      "extended_entities": {
+        "media": [
+          {
+            "display_url": "pic.twitter.com/Njjls1cdmW",
+            "expanded_url": "https://twitter.com/recursecenter/status/1266099355695620096/photo/1",
+            "id": 1266099293972303884,
+            "id_str": "1266099293972303884",
+            "indices": [
+              236,
+              259
+            ],
+            "media_url": "http://pbs.twimg.com/media/EZIWmYuXkAwxDaB.jpg",
+            "media_url_https": "https://pbs.twimg.com/media/EZIWmYuXkAwxDaB.jpg",
+            "sizes": {
+              "large": {
+                "h": 944,
+                "resize": "fit",
+                "w": 1919
+              },
+              "medium": {
+                "h": 590,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 335,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/Njjls1cdmW"
+          }
+        ]
+      },
+      "favorite_count": 44,
+      "favorited": true,
+      "full_text": "An online version of Hanabi, the collaborative card game, built using @rustlang by @WAptekar! \n\nToday's Joy of Computing: https://t.co/3xqOaYgiH7\nYou can play with your friends at https://t.co/ikkWrXdVmL\nSource: https://t.co/DxLWpOi40N https://t.co/Njjls1cdmW",
+      "geo": null,
+      "id": 1266099355695620096,
+      "id_str": "1266099355695620096",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "retweet_count": 10,
+      "retweeted": true,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Tue Jan 10 21:39:54 +0000 2012",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "RC is a self-directed, community-driven educational retreat for programmers. We believe people learn best when they are free to explore their interests.",
+        "entities": {
+          "description": {
+            "urls": []
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "recurse.com",
+                "expanded_url": "http://www.recurse.com/",
+                "indices": [
+                  0,
+                  22
+                ],
+                "url": "http://t.co/UEvai7Q55k"
+              }
+            ]
+          }
+        },
+        "favourites_count": 1674,
+        "follow_request_sent": false,
+        "followers_count": 26456,
+        "following": false,
+        "friends_count": 156,
+        "geo_enabled": false,
+        "has_extended_profile": false,
+        "id": 460544490,
+        "id_str": "460544490",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 539,
+        "location": "New York, NY",
+        "name": "Recurse Center",
+        "notifications": false,
+        "profile_background_color": "5ABA47",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme16/bg.gif",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme16/bg.gif",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/460544490/1573673149",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/984166621328617472/5mJw_JYv_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/984166621328617472/5mJw_JYv_normal.jpg",
+        "profile_link_color": "3DC06C",
+        "profile_sidebar_border_color": "FFFFFF",
+        "profile_sidebar_fill_color": "DDEEF6",
+        "profile_text_color": "333333",
+        "profile_use_background_image": false,
+        "protected": false,
+        "screen_name": "recursecenter",
+        "statuses_count": 2540,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": "http://t.co/UEvai7Q55k",
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Thu May 28 20:21:03 +0000 2020",
+    "display_text_range": [
+      0,
+      139
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": [
+        {
+          "id": 3374358670,
+          "id_str": "3374358670",
+          "indices": [
+            3,
+            11
+          ],
+          "name": "ZomboDB",
+          "screen_name": "zombodb"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @zombodb: It's a little hard to read, but here's standard Rust \"{:?}\" debug output from a safe version of Postgres' raw parse tree, for…",
+    "geo": null,
+    "id": 1266102206857728003,
+    "id_str": "1266102206857728003",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "retweet_count": 5,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Thu May 28 20:20:09 +0000 2020",
+      "display_text_range": [
+        0,
+        269
+      ],
+      "entities": {
+        "hashtags": [],
+        "media": [
+          {
+            "display_url": "pic.twitter.com/F7TRhUoHOO",
+            "expanded_url": "https://twitter.com/zombodb/status/1266101980906340353/photo/1",
+            "id": 1266101474452557824,
+            "id_str": "1266101474452557824",
+            "indices": [
+              270,
+              293
+            ],
+            "media_url": "http://pbs.twimg.com/media/EZIYlTpX0AAx5cW.jpg",
+            "media_url_https": "https://pbs.twimg.com/media/EZIYlTpX0AAx5cW.jpg",
+            "sizes": {
+              "large": {
+                "h": 1361,
+                "resize": "fit",
+                "w": 2048
+              },
+              "medium": {
+                "h": 797,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 452,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/F7TRhUoHOO"
+          }
+        ],
+        "symbols": [],
+        "urls": [],
+        "user_mentions": [
+          {
+            "id": 848569011231006721,
+            "id_str": "848569011231006721",
+            "indices": [
+              195,
+              206
+            ],
+            "name": "PostgreSQL",
+            "screen_name": "PostgreSQL"
+          },
+          {
+            "id": 165262228,
+            "id_str": "165262228",
+            "indices": [
+              227,
+              236
+            ],
+            "name": "Rust Language",
+            "screen_name": "rustlang"
+          }
+        ]
+      },
+      "extended_entities": {
+        "media": [
+          {
+            "display_url": "pic.twitter.com/F7TRhUoHOO",
+            "expanded_url": "https://twitter.com/zombodb/status/1266101980906340353/photo/1",
+            "id": 1266101474452557824,
+            "id_str": "1266101474452557824",
+            "indices": [
+              270,
+              293
+            ],
+            "media_url": "http://pbs.twimg.com/media/EZIYlTpX0AAx5cW.jpg",
+            "media_url_https": "https://pbs.twimg.com/media/EZIYlTpX0AAx5cW.jpg",
+            "sizes": {
+              "large": {
+                "h": 1361,
+                "resize": "fit",
+                "w": 2048
+              },
+              "medium": {
+                "h": 797,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 452,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/F7TRhUoHOO"
+          },
+          {
+            "display_url": "pic.twitter.com/F7TRhUoHOO",
+            "expanded_url": "https://twitter.com/zombodb/status/1266101980906340353/photo/1",
+            "id": 1266101564181221376,
+            "id_str": "1266101564181221376",
+            "indices": [
+              270,
+              293
+            ],
+            "media_url": "http://pbs.twimg.com/media/EZIYqh6WkAArD5F.jpg",
+            "media_url_https": "https://pbs.twimg.com/media/EZIYqh6WkAArD5F.jpg",
+            "sizes": {
+              "large": {
+                "h": 456,
+                "resize": "fit",
+                "w": 2048
+              },
+              "medium": {
+                "h": 267,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 151,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 150,
+                "resize": "crop",
+                "w": 150
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/F7TRhUoHOO"
+          }
+        ]
+      },
+      "favorite_count": 67,
+      "favorited": false,
+      "full_text": "It's a little hard to read, but here's standard Rust \"{:?}\" debug output from a safe version of Postgres' raw parse tree, for the query \"select ARRAY[1,2,3]\".\n\nIn general, it works!\n\nCan now use @PostgreSQL's query parser from @rustlang.\n\nTesting will be interesting... https://t.co/F7TRhUoHOO",
+      "geo": null,
+      "id": 1266101980906340353,
+      "id_str": "1266101980906340353",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "retweet_count": 5,
+      "retweeted": false,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Mon Jul 13 17:25:28 +0000 2015",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "Making #PostgreSQL and #Elasticsearch work together like it's 2020\n\nhttps://t.co/J29nKvoa5o",
+        "entities": {
+          "description": {
+            "urls": [
+              {
+                "display_url": "github.com/sponsors/eeeeb…",
+                "expanded_url": "https://github.com/sponsors/eeeebbbbrrrr",
+                "indices": [
+                  68,
+                  91
+                ],
+                "url": "https://t.co/J29nKvoa5o"
+              }
+            ]
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "zombodb.com",
+                "expanded_url": "http://www.zombodb.com",
+                "indices": [
+                  0,
+                  23
+                ],
+                "url": "https://t.co/L3ulCseilj"
+              }
+            ]
+          }
+        },
+        "favourites_count": 2719,
+        "follow_request_sent": false,
+        "followers_count": 780,
+        "following": false,
+        "friends_count": 1061,
+        "geo_enabled": false,
+        "has_extended_profile": true,
+        "id": 3374358670,
+        "id_str": "3374358670",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 16,
+        "location": "El Paso, Texas, USA",
+        "name": "ZomboDB",
+        "notifications": false,
+        "profile_background_color": "000000",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/3374358670/1590899548",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1252126782863675392/Lp3ZqkRF_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1252126782863675392/Lp3ZqkRF_normal.jpg",
+        "profile_link_color": "89C9FA",
+        "profile_sidebar_border_color": "000000",
+        "profile_sidebar_fill_color": "000000",
+        "profile_text_color": "000000",
+        "profile_use_background_image": false,
+        "protected": false,
+        "screen_name": "zombodb",
+        "statuses_count": 4969,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": "https://t.co/L3ulCseilj",
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Thu May 28 01:20:24 +0000 2020",
+    "display_text_range": [
+      0,
+      140
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": [
+        {
+          "id": 2978661890,
+          "id_str": "2978661890",
+          "indices": [
+            3,
+            10
+          ],
+          "name": "Kat Marchán 🍑🍑🍑",
+          "screen_name": "zkat__"
+        },
+        {
+          "id": 165262228,
+          "id_str": "165262228",
+          "indices": [
+            17,
+            26
+          ],
+          "name": "Rust Language",
+          "screen_name": "rustlang"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @zkat__: Dear @rustlang -- is it possible to, say, read a .toml file that has a struct/trait name in it (or some identifier referring to…",
+    "geo": null,
+    "id": 1265815151275651072,
+    "id_str": "1265815151275651072",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "retweet_count": 1,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Thu May 28 01:13:45 +0000 2020",
+      "display_text_range": [
+        0,
+        269
+      ],
+      "entities": {
+        "hashtags": [],
+        "symbols": [],
+        "urls": [
+          {
+            "display_url": "build.rs",
+            "expanded_url": "http://build.rs",
+            "indices": [
+              245,
+              268
+            ],
+            "url": "https://t.co/JgIydbgI8h"
+          }
+        ],
+        "user_mentions": [
+          {
+            "id": 165262228,
+            "id_str": "165262228",
+            "indices": [
+              5,
+              14
+            ],
+            "name": "Rust Language",
+            "screen_name": "rustlang"
+          }
+        ]
+      },
+      "favorite_count": 16,
+      "favorited": false,
+      "full_text": "Dear @rustlang -- is it possible to, say, read a .toml file that has a struct/trait name in it (or some identifier referring to one), and have some code that creates an instance of that struct dynamically? *Without* dynamic code generation with https://t.co/JgIydbgI8h?",
+      "geo": null,
+      "id": 1265813479375532032,
+      "id_str": "1265813479375532032",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "retweet_count": 1,
+      "retweeted": false,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Tue Jan 13 06:07:49 +0000 2015",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "tired of tech. edeleth stan account. nb. (they/them), boricua, eng @microsoft. 🐘: @zkat@toot.cat. shitposts and opinions my own.",
+        "entities": {
+          "description": {
+            "urls": []
+          }
+        },
+        "favourites_count": 151232,
+        "follow_request_sent": false,
+        "followers_count": 11086,
+        "following": false,
+        "friends_count": 375,
+        "geo_enabled": false,
+        "has_extended_profile": true,
+        "id": 2978661890,
+        "id_str": "2978661890",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 362,
+        "location": "Oakland, CA",
+        "name": "Kat Marchán 🍑🍑🍑",
+        "notifications": false,
+        "profile_background_color": "352726",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme5/bg.gif",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme5/bg.gif",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/2978661890/1590861083",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1192876597730168832/csEZmgJb_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1192876597730168832/csEZmgJb_normal.jpg",
+        "profile_link_color": "19CF86",
+        "profile_sidebar_border_color": "000000",
+        "profile_sidebar_fill_color": "000000",
+        "profile_text_color": "000000",
+        "profile_use_background_image": true,
+        "protected": false,
+        "screen_name": "zkat__",
+        "statuses_count": 71734,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": null,
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Wed May 27 23:29:57 +0000 2020",
+    "display_text_range": [
+      0,
+      75
+    ],
+    "entities": {
+      "hashtags": [
+        {
+          "indices": [
+            66,
+            75
+          ],
+          "text": "rustlang"
+        }
+      ],
+      "symbols": [],
+      "urls": [
+        {
+          "display_url": "this-week-in-rust.org/blog/2020/05/2…",
+          "expanded_url": "https://this-week-in-rust.org/blog/2020/05/27/this-week-in-rust-340/",
+          "indices": [
+            42,
+            65
+          ],
+          "url": "https://t.co/KljR2E52Ue"
+        }
+      ],
+      "user_mentions": [
+        {
+          "id": 3252451501,
+          "id_str": "3252451501",
+          "indices": [
+            3,
+            18
+          ],
+          "name": "This Week in Rust",
+          "screen_name": "ThisWeekInRust"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @ThisWeekInRust: This week in Rust 340 https://t.co/KljR2E52Ue #rustlang",
+    "geo": null,
+    "id": 1265787353878212609,
+    "id_str": "1265787353878212609",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "possibly_sensitive": false,
+    "retweet_count": 16,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Wed May 27 20:51:04 +0000 2020",
+      "display_text_range": [
+        0,
+        55
+      ],
+      "entities": {
+        "hashtags": [
+          {
+            "indices": [
+              46,
+              55
+            ],
+            "text": "rustlang"
+          }
+        ],
+        "symbols": [],
+        "urls": [
+          {
+            "display_url": "this-week-in-rust.org/blog/2020/05/2…",
+            "expanded_url": "https://this-week-in-rust.org/blog/2020/05/27/this-week-in-rust-340/",
+            "indices": [
+              22,
+              45
+            ],
+            "url": "https://t.co/KljR2E52Ue"
+          }
+        ],
+        "user_mentions": []
+      },
+      "favorite_count": 50,
+      "favorited": false,
+      "full_text": "This week in Rust 340 https://t.co/KljR2E52Ue #rustlang",
+      "geo": null,
+      "id": 1265747370488115200,
+      "id_str": "1265747370488115200",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "retweet_count": 16,
+      "retweeted": false,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Mon Jun 22 06:48:22 +0000 2015",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "Cataloguing the Rust community's awesomeness #rustlang",
+        "entities": {
+          "description": {
+            "urls": []
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "this-week-in-rust.org",
+                "expanded_url": "http://this-week-in-rust.org/",
+                "indices": [
+                  0,
+                  22
+                ],
+                "url": "http://t.co/ZBRtt41QwX"
+              }
+            ]
+          }
+        },
+        "favourites_count": 90,
+        "follow_request_sent": false,
+        "followers_count": 15013,
+        "following": false,
+        "friends_count": 34,
+        "geo_enabled": false,
+        "has_extended_profile": false,
+        "id": 3252451501,
+        "id_str": "3252451501",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 284,
+        "location": "Pale Blue Dot",
+        "name": "This Week in Rust",
+        "notifications": false,
+        "profile_background_color": "000000",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_tile": false,
+        "profile_image_url": "http://pbs.twimg.com/profile_images/633365450760458240/SpZ17g_B_normal.png",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/633365450760458240/SpZ17g_B_normal.png",
+        "profile_link_color": "777777",
+        "profile_sidebar_border_color": "000000",
+        "profile_sidebar_fill_color": "000000",
+        "profile_text_color": "000000",
+        "profile_use_background_image": false,
+        "protected": false,
+        "screen_name": "ThisWeekInRust",
+        "statuses_count": 1989,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": "http://t.co/ZBRtt41QwX",
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Wed May 27 23:29:40 +0000 2020",
+    "display_text_range": [
+      0,
+      140
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": [
+        {
+          "id": 25386045,
+          "id_str": "25386045",
+          "indices": [
+            3,
+            10
+          ],
+          "name": "Jon Gjengset",
+          "screen_name": "jonhoo"
+        },
+        {
+          "id": 165262228,
+          "id_str": "165262228",
+          "indices": [
+            37,
+            46
+          ],
+          "name": "Rust Language",
+          "screen_name": "rustlang"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @jonhoo: Today's Crust of Rust on @rustlang iterators and trait bounds is now on YouTube, fresh out of the oven (literally; my apartment…",
+    "geo": null,
+    "id": 1265787282977689600,
+    "id_str": "1265787282977689600",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "retweet_count": 18,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Wed May 27 22:54:59 +0000 2020",
+      "display_text_range": [
+        0,
+        254
+      ],
+      "entities": {
+        "hashtags": [],
+        "symbols": [],
+        "urls": [
+          {
+            "display_url": "youtube.com/watch?v=yozQ9C…",
+            "expanded_url": "https://www.youtube.com/watch?v=yozQ9C69pNs",
+            "indices": [
+              231,
+              254
+            ],
+            "url": "https://t.co/VZZQWvawhA"
+          }
+        ],
+        "user_mentions": [
+          {
+            "id": 165262228,
+            "id_str": "165262228",
+            "indices": [
+              25,
+              34
+            ],
+            "name": "Rust Language",
+            "screen_name": "rustlang"
+          }
+        ]
+      },
+      "favorite_count": 141,
+      "favorited": false,
+      "full_text": "Today's Crust of Rust on @rustlang iterators and trait bounds is now on YouTube, fresh out of the oven (literally; my apartment was ~95°F at the end). We re-implemented Iterator::flatten, including the DoubleEndedIterator parts! 🥧 https://t.co/VZZQWvawhA",
+      "geo": null,
+      "id": 1265778554782060544,
+      "id_str": "1265778554782060544",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "retweet_count": 18,
+      "retweeted": false,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Thu Mar 19 21:12:36 +0000 2009",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "PhD student at MIT in distributed systems, @rustlang live-coder. and OSS tinkerer who loves teaching. I try to maintain a high SNR and retweet original tweets!",
+        "entities": {
+          "description": {
+            "urls": []
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "thesquareplanet.com",
+                "expanded_url": "https://thesquareplanet.com",
+                "indices": [
+                  0,
+                  23
+                ],
+                "url": "https://t.co/Of7xpxXqvx"
+              }
+            ]
+          }
+        },
+        "favourites_count": 11285,
+        "follow_request_sent": false,
+        "followers_count": 6475,
+        "following": false,
+        "friends_count": 142,
+        "geo_enabled": true,
+        "has_extended_profile": true,
+        "id": 25386045,
+        "id_str": "25386045",
+        "is_translation_enabled": true,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 99,
+        "location": "Cambridge, Massachusetts",
+        "name": "Jon Gjengset",
+        "notifications": false,
+        "profile_background_color": "89C9FA",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme18/bg.gif",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme18/bg.gif",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/25386045/1489783222",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1114594272077066240/86ze0W_P_normal.png",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1114594272077066240/86ze0W_P_normal.png",
+        "profile_link_color": "0C6FA9",
+        "profile_sidebar_border_color": "C6E2EE",
+        "profile_sidebar_fill_color": "DAECF4",
+        "profile_text_color": "663B12",
+        "profile_use_background_image": true,
+        "protected": false,
+        "screen_name": "jonhoo",
+        "statuses_count": 5188,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": "https://t.co/Of7xpxXqvx",
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Wed May 27 21:15:30 +0000 2020",
+    "display_text_range": [
+      0,
+      140
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [
+        {
+          "display_url": "crates.io",
+          "expanded_url": "http://crates.io",
+          "indices": [
+            72,
+            95
+          ],
+          "url": "https://t.co/a3X2IvcNBX"
+        }
+      ],
+      "user_mentions": [
+        {
+          "id": 1261362116377800706,
+          "id_str": "1261362116377800706",
+          "indices": [
+            3,
+            15
+          ],
+          "name": "rain 🌧",
+          "screen_name": "sunshowers6"
+        },
+        {
+          "id": 165262228,
+          "id_str": "165262228",
+          "indices": [
+            49,
+            58
+          ],
+          "name": "Rust Language",
+          "screen_name": "rustlang"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @sunshowers6: What is the semver contract for @rustlang CLI tools on https://t.co/a3X2IvcNBX?\n* I guess the CLI is the API so any breaki…",
+    "geo": null,
+    "id": 1265753518432047104,
+    "id_str": "1265753518432047104",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "possibly_sensitive": false,
+    "retweet_count": 1,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Wed May 27 17:36:24 +0000 2020",
+      "display_text_range": [
+        0,
+        275
+      ],
+      "entities": {
+        "hashtags": [],
+        "symbols": [],
+        "urls": [
+          {
+            "display_url": "crates.io",
+            "expanded_url": "http://crates.io",
+            "indices": [
+              55,
+              78
+            ],
+            "url": "https://t.co/a3X2IvcNBX"
+          }
+        ],
+        "user_mentions": [
+          {
+            "id": 165262228,
+            "id_str": "165262228",
+            "indices": [
+              32,
+              41
+            ],
+            "name": "Rust Language",
+            "screen_name": "rustlang"
+          }
+        ]
+      },
+      "favorite_count": 12,
+      "favorited": false,
+      "full_text": "What is the semver contract for @rustlang CLI tools on https://t.co/a3X2IvcNBX?\n* I guess the CLI is the API so any breaking changes to it would involve a new major version?\n* Do I need to care about users who use the crate as a library if I explicitly document not to do it?",
+      "geo": null,
+      "id": 1265698384230285314,
+      "id_str": "1265698384230285314",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "retweet_count": 1,
+      "retweeted": false,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Fri May 15 18:26:08 +0000 2020",
+        "default_profile": true,
+        "default_profile_image": false,
+        "description": "domain modeler. they/she. queer ⋀ trans. rust is cool. tweets are solely my fault. black lives matter",
+        "entities": {
+          "description": {
+            "urls": []
+          }
+        },
+        "favourites_count": 106,
+        "follow_request_sent": false,
+        "followers_count": 281,
+        "following": false,
+        "friends_count": 75,
+        "geo_enabled": false,
+        "has_extended_profile": true,
+        "id": 1261362116377800706,
+        "id_str": "1261362116377800706",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 4,
+        "location": "Oakland, CA",
+        "name": "rain 🌧",
+        "notifications": false,
+        "profile_background_color": "F5F8FA",
+        "profile_background_image_url": null,
+        "profile_background_image_url_https": null,
+        "profile_background_tile": false,
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1267872149768769536/a7uH8eO__normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1267872149768769536/a7uH8eO__normal.jpg",
+        "profile_link_color": "1DA1F2",
+        "profile_sidebar_border_color": "C0DEED",
+        "profile_sidebar_fill_color": "DDEEF6",
+        "profile_text_color": "333333",
+        "profile_use_background_image": true,
+        "protected": false,
+        "screen_name": "sunshowers6",
+        "statuses_count": 91,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": null,
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Wed May 27 21:15:15 +0000 2020",
+    "display_text_range": [
+      0,
+      139
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [
+        {
+          "display_url": "actyx.com/news/2020/5/25…",
+          "expanded_url": "https://www.actyx.com/news/2020/5/25/may-2020-release-update",
+          "indices": [
+            86,
+            109
+          ],
+          "url": "https://t.co/Tk1Ewett88"
+        }
+      ],
+      "user_mentions": [
+        {
+          "id": 770209022,
+          "id_str": "770209022",
+          "indices": [
+            3,
+            11
+          ],
+          "name": "Rüdiger Klaehn",
+          "screen_name": "klaehnr"
+        },
+        {
+          "id": 165262228,
+          "id_str": "165262228",
+          "indices": [
+            128,
+            137
+          ],
+          "name": "Rust Language",
+          "screen_name": "rustlang"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @klaehnr: Want to use p2p technology in manufacturing?\n\nWe released RC2 of ActyxOS\nhttps://t.co/Tk1Ewett88\n\nCore is built in @rustlang,…",
+    "geo": null,
+    "id": 1265753456003952641,
+    "id_str": "1265753456003952641",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "possibly_sensitive": false,
+    "retweet_count": 10,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Wed May 27 08:39:23 +0000 2020",
+      "display_text_range": [
+        0,
+        263
+      ],
+      "entities": {
+        "hashtags": [],
+        "symbols": [],
+        "urls": [
+          {
+            "display_url": "actyx.com/news/2020/5/25…",
+            "expanded_url": "https://www.actyx.com/news/2020/5/25/may-2020-release-update",
+            "indices": [
+              73,
+              96
+            ],
+            "url": "https://t.co/Tk1Ewett88"
+          },
+          {
+            "display_url": "crates.io/crates/actyxos…",
+            "expanded_url": "https://crates.io/crates/actyxos_sdk",
+            "indices": [
+              240,
+              263
+            ],
+            "url": "https://t.co/qCIbo9C7Zu"
+          }
+        ],
+        "user_mentions": [
+          {
+            "id": 165262228,
+            "id_str": "165262228",
+            "indices": [
+              115,
+              124
+            ],
+            "name": "Rust Language",
+            "screen_name": "rustlang"
+          },
+          {
+            "id": 809233214,
+            "id_str": "809233214",
+            "indices": [
+              155,
+              166
+            ],
+            "name": "TypeScript",
+            "screen_name": "typescript"
+          },
+          {
+            "id": 1266081387179847683,
+            "id_str": "1266081387179847683",
+            "indices": [
+              183,
+              191
+            ],
+            "name": "IPFSbot",
+            "screen_name": "IpfSbot"
+          },
+          {
+            "id": 778395996619431937,
+            "id_str": "778395996619431937",
+            "indices": [
+              194,
+              201
+            ],
+            "name": "libp2p",
+            "screen_name": "libp2p"
+          }
+        ]
+      },
+      "favorite_count": 26,
+      "favorited": false,
+      "full_text": "Want to use p2p technology in manufacturing?\n\nWe released RC2 of ActyxOS\nhttps://t.co/Tk1Ewett88\n\nCore is built in @rustlang, business logic is written in @typescript. Networking via @ipfsbot / @libp2p.\n\nAlso, Rust API for high perf needs:\nhttps://t.co/qCIbo9C7Zu",
+      "geo": null,
+      "id": 1265563236197416960,
+      "id_str": "1265563236197416960",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "retweet_count": 10,
+      "retweeted": false,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Mon Aug 20 20:53:19 +0000 2012",
+        "default_profile": true,
+        "default_profile_image": false,
+        "description": "Distributed systems engineer at @Actyx, formerly spacecraft telemetry and space mission planning for @Dlr_en",
+        "entities": {
+          "description": {
+            "urls": []
+          }
+        },
+        "favourites_count": 6698,
+        "follow_request_sent": false,
+        "followers_count": 543,
+        "following": false,
+        "friends_count": 848,
+        "geo_enabled": false,
+        "has_extended_profile": false,
+        "id": 770209022,
+        "id_str": "770209022",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 21,
+        "location": "Bavaria, Germany",
+        "name": "Rüdiger Klaehn",
+        "notifications": false,
+        "profile_background_color": "C0DEED",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/770209022/1402831077",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1161295627063648256/9DrkHuEB_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1161295627063648256/9DrkHuEB_normal.jpg",
+        "profile_link_color": "1DA1F2",
+        "profile_sidebar_border_color": "C0DEED",
+        "profile_sidebar_fill_color": "DDEEF6",
+        "profile_text_color": "333333",
+        "profile_use_background_image": true,
+        "protected": false,
+        "screen_name": "klaehnr",
+        "statuses_count": 1285,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": null,
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Wed May 27 21:13:49 +0000 2020",
+    "display_text_range": [
+      0,
+      85
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [
+        {
+          "display_url": "twitter.com/jonhoo/status/…",
+          "expanded_url": "https://twitter.com/jonhoo/status/1265285360101318656",
+          "indices": [
+            62,
+            85
+          ],
+          "url": "https://t.co/bm5RelJHGm"
+        }
+      ],
+      "user_mentions": [
+        {
+          "id": 25386045,
+          "id_str": "25386045",
+          "indices": [
+            3,
+            10
+          ],
+          "name": "Jon Gjengset",
+          "screen_name": "jonhoo"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @jonhoo: Quick reminder that this is happening in 6 hours!\nhttps://t.co/bm5RelJHGm",
+    "geo": null,
+    "id": 1265753096745095168,
+    "id_str": "1265753096745095168",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": true,
+    "lang": "en",
+    "place": null,
+    "possibly_sensitive": false,
+    "quoted_status_id": 1265285360101318656,
+    "quoted_status_id_str": "1265285360101318656",
+    "quoted_status_permalink": {
+      "display": "twitter.com/jonhoo/status/…",
+      "expanded": "https://twitter.com/jonhoo/status/1265285360101318656",
+      "url": "https://t.co/bm5RelJHGm"
+    },
+    "retweet_count": 4,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Wed May 27 14:30:10 +0000 2020",
+      "display_text_range": [
+        0,
+        73
+      ],
+      "entities": {
+        "hashtags": [],
+        "symbols": [],
+        "urls": [
+          {
+            "display_url": "twitter.com/jonhoo/status/…",
+            "expanded_url": "https://twitter.com/jonhoo/status/1265285360101318656",
+            "indices": [
+              50,
+              73
+            ],
+            "url": "https://t.co/bm5RelJHGm"
+          }
+        ],
+        "user_mentions": []
+      },
+      "favorite_count": 35,
+      "favorited": false,
+      "full_text": "Quick reminder that this is happening in 6 hours!\nhttps://t.co/bm5RelJHGm",
+      "geo": null,
+      "id": 1265651515496247296,
+      "id_str": "1265651515496247296",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": true,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "quoted_status": {
+        "contributors": null,
+        "coordinates": null,
+        "created_at": "Tue May 26 14:15:12 +0000 2020",
+        "display_text_range": [
+          0,
+          214
+        ],
+        "entities": {
+          "hashtags": [],
+          "symbols": [],
+          "urls": [
+            {
+              "display_url": "everytimezone.com/s/c5814c1f",
+              "expanded_url": "https://everytimezone.com/s/c5814c1f",
+              "indices": [
+                113,
+                136
+              ],
+              "url": "https://t.co/yNNIm97UNM"
+            },
+            {
+              "display_url": "twitter.com/jonhoo/status/…",
+              "expanded_url": "https://twitter.com/jonhoo/status/1264906113939574786",
+              "indices": [
+                191,
+                214
+              ],
+              "url": "https://t.co/ih3WiqclsF"
+            }
+          ],
+          "user_mentions": [
+            {
+              "id": 165262228,
+              "id_str": "165262228",
+              "indices": [
+                76,
+                85
+              ],
+              "name": "Rust Language",
+              "screen_name": "rustlang"
+            }
+          ]
+        },
+        "favorite_count": 56,
+        "favorited": false,
+        "full_text": "The votes are in! Tomorrow's Crust of Rust on Iterators and trait bounds in @rustlang will happen at 8:30pm UTC (https://t.co/yNNIm97UNM), just like the past few streams. Come one, come all! https://t.co/ih3WiqclsF",
+        "geo": null,
+        "id": 1265285360101318656,
+        "id_str": "1265285360101318656",
+        "in_reply_to_screen_name": null,
+        "in_reply_to_status_id": null,
+        "in_reply_to_status_id_str": null,
+        "in_reply_to_user_id": null,
+        "in_reply_to_user_id_str": null,
+        "is_quote_status": true,
+        "lang": "en",
+        "place": null,
+        "possibly_sensitive": false,
+        "quoted_status_id": 1264906113939574786,
+        "quoted_status_id_str": "1264906113939574786",
+        "quoted_status_permalink": {
+          "display": "twitter.com/jonhoo/status/…",
+          "expanded": "https://twitter.com/jonhoo/status/1264906113939574786",
+          "url": "https://t.co/ih3WiqclsF"
+        },
+        "retweet_count": 8,
+        "retweeted": false,
+        "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+        "truncated": false,
+        "user": {
+          "contributors_enabled": false,
+          "created_at": "Thu Mar 19 21:12:36 +0000 2009",
+          "default_profile": false,
+          "default_profile_image": false,
+          "description": "PhD student at MIT in distributed systems, @rustlang live-coder. and OSS tinkerer who loves teaching. I try to maintain a high SNR and retweet original tweets!",
+          "entities": {
+            "description": {
+              "urls": []
+            },
+            "url": {
+              "urls": [
+                {
+                  "display_url": "thesquareplanet.com",
+                  "expanded_url": "https://thesquareplanet.com",
+                  "indices": [
+                    0,
+                    23
+                  ],
+                  "url": "https://t.co/Of7xpxXqvx"
+                }
+              ]
+            }
+          },
+          "favourites_count": 11285,
+          "follow_request_sent": false,
+          "followers_count": 6475,
+          "following": false,
+          "friends_count": 142,
+          "geo_enabled": true,
+          "has_extended_profile": true,
+          "id": 25386045,
+          "id_str": "25386045",
+          "is_translation_enabled": true,
+          "is_translator": false,
+          "lang": null,
+          "listed_count": 99,
+          "location": "Cambridge, Massachusetts",
+          "name": "Jon Gjengset",
+          "notifications": false,
+          "profile_background_color": "89C9FA",
+          "profile_background_image_url": "http://abs.twimg.com/images/themes/theme18/bg.gif",
+          "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme18/bg.gif",
+          "profile_background_tile": false,
+          "profile_banner_url": "https://pbs.twimg.com/profile_banners/25386045/1489783222",
+          "profile_image_url": "http://pbs.twimg.com/profile_images/1114594272077066240/86ze0W_P_normal.png",
+          "profile_image_url_https": "https://pbs.twimg.com/profile_images/1114594272077066240/86ze0W_P_normal.png",
+          "profile_link_color": "0C6FA9",
+          "profile_sidebar_border_color": "C6E2EE",
+          "profile_sidebar_fill_color": "DAECF4",
+          "profile_text_color": "663B12",
+          "profile_use_background_image": true,
+          "protected": false,
+          "screen_name": "jonhoo",
+          "statuses_count": 5188,
+          "time_zone": null,
+          "translator_type": "none",
+          "url": "https://t.co/Of7xpxXqvx",
+          "utc_offset": null,
+          "verified": false
+        }
+      },
+      "quoted_status_id": 1265285360101318656,
+      "quoted_status_id_str": "1265285360101318656",
+      "quoted_status_permalink": {
+        "display": "twitter.com/jonhoo/status/…",
+        "expanded": "https://twitter.com/jonhoo/status/1265285360101318656",
+        "url": "https://t.co/bm5RelJHGm"
+      },
+      "retweet_count": 4,
+      "retweeted": false,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Thu Mar 19 21:12:36 +0000 2009",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "PhD student at MIT in distributed systems, @rustlang live-coder. and OSS tinkerer who loves teaching. I try to maintain a high SNR and retweet original tweets!",
+        "entities": {
+          "description": {
+            "urls": []
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "thesquareplanet.com",
+                "expanded_url": "https://thesquareplanet.com",
+                "indices": [
+                  0,
+                  23
+                ],
+                "url": "https://t.co/Of7xpxXqvx"
+              }
+            ]
+          }
+        },
+        "favourites_count": 11285,
+        "follow_request_sent": false,
+        "followers_count": 6475,
+        "following": false,
+        "friends_count": 142,
+        "geo_enabled": true,
+        "has_extended_profile": true,
+        "id": 25386045,
+        "id_str": "25386045",
+        "is_translation_enabled": true,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 99,
+        "location": "Cambridge, Massachusetts",
+        "name": "Jon Gjengset",
+        "notifications": false,
+        "profile_background_color": "89C9FA",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme18/bg.gif",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme18/bg.gif",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/25386045/1489783222",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1114594272077066240/86ze0W_P_normal.png",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1114594272077066240/86ze0W_P_normal.png",
+        "profile_link_color": "0C6FA9",
+        "profile_sidebar_border_color": "C6E2EE",
+        "profile_sidebar_fill_color": "DAECF4",
+        "profile_text_color": "663B12",
+        "profile_use_background_image": true,
+        "protected": false,
+        "screen_name": "jonhoo",
+        "statuses_count": 5188,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": "https://t.co/Of7xpxXqvx",
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Wed May 27 21:13:28 +0000 2020",
+    "display_text_range": [
+      0,
+      140
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": [
+        {
+          "id": 386654463,
+          "id_str": "386654463",
+          "indices": [
+            3,
+            16
+          ],
+          "name": "Niko Matsakis",
+          "screen_name": "nikomatsakis"
+        },
+        {
+          "id": 165262228,
+          "id_str": "165262228",
+          "indices": [
+            87,
+            96
+          ],
+          "name": "Rust Language",
+          "screen_name": "rustlang"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": true,
+    "full_text": "RT @nikomatsakis: Ever contributed code -- or thought about contributing code -- to an @rustlang repo? Fill out this survey to help us unde…",
+    "geo": null,
+    "id": 1265753010413633538,
+    "id_str": "1265753010413633538",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "retweet_count": 56,
+    "retweeted": true,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Wed May 27 20:47:26 +0000 2020",
+      "display_text_range": [
+        0,
+        186
+      ],
+      "entities": {
+        "hashtags": [],
+        "symbols": [],
+        "urls": [
+          {
+            "display_url": "blog.rust-lang.org/inside-rust/20…",
+            "expanded_url": "https://blog.rust-lang.org/inside-rust/2020/05/27/contributor-survey.html",
+            "indices": [
+              163,
+              186
+            ],
+            "url": "https://t.co/w3H2E3gSFr"
+          }
+        ],
+        "user_mentions": [
+          {
+            "id": 165262228,
+            "id_str": "165262228",
+            "indices": [
+              69,
+              78
+            ],
+            "name": "Rust Language",
+            "screen_name": "rustlang"
+          }
+        ]
+      },
+      "favorite_count": 104,
+      "favorited": true,
+      "full_text": "Ever contributed code -- or thought about contributing code -- to an @rustlang repo? Fill out this survey to help us understand how we can improve the experience! https://t.co/w3H2E3gSFr",
+      "geo": null,
+      "id": 1265746457476444160,
+      "id_str": "1265746457476444160",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "retweet_count": 56,
+      "retweeted": true,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Fri Oct 07 17:15:21 +0000 2011",
+        "default_profile": true,
+        "default_profile_image": false,
+        "description": "Rustacean. him/they.",
+        "entities": {
+          "description": {
+            "urls": []
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "smallcultfollowing.com/babysteps",
+                "expanded_url": "http://smallcultfollowing.com/babysteps",
+                "indices": [
+                  0,
+                  23
+                ],
+                "url": "https://t.co/4tSJb6bZRW"
+              }
+            ]
+          }
+        },
+        "favourites_count": 2760,
+        "follow_request_sent": false,
+        "followers_count": 6865,
+        "following": true,
+        "friends_count": 318,
+        "geo_enabled": false,
+        "has_extended_profile": false,
+        "id": 386654463,
+        "id_str": "386654463",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 164,
+        "location": "Boston, MA",
+        "name": "Niko Matsakis",
+        "notifications": false,
+        "profile_background_color": "C0DEED",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/386654463/1553608252",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1110539492706914304/NUeyOrLX_normal.png",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1110539492706914304/NUeyOrLX_normal.png",
+        "profile_link_color": "1DA1F2",
+        "profile_sidebar_border_color": "C0DEED",
+        "profile_sidebar_fill_color": "DDEEF6",
+        "profile_text_color": "333333",
+        "profile_use_background_image": true,
+        "protected": false,
+        "screen_name": "nikomatsakis",
+        "statuses_count": 928,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": "https://t.co/4tSJb6bZRW",
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Wed May 27 13:00:27 +0000 2020",
+    "display_text_range": [
+      0,
+      140
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": [
+        {
+          "id": 20247424,
+          "id_str": "20247424",
+          "indices": [
+            3,
+            13
+          ],
+          "name": "Simon Paitrault",
+          "screen_name": "Freyskeyd"
+        },
+        {
+          "id": 165262228,
+          "id_str": "165262228",
+          "indices": [
+            19,
+            28
+          ],
+          "name": "Rust Language",
+          "screen_name": "rustlang"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @Freyskeyd: Hey @rustlang folks 🦀\n\nI’m starting a blog post series about how I’m trying to implement an open source cqrs/es library from…",
+    "geo": null,
+    "id": 1265628936395984897,
+    "id_str": "1265628936395984897",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "retweet_count": 8,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Wed May 27 09:17:56 +0000 2020",
+      "display_text_range": [
+        0,
+        256
+      ],
+      "entities": {
+        "hashtags": [],
+        "symbols": [],
+        "urls": [],
+        "user_mentions": [
+          {
+            "id": 165262228,
+            "id_str": "165262228",
+            "indices": [
+              4,
+              13
+            ],
+            "name": "Rust Language",
+            "screen_name": "rustlang"
+          }
+        ]
+      },
+      "favorite_count": 79,
+      "favorited": false,
+      "full_text": "Hey @rustlang folks 🦀\n\nI’m starting a blog post series about how I’m trying to implement an open source cqrs/es library from scratch. \n\nI want that to be collaborative so feel free to ask or participate! \n\nIs it something that might interest some of you? 🥰",
+      "geo": null,
+      "id": 1265572937584840704,
+      "id_str": "1265572937584840704",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "retweet_count": 8,
+      "retweeted": false,
+      "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Fri Feb 06 16:07:25 +0000 2009",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "PLATFORM Engineer @iAdvize. FullStack Software engineer, Photographer, @rustlang enthusiast, #devops, FP, travel geek, animals defender and some other things",
+        "entities": {
+          "description": {
+            "urls": []
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "freyskeyd.fr",
+                "expanded_url": "http://www.freyskeyd.fr",
+                "indices": [
+                  0,
+                  23
+                ],
+                "url": "https://t.co/KhiPZcvgfM"
+              }
+            ]
+          }
+        },
+        "favourites_count": 464,
+        "follow_request_sent": false,
+        "followers_count": 280,
+        "following": false,
+        "friends_count": 174,
+        "geo_enabled": true,
+        "has_extended_profile": true,
+        "id": 20247424,
+        "id_str": "20247424",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 15,
+        "location": "Nantes",
+        "name": "Simon Paitrault",
+        "notifications": false,
+        "profile_background_color": "333333",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/20247424/1391417602",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/962278871574949888/-E2MR3u5_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/962278871574949888/-E2MR3u5_normal.jpg",
+        "profile_link_color": "019AD2",
+        "profile_sidebar_border_color": "000000",
+        "profile_sidebar_fill_color": "DDEEF6",
+        "profile_text_color": "333333",
+        "profile_use_background_image": false,
+        "protected": false,
+        "screen_name": "Freyskeyd",
+        "statuses_count": 3129,
+        "time_zone": null,
+        "translator_type": "regular",
+        "url": "https://t.co/KhiPZcvgfM",
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Wed May 27 13:00:18 +0000 2020",
+    "display_text_range": [
+      0,
+      123
+    ],
+    "entities": {
+      "hashtags": [],
+      "media": [
+        {
+          "display_url": "pic.twitter.com/7Kse3SyL5u",
+          "expanded_url": "https://twitter.com/piecritic/status/1265598567126896641/photo/1",
+          "id": 1265598549254955008,
+          "id_str": "1265598549254955008",
+          "indices": [
+            100,
+            123
+          ],
+          "media_url": "http://pbs.twimg.com/media/EZBPLNSXYAA9AiU.jpg",
+          "media_url_https": "https://pbs.twimg.com/media/EZBPLNSXYAA9AiU.jpg",
+          "sizes": {
+            "large": {
+              "h": 104,
+              "resize": "fit",
+              "w": 1366
+            },
+            "medium": {
+              "h": 91,
+              "resize": "fit",
+              "w": 1200
+            },
+            "small": {
+              "h": 52,
+              "resize": "fit",
+              "w": 680
+            },
+            "thumb": {
+              "h": 104,
+              "resize": "crop",
+              "w": 104
+            }
+          },
+          "source_status_id": 1265598567126896641,
+          "source_status_id_str": "1265598567126896641",
+          "source_user_id": 17752201,
+          "source_user_id_str": "17752201",
+          "type": "photo",
+          "url": "https://t.co/7Kse3SyL5u"
+        }
+      ],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": [
+        {
+          "id": 17752201,
+          "id_str": "17752201",
+          "indices": [
+            3,
+            13
+          ],
+          "name": "Brendan Molloy",
+          "screen_name": "piecritic"
+        },
+        {
+          "id": 165262228,
+          "id_str": "165262228",
+          "indices": [
+            15,
+            24
+          ],
+          "name": "Rust Language",
+          "screen_name": "rustlang"
+        }
+      ]
+    },
+    "extended_entities": {
+      "media": [
+        {
+          "display_url": "pic.twitter.com/7Kse3SyL5u",
+          "expanded_url": "https://twitter.com/piecritic/status/1265598567126896641/photo/1",
+          "id": 1265598549254955008,
+          "id_str": "1265598549254955008",
+          "indices": [
+            100,
+            123
+          ],
+          "media_url": "http://pbs.twimg.com/media/EZBPLNSXYAA9AiU.jpg",
+          "media_url_https": "https://pbs.twimg.com/media/EZBPLNSXYAA9AiU.jpg",
+          "sizes": {
+            "large": {
+              "h": 104,
+              "resize": "fit",
+              "w": 1366
+            },
+            "medium": {
+              "h": 91,
+              "resize": "fit",
+              "w": 1200
+            },
+            "small": {
+              "h": 52,
+              "resize": "fit",
+              "w": 680
+            },
+            "thumb": {
+              "h": 104,
+              "resize": "crop",
+              "w": 104
+            }
+          },
+          "source_status_id": 1265598567126896641,
+          "source_status_id_str": "1265598567126896641",
+          "source_user_id": 17752201,
+          "source_user_id_str": "17752201",
+          "type": "photo",
+          "url": "https://t.co/7Kse3SyL5u"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @piecritic: @rustlang on a scale of 1 to 10, how illegal is this ultracrime in the unsafe lands? https://t.co/7Kse3SyL5u",
+    "geo": null,
+    "id": 1265628900081700865,
+    "id_str": "1265628900081700865",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "possibly_sensitive": false,
+    "retweet_count": 3,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Wed May 27 10:59:46 +0000 2020",
+      "display_text_range": [
+        0,
+        84
+      ],
+      "entities": {
+        "hashtags": [],
+        "media": [
+          {
+            "display_url": "pic.twitter.com/7Kse3SyL5u",
+            "expanded_url": "https://twitter.com/piecritic/status/1265598567126896641/photo/1",
+            "id": 1265598549254955008,
+            "id_str": "1265598549254955008",
+            "indices": [
+              85,
+              108
+            ],
+            "media_url": "http://pbs.twimg.com/media/EZBPLNSXYAA9AiU.jpg",
+            "media_url_https": "https://pbs.twimg.com/media/EZBPLNSXYAA9AiU.jpg",
+            "sizes": {
+              "large": {
+                "h": 104,
+                "resize": "fit",
+                "w": 1366
+              },
+              "medium": {
+                "h": 91,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 52,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 104,
+                "resize": "crop",
+                "w": 104
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/7Kse3SyL5u"
+          }
+        ],
+        "symbols": [],
+        "urls": [],
+        "user_mentions": [
+          {
+            "id": 165262228,
+            "id_str": "165262228",
+            "indices": [
+              0,
+              9
+            ],
+            "name": "Rust Language",
+            "screen_name": "rustlang"
+          }
+        ]
+      },
+      "extended_entities": {
+        "media": [
+          {
+            "display_url": "pic.twitter.com/7Kse3SyL5u",
+            "expanded_url": "https://twitter.com/piecritic/status/1265598567126896641/photo/1",
+            "id": 1265598549254955008,
+            "id_str": "1265598549254955008",
+            "indices": [
+              85,
+              108
+            ],
+            "media_url": "http://pbs.twimg.com/media/EZBPLNSXYAA9AiU.jpg",
+            "media_url_https": "https://pbs.twimg.com/media/EZBPLNSXYAA9AiU.jpg",
+            "sizes": {
+              "large": {
+                "h": 104,
+                "resize": "fit",
+                "w": 1366
+              },
+              "medium": {
+                "h": 91,
+                "resize": "fit",
+                "w": 1200
+              },
+              "small": {
+                "h": 52,
+                "resize": "fit",
+                "w": 680
+              },
+              "thumb": {
+                "h": 104,
+                "resize": "crop",
+                "w": 104
+              }
+            },
+            "type": "photo",
+            "url": "https://t.co/7Kse3SyL5u"
+          }
+        ]
+      },
+      "favorite_count": 12,
+      "favorited": false,
+      "full_text": "@rustlang on a scale of 1 to 10, how illegal is this ultracrime in the unsafe lands? https://t.co/7Kse3SyL5u",
+      "geo": null,
+      "id": 1265598567126896641,
+      "id_str": "1265598567126896641",
+      "in_reply_to_screen_name": "rustlang",
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": 165262228,
+      "in_reply_to_user_id_str": "165262228",
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "retweet_count": 3,
+      "retweeted": false,
+      "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Sun Nov 30 10:20:45 +0000 2008",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "Rust is my first language now. Former Australian. Working at @technocreatives. I do language tech for Sámi and other indigenous peoples.",
+        "entities": {
+          "description": {
+            "urls": []
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "brendan.se",
+                "expanded_url": "http://brendan.se",
+                "indices": [
+                  0,
+                  23
+                ],
+                "url": "https://t.co/eBwGx5a7kc"
+              }
+            ]
+          }
+        },
+        "favourites_count": 2161,
+        "follow_request_sent": false,
+        "followers_count": 1867,
+        "following": false,
+        "friends_count": 326,
+        "geo_enabled": false,
+        "has_extended_profile": false,
+        "id": 17752201,
+        "id_str": "17752201",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 124,
+        "location": "Gothenburg, Sweden",
+        "name": "Brendan Molloy",
+        "notifications": false,
+        "profile_background_color": "1A1B1F",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme9/bg.gif",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme9/bg.gif",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/17752201/1526284353",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1185965792581607426/HZmnPhMP_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1185965792581607426/HZmnPhMP_normal.jpg",
+        "profile_link_color": "0073AE",
+        "profile_sidebar_border_color": "FFFFFF",
+        "profile_sidebar_fill_color": "252429",
+        "profile_text_color": "666666",
+        "profile_use_background_image": true,
+        "protected": false,
+        "screen_name": "piecritic",
+        "statuses_count": 81209,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": "https://t.co/eBwGx5a7kc",
+        "utc_offset": null,
+        "verified": false
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  },
+  {
+    "contributors": null,
+    "coordinates": null,
+    "created_at": "Wed May 27 13:00:06 +0000 2020",
+    "display_text_range": [
+      0,
+      140
+    ],
+    "entities": {
+      "hashtags": [],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": [
+        {
+          "id": 14288184,
+          "id_str": "14288184",
+          "indices": [
+            3,
+            12
+          ],
+          "name": "Smarkets",
+          "screen_name": "smarkets"
+        },
+        {
+          "id": 165262228,
+          "id_str": "165262228",
+          "indices": [
+            41,
+            50
+          ],
+          "name": "Rust Language",
+          "screen_name": "rustlang"
+        },
+        {
+          "id": 1049228648660815872,
+          "id_str": "1049228648660815872",
+          "indices": [
+            98,
+            111
+          ],
+          "name": "RustLDN",
+          "screen_name": "RustLdnUsers"
+        }
+      ]
+    },
+    "favorite_count": 0,
+    "favorited": false,
+    "full_text": "RT @smarkets: If you have an interest in @rustlang, then make sure you join us for this evening’s @RustLdnUsers virtual meet-up (feat. @Tru…",
+    "geo": null,
+    "id": 1265628849343168513,
+    "id_str": "1265628849343168513",
+    "in_reply_to_screen_name": null,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "is_quote_status": false,
+    "lang": "en",
+    "place": null,
+    "retweet_count": 6,
+    "retweeted": false,
+    "retweeted_status": {
+      "contributors": null,
+      "coordinates": null,
+      "created_at": "Wed May 27 11:26:00 +0000 2020",
+      "display_text_range": [
+        0,
+        192
+      ],
+      "entities": {
+        "hashtags": [],
+        "symbols": [],
+        "urls": [
+          {
+            "display_url": "smrkts.co/3c1gJfm",
+            "expanded_url": "https://smrkts.co/3c1gJfm",
+            "indices": [
+              169,
+              192
+            ],
+            "url": "https://t.co/wAWbf7NClJ"
+          }
+        ],
+        "user_mentions": [
+          {
+            "id": 165262228,
+            "id_str": "165262228",
+            "indices": [
+              27,
+              36
+            ],
+            "name": "Rust Language",
+            "screen_name": "rustlang"
+          },
+          {
+            "id": 1049228648660815872,
+            "id_str": "1049228648660815872",
+            "indices": [
+              84,
+              97
+            ],
+            "name": "RustLDN",
+            "screen_name": "RustLdnUsers"
+          },
+          {
+            "id": 775651057011744768,
+            "id_str": "775651057011744768",
+            "indices": [
+              121,
+              131
+            ],
+            "name": "TrueLayer",
+            "screen_name": "TrueLayer"
+          },
+          {
+            "id": 2739826012,
+            "id_str": "2739826012",
+            "indices": [
+              138,
+              151
+            ],
+            "name": "Matrix",
+            "screen_name": "matrixdotorg"
+          }
+        ]
+      },
+      "favorite_count": 8,
+      "favorited": false,
+      "full_text": "If you have an interest in @rustlang, then make sure you join us for this evening’s @RustLdnUsers virtual meet-up (feat. @TrueLayer &amp; @matrixdotorg)\n\nRegister here: https://t.co/wAWbf7NClJ",
+      "geo": null,
+      "id": 1265605166633451521,
+      "id_str": "1265605166633451521",
+      "in_reply_to_screen_name": null,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "is_quote_status": false,
+      "lang": "en",
+      "place": null,
+      "possibly_sensitive": false,
+      "retweet_count": 6,
+      "retweeted": false,
+      "source": "<a href=\"https://about.twitter.com/products/tweetdeck\" rel=\"nofollow\">TweetDeck</a>",
+      "truncated": false,
+      "user": {
+        "contributors_enabled": false,
+        "created_at": "Wed Apr 02 22:25:18 +0000 2008",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "The best of sports betting, political prediction markets and fintech in one sleek, 2% commission exchange. DMs open. Followers must be 18+. https://t.co/p6nDJkCOUM",
+        "entities": {
+          "description": {
+            "urls": [
+              {
+                "display_url": "Begambleaware.org",
+                "expanded_url": "http://Begambleaware.org",
+                "indices": [
+                  140,
+                  163
+                ],
+                "url": "https://t.co/p6nDJkCOUM"
+              }
+            ]
+          },
+          "url": {
+            "urls": [
+              {
+                "display_url": "smarkets.com",
+                "expanded_url": "http://smarkets.com",
+                "indices": [
+                  0,
+                  23
+                ],
+                "url": "https://t.co/CrD60C7hI5"
+              }
+            ]
+          }
+        },
+        "favourites_count": 1500,
+        "follow_request_sent": false,
+        "followers_count": 10554,
+        "following": false,
+        "friends_count": 600,
+        "geo_enabled": true,
+        "has_extended_profile": false,
+        "id": 14288184,
+        "id_str": "14288184",
+        "is_translation_enabled": false,
+        "is_translator": false,
+        "lang": null,
+        "listed_count": 175,
+        "location": "London",
+        "name": "Smarkets",
+        "notifications": false,
+        "profile_background_color": "00B677",
+        "profile_background_image_url": "http://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme1/bg.png",
+        "profile_background_tile": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/14288184/1584124332",
+        "profile_image_url": "http://pbs.twimg.com/profile_images/1214492873602850816/dGNCSjzG_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1214492873602850816/dGNCSjzG_normal.jpg",
+        "profile_link_color": "0CCD93",
+        "profile_sidebar_border_color": "FFFFFF",
+        "profile_sidebar_fill_color": "EBEBEB",
+        "profile_text_color": "333333",
+        "profile_use_background_image": true,
+        "protected": false,
+        "screen_name": "smarkets",
+        "statuses_count": 18150,
+        "time_zone": null,
+        "translator_type": "none",
+        "url": "https://t.co/CrD60C7hI5",
+        "utc_offset": null,
+        "verified": true
+      }
+    },
+    "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+    "truncated": false,
+    "user": {
+      "contributors_enabled": false,
+      "created_at": "Sun Jul 11 02:35:18 +0000 2010",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "A programming language empowering everyone to build reliable and efficient software.",
+      "entities": {
+        "description": {
+          "urls": []
+        },
+        "url": {
+          "urls": [
+            {
+              "display_url": "rust-lang.org",
+              "expanded_url": "http://www.rust-lang.org",
+              "indices": [
+                0,
+                23
+              ],
+              "url": "https://t.co/REex8dijm6"
+            }
+          ]
+        }
+      },
+      "favourites_count": 29134,
+      "follow_request_sent": false,
+      "followers_count": 56826,
+      "following": true,
+      "friends_count": 0,
+      "geo_enabled": false,
+      "has_extended_profile": false,
+      "id": 165262228,
+      "id_str": "165262228",
+      "is_translation_enabled": false,
+      "is_translator": false,
+      "lang": null,
+      "listed_count": 1129,
+      "location": "",
+      "name": "Rust Language",
+      "notifications": false,
+      "profile_background_color": "000000",
+      "profile_background_image_url": "http://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme14/bg.gif",
+      "profile_background_tile": false,
+      "profile_image_url": "http://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2392473363/v7txhrjp9pdqrkdtxxp0_normal.png",
+      "profile_link_color": "000000",
+      "profile_sidebar_border_color": "000000",
+      "profile_sidebar_fill_color": "000000",
+      "profile_text_color": "000000",
+      "profile_use_background_image": false,
+      "protected": false,
+      "screen_name": "rustlang",
+      "statuses_count": 18533,
+      "time_zone": null,
+      "translator_type": "none",
+      "url": "https://t.co/REex8dijm6",
+      "utc_offset": null,
+      "verified": false
+    }
+  }
+]
