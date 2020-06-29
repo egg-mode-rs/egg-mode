@@ -89,16 +89,12 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::fmt;
 use std::future::Future;
 use std::iter::Peekable;
 use std::pin::Pin;
 
 use hyper::header::{HeaderMap, HeaderValue};
-use mime;
 use percent_encoding::{utf8_percent_encode, AsciiSet, PercentEncode};
-use serde::de::Error;
-use serde::{Serializer, Deserialize, Deserializer};
 
 mod response;
 
@@ -450,31 +446,29 @@ pub mod serde_datetime {
     }
 }
 
-pub fn deserialize_mime<'de, D>(ser: D) -> Result<mime::Mime, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let str = String::deserialize(ser)?;
-    str.parse().map_err(|e| D::Error::custom(e))
-}
+pub mod serde_via_string {
+    use serde::{Serializer, Deserialize, Deserializer};
+    use serde::de::Error;
 
-pub fn deser_from_string<'de, D, T>(ser: D) -> Result<T, D::Error>
-where
-    D: Deserializer<'de>,
-    T: std::str::FromStr,
-    <T as std::str::FromStr>::Err: std::fmt::Display,
-{
-    let str = String::deserialize(ser)?;
-    str.parse().map_err(|e| D::Error::custom(e))
-}
+    use std::fmt;
 
-pub fn ser_via_string<T, S>(src: &T, ser: S) -> Result<S::Ok, S::Error>
-where
-    T: fmt::Display,
-    S: Serializer,
-{
-    let out = src.to_string();
-    ser.serialize_str(&out)
+    pub fn deserialize<'de, D, T>(ser: D) -> Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: std::str::FromStr,
+        <T as std::str::FromStr>::Err: std::fmt::Display,
+    {
+        let str = String::deserialize(ser)?;
+        str.parse().map_err(|e| D::Error::custom(e))
+    }
+
+    pub fn serialize<T, S>(src: &T, ser: S) -> Result<S::Ok, S::Error>
+    where
+        T: fmt::Display,
+        S: Serializer,
+    {
+        ser.collect_str(src)
+    }
 }
 
 /// Percent-encodes the given string based on the Twitter API specification.

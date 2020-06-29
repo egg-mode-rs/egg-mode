@@ -45,7 +45,7 @@
 use mime;
 use serde::{Serialize, Deserialize, Deserializer};
 
-use crate::common::{deserialize_mime, ser_via_string};
+use crate::common::serde_via_string;
 
 ///Represents a hashtag or symbol extracted from another piece of text.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -178,8 +178,7 @@ pub struct VideoVariant {
     ///The bitrate of the video. This value is present for GIFs, but it will be zero.
     pub bitrate: Option<i32>,
     ///The file format of the video variant.
-    #[serde(deserialize_with = "deserialize_mime")]
-    #[serde(serialize_with = "ser_via_string")]
+    #[serde(with = "serde_via_string")]
     pub content_type: mime::Mime,
     ///The URL for the video variant.
     pub url: String,

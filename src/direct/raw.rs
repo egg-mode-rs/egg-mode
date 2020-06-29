@@ -200,11 +200,11 @@ impl EventType {
 #[derive(Deserialize)]
 struct DMEvent {
     /// Numeric ID for the direct message.
-    #[serde(deserialize_with = "deser_from_string")]
+    #[serde(with = "serde_via_string")]
     id: u64,
     /// UTC Unix timestamp for when the message was sent, encoded as the number of milliseconds
     /// since the Unix epoch.
-    #[serde(deserialize_with = "deser_from_string")]
+    #[serde(with = "serde_via_string")]
     created_timestamp: i64,
     /// Message data for this event.
     message_create: MessageCreateEvent,
@@ -215,7 +215,7 @@ struct DMEvent {
 struct MessageCreateEvent {
     /// The `message_data` portion of this event.
     message_data: MessageData,
-    #[serde(deserialize_with = "deser_from_string")]
+    #[serde(with = "serde_via_string")]
     /// The numeric User ID of the sender.
     sender_id: u64,
     /// The string ID of the app used to send the message, if it was sent by the authenticated
@@ -272,7 +272,7 @@ struct QuickReplyResponse {
 /// Represents the message target from within a `DMEvent`.
 #[derive(Deserialize)]
 struct MessageTarget {
-    #[serde(deserialize_with = "deser_from_string")]
+    #[serde(with = "serde_via_string")]
     /// The numeric user ID of the recipient of the message.
     recipient_id: u64,
 }
