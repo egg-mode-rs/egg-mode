@@ -243,6 +243,26 @@ pub(super) struct MessageData {
     pub(super) text: String,
 }
 
+impl MessageData {
+    pub(super) fn translate_indices(&mut self) {
+        for entity in &mut self.entities.hashtags {
+            codepoints_to_bytes(&mut entity.range, &self.text);
+        }
+        for entity in &mut self.entities.symbols {
+            codepoints_to_bytes(&mut entity.range, &self.text);
+        }
+        for entity in &mut self.entities.urls {
+            codepoints_to_bytes(&mut entity.range, &self.text);
+        }
+        for entity in &mut self.entities.user_mentions {
+            codepoints_to_bytes(&mut entity.range, &self.text);
+        }
+        if let Some(ref mut attachment) = self.attachment {
+            codepoints_to_bytes(&mut attachment.media.range, &self.text);
+        }
+    }
+}
+
 /// Represents attached media information from within a `DMEvent`.
 #[derive(Deserialize)]
 pub(super) struct MessageAttachment {

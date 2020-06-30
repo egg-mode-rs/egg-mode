@@ -53,21 +53,7 @@ impl From<SingleMessage> for WelcomeMessage {
 
         let SingleMessage { apps, mut welcome_message } = raw;
 
-        for entity in &mut welcome_message.message_data.entities.hashtags {
-            codepoints_to_bytes(&mut entity.range, &welcome_message.message_data.text);
-        }
-        for entity in &mut welcome_message.message_data.entities.symbols {
-            codepoints_to_bytes(&mut entity.range, &welcome_message.message_data.text);
-        }
-        for entity in &mut welcome_message.message_data.entities.urls {
-            codepoints_to_bytes(&mut entity.range, &welcome_message.message_data.text);
-        }
-        for entity in &mut welcome_message.message_data.entities.user_mentions {
-            codepoints_to_bytes(&mut entity.range, &welcome_message.message_data.text);
-        }
-        if let Some(ref mut attachment) = welcome_message.message_data.attachment {
-            codepoints_to_bytes(&mut attachment.media.range, &welcome_message.message_data.text);
-        }
+        welcome_message.message_data.translate_indices();
 
         let source_app = welcome_message.source_app_id.and_then(|id| apps.get(&id).cloned());
 
