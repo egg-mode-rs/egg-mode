@@ -228,45 +228,45 @@ struct MessageCreateEvent {
 /// The `message_data` portion of a `DMEvent`, containing the bulk of information about a direct
 /// message.
 #[derive(Deserialize)]
-struct MessageData {
+pub(super) struct MessageData {
     /// A list of "call to action" buttons, if present.
-    ctas: Option<Vec<Cta>>,
+    pub(super) ctas: Option<Vec<Cta>>,
     /// Information about attached media, if present.
-    attachment: Option<MessageAttachment>,
+    pub(super) attachment: Option<MessageAttachment>,
     /// Information about URL, hashtag, or user-mention entities used in the message.
-    entities: DMEntities,
+    pub(super) entities: DMEntities,
     /// Information about Quick Reply options, if present.
-    quick_reply: Option<RawQuickReply>,
+    pub(super) quick_reply: Option<RawQuickReply>,
     /// Information about a selected Quick Reply option, if the sender selected one.
-    quick_reply_response: Option<QuickReplyResponse>,
+    pub(super) quick_reply_response: Option<QuickReplyResponse>,
     /// The message text.
-    text: String,
+    pub(super) text: String,
 }
 
 /// Represents attached media information from within a `DMEvent`.
 #[derive(Deserialize)]
-struct MessageAttachment {
+pub(super) struct MessageAttachment {
     /// Information about the attached media.
     ///
     /// Note that the indices used within the `MediaEntity` are received from Twitter using
     /// codepoint-based indexing. Using the indices from within this type directly without
     /// translating them may result in string-slicing errors or panics unless you translate the
     /// indices or use `char_indices` and `enumerate` yourself to ensure proper use of the indices.
-    media: MediaEntity,
+    pub(super) media: MediaEntity,
 }
 
 /// Represents a list of Quick Reply options from within a `DMEvent`.
 #[derive(Deserialize)]
-struct RawQuickReply {
+pub(super) struct RawQuickReply {
     /// The list of Quick Reply options sent with this message.
-    options: Vec<QuickReply>,
+    pub(super) options: Vec<QuickReply>,
 }
 
 /// Represents the `metadata` from a selected Quick Reply from within a `DMEvent`.
 #[derive(Deserialize)]
-struct QuickReplyResponse {
+pub(super) struct QuickReplyResponse {
     /// The `metadata` field for the Quick Reply option the sender selected.
-    metadata: String,
+    pub(super) metadata: String,
 }
 
 /// Represents the message target from within a `DMEvent`.

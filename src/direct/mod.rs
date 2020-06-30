@@ -52,6 +52,7 @@ use crate::tweet::TweetSource;
 
 mod fun;
 pub(crate) mod raw;
+pub mod welcome_messages;
 
 pub use self::fun::*;
 
