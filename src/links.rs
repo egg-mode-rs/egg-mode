@@ -117,6 +117,7 @@ pub mod direct {
 
     pub mod welcome_messages {
         pub const SHOW: &'static str = "https://api.twitter.com/1.1/direct_messages/welcome_messages/show.json";
+        pub const LIST: &'static str = "https://api.twitter.com/1.1/direct_messages/welcome_messages/list.json";
     }
 }
 
