@@ -47,6 +47,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::common::*;
 use crate::{auth, entities, error, links, media};
+use crate::cursor::{self, ActivityCursor};
 use crate::user::{self, UserID};
 use crate::tweet::TweetSource;
 
@@ -121,6 +122,21 @@ impl From<raw::EventCursor> for Vec<DirectMessage> {
 
         ret
     }
+}
+
+impl From<raw::EventCursor> for ActivityCursor<DirectMessage> {
+    fn from(mut curs: raw::EventCursor) -> ActivityCursor<DirectMessage> {
+        let next_cursor = curs.next_cursor.take();
+
+        ActivityCursor {
+            next_cursor,
+            items: curs.into(),
+        }
+    }
+}
+
+impl cursor::ActivityItem for DirectMessage {
+    type Cursor = raw::EventCursor;
 }
 
 /// Container for URL, hashtag, and mention information associated with a direct message.

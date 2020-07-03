@@ -7,14 +7,11 @@
 use crate::common::*;
 
 use std::collections::HashMap;
-use std::future::Future;
 
-use futures::FutureExt;
-use futures::stream::{self, Stream, StreamExt, TryStreamExt};
-use hyper::{Body, Request};
 use serde::Deserialize;
 
 use crate::{auth, entities, error, links};
+use crate::cursor::{self, ActivityCursor};
 use crate::tweet::TweetSource;
 
 use super::raw;
@@ -29,8 +26,8 @@ pub async fn show(id: u64, token: &auth::Token) -> Result<Response<WelcomeMessag
 }
 
 /// Load the list of welcome messages created by this user.
-pub fn list(token: &auth::Token) -> Timeline {
-    Timeline::new(links::direct::welcome_messages::LIST, token.clone())
+pub fn list(token: &auth::Token) -> cursor::ActivityCursorIter<WelcomeMessage> {
+    cursor::ActivityCursorIter::new(links::direct::welcome_messages::LIST, token)
 }
 
 /// A message that can be used to greet users to a DM conversation.
@@ -70,6 +67,21 @@ impl From<MessageCursor> for Vec<WelcomeMessage> {
 
         welcome_messages.into_iter().map(|wm| wm.into_wm(&apps)).collect()
     }
+}
+
+impl From<MessageCursor> for ActivityCursor<WelcomeMessage> {
+    fn from(mut raw: MessageCursor) -> ActivityCursor<WelcomeMessage> {
+        let next_cursor = raw.next_cursor.take();
+
+        ActivityCursor {
+            next_cursor,
+            items: raw.into(),
+        }
+    }
+}
+
+impl cursor::ActivityItem for WelcomeMessage {
+    type Cursor = MessageCursor;
 }
 
 #[derive(Deserialize)]
@@ -113,100 +125,10 @@ struct SingleMessage {
 }
 
 #[derive(Deserialize)]
-struct MessageCursor {
+#[doc(hidden)] // TODO: move this into a `raw` module and re-export in `raw::types::direct`
+pub struct MessageCursor {
     #[serde(default)]
     apps: HashMap<String, TweetSource>,
     welcome_messages: Vec<RawWelcomeMessage>,
     next_cursor: Option<String>,
-}
-
-/// Helper struct to navigate a collection of welcome messages.
-pub struct Timeline {
-    link: &'static str,
-    token: auth::Token,
-    /// The number of messages to request in a single page. The default is 20; the maximum is 50.
-    pub count: u32,
-    /// The string ID that can be used to load the next page of results. A value of `None`
-    /// indicates that either no messages have been loaded yet, or that the most recently loaded
-    /// page is the last page of messages available.
-    pub next_cursor: Option<String>,
-    /// Whether this `Timeline` has been called yet.
-    pub loaded: bool,
-}
-
-impl Timeline {
-    pub(crate) fn new(link: &'static str, token: auth::Token) -> Timeline {
-        Timeline {
-            link,
-            token,
-            count: 20,
-            next_cursor: None,
-            loaded: false,
-        }
-    }
-
-    /// Builder function to set the page size. The default value for the page size is 20; the
-    /// maximum allowed is 50.
-    pub fn with_page_size(self, count: u32) -> Self {
-        Timeline {
-            count,
-            ..self
-        }
-    }
-
-    /// Clears the saved cursor information on this `Timeline`.
-    pub fn reset(&mut self) {
-        self.next_cursor = None;
-        self.loaded = false;
-    }
-
-    fn request(&self, cursor: Option<String>) -> Request<Body> {
-        let params = ParamList::new()
-            .add_param("count", self.count.to_string())
-            .add_opt_param("cursor", cursor);
-
-        get(self.link, &self.token, Some(&params))
-    }
-
-    /// Clear the saved cursor information on this timeline, then return the most recent set of
-    /// messages.
-    pub fn start<'s>(&'s mut self)
-        -> impl Future<Output = Result<Response<Vec<WelcomeMessage>>, error::Error>> + 's
-    {
-        self.reset();
-        self.next_page()
-    }
-
-    /// Loads the next page of messages, setting the `next_cursor` to the one received from
-    /// Twitter.
-    pub fn next_page<'s>(&'s mut self)
-        -> impl Future<Output = Result<Response<Vec<WelcomeMessage>>, error::Error>> + 's
-    {
-        let next_cursor = self.next_cursor.take();
-        let req = self.request(next_cursor);
-        let loader = request_with_json_response(req);
-        loader.map(
-            move |resp: Result<Response<MessageCursor>, error::Error>| {
-                let mut resp = resp?;
-                self.loaded = true;
-                self.next_cursor = resp.next_cursor.take();
-                Ok(Response::into(resp))
-            }
-        )
-    }
-
-    /// Converts this `Timeline` into a `Stream` of direct messages, which automatically loads the
-    /// next page as needed.
-    pub fn into_stream(self)
-        -> impl Stream<Item = Result<Response<WelcomeMessage>, error::Error>>
-    {
-        stream::try_unfold(self, |mut timeline| async move {
-            if timeline.loaded && timeline.next_cursor.is_none() {
-                Ok::<_, error::Error>(None)
-            } else {
-                let page = timeline.next_page().await?;
-                Ok(Some((page, timeline)))
-            }
-        }).map_ok(|page| stream::iter(page).map(Ok::<_, error::Error>)).try_flatten()
-    }
 }

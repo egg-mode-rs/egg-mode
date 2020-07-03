@@ -9,15 +9,20 @@
 //! module. The rest of it is available to make sure consumers of the API can understand precisely
 //! what types come out of functions that return `CursorIter`.
 
-use futures::Stream;
+use hyper::{Body, Request};
+use futures::FutureExt;
+use futures::stream::{self, Stream, StreamExt, TryStreamExt};
 use serde::{de::DeserializeOwned, Deserialize};
 use std::future::Future;
+use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use crate::common::*;
-use crate::error::Result;
+use crate::error::{self, Result};
 use crate::{auth, list, user};
+
+// TODO: refactor the Cursor trait into a CursorItem trait to echo ActivityCursor
 
 ///Trait to generalize over paginated views of API results.
 ///
@@ -367,5 +372,112 @@ where
 
         self.loader = Some(Box::pin(self.call()));
         self.poll_next(cx)
+    }
+}
+
+/// Represents a page of results in an `ActivityCursorIter`.
+///
+/// This type is used internally by the `ActivityCursorIter` implementation to collect a page of
+/// results.
+pub struct ActivityCursor<T> {
+    /// String key representing the next page of results, if present.
+    pub next_cursor: Option<String>,
+    /// The list of items in this page of results.
+    pub items: Vec<T>,
+}
+
+/// Trait for items which can be returned by `ActivityCursorIter`.
+pub trait ActivityItem: Sized {
+    /// What is the cursor type that `ActivityCursorIter` can deserialize into?
+    type Cursor: DeserializeOwned + Into<ActivityCursor<Self>>;
+}
+
+/// Represents a handle to a paginated list of items on the Account Activity API.
+pub struct ActivityCursorIter<CursorItem> {
+    url: &'static str,
+    token: auth::Token,
+    /// String key representing the next page of results, if present. If this is `None`, calling
+    /// `next_page` will return the first page of results.
+    pub next_cursor: Option<String>,
+    /// The number of items to request per-page. The default is 20, the maximum is 50.
+    pub count: u32,
+    /// Whether this `ActivityCursorIter` has loaded a page yet. Used to determine whether a `None`
+    /// value in `next_cursor` means that the results haven't been loaded at all, or whether it
+    /// means that the results have been loaded in full.
+    pub loaded: bool,
+    _marker: PhantomData<CursorItem>,
+}
+
+impl<CursorItem: ActivityItem> ActivityCursorIter<CursorItem> {
+    pub(crate) fn new(url: &'static str, token: &auth::Token) -> Self {
+        ActivityCursorIter {
+            url,
+            token: token.clone(),
+            next_cursor: None,
+            count: 20,
+            loaded: false,
+            _marker: PhantomData,
+        }
+    }
+
+    /// Sets the number of items loaded per page of results as a builder-style constructor.
+    ///
+    /// Note that calling this function will reset the saved cursor information, causing the next
+    /// call to `next_page` to return the first page of results. This is meant to be used when you
+    /// first receive the `ActivityCursorIter`.
+    pub fn with_page_size(self, count: u32) -> Self {
+        ActivityCursorIter {
+            count,
+            next_cursor: None,
+            loaded: false,
+            ..self
+        }
+    }
+
+    /// Clears the saved cursor information on this `ActivityCursorIter`.
+    pub fn reset(&mut self) {
+        self.next_cursor = None;
+        self.loaded = false;
+    }
+
+    fn request(&self, cursor: Option<String>) -> Request<Body> {
+        let params = ParamList::new()
+            .add_param("count", self.count.to_string())
+            .add_opt_param("cursor", cursor);
+
+        get(self.url, &self.token, Some(&params))
+    }
+
+    /// Loads the next page of messages, setting the `next_cursor` to the one received from
+    /// Twitter.
+    pub fn next_page<'s>(&'s mut self)
+        -> impl Future<Output = Result<Response<Vec<CursorItem>>>> + 's
+    {
+        let next_cursor = self.next_cursor.take();
+        let req = self.request(next_cursor);
+        let loader = request_with_json_response(req);
+        loader.map(
+            move |resp: Result<Response<CursorItem::Cursor>>| {
+                let mut resp = Response::into(resp?);
+                self.loaded = true;
+                self.next_cursor = resp.response.next_cursor.take();
+                Ok(Response::map(resp, |curs| curs.items))
+            }
+        )
+    }
+
+    /// Converts this `ActivityCursorIter` into a `Stream` of items, which automatically loads the
+    /// next page as needed.
+    pub fn into_stream(self)
+        -> impl Stream<Item = Result<Response<CursorItem>>>
+    {
+        stream::try_unfold(self, |mut timeline| async move {
+            if timeline.loaded && timeline.next_cursor.is_none() {
+                Ok::<_, error::Error>(None)
+            } else {
+                let page = timeline.next_page().await?;
+                Ok(Some((page, timeline)))
+            }
+        }).map_ok(|page| stream::iter(page).map(Ok::<_, error::Error>)).try_flatten()
     }
 }
