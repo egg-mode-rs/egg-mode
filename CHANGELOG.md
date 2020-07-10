@@ -21,6 +21,8 @@
     - The `conversations` example has been updated to demonstrate the new API
   - This is technically a **breaking change**, but the old DMs stuff hasn't worked since 2018 so it
     was already broken without this change
+- `CursorIter` now implements `Send`
+  - Thanks @hdevalence for the PR!
 
 ### Added
 - New function `raw::request_delete` which is like `request_get`, but sends a DELETE request instead
