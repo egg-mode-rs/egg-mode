@@ -56,8 +56,8 @@ To authenticate a user and request an access token:
 
 let con_token = egg_mode::KeyPair::new("consumer key", "consumer secret");
 // "oob" is needed for PIN-based auth; see docs for `request_token` for more info
-let request_token = egg_mode::request_token(&con_token, "oob").await.unwrap();
-let auth_url = egg_mode::authorize_url(&request_token);
+let request_token = egg_mode::auth::request_token(&con_token, "oob").await.unwrap();
+let auth_url = egg_mode::auth::authorize_url(&request_token);
 
 // give auth_url to the user, they can sign in to Twitter and accept your app's permissions.
 // they'll receive a PIN in return, they need to give this to your application
@@ -66,7 +66,7 @@ let verifier = "123456"; //read the PIN from the user here
 
 // note this consumes con_token; if you want to sign in multiple accounts, clone it here
 let (token, user_id, screen_name) =
-    egg_mode::access_token(con_token, &request_token, verifier).await.unwrap()
+    egg_mode::auth::access_token(con_token, &request_token, verifier).await.unwrap();
 
 // token can be given to any egg_mode method that asks for a token
 // user_id and screen_name refer to the user who signed in
