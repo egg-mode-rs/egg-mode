@@ -167,6 +167,8 @@ pub fn response_as_stream(req: Request<Body>) -> TwitterStream {
     TwitterStream::new(req)
 }
 
+pub use crate::common::RoundTrip;
+
 /// Facilities to manually assemble signed requests.
 ///
 /// In case you need to do things that aren't available in the `raw` module, the `RequestBuilder`

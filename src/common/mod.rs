@@ -163,24 +163,15 @@ macro_rules! round_trip {
             $v $f: $t
         ),+ }
 
-        impl $struct_name {
-            /// Returns the string representation of an error from loading JSON from Twitter, if
-            /// applicable.
-            ///
-            /// Use this function if trying to load something from the API gave you a
-            /// deserialization error.
-            pub fn twitter_deser_error(input: serde_json::Value) -> Option<String> {
+        #[allow(unused_qualifications)]
+        impl crate::common::RoundTrip for $struct_name {
+            fn upstream_deser_error(input: serde_json::Value) -> Option<String> {
                 use crate::common::MapString;
 
                 serde_json::from_value::<$raw_name>(input).err().map_string()
             }
 
-            /// Returns the string representation of an error from loading JSON given by
-            /// serializing this type.
-            ///
-            /// Use this function if trying to load saved JSON from saving previously-loaded data
-            /// gave you a deserialization error.
-            pub fn roundtrip_deser_error(input: serde_json::Value) -> Option<String> {
+            fn roundtrip_deser_error(input: serde_json::Value) -> Option<String> {
                 use crate::common::MapString;
 
                 serde_json::from_value::<SerCopy>(input).err().map_string()
@@ -225,6 +216,52 @@ macro_rules! round_trip {
             }
         }
     };
+}
+
+/// Types that implement `Deserialize` either by loading from upstream JSON, or via a "round-trip"
+/// serialization.
+///
+/// Starting in egg-mode 0.16, select types gained a `Serialize` implementation, which caused them
+/// to require special handling when deserializing. This special handling created an issue for when
+/// errors occur: When the input data didn't match the expected type definition, the only error
+/// that would be returned is a generic `"data did not match any variant of untagged enum
+/// SerEnum"`. In an attempt to allow these errors to be recovered, this trait was created.
+///
+/// If you get an error when trying to load a type that implements `RoundTrip`, and can isolate it
+/// to a specific instance of data, you can try to load it with either of these functions to see
+/// the specific error. For example, to find the error from loading a user:
+///
+/// ```no_run
+/// use egg_mode::user::TwitterUser;
+/// use egg_mode::raw::{self, RoundTrip};
+///
+/// # #[tokio::main]
+/// # async fn main() {
+/// # let token: egg_mode::Token = unimplemented!();
+/// let url = "https://api.twitter.com/1.1/users/show.json";
+/// let params = raw::ParamList::new().add_user_param("rustlang".into());
+/// let req = raw::request_get(url, &token, Some(&params));
+/// let resp = raw::response_json::<serde_json::Value>(req).await.unwrap();
+///
+/// if let Some(msg) = TwitterUser::upstream_deser_error(resp.response) {
+///     println!("there was an error: {}", msg);
+/// }
+/// # }
+/// ```
+pub trait RoundTrip {
+    /// Returns the string representation of an error from loading JSON from Twitter, if
+    /// applicable.
+    ///
+    /// Use this function if trying to load something from the API gave you a
+    /// deserialization error.
+    fn upstream_deser_error(input: serde_json::Value) -> Option<String>;
+
+    /// Returns the string representation of an error from loading JSON given by
+    /// serializing this type.
+    ///
+    /// Use this function if trying to load saved JSON from saving previously-loaded data
+    /// gave you a deserialization error.
+    fn roundtrip_deser_error(input: serde_json::Value) -> Option<String>;
 }
 
 // n.b. this type alias is re-exported in the `raw` module - these docs are public!
