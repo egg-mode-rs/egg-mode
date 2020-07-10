@@ -53,7 +53,7 @@ use futures::Stream;
 use hyper::client::ResponseFuture;
 use hyper::{Body, Request};
 use serde::de::Error;
-use serde::{Deserialize, Deserializer};
+use serde::{Serialize, Deserialize, Deserializer};
 use serde_json;
 
 use crate::auth::Token;
@@ -298,7 +298,7 @@ impl Stream for TwitterStream {
 /// According to Twitter's documentation, "When displaying a stream of Tweets to end users
 /// (dashboards or live feeds at a presentation or conference, for example) it is suggested that
 /// you set this value to medium."
-#[derive(Copy, Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 pub enum FilterLevel {
     /// No filtering.
     #[serde(rename = "none")]

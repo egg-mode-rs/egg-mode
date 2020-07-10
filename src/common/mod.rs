@@ -52,9 +52,10 @@
 //! string. It's also an example of how function parameters are themselves patterns, because i
 //! destructure the pair right in the signature. `>_>`
 //!
-//! `deserialize_datetime` and `deserialize_mime` are glue functions to read these specific items
-//! out in a `Deserialize` implementation. Twitter always gives timestamps in the same format, so
-//! having that function here saves us from having to write the format out everywhere.
+//! `serde_datetime` and `serde_via_string` are helper modules to use with derived
+//! `Serialize`/`Deserialize` implementations. `serde_datetime` loads and saves `DateTime`s with
+//! the format Twitter uses for timestamps, and `serde_via_string` uses `Display` and `FromStr` to
+//! save a string representation of the original type.
 //!
 //! `merge_by` and its companion type `MergeBy` is a copy of the iterator adapter of the same name
 //! from itertools, because i didn't want to add another dependency onto the great towering pile
@@ -93,12 +94,8 @@ use std::future::Future;
 use std::iter::Peekable;
 use std::pin::Pin;
 
-use chrono::{self, TimeZone};
 use hyper::header::{HeaderMap, HeaderValue};
-use mime;
 use percent_encoding::{utf8_percent_encode, AsciiSet, PercentEncode};
-use serde::de::Error;
-use serde::{Deserialize, Deserializer};
 
 mod response;
 
@@ -106,6 +103,166 @@ pub use crate::auth::raw::{get, post, post_json};
 
 pub use crate::common::response::*;
 use crate::{error, list, user};
+
+/// Macro to create a `Serialize`/`Deserialize` implementation allowing for deserialization via the
+/// given "raw" struct or via a "round-trip" using the type's own serialization.
+///
+/// This macro takes two arguments: the name of a "raw" type, and a public struct definition. The
+/// given struct must implement `From` or `TryFrom` for the given raw type. In return, it derives
+/// `Serialize` and `Deserialize` for the struct, and creates a handful of helper types to modify
+/// the `Deserialize` implementation.
+///
+/// ## Warning
+///
+/// If you're adding this to something that should have custom (de-)serialization logic on some
+/// fields (e.g.  `DateTime`), make sure to add both the `serialize_with` and `deserialize_with`
+/// attributes to the struct definition. All the attributes are copied in to the `SerCopy` struct,
+/// so it inherits the deserialization logic that otherwise goes unused. If you don't do this, then
+/// the type will fail to "round-trip" properly and may create an error when you try to deserialize
+/// from the saved data.
+///
+/// ## Example
+///
+/// ```rust,ignore (internal-items)
+/// use crate::common::*;
+///
+/// round_trip! { raw::RawDummyStruct,
+///     /// A dummy struct to demonstrate `round_trip!`.
+///     pub struct DummyStruct {
+///         // ...
+///     }
+/// }
+///
+/// impl From<raw::RawDummyStruct> for DummyStruct {
+///     fn from(src: RawDummyStruct) -> DummyStruct {
+///         // ...
+///     }
+/// }
+/// ```
+///
+/// ## Implementation
+///
+/// This macro abuses the `#[serde(untagged)]` enum representation to allow it to deserialize via
+/// the existing "raw" type, or the generated "SerCopy" struct which is a field-for-field copy of
+/// the original struct. This way, either representation can be used to load the struct without the
+/// overhead of loading it all into a `serde_json::Value` first to manually decode into either
+/// type.
+macro_rules! round_trip {
+    ( $raw_name:path,
+      $(#[$outer_attr:meta])*
+      pub struct $struct_name:ident { $(
+          $(#[$attr:meta])*
+          $v:vis $f:ident : $t:ty
+      ),+ $(,)? } ) => {
+        $(#[$outer_attr])*
+        #[derive(serde::Serialize)]
+        #[derive(serde::Deserialize)]
+        #[serde(try_from = "SerEnum")]
+        pub struct $struct_name { $(
+            $(#[$attr])*
+            $v $f: $t
+        ),+ }
+
+        #[allow(unused_qualifications)]
+        impl crate::common::RoundTrip for $struct_name {
+            fn upstream_deser_error(input: serde_json::Value) -> Option<String> {
+                use crate::common::MapString;
+
+                serde_json::from_value::<$raw_name>(input).err().map_string()
+            }
+
+            fn roundtrip_deser_error(input: serde_json::Value) -> Option<String> {
+                use crate::common::MapString;
+
+                serde_json::from_value::<SerCopy>(input).err().map_string()
+            }
+        }
+
+        #[derive(serde::Deserialize)]
+        struct SerCopy { $(
+            $(#[$attr])*
+            $v $f: $t
+        ),+ }
+
+        impl From<SerCopy> for $struct_name {
+            fn from(src: SerCopy) -> $struct_name {
+                $struct_name { $(
+                    $f: src.$f
+                ),+ }
+            }
+        }
+
+        #[derive(serde::Deserialize)]
+        #[serde(untagged)]
+        enum SerEnum {
+            Raw($raw_name),
+            Ser(SerCopy),
+        }
+
+        #[allow(unused_qualifications)]
+        impl std::convert::TryFrom<SerEnum> for $struct_name
+        where
+            $struct_name: std::convert::TryFrom<$raw_name>,
+        {
+            type Error = <$struct_name as std::convert::TryFrom<$raw_name>>::Error;
+
+            fn try_from(src: SerEnum) -> std::result::Result<$struct_name, Self::Error> {
+                use std::convert::TryInto;
+
+                match src {
+                    SerEnum::Raw(raw) => raw.try_into(),
+                    SerEnum::Ser(ser) => Ok(ser.into()),
+                }
+            }
+        }
+    };
+}
+
+/// Types that implement `Deserialize` either by loading from upstream JSON, or via a "round-trip"
+/// serialization.
+///
+/// Starting in egg-mode 0.16, select types gained a `Serialize` implementation, which caused them
+/// to require special handling when deserializing. This special handling created an issue for when
+/// errors occur: When the input data didn't match the expected type definition, the only error
+/// that would be returned is a generic `"data did not match any variant of untagged enum
+/// SerEnum"`. In an attempt to allow these errors to be recovered, this trait was created.
+///
+/// If you get an error when trying to load a type that implements `RoundTrip`, and can isolate it
+/// to a specific instance of data, you can try to load it with either of these functions to see
+/// the specific error. For example, to find the error from loading a user:
+///
+/// ```no_run
+/// use egg_mode::user::TwitterUser;
+/// use egg_mode::raw::{self, RoundTrip};
+///
+/// # #[tokio::main]
+/// # async fn main() {
+/// # let token: egg_mode::Token = unimplemented!();
+/// let url = "https://api.twitter.com/1.1/users/show.json";
+/// let params = raw::ParamList::new().add_user_param("rustlang".into());
+/// let req = raw::request_get(url, &token, Some(&params));
+/// let resp = raw::response_json::<serde_json::Value>(req).await.unwrap();
+///
+/// if let Some(msg) = TwitterUser::upstream_deser_error(resp.response) {
+///     println!("there was an error: {}", msg);
+/// }
+/// # }
+/// ```
+pub trait RoundTrip {
+    /// Returns the string representation of an error from loading JSON from Twitter, if
+    /// applicable.
+    ///
+    /// Use this function if trying to load something from the API gave you a
+    /// deserialization error.
+    fn upstream_deser_error(input: serde_json::Value) -> Option<String>;
+
+    /// Returns the string representation of an error from loading JSON given by
+    /// serializing this type.
+    ///
+    /// Use this function if trying to load saved JSON from saving previously-loaded data
+    /// gave you a deserialization error.
+    fn roundtrip_deser_error(input: serde_json::Value) -> Option<String>;
+}
 
 // n.b. this type alias is re-exported in the `raw` module - these docs are public!
 /// A set of headers returned with a response.
@@ -327,33 +484,55 @@ where
     }
 }
 
-pub fn deserialize_datetime<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s = String::deserialize(ser)?;
-    let date = (chrono::Utc)
-        .datetime_from_str(&s, "%a %b %d %T %z %Y")
-        .map_err(|e| D::Error::custom(e))?;
-    Ok(date)
+pub mod serde_datetime {
+    use serde::{Serializer, Deserialize, Deserializer};
+    use serde::de::Error;
+    use chrono::TimeZone;
+
+    const DATE_FORMAT: &'static str = "%a %b %d %T %z %Y";
+
+    pub fn deserialize<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(ser)?;
+        let date = (chrono::Utc)
+            .datetime_from_str(&s, DATE_FORMAT)
+            .map_err(|e| D::Error::custom(e))?;
+        Ok(date)
+    }
+
+    pub fn serialize<S>(src: &chrono::DateTime<chrono::Utc>, ser: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        ser.collect_str(&src.format(DATE_FORMAT))
+    }
 }
 
-pub fn deserialize_mime<'de, D>(ser: D) -> Result<mime::Mime, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let str = String::deserialize(ser)?;
-    str.parse().map_err(|e| D::Error::custom(e))
-}
+pub mod serde_via_string {
+    use serde::{Serializer, Deserialize, Deserializer};
+    use serde::de::Error;
 
-pub fn deser_from_string<'de, D, T>(ser: D) -> Result<T, D::Error>
-where
-    D: Deserializer<'de>,
-    T: std::str::FromStr,
-    <T as std::str::FromStr>::Err: std::fmt::Display,
-{
-    let str = String::deserialize(ser)?;
-    str.parse().map_err(|e| D::Error::custom(e))
+    use std::fmt;
+
+    pub fn deserialize<'de, D, T>(ser: D) -> Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: std::str::FromStr,
+        <T as std::str::FromStr>::Err: std::fmt::Display,
+    {
+        let str = String::deserialize(ser)?;
+        str.parse().map_err(|e| D::Error::custom(e))
+    }
+
+    pub fn serialize<T, S>(src: &T, ser: S) -> Result<S::Ok, S::Error>
+    where
+        T: fmt::Display,
+        S: Serializer,
+    {
+        ser.collect_str(src)
+    }
 }
 
 /// Percent-encodes the given string based on the Twitter API specification.

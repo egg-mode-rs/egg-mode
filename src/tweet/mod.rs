@@ -54,6 +54,7 @@
 //! - `user_timeline`/`liked_by`
 
 use std::borrow::Cow;
+use std::convert::TryFrom;
 use std::future::Future;
 use std::pin::Pin;
 use std::str::FromStr;
@@ -62,8 +63,7 @@ use std::task::{Context, Poll};
 use chrono;
 use hyper::{Body, Request};
 use regex::Regex;
-use serde::de::Error;
-use serde::{Deserialize, Deserializer};
+use serde::{Serialize, Deserialize, Deserializer};
 
 use crate::common::*;
 use crate::error::{Error::InvalidResponse, Result};
@@ -75,175 +75,176 @@ mod raw;
 
 pub use self::fun::*;
 
-///Represents a single status update.
-///
-///The fields present in this struct can be mainly split up based on the context they're present
-///for.
-///
-///## Base Tweet Info
-///
-///This information is the basic information inherent to all tweets, regardless of context.
-///
-///* `text`
-///* `id`
-///* `created_at`
-///* `user`
-///* `source`
-///* `favorite_count`/`retweet_count`
-///* `lang`, though third-party clients usually don't surface this at a user-interface level.
-///  Twitter Web uses this to create machine-translations of the tweet.
-///* `coordinates`/`place`
-///* `display_text_range`
-///* `truncated`
-///
-///## Perspective-based data
-///
-///This information depends on the authenticated user who called the data. These are left as
-///Options because certain contexts where the information is pulled either don't have an
-///authenticated user to compare with, or don't have to opportunity to poll the user's interactions
-///with the tweet.
-///
-///* `favorited`
-///* `retweeted`
-///* `current_user_retweet`
-///
-///## Replies
-///
-///This information is only present when the tweet in question is marked as being a reply to
-///another tweet, or when it's threaded into a chain from the same user.
-///
-///* `in_reply_to_user_id`/`in_reply_to_screen_name`
-///* `in_reply_to_status_id`
-///
-///## Retweets and Quote Tweets
-///
-///This information is only present when the tweet in question is a native retweet or is a "quote
-///tweet" that references another tweet by linking to it. These fields allow you to reference the
-///parent tweet without having to make another call to `show`.
-///
-///* `retweeted_status`
-///* `quoted_status`/`quoted_status_id`
-///
-///## Media
-///
-///As a tweet can attach an image, GIF, or video, these fields allow you to access information
-///about the attached media. Note that polls are not surfaced to the Public API at the time of this
-///writing (2016-09-01). For more information about how to use attached media, see the
-///documentation for [`MediaEntity`][].
-///
-///[`MediaEntity`]: ../entities/struct.MediaEntity.html
-///
-///* `entities` (note that this also contains information about hyperlinks, user mentions, and
-///  hashtags in addition to a picture/thumbnail)
-///* `extended_entities`: This field is only present for tweets with attached media, and houses
-///  more complete media information, in the case of a photo set, video, or GIF. For videos and
-///  GIFs, note that `entities` will only contain a thumbnail, and the actual video links will be
-///  in this field. For tweets with more than one photo attached, `entities` will only contain the
-///  first photo, and this field will contain all of them.
-///* `possibly_sensitive`
-///* `withheld_copyright`
-///* `withheld_in_countries`
-///* `withheld_scope`
-#[derive(Debug, Clone)]
-pub struct Tweet {
-    //If the user has contributors enabled, this will show which accounts contributed to this
-    //tweet.
-    //pub contributors: Option<Contributors>,
-    ///If present, the location coordinate attached to the tweet, as a (latitude, longitude) pair.
-    pub coordinates: Option<(f64, f64)>,
-    ///UTC timestamp from when the tweet was posted.
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
-    pub current_user_retweet: Option<u64>,
-    ///If this tweet is an extended tweet with "hidden" metadata and entities, contains the byte
-    ///offsets between which the "displayable" tweet text is.
-    pub display_text_range: Option<(usize, usize)>,
-    ///Link, hashtag, and user mention information extracted from the tweet text.
-    pub entities: TweetEntities,
-    ///Extended media information attached to the tweet, if media is available.
+round_trip! { raw::RawTweet,
+    ///Represents a single status update.
     ///
-    ///If a tweet has a photo, set of photos, gif, or video attached to it, this field will be
-    ///present and contain the real media information. The information available in the `media`
-    ///field of `entities` will only contain the first photo of a set, or a thumbnail of a gif or
-    ///video.
-    pub extended_entities: Option<ExtendedTweetEntities>,
-    ///"Approximately" how many times this tweet has been liked by users.
-    pub favorite_count: i32,
-    ///Indicates whether the authenticated user has liked this tweet.
-    pub favorited: Option<bool>,
-    ///Indicates the maximum `FilterLevel` parameter that can be applied to a stream and still show
-    ///this tweet.
-    pub filter_level: Option<FilterLevel>,
-    ///Numeric ID for this tweet.
-    pub id: u64,
-    ///If the tweet is a reply, contains the ID of the user that was replied to.
-    pub in_reply_to_user_id: Option<u64>,
-    ///If the tweet is a reply, contains the screen name of the user that was replied to.
-    pub in_reply_to_screen_name: Option<String>,
-    ///If the tweet is a reply, contains the ID of the tweet that was replied to.
-    pub in_reply_to_status_id: Option<u64>,
-    ///Can contain a language ID indicating the machine-detected language of the text, or "und" if
-    ///no language could be detected.
-    pub lang: Option<String>,
-    ///When present, the `Place` that this tweet is associated with (but not necessarily where it
-    ///originated from).
-    pub place: Option<place::Place>,
-    ///If the tweet has a link, indicates whether the link may contain content that could be
-    ///identified as sensitive.
-    pub possibly_sensitive: Option<bool>,
-    ///If this tweet is quoting another by link, contains the ID of the quoted tweet.
-    pub quoted_status_id: Option<u64>,
-    ///If this tweet is quoting another by link, contains the quoted tweet.
-    pub quoted_status: Option<Box<Tweet>>,
-    //"A set of key-value pairs indicating the intended contextual delivery of the containing
-    //Tweet. Currently used by Twitter’s Promoted Products."
-    //pub scopes: Option<Scopes>,
-    ///The number of times this tweet has been retweeted (with native retweets).
-    pub retweet_count: i32,
-    ///Indicates whether the authenticated user has retweeted this tweet.
-    pub retweeted: Option<bool>,
-    ///If this tweet is a retweet, then this field contains the original status information.
+    ///The fields present in this struct can be mainly split up based on the context they're present
+    ///for.
     ///
-    ///The separation between retweet and original is so that retweets can be recalled by deleting
-    ///the retweet, and so that liking a retweet results in an additional notification to the user
-    ///who retweeted the status, as well as the original poster.
-    pub retweeted_status: Option<Box<Tweet>>,
-    ///The application used to post the tweet.
-    pub source: Option<TweetSource>,
-    ///The text of the tweet. For "extended" tweets, opening reply mentions and/or attached media
-    ///or quoted tweet links do not count against character count, so this could be longer than 280
-    ///characters in those situations.
-    pub text: String,
-    ///Indicates whether this tweet is a truncated "compatibility" form of an extended tweet whose
-    ///full text is longer than 280 characters.
-    pub truncated: bool,
-    ///The user who posted this tweet. This field will be absent on tweets included as part of a
-    ///`TwitterUser`.
-    pub user: Option<Box<user::TwitterUser>>,
-    ///If present and `true`, indicates that this tweet has been withheld due to a DMCA complaint.
-    pub withheld_copyright: bool,
-    ///If present, contains two-letter country codes indicating where this tweet is being withheld.
+    ///## Base Tweet Info
     ///
-    ///The following special codes exist:
+    ///This information is the basic information inherent to all tweets, regardless of context.
     ///
-    ///- `XX`: Withheld in all countries
-    ///- `XY`: Withheld due to DMCA complaint.
-    pub withheld_in_countries: Option<Vec<String>>,
-    ///If present, indicates whether the content being withheld is the `status` or the `user`.
-    pub withheld_scope: Option<String>,
+    ///* `text`
+    ///* `id`
+    ///* `created_at`
+    ///* `user`
+    ///* `source`
+    ///* `favorite_count`/`retweet_count`
+    ///* `lang`, though third-party clients usually don't surface this at a user-interface level.
+    ///  Twitter Web uses this to create machine-translations of the tweet.
+    ///* `coordinates`/`place`
+    ///* `display_text_range`
+    ///* `truncated`
+    ///
+    ///## Perspective-based data
+    ///
+    ///This information depends on the authenticated user who called the data. These are left as
+    ///Options because certain contexts where the information is pulled either don't have an
+    ///authenticated user to compare with, or don't have to opportunity to poll the user's interactions
+    ///with the tweet.
+    ///
+    ///* `favorited`
+    ///* `retweeted`
+    ///* `current_user_retweet`
+    ///
+    ///## Replies
+    ///
+    ///This information is only present when the tweet in question is marked as being a reply to
+    ///another tweet, or when it's threaded into a chain from the same user.
+    ///
+    ///* `in_reply_to_user_id`/`in_reply_to_screen_name`
+    ///* `in_reply_to_status_id`
+    ///
+    ///## Retweets and Quote Tweets
+    ///
+    ///This information is only present when the tweet in question is a native retweet or is a "quote
+    ///tweet" that references another tweet by linking to it. These fields allow you to reference the
+    ///parent tweet without having to make another call to `show`.
+    ///
+    ///* `retweeted_status`
+    ///* `quoted_status`/`quoted_status_id`
+    ///
+    ///## Media
+    ///
+    ///As a tweet can attach an image, GIF, or video, these fields allow you to access information
+    ///about the attached media. Note that polls are not surfaced to the Public API at the time of this
+    ///writing (2016-09-01). For more information about how to use attached media, see the
+    ///documentation for [`MediaEntity`][].
+    ///
+    ///[`MediaEntity`]: ../entities/struct.MediaEntity.html
+    ///
+    ///* `entities` (note that this also contains information about hyperlinks, user mentions, and
+    ///  hashtags in addition to a picture/thumbnail)
+    ///* `extended_entities`: This field is only present for tweets with attached media, and houses
+    ///  more complete media information, in the case of a photo set, video, or GIF. For videos and
+    ///  GIFs, note that `entities` will only contain a thumbnail, and the actual video links will be
+    ///  in this field. For tweets with more than one photo attached, `entities` will only contain the
+    ///  first photo, and this field will contain all of them.
+    ///* `possibly_sensitive`
+    ///* `withheld_copyright`
+    ///* `withheld_in_countries`
+    ///* `withheld_scope`
+    #[derive(Debug, Clone)]
+    pub struct Tweet {
+        //If the user has contributors enabled, this will show which accounts contributed to this
+        //tweet.
+        //pub contributors: Option<Contributors>,
+        ///If present, the location coordinate attached to the tweet, as a (latitude, longitude) pair.
+        pub coordinates: Option<(f64, f64)>,
+        ///UTC timestamp from when the tweet was posted.
+        #[serde(with = "serde_datetime")]
+        pub created_at: chrono::DateTime<chrono::Utc>,
+        ///If the authenticated user has retweeted this tweet, contains the ID of the retweet.
+        pub current_user_retweet: Option<u64>,
+        ///If this tweet is an extended tweet with "hidden" metadata and entities, contains the byte
+        ///offsets between which the "displayable" tweet text is.
+        pub display_text_range: Option<(usize, usize)>,
+        ///Link, hashtag, and user mention information extracted from the tweet text.
+        pub entities: TweetEntities,
+        ///Extended media information attached to the tweet, if media is available.
+        ///
+        ///If a tweet has a photo, set of photos, gif, or video attached to it, this field will be
+        ///present and contain the real media information. The information available in the `media`
+        ///field of `entities` will only contain the first photo of a set, or a thumbnail of a gif or
+        ///video.
+        pub extended_entities: Option<ExtendedTweetEntities>,
+        ///"Approximately" how many times this tweet has been liked by users.
+        pub favorite_count: i32,
+        ///Indicates whether the authenticated user has liked this tweet.
+        pub favorited: Option<bool>,
+        ///Indicates the maximum `FilterLevel` parameter that can be applied to a stream and still show
+        ///this tweet.
+        pub filter_level: Option<FilterLevel>,
+        ///Numeric ID for this tweet.
+        pub id: u64,
+        ///If the tweet is a reply, contains the ID of the user that was replied to.
+        pub in_reply_to_user_id: Option<u64>,
+        ///If the tweet is a reply, contains the screen name of the user that was replied to.
+        pub in_reply_to_screen_name: Option<String>,
+        ///If the tweet is a reply, contains the ID of the tweet that was replied to.
+        pub in_reply_to_status_id: Option<u64>,
+        ///Can contain a language ID indicating the machine-detected language of the text, or "und" if
+        ///no language could be detected.
+        pub lang: Option<String>,
+        ///When present, the `Place` that this tweet is associated with (but not necessarily where it
+        ///originated from).
+        pub place: Option<place::Place>,
+        ///If the tweet has a link, indicates whether the link may contain content that could be
+        ///identified as sensitive.
+        pub possibly_sensitive: Option<bool>,
+        ///If this tweet is quoting another by link, contains the ID of the quoted tweet.
+        pub quoted_status_id: Option<u64>,
+        ///If this tweet is quoting another by link, contains the quoted tweet.
+        pub quoted_status: Option<Box<Tweet>>,
+        //"A set of key-value pairs indicating the intended contextual delivery of the containing
+        //Tweet. Currently used by Twitter’s Promoted Products."
+        //pub scopes: Option<Scopes>,
+        ///The number of times this tweet has been retweeted (with native retweets).
+        pub retweet_count: i32,
+        ///Indicates whether the authenticated user has retweeted this tweet.
+        pub retweeted: Option<bool>,
+        ///If this tweet is a retweet, then this field contains the original status information.
+        ///
+        ///The separation between retweet and original is so that retweets can be recalled by deleting
+        ///the retweet, and so that liking a retweet results in an additional notification to the user
+        ///who retweeted the status, as well as the original poster.
+        pub retweeted_status: Option<Box<Tweet>>,
+        ///The application used to post the tweet.
+        pub source: Option<TweetSource>,
+        ///The text of the tweet. For "extended" tweets, opening reply mentions and/or attached media
+        ///or quoted tweet links do not count against character count, so this could be longer than 280
+        ///characters in those situations.
+        pub text: String,
+        ///Indicates whether this tweet is a truncated "compatibility" form of an extended tweet whose
+        ///full text is longer than 280 characters.
+        pub truncated: bool,
+        ///The user who posted this tweet. This field will be absent on tweets included as part of a
+        ///`TwitterUser`.
+        pub user: Option<Box<user::TwitterUser>>,
+        ///If present and `true`, indicates that this tweet has been withheld due to a DMCA complaint.
+        pub withheld_copyright: bool,
+        ///If present, contains two-letter country codes indicating where this tweet is being withheld.
+        ///
+        ///The following special codes exist:
+        ///
+        ///- `XX`: Withheld in all countries
+        ///- `XY`: Withheld due to DMCA complaint.
+        pub withheld_in_countries: Option<Vec<String>>,
+        ///If present, indicates whether the content being withheld is the `status` or the `user`.
+        pub withheld_scope: Option<String>,
+    }
 }
 
-impl<'de> Deserialize<'de> for Tweet {
-    fn deserialize<D>(deser: D) -> std::result::Result<Tweet, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let mut raw = raw::RawTweet::deserialize(deser)?;
+impl TryFrom<raw::RawTweet> for Tweet {
+    type Error = error::Error;
+
+    fn try_from(mut raw: raw::RawTweet) -> Result<Tweet> {
         let text = raw
             .full_text
             .or(raw.extended_tweet.map(|xt| xt.full_text))
             .or(raw.text)
-            .ok_or_else(|| D::Error::custom("Tweet missing text field"))?;
+            .ok_or_else(|| error::Error::MissingValue("text"))?;
         let current_user_retweet = raw.current_user_retweet.map(|cur| cur.id);
 
         if let Some(ref mut range) = raw.display_text_range {
@@ -313,7 +314,7 @@ impl<'de> Deserialize<'de> for Tweet {
 ///
 ///Note that if you're going to reconstruct a link from this, the source URL has `rel="nofollow"`
 ///in the anchor tag.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct TweetSource {
     ///The name of the app, given by its developer.
     pub name: String,
@@ -376,7 +377,7 @@ where
 ///Note that for media attached to a tweet, this struct will only contain the first image of a
 ///photo set, or a thumbnail of a video or GIF. Full media information is available in the tweet's
 ///`extended_entities` field.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct TweetEntities {
     ///Collection of hashtags parsed from the tweet.
     pub hashtags: Vec<entities::HashtagEntity>,
@@ -396,7 +397,7 @@ pub struct TweetEntities {
 ///If a tweet has a photo, set of photos, gif, or video attached to it, this field will be present
 ///and contain the real media information. The information available in the `media` field of
 ///`entities` will only contain the first photo of a set, or a thumbnail of a gif or video.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ExtendedTweetEntities {
     ///Collection of extended media information attached to the tweet.
     pub media: Vec<entities::MediaEntity>,
@@ -994,5 +995,16 @@ mod tests {
             extended_entities.media[0].ext_alt_text,
             Some("test alt text for the image".to_string())
         );
+    }
+
+    #[test]
+    fn roundtrip_deser() {
+        let sample = load_file("sample_payloads/tweet_array.json");
+        let tweets_src: Vec<Tweet> = serde_json::from_str(&sample).unwrap();
+        let json1 = serde_json::to_value(tweets_src).unwrap();
+        let tweets_roundtrip: Vec<Tweet> = serde_json::from_value(json1.clone()).unwrap();
+        let json2 = serde_json::to_value(tweets_roundtrip).unwrap();
+
+        assert_eq!(json1, json2);
     }
 }
