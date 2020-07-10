@@ -452,13 +452,15 @@ pub mod serde_datetime {
     use serde::de::Error;
     use chrono::TimeZone;
 
+    const DATE_FORMAT: &'static str = "%a %b %d %T %z %Y";
+
     pub fn deserialize<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error>
     where
         D: Deserializer<'de>,
     {
         let s = String::deserialize(ser)?;
         let date = (chrono::Utc)
-            .datetime_from_str(&s, "%a %b %d %T %z %Y")
+            .datetime_from_str(&s, DATE_FORMAT)
             .map_err(|e| D::Error::custom(e))?;
         Ok(date)
     }
@@ -467,7 +469,7 @@ pub mod serde_datetime {
     where
         S: Serializer,
     {
-        ser.collect_str(&src.format("%a %b %d %T %z %Y"))
+        ser.collect_str(&src.format(DATE_FORMAT))
     }
 }
 

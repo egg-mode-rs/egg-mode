@@ -2,7 +2,7 @@ use crate::{place, user};
 use chrono;
 use serde::Deserialize;
 
-use crate::common::{serde_datetime};
+use crate::common::serde_datetime;
 
 use super::{
     deserialize_tweet_source, ExtendedTweetEntities, FilterLevel, Tweet,
