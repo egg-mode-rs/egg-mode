@@ -254,7 +254,7 @@ where
     ///pagination.
     pub next_cursor: i64,
     loader: Option<FutureResponse<T>>,
-    iter: Option<Box<dyn Iterator<Item = Response<T::Item>>>>,
+    iter: Option<Box<dyn Iterator<Item = Response<T::Item>> + Send>>,
 }
 
 impl<T> CursorIter<T>
@@ -323,7 +323,7 @@ where
 impl<T> Stream for CursorIter<T>
 where
     T: Cursor + DeserializeOwned + 'static,
-    T::Item: Unpin,
+    T::Item: Unpin + Send,
 {
     type Item = Result<Response<T::Item>>;
 
