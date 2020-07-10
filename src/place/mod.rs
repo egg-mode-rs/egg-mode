@@ -30,7 +30,7 @@ use std::collections::HashMap;
 use std::fmt;
 
 use serde::de::Error;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json;
 
 use crate::common::*;
@@ -52,8 +52,7 @@ pub struct Place {
     ///[attrib]: https://dev.twitter.com/overview/api/places#attributes
     pub attributes: HashMap<String, String>,
     ///A bounding box of latitude/longitude coordinates that encloses this place.
-    #[serde(deserialize_with = "deserialize_bounding_box")]
-    #[serde(serialize_with = "serialize_bounding_box")]
+    #[serde(with = "serde_bounding_box")]
     pub bounding_box: Vec<(f64, f64)>,
     ///Name of the country containing this place.
     pub country: String,
@@ -356,51 +355,56 @@ impl fmt::Display for Accuracy {
     }
 }
 
-fn deserialize_bounding_box<'de, D>(ser: D) -> Result<Vec<(f64, f64)>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s = serde_json::Value::deserialize(ser)?;
-    s.get("coordinates")
-        .and_then(|arr| arr.get(0).cloned())
-        .ok_or_else(|| D::Error::custom("Malformed 'bounding_box' attribute"))
-        .and_then(|inner_arr| {
-            serde_json::from_value::<Vec<(f64, f64)>>(inner_arr).map_err(|e| D::Error::custom(e))
-        })
-}
+mod serde_bounding_box {
+    use serde::{Serialize, Deserialize, Serializer, Deserializer};
+    use serde::de::Error;
 
-fn serialize_bounding_box<S>(src: &Vec<(f64, f64)>, ser: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    #[derive(Serialize)]
-    struct SerBox {
-        coordinates: Vec<(f64, f64)>,
-        #[serde(rename = "type")]
-        box_type: BoxType,
+    pub fn deserialize<'de, D>(ser: D) -> Result<Vec<(f64, f64)>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = serde_json::Value::deserialize(ser)?;
+        s.get("coordinates")
+            .and_then(|arr| arr.get(0).cloned())
+            .ok_or_else(|| D::Error::custom("Malformed 'bounding_box' attribute"))
+            .and_then(|inner_arr| {
+                serde_json::from_value::<Vec<(f64, f64)>>(inner_arr).map_err(|e| D::Error::custom(e))
+            })
     }
 
-    #[derive(Serialize)]
-    enum BoxType {
-        Polygon,
-        Point,
-    }
+    pub fn serialize<S>(src: &Vec<(f64, f64)>, ser: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        #[derive(Serialize)]
+        struct SerBox {
+            coordinates: Vec<(f64, f64)>,
+            #[serde(rename = "type")]
+            box_type: BoxType,
+        }
 
-    impl From<&Vec<(f64, f64)>> for SerBox {
-        fn from(src: &Vec<(f64, f64)>) -> SerBox {
-            let box_type = if src.len() == 1 {
-                BoxType::Point
-            } else {
-                BoxType::Polygon
-            };
+        #[derive(Serialize)]
+        enum BoxType {
+            Polygon,
+            Point,
+        }
 
-            SerBox {
-                coordinates: src.clone(),
-                box_type,
+        impl From<&Vec<(f64, f64)>> for SerBox {
+            fn from(src: &Vec<(f64, f64)>) -> SerBox {
+                let box_type = if src.len() == 1 {
+                    BoxType::Point
+                } else {
+                    BoxType::Polygon
+                };
+
+                SerBox {
+                    coordinates: src.clone(),
+                    box_type,
+                }
             }
         }
-    }
 
-    let out: SerBox = src.into();
-    out.serialize(ser)
+        let out: SerBox = src.into();
+        out.serialize(ser)
+    }
 }
