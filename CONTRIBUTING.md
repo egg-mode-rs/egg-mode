@@ -23,7 +23,7 @@ mention the API effect of trying to follow a protected user. When documenting [`
 tried just that, to see what would happen, and I included that note in the documentation. If you
 notice such holes in egg-mode documentation, please post an issue or create a pull request!
 
-[`friendships/create`]: https://dev.twitter.com/rest/reference/post/friendships/create
+[`friendships/create`]: https://developer.twitter.com/en/docs/accounts-and-users/follow-search-get-users/api-reference/post-friendships-create
 [`user::follow`]: https://docs.rs/egg-mode/0.14.0/egg_mode/user/fn.follow.html
 
 ## Code Contributions
@@ -79,9 +79,9 @@ return a list of items, and have `since_id`/`max_id` parameters to load various 
 This interaction was wrapped into the respective `Timeline` structs, which handle this pagination
 without the user having to juggle these tweet IDs for basic scenarios.
 
-[retweeters-of]: https://dev.twitter.com/rest/reference/get/statuses/retweeters/ids
-[followers-of]: https://dev.twitter.com/rest/reference/get/followers/list
-[list-ownerships]: https://dev.twitter.com/rest/reference/get/lists/ownerships
+[retweeters-of]: https://developer.twitter.com/en/docs/tweets/post-and-engage/api-reference/get-statuses-retweeters-ids
+[followers-of]: https://developer.twitter.com/en/docs/accounts-and-users/follow-search-get-users/api-reference/get-followers-list
+[list-ownerships]: https://developer.twitter.com/en/docs/accounts-and-users/create-manage-lists/api-reference/get-lists-ownerships
 [CursorIter]: https://docs.rs/egg-mode/0.14.0/egg_mode/cursor/struct.CursorIter.html
 
 If you're adding new endpoints, check to make sure whether they follow one of these patterns. That

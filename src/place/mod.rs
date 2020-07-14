@@ -49,7 +49,7 @@ pub struct Place {
     ///Map of miscellaneous information about this place. See [Twitter's documentation][attrib] for
     ///details and common attribute keys.
     ///
-    ///[attrib]: https://dev.twitter.com/overview/api/places#attributes
+    ///[attrib]: https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/geo-objects#place
     pub attributes: HashMap<String, String>,
     ///A bounding box of latitude/longitude coordinates that encloses this place.
     #[serde(with = "serde_bounding_box")]
@@ -295,7 +295,7 @@ impl SearchBuilder {
     ///this search, if you know them. This function may be called multiple times with different
     ///`attribute_key` values to combine attribute search parameters.
     ///
-    ///[attrs]: https://dev.twitter.com/overview/api/places#attributes
+    ///[attrs]: https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/geo-objects#place
     ///
     ///For example, `.attribute("street_address", "123 Main St")` searches for places with the
     ///given street address.

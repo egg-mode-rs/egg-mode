@@ -126,7 +126,7 @@ pub async fn rate_limit_status_raw(token: &auth::Token) -> Result<Response<serde
 ///fields, treat the whole URL as if it were as long as the number of characters given in this
 ///struct.
 ///
-///[t.co URLs]: https://dev.twitter.com/overview/t.co
+///[t.co URLs]: https://developer.twitter.com/en/docs/basics/tco
 ///
 ///Finally, loading `non_username_paths` allows you to handle `twitter.com/[name]` links as if they
 ///were a user mention, while still keeping site-level links working properly.

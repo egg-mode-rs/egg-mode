@@ -7,7 +7,7 @@ alongside them.
 I've grouped them by API heading, then by a rough category and data structure. Endpoints that just
 return a list of IDs of something are grouped in with the rest of the main structure's list.
 
-## [OAuth](https://dev.twitter.com/oauth/overview)
+## [OAuth](https://developer.twitter.com/en/docs/basics/authentication/oauth-1-0a)
 
 - [x] oauth/request\_token (`request_token`)
 - [x] oauth/authenticate (`authenticate_url`)
@@ -16,7 +16,7 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [x] oauth2/token (`bearer_token`)
 - [x] oauth2/invalidate\_token (`invalidate_bearer`)
 
-## [Public API](https://dev.twitter.com/rest/public)
+## [Public API](https://developer.twitter.com/en/docs/api-reference-index)
 
 ### Statuses
 
@@ -161,7 +161,7 @@ return a list of IDs of something are grouped in with the rest of the main struc
 
 - [x] account/verify\_credentials (`verify_tokens`)
 
-## [Media API](https://dev.twitter.com/rest/media)
+## [Media API](https://developer.twitter.com/en/docs/media/upload-media/api-reference)
 
 - [x] media/upload (INIT) (`media::UploadFuture`)
 - [x] media/upload (APPEND) (`media::UploadFuture`)
@@ -169,7 +169,7 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [x] media/upload (STATUS) (`media::UploadFuture`)
 - [x] media/metadata/create (`media::UploadBuilder::alt_text`)
 
-## [Collections API](https://dev.twitter.com/rest/collections)
+## [Collections API](https://developer.twitter.com/en/docs/tweets/curate-a-collection/api-reference)
 
 - [ ] collections/list
 - [ ] collections/show
@@ -182,7 +182,7 @@ return a list of IDs of something are grouped in with the rest of the main struc
 - [ ] collections/entries/curate
 - [ ] collections/entries/move
 
-## [Streaming API](https://dev.twitter.com/streaming/overview)
+## [Streaming API](https://developer.twitter.com/en/docs/tweets/sample-realtime/api-reference)
 
 The firehose is unavailable to the general public, so I don't plan to implement it unless asked.
 (It shouldn't be much different from the other streams, though.)
