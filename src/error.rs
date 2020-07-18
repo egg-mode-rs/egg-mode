@@ -65,7 +65,7 @@ pub struct TwitterErrorCode {
     ///The numeric error code returned by Twitter. A list of possible error codes can be found in
     ///the [API documentation][error-codes].
     ///
-    ///[error-codes]: https://dev.twitter.com/overview/api/response-codes
+    ///[error-codes]: https://developer.twitter.com/en/docs/basics/response-codes
     pub code: i32,
 }
 

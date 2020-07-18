@@ -112,10 +112,10 @@ impl From<String> for UserID {
 round_trip! { raw::RawTwitterUser,
     /// Represents a Twitter user.
     ///
-    /// Field-level documentation is mostly ripped wholesale from [Twitter's user
-    /// documentation][api-user].
+    /// Field-level documentation is mostly ripped wholesale from the previous
+    /// edition of [Twitter's user documentation][api-user].
     ///
-    /// [api-user]: https://dev.twitter.com/overview/api/users
+    /// [api-user]: https://web.archive.org/web/20161114173522/https://dev.twitter.com/overview/api/users
     ///
     /// The fields present in this struct can be divided up into a few sections: Profile Information and
     /// Settings.
@@ -232,17 +232,17 @@ round_trip! { raw::RawTwitterUser,
         /// This is a base URL that a size specifier can be appended onto to get variously
         /// sized images, with size specifiers according to [Profile Images and Banners][profile-img].
         ///
-        /// [profile-img]: https://dev.twitter.com/overview/general/user-profile-images-and-banners
+        /// [profile-img]: https://developer.twitter.com/en/docs/accounts-and-users/user-profile-images-and-banners
         pub profile_banner_url: Option<String>,
         /// A URL pointing to the user's avatar image. Uses HTTP as the protocol. Size
         /// specifiers can be used according to [Profile Images and Banners][profile-img].
         ///
-        /// [profile-img]: https://dev.twitter.com/overview/general/user-profile-images-and-banners
+        /// [profile-img]: https://developer.twitter.com/en/docs/accounts-and-users/user-profile-images-and-banners
         pub profile_image_url: String,
         /// A URL pointing to the user's avatar image. Uses HTTPS as the protocol. Size
         /// specifiers can be used according to [Profile Images and Banners][profile-img].
         ///
-        /// [profile-img]: https://dev.twitter.com/overview/general/user-profile-images-and-banners
+        /// [profile-img]: https://developer.twitter.com/en/docs/accounts-and-users/user-profile-images-and-banners
         pub profile_image_url_https: String,
         /// The hex color chosen by the user to display links in the Twitter UI.
         pub profile_link_color: String,
@@ -277,7 +277,7 @@ round_trip! { raw::RawTwitterUser,
         /// "Perspectival" items within this tweet that depend on the authenticating user
         /// [may not be completely reliable][stale-embed] in this embed.
         ///
-        /// [stale-embed]: https://dev.twitter.com/docs/faq/basics/why-are-embedded-objects-stale-or-inaccurate
+        /// [stale-embed]: https://web.archive.org/web/20160617182407/https://dev.twitter.com/faq#41
         pub status: Option<Box<tweet::Tweet>>,
         /// The number of tweets (including retweets) posted by this user.
         pub statuses_count: i32,

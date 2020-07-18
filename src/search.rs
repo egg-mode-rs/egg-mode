@@ -41,8 +41,8 @@
 //! page][search-place]. A future version of egg-mode might break these options into further
 //! methods on `SearchBuilder`.
 //!
-//! [search-doc]: https://dev.twitter.com/rest/public/search
-//! [search-place]: https://dev.twitter.com/rest/public/search-by-place
+//! [search-doc]: https://developer.twitter.com/en/docs/tweets/search/api-reference/get-search-tweets
+//! [search-place]: https://developer.twitter.com/en/docs/tweets/search/guides/tweets-by-place
 
 use std::fmt;
 

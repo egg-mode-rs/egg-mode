@@ -9,10 +9,10 @@
 //! `HashtagEntity` describes a hashtag or stock symbol extracted from a tweet.
 //!
 //! For more information on the data in these structures, see Twitter's documentation for
-//! [Entities][] and [Entities in Objects][obj].
+//! [Entities Object][ent] and [Extended Entities Object][ext-ent].
 //!
-//! [Entities]: https://dev.twitter.com/overview/api/entities
-//! [obj]: https://dev.twitter.com/overview/api/entities-in-twitter-objects
+//! [ent]: https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/entities-object
+//! [ext-ent]: https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/extended-entities-object
 //!
 //! ## Entity Ranges
 //!
