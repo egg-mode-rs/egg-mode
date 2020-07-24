@@ -18,15 +18,14 @@
 //!
 //! * `DirectMessage`: The primary representation of a DM as retrieved from Twitter. Contains the
 //!   types `DMEntities`/`Cta`/`QuickReply` as fields.
-//! * `Timeline`: Returned by `list`, this is how you load a user's Direct Messages. Contains
-//!   adapters to consume the collection as a `Stream` or to load it into a `DMConversations`
-//!   collection.
+//! * `DMConversations`: Collection returned by `ActivityCursorIter::into_conversations` that sorts
+//!   a user's direct messages based on who they're talking to.
 //! * `DraftMessage`: As DMs have many optional parameters when creating them, this builder struct
 //!   allows you to build up a DM before sending it.
 //!
 //! ## Functions
 //!
-//! * `list`: This creates a `Timeline` struct to load a user's Direct Messages.
+//! * `list`: This creates a `ActivityCursorIter` struct to load a user's Direct Messages.
 //! * `show`: This allows you to load a single DM from its ID.
 //! * `delete`: This allows you to delete a DM from a user's own views. Note that it will not
 //!   delete it entirely from the system; the recipient will still have a copy of the message.
@@ -37,12 +36,8 @@
 
 use std::borrow::Cow;
 use std::collections::{HashMap, VecDeque};
-use std::future::Future;
 
 use chrono;
-use futures::FutureExt;
-use futures::stream::{self, Stream, StreamExt, TryStreamExt};
-use hyper::{Body, Request};
 use serde::{Serialize, Deserialize};
 
 use crate::common::*;
@@ -201,215 +196,14 @@ pub struct QuickReply {
     pub metadata: String,
 }
 
-/// Helper struct to navigate collections of direct messages by tracking the status of Twitter's
-/// cursor references.
-///
-/// The API of the Direct Message `Timeline` differs from the Tweet `Timeline`, in that Twitter
-/// returns a "cursor" ID instead of paging through results by asking for messages before or after
-/// a certain ID. It's not a strict `CursorIter`, though, in that there is no "previous cursor"
-/// ID given by Twitter; messages are loaded one-way, from newest to oldest.
-///
-/// To start using a `Timeline`, call `list` to set one up. Before starting, you can call
-/// `with_page_size` to set how many messages to ask for at once. Then use `start` and `next_page`
-/// to load messages one page at a time.
-///
-/// ```no_run
-/// # #[tokio::main]
-/// # async fn main() {
-/// # let token: egg_mode::Token = unimplemented!();
-/// let timeline = egg_mode::direct::list(&token).with_page_size(50);
-/// let mut messages = timeline.start().await.unwrap();
-///
-/// while timeline.next_cursor.is_some() {
-///     let next_page = timeline.next_page().await.unwrap();
-///     messages.extend(next_page.response);
-/// }
-/// # }
-/// ```
-///
-/// An adapter is provided which converts a `Timeline` into a `futures::stream::Stream` which
-/// yields one message at a time and lazily loads each page as needed. As the stream's `Item` is a
-/// `Result` which can express the error caused by loading the next page, it also implements
-/// `futures::stream::TryStream` as well. The previous example can also be expressed like this:
-///
-/// ```no_run
-/// use egg_mode::Response;
-/// use egg_mode::direct::DirectMessage;
-/// use futures::stream::TryStreamExt;
-/// # #[tokio::main]
-/// # async fn main() {
-/// # let token: egg_mode::Token = unimplemented!();
-/// let timeline = egg_mode::direct::list(&token).with_page_size(50);
-/// let messages = timeline.into_stream()
-///                        .try_collect::<Vec<Response<DirectMessage>>>()
-///                        .await
-///                        .unwrap();
-/// # }
-/// ```
-///
-/// In addition, an adapter is available which loads all available messages and sorts them into
-/// "conversations" between the authenticated user and other users. The `into_conversations`
-/// adapter loads all available messages and returns a [`DMConversations`] map after sorting them.
-///
-/// [`DMConversations`]: type.DMConversations.html
-pub struct Timeline {
-    link: &'static str,
-    token: auth::Token,
-    /// The number of messages to request in a single page. The default is 20; the maximum is 50.
-    pub count: u32,
-    /// The string ID that can be used to load the next page of results. A value of `None`
-    /// indicates that either no messages have been loaded yet, or that the most recently loaded
-    /// page is the last page of messages available.
-    pub next_cursor: Option<String>,
-    /// Whether this `Timeline` has been called yet.
-    pub loaded: bool,
-}
-
-impl Timeline {
-    pub(crate) fn new(link: &'static str, token: auth::Token) -> Timeline {
-        Timeline {
-            link,
-            token,
-            count: 20,
-            next_cursor: None,
-            loaded: false,
-        }
-    }
-
-    /// Builder function to set the page size. The default value for the page size is 20; the
-    /// maximum allowed is 50.
-    pub fn with_page_size(self, count: u32) -> Self {
-        Timeline {
-            count,
-            ..self
-        }
-    }
-
-    /// Clears the saved cursor information on this `Timeline`.
-    pub fn reset(&mut self) {
-        self.next_cursor = None;
-        self.loaded = false;
-    }
-
-    fn request(&self, cursor: Option<String>) -> Request<Body> {
-        let params = ParamList::new()
-            .add_param("count", self.count.to_string())
-            .add_opt_param("cursor", cursor);
-
-        get(self.link, &self.token, Some(&params))
-    }
-
-    /// Clear the saved cursor information on this timeline, then return the most recent set of
-    /// messages.
-    pub fn start<'s>(&'s mut self)
-        -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's
-    {
-        self.reset();
-        self.next_page()
-    }
-
-    /// Loads the next page of messages, setting the `next_cursor` to the one received from
-    /// Twitter.
-    pub fn next_page<'s>(&'s mut self)
-        -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's
-    {
-        let next_cursor = self.next_cursor.take();
-        let req = self.request(next_cursor);
-        let loader = request_with_json_response(req);
-        loader.map(
-            move |resp: Result<Response<raw::EventCursor>, error::Error>| {
-                let mut resp = resp?;
-                self.loaded = true;
-                self.next_cursor = resp.next_cursor.take();
-                Ok(Response::into(resp))
-            }
-        )
-    }
-
-    /// Converts this `Timeline` into a `Stream` of direct messages, which automatically loads the
-    /// next page as needed.
-    pub fn into_stream(self)
-        -> impl Stream<Item = Result<Response<DirectMessage>, error::Error>>
-    {
-        stream::try_unfold(self, |mut timeline| async move {
-            if timeline.loaded && timeline.next_cursor.is_none() {
-                Ok::<_, error::Error>(None)
-            } else {
-                let page = timeline.next_page().await?;
-                Ok(Some((page, timeline)))
-            }
-        }).map_ok(|page| stream::iter(page).map(Ok::<_, error::Error>)).try_flatten()
-    }
-
-    /// Loads all the direct messages from this `Timeline` and sorts them into a `DMConversations`
-    /// map.
-    ///
-    /// This adapter is a convenient way to sort all of a user's messages (from the last 30 days)
-    /// into a familiar user-interface pattern of a list of conversations between the authenticated
-    /// user and a specific other user. This function first pulls all the available messages, then
-    /// sorts them into a set of threads by matching them against which user the authenticated user
-    /// is messaging.
-    ///
-    /// If there are more messages available than can be loaded without hitting the rate limit (15
-    /// calls to the `list` endpoint per 15 minutes), then this function will stop once it receives
-    /// a rate-limit error and sort the messages it received.
-    pub async fn into_conversations(mut self) -> Result<DMConversations, error::Error> {
-        let mut dms: Vec<DirectMessage> = vec![];
-        while !self.loaded || self.next_cursor.is_some() {
-            match self.next_page().await {
-                Ok(page) => dms.extend(page.into_iter().map(|r| r.response)),
-                Err(error::Error::RateLimit(_)) => break,
-                Err(e) => return Err(e),
-            }
-        }
-        let mut conversations = HashMap::new();
-        let me_id = if let Some(dm) = dms.first() {
-            if dm.source_app.is_some() {
-                // since the source app info is only populated when the authenticated user sent the
-                // message, we know that this message was sent by the authenticated user
-                dm.sender_id
-            } else {
-                dm.recipient_id
-            }
-        } else {
-            // no messages, nothing to sort
-            return Ok(conversations);
-        };
-
-        for dm in dms {
-            let entry = match (dm.sender_id == me_id, dm.recipient_id == me_id) {
-                (true, true) => {
-                    // if the sender and recipient are the same - and they match the authenticated
-                    // user - then it's the listing of "messages to self"
-                    conversations.entry(me_id).or_default()
-                }
-                (true, false) => {
-                    conversations.entry(dm.recipient_id).or_default()
-                }
-                (false, true) => {
-                    conversations.entry(dm.sender_id).or_default()
-                }
-                (false, false) => {
-                    return Err(error::Error::InvalidResponse(
-                            "messages activity contains disjoint conversations",
-                            None));
-                }
-            };
-            entry.push(dm);
-        }
-
-        Ok(conversations)
-    }
-}
-
 /// Wrapper around a collection of direct messages, sorted by their recipient.
 ///
 /// The mapping exposed here is from a User ID to a listing of direct messages between the
 /// authenticated user and that user. Messages sent from the authenticated user to themself are
 /// sorted under the user's own ID. This map is returned by the `into_conversations` adapter on
-/// [`Timeline`].
+/// [`ActivityCursorIter`].
 ///
-/// [`Timeline`]: struct.Timeline.html
+/// [`ActivityCursorIter`]: ../cursor/struct.ActivityCursorIter.html
 pub type DMConversations = HashMap<u64, Vec<DirectMessage>>;
 
 /// Represents a direct message before it is sent.

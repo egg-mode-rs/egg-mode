@@ -13,6 +13,7 @@ use hyper::{Body, Request};
 use futures::FutureExt;
 use futures::stream::{self, Stream, StreamExt, TryStreamExt};
 use serde::{de::DeserializeOwned, Deserialize};
+use std::collections::HashMap;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
@@ -20,7 +21,7 @@ use std::task::{Context, Poll};
 
 use crate::common::*;
 use crate::error::{self, Result};
-use crate::{auth, list, user};
+use crate::{auth, direct, list, user};
 
 // TODO: refactor the Cursor trait into a CursorItem trait to echo ActivityCursor
 
@@ -393,6 +394,57 @@ pub trait ActivityItem: Sized {
 }
 
 /// Represents a handle to a paginated list of items on the Account Activity API.
+///
+/// Paginated APIs in the Account Activity API, used by Direct Message endpoints, differ from APIs
+/// like `tweet::home_timeline` in that Twitter returns a "cursor" ID instead of paging through
+/// results by asking for messages before or after a certain ID. It's not a strict `CursorIter`,
+/// though, in that there is no "previous cursor" ID given by Twitter; messages are loaded one-way,
+/// from newest to oldest.
+///
+/// To start using an `ActivityCursorIter`, call a function that returns one to set one up, like
+/// `direct::list`. Before starting, you can call `with_page_size` to set how many messages to ask
+/// for at once. Then use `start` and `next_page` to load messages one page at a time.
+///
+/// ```no_run
+/// # #[tokio::main]
+/// # async fn main() {
+/// # let token: egg_mode::Token = unimplemented!();
+/// let timeline = egg_mode::direct::list(&token).with_page_size(50);
+/// let mut messages = timeline.start().await.unwrap();
+///
+/// while timeline.next_cursor.is_some() {
+///     let next_page = timeline.next_page().await.unwrap();
+///     messages.extend(next_page.response);
+/// }
+/// # }
+/// ```
+///
+/// An adapter is provided which converts a `ActivityCursorIter` into a `futures::stream::Stream`
+/// which yields one message at a time and lazily loads each page as needed. As the stream's `Item`
+/// is a `Result` which can express the error caused by loading the next page, it also implements
+/// `futures::stream::TryStream` as well. The previous example can also be expressed like this:
+///
+/// ```no_run
+/// use egg_mode::Response;
+/// use egg_mode::direct::DirectMessage;
+/// use futures::stream::TryStreamExt;
+/// # #[tokio::main]
+/// # async fn main() {
+/// # let token: egg_mode::Token = unimplemented!();
+/// let timeline = egg_mode::direct::list(&token).with_page_size(50);
+/// let messages = timeline.into_stream()
+///                        .try_collect::<Vec<Response<DirectMessage>>>()
+///                        .await
+///                        .unwrap();
+/// # }
+/// ```
+///
+/// In addition, an adapter is available for `ActivityCursorIter`s over direct messages which loads
+/// all available messages and sorts them into "conversations" between the authenticated user and
+/// other users. The `into_conversations` adapter loads all available messages and returns a
+/// [`DMConversations`] map after sorting them.
+///
+/// [`DMConversations`]: ../direct/type.DMConversations.html
 pub struct ActivityCursorIter<CursorItem> {
     url: &'static str,
     token: auth::Token,
@@ -479,5 +531,67 @@ impl<CursorItem: ActivityItem> ActivityCursorIter<CursorItem> {
                 Ok(Some((page, timeline)))
             }
         }).map_ok(|page| stream::iter(page).map(Ok::<_, error::Error>)).try_flatten()
+    }
+}
+
+impl ActivityCursorIter<direct::DirectMessage> {
+    /// Loads all the direct messages from this `ActivityCursorIter` and sorts them into a
+    /// `DMConversations` map.
+    ///
+    /// This adapter is a convenient way to sort all of a user's messages (from the last 30 days)
+    /// into a familiar user-interface pattern of a list of conversations between the authenticated
+    /// user and a specific other user. This function first pulls all the available messages, then
+    /// sorts them into a set of threads by matching them against which user the authenticated user
+    /// is messaging.
+    ///
+    /// If there are more messages available than can be loaded without hitting the rate limit (15
+    /// calls to the `list` endpoint per 15 minutes), then this function will stop once it receives
+    /// a rate-limit error and sort the messages it received.
+    pub async fn into_conversations(mut self) -> Result<direct::DMConversations> {
+        let mut dms: Vec<direct::DirectMessage> = vec![];
+        while !self.loaded || self.next_cursor.is_some() {
+            match self.next_page().await {
+                Ok(page) => dms.extend(page.into_iter().map(|r| r.response)),
+                Err(error::Error::RateLimit(_)) => break,
+                Err(e) => return Err(e),
+            }
+        }
+        let mut conversations = HashMap::new();
+        let me_id = if let Some(dm) = dms.first() {
+            if dm.source_app.is_some() {
+                // since the source app info is only populated when the authenticated user sent the
+                // message, we know that this message was sent by the authenticated user
+                dm.sender_id
+            } else {
+                dm.recipient_id
+            }
+        } else {
+            // no messages, nothing to sort
+            return Ok(conversations);
+        };
+
+        for dm in dms {
+            let entry = match (dm.sender_id == me_id, dm.recipient_id == me_id) {
+                (true, true) => {
+                    // if the sender and recipient are the same - and they match the authenticated
+                    // user - then it's the listing of "messages to self"
+                    conversations.entry(me_id).or_default()
+                }
+                (true, false) => {
+                    conversations.entry(dm.recipient_id).or_default()
+                }
+                (false, true) => {
+                    conversations.entry(dm.sender_id).or_default()
+                }
+                (false, false) => {
+                    return Err(error::Error::InvalidResponse(
+                            "messages activity contains disjoint conversations",
+                            None));
+                }
+            };
+            entry.push(dm);
+        }
+
+        Ok(conversations)
     }
 }
