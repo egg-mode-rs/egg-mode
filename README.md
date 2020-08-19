@@ -47,7 +47,7 @@ this in your `Cargo.toml` instead:
 egg-mode = { version = "0.15", features = ["rustls_webpki"], default-features = false }
 ```
 
-See available methods and tips to get started in the [Documentation][].
+See available methods and tips to get started in the [Documentation](https://docs.rs/egg-mode/).
 
 To authenticate a user and request an access token:
 
