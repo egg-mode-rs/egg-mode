@@ -364,12 +364,17 @@ mod serde_bounding_box {
         D: Deserializer<'de>,
     {
         let s = serde_json::Value::deserialize(ser)?;
-        s.get("coordinates")
-            .and_then(|arr| arr.get(0).cloned())
-            .ok_or_else(|| D::Error::custom("Malformed 'bounding_box' attribute"))
-            .and_then(|inner_arr| {
-                serde_json::from_value::<Vec<(f64, f64)>>(inner_arr).map_err(|e| D::Error::custom(e))
-            })
+        if s.is_null() {
+            Ok(vec![])
+        } else {
+            s.get("coordinates")
+                .and_then(|arr| arr.get(0).cloned())
+                .ok_or_else(|| D::Error::custom("Malformed 'bounding_box' attribute"))
+                .and_then(|inner_arr| {
+                    serde_json::from_value::<Vec<(f64, f64)>>(inner_arr)
+                        .map_err(|e| D::Error::custom(e))
+                })
+        }
     }
 
     pub fn serialize<S>(src: &Vec<(f64, f64)>, ser: S) -> Result<S::Ok, S::Error>
@@ -404,7 +409,11 @@ mod serde_bounding_box {
             }
         }
 
-        let out: SerBox = src.into();
+        let out: Option<SerBox> = if src.is_empty() {
+            None
+        } else {
+            Some(src.into())
+        };
         out.serialize(ser)
     }
 }
