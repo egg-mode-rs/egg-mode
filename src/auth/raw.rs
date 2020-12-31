@@ -236,6 +236,7 @@ impl OAuthParams {
         let mut rng = rand::thread_rng();
         let nonce = ::std::iter::repeat(())
             .map(|()| rng.sample(rand::distributions::Alphanumeric))
+            .map(char::from)
             .take(32)
             .collect::<String>();
         OAuthParams {

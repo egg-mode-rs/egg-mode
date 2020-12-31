@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use structopt::StructOpt;
-use tokio::time::delay_for;
+use tokio::time::sleep;
 
 #[derive(StructOpt)]
 /// A simple CLI for uploading a tweet, optionally with media attched
@@ -62,7 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Some(ProgressInfo::Pending(_)) | Some(ProgressInfo::InProgress(_)) => {
                     print!(".");
                     stdout().flush()?;
-                    delay_for(Duration::from_secs(1)).await;
+                    sleep(Duration::from_secs(1)).await;
                 }
                 Some(ProgressInfo::Failed(err)) => Err(err)?,
             }

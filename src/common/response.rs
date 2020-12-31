@@ -4,12 +4,8 @@
 use crate::error::Error::{self, *};
 use crate::error::{Result, TwitterErrors};
 
-use hyper::client::ResponseFuture;
+use hyper::client::{ResponseFuture, HttpConnector};
 use hyper::{self, Body, Request};
-#[cfg(feature = "hyper-rustls")]
-use hyper_rustls::HttpsConnector;
-#[cfg(feature = "native_tls")]
-use hyper_tls::HttpsConnector;
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json;
 
@@ -148,10 +144,39 @@ impl<T: Iterator> Iterator for ResponseIter<T> {
     }
 }
 
+#[cfg(not(any(feature = "native_tls", feature = "rustls", feature = "rustls_webpki")))]
+compile_error!("Crate `egg_mode` must be compiled with exactly one of the three \
+feature flags `native_tls`, `rustls` or `rustls_webpki` enabled, you attempted to \
+compile `egg_mode` with none of them enabled");
+
+#[cfg(any(
+    all(feature = "native_tls", any(feature = "rustls", feature = "rustls_webpki")),
+    all(feature = "rustls", any(feature = "native_tls", feature = "rustls_webpki")),
+    all(feature = "rustls_webpki", any(feature = "native_tls", feature = "rustls")),
+))]
+compile_error!("features `egg_mode/native_tls`, `egg_mode/rustls` and \
+`egg_mode/rustls_webpki` are mutually exclusive, you attempted to compile `egg_mode` \
+with more than one of these feature flags enabled at the same time");
+
+#[cfg(feature = "native_tls")]
+fn new_https_connector() -> hyper_tls::HttpsConnector<HttpConnector> {
+    hyper_tls::HttpsConnector::new()
+}
+
+#[cfg(feature = "rustls")]
+fn new_https_connector() -> hyper_rustls::HttpsConnector<HttpConnector> {
+    hyper_rustls::HttpsConnector::with_native_roots()
+}
+
+#[cfg(feature = "rustls_webpki")]
+fn new_https_connector() -> hyper_rustls::HttpsConnector<HttpConnector> {
+    hyper_rustls::HttpsConnector::with_webpki_roots()
+}
+
 // n.b. this function is re-exported in the `raw` module - these docs are public!
 /// Converts the given request into a raw `ResponseFuture` from hyper.
 pub fn get_response(request: Request<Body>) -> ResponseFuture {
-    let connector = HttpsConnector::new();
+    let connector = new_https_connector();
     let client = hyper::Client::builder().build(connector);
     client.request(request)
 }
@@ -160,7 +185,7 @@ pub fn get_response(request: Request<Body>) -> ResponseFuture {
 /// Loads the given request, parses the headers and response for potential errors given by Twitter,
 /// and returns the headers and raw bytes returned from the response.
 pub async fn raw_request(request: Request<Body>) -> Result<(Headers, Vec<u8>)> {
-    let connector = HttpsConnector::new();
+    let connector = new_https_connector();
     let client = hyper::Client::builder().build(connector);
     let resp = client.request(request).await?;
     let (parts, body) = resp.into_parts();

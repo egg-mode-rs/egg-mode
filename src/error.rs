@@ -134,7 +134,7 @@ pub enum Error {
     BadStatus(hyper::StatusCode),
     ///The web request experienced an error. The enclosed error was returned from hyper.
     #[error("Network error: {}", _0)]
-    NetError(#[from] hyper::error::Error),
+    NetError(#[from] hyper::Error),
     ///The `native_tls` implementation returned an error. The enclosed error was returned from
     ///`native_tls`.
     #[cfg(feature = "native_tls")]
@@ -155,7 +155,7 @@ pub enum Error {
     ///The tokio `Timer` instance was shut down while waiting on a timer, for example while waiting
     ///for media to be processed by Twitter. The enclosed error was returned from `tokio`.
     #[error("Timer runtime shutdown: {}", _0)]
-    TimerShutdownError(#[from] tokio::time::Error),
+    TimerShutdownError(#[from] tokio::time::error::Error),
     ///An error occurred when reading the value from a response header. The enclused error was
     ///returned from hyper.
     ///
