@@ -3,6 +3,7 @@
 ## Pending
 
 ### Changed
+- Updated tokio to version 1.0
 - The `direct` module has been overhauled to switch it over to the DM Events API
   - `sent` and `received` have been merged into `list`, to match the endpoint
   - `send` has been changed into the `DraftMessage` type, to reflect the new capabilities
