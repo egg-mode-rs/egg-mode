@@ -179,5 +179,5 @@ pub mod stream;
 pub mod tweet;
 pub mod user;
 
-pub use crate::auth::{Token, KeyPair};
-pub use crate::common::{Response, ResponseIter, RateLimit};
+pub use crate::auth::{KeyPair, Token};
+pub use crate::common::{RateLimit, Response, ResponseIter};

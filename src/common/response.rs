@@ -4,7 +4,7 @@
 use crate::error::Error::{self, *};
 use crate::error::{Result, TwitterErrors};
 
-use hyper::client::{ResponseFuture, HttpConnector};
+use hyper::client::{HttpConnector, ResponseFuture};
 use hyper::{self, Body, Request};
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json;
@@ -87,7 +87,7 @@ impl<T> Response<T> {
     ///contained `T`.
     pub fn try_map<F, U, E>(src: Response<T>, fun: F) -> std::result::Result<Response<U>, E>
     where
-        F: FnOnce(T) -> std::result::Result<U, E>
+        F: FnOnce(T) -> std::result::Result<U, E>,
     {
         Ok(Response {
             rate_limit_status: src.rate_limit_status,
@@ -119,7 +119,7 @@ impl<T: IntoIterator> IntoIterator for Response<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         ResponseIter {
-            it: Response::map(self, |it| it.into_iter())
+            it: Response::map(self, |it| it.into_iter()),
         }
     }
 }
@@ -145,18 +145,31 @@ impl<T: Iterator> Iterator for ResponseIter<T> {
 }
 
 #[cfg(not(any(feature = "native_tls", feature = "rustls", feature = "rustls_webpki")))]
-compile_error!("Crate `egg_mode` must be compiled with exactly one of the three \
+compile_error!(
+    "Crate `egg_mode` must be compiled with exactly one of the three \
 feature flags `native_tls`, `rustls` or `rustls_webpki` enabled, you attempted to \
-compile `egg_mode` with none of them enabled");
+compile `egg_mode` with none of them enabled"
+);
 
 #[cfg(any(
-    all(feature = "native_tls", any(feature = "rustls", feature = "rustls_webpki")),
-    all(feature = "rustls", any(feature = "native_tls", feature = "rustls_webpki")),
-    all(feature = "rustls_webpki", any(feature = "native_tls", feature = "rustls")),
+    all(
+        feature = "native_tls",
+        any(feature = "rustls", feature = "rustls_webpki")
+    ),
+    all(
+        feature = "rustls",
+        any(feature = "native_tls", feature = "rustls_webpki")
+    ),
+    all(
+        feature = "rustls_webpki",
+        any(feature = "native_tls", feature = "rustls")
+    ),
 ))]
-compile_error!("features `egg_mode/native_tls`, `egg_mode/rustls` and \
+compile_error!(
+    "features `egg_mode/native_tls`, `egg_mode/rustls` and \
 `egg_mode/rustls_webpki` are mutually exclusive, you attempted to compile `egg_mode` \
-with more than one of these feature flags enabled at the same time");
+with more than one of these feature flags enabled at the same time"
+);
 
 #[cfg(feature = "native_tls")]
 fn new_https_connector() -> hyper_tls::HttpsConnector<HttpConnector> {
