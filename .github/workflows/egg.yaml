@@ -19,7 +19,7 @@ jobs:
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.39.0
+          toolchain: 1.44.0
 
       - name: Prep tests
         shell: bash
