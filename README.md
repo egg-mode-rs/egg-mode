@@ -11,8 +11,6 @@ interact with the Twitter API. Parts of this library are added as a convenience 
 mechanisms; for example, cursored lists of users and tweets can be used as an iterator in addition
 to being able to manually load a page at a time.
 
-Starting in version `v0.14`, egg-mode uses the `async/await` syntax and therefore requires Rust
-**v1.39.0+**.
 
 [TODO.md]: https://github.com/egg-mode-rs/egg-mode/blob/master/TODO.md
 
@@ -22,12 +20,17 @@ counting and mention/hashtag/url extraction. That has since been extracted into 
 
 [egg-mode-text]: https://github.com/egg-mode-rs/egg-mode-text
 
+## MSRV
 
-To start using this library, put the following into your Cargo.toml:
+Rust **1.44** or higher
+
+## Usage
+
+Add the following to your Cargo.toml:
 
 ```TOML
 [dependencies]
-egg-mode = "0.15"
+egg-mode = "0.16"
 ```
 
 By default, `egg-mode` uses `native-tls` for encryption, but also supports `rustls`.
@@ -48,6 +51,14 @@ egg-mode = { version = "0.15", features = ["rustls_webpki"], default-features = 
 ```
 
 See available methods and tips to get started in the [Documentation](https://docs.rs/egg-mode/).
+
+### Authentication
+
+To use the twitter API, you must first create an 'application' within twitter's developer portal.
+We recommened having a browse of the
+[Getting started guide](https://developer.twitter.com/en/docs/twitter-api/getting-started/guide)
+before proceeding. Once you have registered your app, you will be given a consumer key and secret
+(also known as API key and secret), which you can use to log in.
 
 To authenticate a user and request an access token:
 
@@ -83,12 +94,18 @@ let rustlang = egg_mode::user::show("rustlang", &token).await.unwrap();
 println!("{} (@{})", rustlang.name, rustlang.screen_name);
 ```
 
-For more examples of how to use this library, check the files in the examples folder. The
-authentication code for most of them is in `examples/common/mod.rs`, though that's also mostly
-wrapped up in code to write the access token to disk and load it back in. `examples/bearer.rs` is an
-example of using application-only authentication to get a Bearer token and use it to load a user's
-posts. Other examples showcase a handful of actions from their related module. To run any of the
-examples for yourself, see the notes in `examples/common/mod.rs`.
+### Examples
+
+There are more examples in `examples` folder. To run them you will need to create two files
+`examples/common/consumer_key` and `examples/common/consumer_secret` containing your consumer
+key and secret respectively.
+
+The authentication code for most of them is in `examples/common/mod.rs`, though that's also mostly
+wrapped up in code to write the access token to disk and load it back in.
+
+`examples/bearer.rs` is an example of using application-only authentication to get a Bearer token
+and use it to load a user's posts. Other examples showcase a handful of actions from their related
+module.
 
 If you've found egg-mode useful, or just want to communicate your first impressions of it, please
 [track me down on Twitter][qm-twitter] and let me know!
