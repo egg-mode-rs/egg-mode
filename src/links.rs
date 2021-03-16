@@ -100,6 +100,15 @@ pub mod lists {
     pub const UPDATE: &'static str = "https://api.twitter.com/1.1/lists/update.json";
 }
 
+pub mod account {
+    pub const UPDATE_PROFILE_IMAGE: &'static str =
+        "https://api.twitter.com/1.1/account/update_profile_image.json";
+    pub const UPDATE_PROFILE_BNNER: &'static str =
+        "https://api.twitter.com/1.1/account/update_profile_banner.json";
+    pub const UPDATE_PROFILE: &'static str =
+        "https://api.twitter.com/1.1/account/update_profile.json";
+}
+
 pub mod place {
     pub const SHOW_STEM: &'static str = "https://api.twitter.com/1.1/geo/id";
     pub const REVERSE_GEOCODE: &'static str =
@@ -111,9 +120,12 @@ pub mod direct {
     pub const SHOW: &'static str = "https://api.twitter.com/1.1/direct_messages/events/show.json";
     pub const LIST: &'static str = "https://api.twitter.com/1.1/direct_messages/events/list.json";
     pub const SEND: &'static str = "https://api.twitter.com/1.1/direct_messages/events/new.json";
-    pub const DELETE: &'static str = "https://api.twitter.com/1.1/direct_messages/events/destroy.json";
-    pub const MARK_READ: &'static str = "https://api.twitter.com/1.1/direct_messages/mark_read.json";
-    pub const INDICATE_TYPING: &'static str = "https://api.twitter.com/1.1/direct_messages/indicate_typing.json";
+    pub const DELETE: &'static str =
+        "https://api.twitter.com/1.1/direct_messages/events/destroy.json";
+    pub const MARK_READ: &'static str =
+        "https://api.twitter.com/1.1/direct_messages/mark_read.json";
+    pub const INDICATE_TYPING: &'static str =
+        "https://api.twitter.com/1.1/direct_messages/indicate_typing.json";
 }
 
 pub mod service {
