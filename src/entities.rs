@@ -111,7 +111,7 @@ pub struct MediaEntity {
 }
 
 ///Represents the types of media that can be attached to a tweet.
-#[derive(Debug, Copy, Clone, Deserialize, Serialize)]
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
 pub enum MediaType {
     ///A static image.
     #[serde(rename = "photo")]
@@ -138,7 +138,7 @@ pub struct MediaSizes {
 }
 
 ///Represents how an image has been resized for a given size variant.
-#[derive(Debug, Copy, Clone, Deserialize, Serialize)]
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
 pub enum ResizeMode {
     ///The media was resized to fit one dimension, keeping its aspect ratio.
     #[serde(rename = "fit")]
