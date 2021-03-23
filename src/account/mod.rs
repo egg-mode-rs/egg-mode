@@ -68,7 +68,7 @@ pub async fn update_profile_banner(
     banner: &[u8],
     options: Option<ProfileBannerOption>,
     token: &auth::Token,
-) -> error::Result<Response<TwitterUser>> {
+) -> error::Result<Response<ProfileBanner>> {
     let params = match options {
         Some(o) => ParamList::new()
             .add_param("banner", base64::encode(banner))
