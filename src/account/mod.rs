@@ -3,12 +3,45 @@ use crate::common::ParamList;
 use crate::common::*;
 use crate::{auth, error, links, user::TwitterUser};
 
+use serde::{Deserialize, Serialize};
+
 /// TODO
-pub struct ProfileBanner {
+pub struct ProfileBannerOption {
     pub width: Option<String>,
     pub height: Option<String>,
     pub offset_left: Option<String>,
     pub offset_top: Option<String>,
+}
+
+/// TODO
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProfileBanner {
+    sizes: Sizes,
+}
+
+/// TODO
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Sizes {
+    ipad: ImageSize,
+    ipad_retina: ImageSize,
+    web: ImageSize,
+    web_retina: ImageSize,
+    mobile: ImageSize,
+    mobile_retina: ImageSize,
+    #[serde(rename = "300x100")]
+    s300x100: ImageSize,
+    #[serde(rename = "600x200")]
+    s600x200: ImageSize,
+    #[serde(rename = "1500x500")]
+    s1500x500: ImageSize,
+}
+
+/// TODO
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImageSize {
+    pub h: String,
+    pub w: String,
+    pub url: String,
 }
 
 /// TODO
@@ -33,7 +66,7 @@ pub async fn update_profile_image(
 /// TODO
 pub async fn update_profile_banner(
     banner: &[u8],
-    options: Option<ProfileBanner>,
+    options: Option<ProfileBannerOption>,
     token: &auth::Token,
 ) -> error::Result<Response<TwitterUser>> {
     let params = match options {
