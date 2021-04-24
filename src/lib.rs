@@ -178,6 +178,7 @@ pub mod service;
 pub mod stream;
 pub mod tweet;
 pub mod user;
+pub mod trend;
 
 pub use crate::auth::{Token, KeyPair};
 pub use crate::common::{Response, ResponseIter, RateLimit};
