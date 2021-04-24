@@ -21,7 +21,7 @@ round_trip! { raw::RawTrendLocation,
         pub country: String,
         ///short alphabetic or numeric geographical codes developed to represent countries
         ///and dependent areas.
-        pub country_code: String,
+        pub country_code: Option<String>,
         ///The location with trending topic information.
         pub name: String,
         ///The woeid of the parent place.

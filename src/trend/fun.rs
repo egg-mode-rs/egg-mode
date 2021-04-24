@@ -18,3 +18,9 @@ pub async fn closest(
 
     request_with_json_response(req).await
 }
+
+///Returns the locations that Twitter has trending topic information for.
+pub async fn available(token: &auth::Token) -> Result<Response<Vec<TrendLocation>>> {
+    let req = get(links::trend::AVAILABLE, token, None);
+    request_with_json_response(req).await
+}
