@@ -143,4 +143,5 @@ pub mod stream {
 
 pub mod trend {
     pub const CLOSEST: &'static str = "https://api.twitter.com/1.1/trends/closest.json";
+    pub const AVAILABLE: &'static str = "https://api.twitter.com/1.1/trends/available.json";
 }

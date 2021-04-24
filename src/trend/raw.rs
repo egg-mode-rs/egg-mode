@@ -6,7 +6,7 @@ use super::PlaceType;
 #[serde(rename_all = "camelCase")]
 pub struct RawTrendLocation {
     pub country: String,
-    pub country_code: String,
+    pub country_code: Option<String>,
     pub name: String,
     pub parentid: u32,
     pub place_type: PlaceType,
