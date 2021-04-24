@@ -140,3 +140,7 @@ pub mod stream {
     pub const SAMPLE: &'static str = "https://stream.twitter.com/1.1/statuses/sample.json";
     pub const FILTER: &'static str = "https://stream.twitter.com/1.1/statuses/filter.json";
 }
+
+pub mod trend {
+    pub const CLOSEST: &'static str = "https://api.twitter.com/1.1/trends/closest.json";
+}
