@@ -356,8 +356,8 @@ impl fmt::Display for Accuracy {
 }
 
 mod serde_bounding_box {
-    use serde::{Serialize, Deserialize, Serializer, Deserializer};
     use serde::de::Error;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     pub fn deserialize<'de, D>(ser: D) -> Result<Vec<(f64, f64)>, D::Error>
     where
@@ -381,39 +381,36 @@ mod serde_bounding_box {
     where
         S: Serializer,
     {
-        #[derive(Serialize)]
-        struct SerBox {
-            coordinates: Vec<(f64, f64)>,
-            #[serde(rename = "type")]
-            box_type: BoxType,
-        }
-
-        #[derive(Serialize)]
-        enum BoxType {
-            Polygon,
-            Point,
-        }
-
-        impl From<&Vec<(f64, f64)>> for SerBox {
-            fn from(src: &Vec<(f64, f64)>) -> SerBox {
-                let box_type = if src.len() == 1 {
-                    BoxType::Point
-                } else {
-                    BoxType::Polygon
-                };
-
-                SerBox {
-                    coordinates: src.clone(),
-                    box_type,
-                }
-            }
-        }
-
-        let out: Option<SerBox> = if src.is_empty() {
+        let value = if src.is_empty() {
             None
+        } else if src.len() == 1 {
+            Some(serde_json::json!({ "coordinates": src, "type": "Point" }))
         } else {
-            Some(src.into())
+            Some(serde_json::json!({ "coordinates": [src], "type": "Polygon" }))
         };
-        out.serialize(ser)
+        value.serialize(ser)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::common::tests::load_file;
+
+    #[derive(Debug, Clone, Deserialize, Serialize)]
+    struct BoundingBox {
+        #[serde(with = "serde_bounding_box")]
+        bounding_box: Vec<(f64, f64)>,
+    }
+
+    #[test]
+    fn parse_and_serialize_polygon_bounding_box() {
+        let content = load_file("sample_payloads/bounding_box-polygon.json");
+        let bounding_box = ::serde_json::from_str::<BoundingBox>(&content).unwrap();
+        assert_eq!(bounding_box.bounding_box.len(), 4);
+
+        let raw_value: serde_json::Value = ::serde_json::from_str(&content).unwrap();
+        let serialized_value = ::serde_json::to_value(&bounding_box).unwrap();
+        assert_eq!(raw_value, serialized_value);
     }
 }
