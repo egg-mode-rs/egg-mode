@@ -53,7 +53,7 @@ use futures::Stream;
 use hyper::client::ResponseFuture;
 use hyper::{Body, Request};
 use serde::de::Error;
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json;
 
 use crate::auth::Token;

@@ -187,7 +187,7 @@
 use std::borrow::Cow;
 
 use hyper::Method;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json;
 
 use crate::common::*;

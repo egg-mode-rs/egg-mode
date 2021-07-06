@@ -78,11 +78,11 @@ use crate::stream::TwitterStream;
 
 use crate::tweet::Timeline as TweetTimeline;
 
-pub use crate::common::ParamList;
 pub use crate::common::Headers;
+pub use crate::common::ParamList;
 
-pub use crate::auth::raw::get as request_get;
 pub use crate::auth::raw::delete as request_delete;
+pub use crate::auth::raw::get as request_get;
 pub use crate::auth::raw::post as request_post;
 pub use crate::auth::raw::post_json as request_post_json;
 
@@ -104,7 +104,7 @@ pub use crate::auth::raw::post_json as request_post_json;
 pub fn request_as_tweet_timeline(
     url: &'static str,
     token: &Token,
-    params: Option<ParamList>
+    params: Option<ParamList>,
 ) -> TweetTimeline {
     TweetTimeline::new(url, params, token)
 }
@@ -144,15 +144,15 @@ pub fn request_as_cursor_iter<T: cursor::Cursor + serde::de::DeserializeOwned>(
     url: &'static str,
     token: &Token,
     params: Option<ParamList>,
-    page_size: Option<i32>
+    page_size: Option<i32>,
 ) -> cursor::CursorIter<T> {
     cursor::CursorIter::new(url, token, params, page_size)
 }
 
 pub use crate::common::get_response as response_future;
 pub use crate::common::raw_request as response_raw_bytes;
-pub use crate::common::request_with_json_response as response_json;
 pub use crate::common::request_with_empty_response as response_empty;
+pub use crate::common::request_with_json_response as response_json;
 
 /// Converts the given request into a `TwitterStream`.
 ///

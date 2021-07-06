@@ -63,7 +63,7 @@ use std::task::{Context, Poll};
 use chrono;
 use hyper::{Body, Request};
 use regex::Regex;
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::common::*;
 use crate::error::{Error::InvalidResponse, Result};

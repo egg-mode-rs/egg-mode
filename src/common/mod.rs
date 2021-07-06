@@ -383,7 +383,8 @@ impl ParamList {
     /// The key/value pairs are printed as `key1=value1&key2=value2`, with all keys and values
     /// being percent-encoded according to Twitter's requirements.
     pub fn to_urlencoded(&self) -> String {
-        self.0.iter()
+        self.0
+            .iter()
             .map(|(k, v)| format!("{}={}", percent_encode(k), percent_encode(v)))
             .collect::<Vec<_>>()
             .join("&")
@@ -485,9 +486,9 @@ where
 }
 
 pub mod serde_datetime {
-    use serde::{Serializer, Deserialize, Deserializer};
-    use serde::de::Error;
     use chrono::TimeZone;
+    use serde::de::Error;
+    use serde::{Deserialize, Deserializer, Serializer};
 
     const DATE_FORMAT: &'static str = "%a %b %d %T %z %Y";
 
@@ -511,8 +512,8 @@ pub mod serde_datetime {
 }
 
 pub mod serde_via_string {
-    use serde::{Serializer, Deserialize, Deserializer};
     use serde::de::Error;
+    use serde::{Deserialize, Deserializer, Serializer};
 
     use std::fmt;
 

@@ -356,8 +356,8 @@ impl fmt::Display for Accuracy {
 }
 
 mod serde_bounding_box {
-    use serde::{Serialize, Deserialize, Serializer, Deserializer};
     use serde::de::Error;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     pub fn deserialize<'de, D>(ser: D) -> Result<Vec<(f64, f64)>, D::Error>
     where

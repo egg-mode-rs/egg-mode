@@ -12,7 +12,7 @@ use serde::Deserialize;
 use crate::entities::MediaEntity;
 use crate::tweet::TweetSource;
 
-use super::{DMEntities, Cta, QuickReply, DirectMessage};
+use super::{Cta, DMEntities, DirectMessage, QuickReply};
 
 // n.b. all of the types in this module are re-exported in `raw::types::direct` - these docs are
 // public!
@@ -100,8 +100,7 @@ impl RawDirectMessage {
     /// information is discarded.
     ///
     /// This conversion also calls `translate_indices` before constructing the `DirectMessage`.
-    pub fn into_dm(mut self, apps: &HashMap<String, TweetSource>) -> DirectMessage
-    {
+    pub fn into_dm(mut self, apps: &HashMap<String, TweetSource>) -> DirectMessage {
         self.translate_indices();
         let source_app = self.source_app_id.and_then(|id| apps.get(&id).cloned());
 
@@ -140,8 +139,16 @@ impl From<DMEvent> for RawDirectMessage {
             sender_id: ev.message_create.sender_id,
             source_app_id: ev.message_create.source_app_id,
             recipient_id: ev.message_create.target.recipient_id,
-            quick_replies: ev.message_create.message_data.quick_reply.map(|q| q.options),
-            quick_reply_response: ev.message_create.message_data.quick_reply_response.map(|q| q.metadata),
+            quick_replies: ev
+                .message_create
+                .message_data
+                .quick_reply
+                .map(|q| q.options),
+            quick_reply_response: ev
+                .message_create
+                .message_data
+                .quick_reply_response
+                .map(|q| q.metadata),
             translated: false,
         }
     }
@@ -177,8 +184,8 @@ pub struct EventCursor {
 /// a broader event envelope. This enum mainly encapsulates the requirement that direct messages
 /// are returned as the `message_create` event type with the proper data structure.
 #[derive(Deserialize)]
-#[serde(tag="type")]
-#[serde(rename_all="snake_case")]
+#[serde(tag = "type")]
+#[serde(rename_all = "snake_case")]
 pub enum EventType {
     /// A `message_create` event, representing a direct message.
     ///

@@ -10,7 +10,10 @@ mod common;
 async fn main() {
     let c = common::Config::load().await;
 
-    let convos = egg_mode::direct::list(&c.token).into_conversations().await.unwrap();
+    let convos = egg_mode::direct::list(&c.token)
+        .into_conversations()
+        .await
+        .unwrap();
     let mut users = HashMap::new();
 
     for (id, convo) in &convos {

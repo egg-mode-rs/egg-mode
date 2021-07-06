@@ -40,15 +40,15 @@ use std::collections::{HashMap, VecDeque};
 use std::future::Future;
 
 use chrono;
-use futures::FutureExt;
 use futures::stream::{self, Stream, StreamExt, TryStreamExt};
+use futures::FutureExt;
 use hyper::{Body, Request};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::common::*;
-use crate::{auth, entities, error, links, media};
-use crate::user::{self, UserID};
 use crate::tweet::TweetSource;
+use crate::user::{self, UserID};
+use crate::{auth, entities, error, links, media};
 
 mod fun;
 pub(crate) mod raw;
@@ -262,10 +262,7 @@ impl Timeline {
     /// Builder function to set the page size. The default value for the page size is 20; the
     /// maximum allowed is 50.
     pub fn with_page_size(self, count: u32) -> Self {
-        Timeline {
-            count,
-            ..self
-        }
+        Timeline { count, ..self }
     }
 
     /// Clears the saved cursor information on this `Timeline`.
@@ -284,18 +281,18 @@ impl Timeline {
 
     /// Clear the saved cursor information on this timeline, then return the most recent set of
     /// messages.
-    pub fn start<'s>(&'s mut self)
-        -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's
-    {
+    pub fn start<'s>(
+        &'s mut self,
+    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's {
         self.reset();
         self.next_page()
     }
 
     /// Loads the next page of messages, setting the `next_cursor` to the one received from
     /// Twitter.
-    pub fn next_page<'s>(&'s mut self)
-        -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's
-    {
+    pub fn next_page<'s>(
+        &'s mut self,
+    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's {
         let next_cursor = self.next_cursor.take();
         let req = self.request(next_cursor);
         let loader = request_with_json_response(req);
@@ -305,15 +302,13 @@ impl Timeline {
                 self.loaded = true;
                 self.next_cursor = resp.next_cursor.take();
                 Ok(Response::into(resp))
-            }
+            },
         )
     }
 
     /// Converts this `Timeline` into a `Stream` of direct messages, which automatically loads the
     /// next page as needed.
-    pub fn into_stream(self)
-        -> impl Stream<Item = Result<Response<DirectMessage>, error::Error>>
-    {
+    pub fn into_stream(self) -> impl Stream<Item = Result<Response<DirectMessage>, error::Error>> {
         stream::try_unfold(self, |mut timeline| async move {
             if timeline.loaded && timeline.next_cursor.is_none() {
                 Ok::<_, error::Error>(None)
@@ -321,7 +316,9 @@ impl Timeline {
                 let page = timeline.next_page().await?;
                 Ok(Some((page, timeline)))
             }
-        }).map_ok(|page| stream::iter(page).map(Ok::<_, error::Error>)).try_flatten()
+        })
+        .map_ok(|page| stream::iter(page).map(Ok::<_, error::Error>))
+        .try_flatten()
     }
 
     /// Loads all the direct messages from this `Timeline` and sorts them into a `DMConversations`
@@ -366,16 +363,13 @@ impl Timeline {
                     // user - then it's the listing of "messages to self"
                     conversations.entry(me_id).or_default()
                 }
-                (true, false) => {
-                    conversations.entry(dm.recipient_id).or_default()
-                }
-                (false, true) => {
-                    conversations.entry(dm.sender_id).or_default()
-                }
+                (true, false) => conversations.entry(dm.recipient_id).or_default(),
+                (false, true) => conversations.entry(dm.sender_id).or_default(),
                 (false, false) => {
                     return Err(error::Error::InvalidResponse(
-                            "messages activity contains disjoint conversations",
-                            None));
+                        "messages activity contains disjoint conversations",
+                        None,
+                    ));
                 }
             };
             entry.push(dm);
@@ -476,7 +470,7 @@ impl DraftMessage {
         mut self,
         label: impl Into<String>,
         metadata: impl Into<String>,
-        description: Option<String>
+        description: Option<String>,
     ) -> Self {
         if self.quick_reply_options.len() == 20 {
             self.quick_reply_options.pop_front();
@@ -552,27 +546,40 @@ impl DraftMessage {
             "text": self.text
         });
         if !self.quick_reply_options.is_empty() {
-            message_data.as_object_mut().unwrap().insert("quick_reply".into(), serde_json::json!({
-                "type": "options",
-                "options": self.quick_reply_options
-            }));
+            message_data.as_object_mut().unwrap().insert(
+                "quick_reply".into(),
+                serde_json::json!({
+                    "type": "options",
+                    "options": self.quick_reply_options
+                }),
+            );
         }
         if !self.cta_buttons.is_empty() {
-            message_data.as_object_mut().unwrap().insert("ctas".into(),
-                self.cta_buttons.into_iter().map(|b| serde_json::json!({
-                    "type": "web_url",
-                    "label": b.label,
-                    "url": b.url,
-                })).collect::<Vec<_>>().into()
+            message_data.as_object_mut().unwrap().insert(
+                "ctas".into(),
+                self.cta_buttons
+                    .into_iter()
+                    .map(|b| {
+                        serde_json::json!({
+                            "type": "web_url",
+                            "label": b.label,
+                            "url": b.url,
+                        })
+                    })
+                    .collect::<Vec<_>>()
+                    .into(),
             );
         }
         if let Some(media_id) = self.media_attachment {
-            message_data.as_object_mut().unwrap().insert("attachment".into(), serde_json::json!({
-                "type": "media",
-                "media": {
-                    "id": media_id.0
-                }
-            }));
+            message_data.as_object_mut().unwrap().insert(
+                "attachment".into(),
+                serde_json::json!({
+                    "type": "media",
+                    "media": {
+                        "id": media_id.0
+                    }
+                }),
+            );
         }
 
         let message = serde_json::json!({
