@@ -72,7 +72,9 @@ impl Config {
                 println!("Welcome back, {}!\n", username);
             }
         } else {
-            let request_token = egg_mode::auth::request_token(&con_token, "oob").await.unwrap();
+            let request_token = egg_mode::auth::request_token(&con_token, "oob")
+                .await
+                .unwrap();
 
             println!("Go to the following URL, sign in, and give me the PIN that comes back:");
             println!("{}", egg_mode::auth::authorize_url(&request_token));

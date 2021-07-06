@@ -43,7 +43,7 @@
 //!   with the parent text. This is useful to show users where the link resolves to, without
 //!   potentially filling up a lot of space with the fullly expanded URL.
 use mime;
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::common::serde_via_string;
 

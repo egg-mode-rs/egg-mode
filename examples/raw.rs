@@ -9,8 +9,8 @@ mod common;
 //
 // This example shows how to use the `raw` API to load a tweet, like with `tweet::show`.
 
-use egg_mode::Response;
 use egg_mode::raw;
+use egg_mode::Response;
 
 #[tokio::main]
 async fn main() {
