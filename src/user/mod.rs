@@ -487,7 +487,7 @@ impl UserSearch {
     /// perform a network call.
     pub fn with_page_size(self, page_size: i32) -> Self {
         UserSearch {
-            page_size: page_size,
+            page_size,
             current_loader: None,
             current_results: None,
             ..self
@@ -500,7 +500,7 @@ impl UserSearch {
     /// search results, making the next call to `next()` perform a network call.
     pub fn start_at_page(self, page_num: i32) -> Self {
         UserSearch {
-            page_num: page_num,
+            page_num,
             current_loader: None,
             current_results: None,
             ..self

@@ -7,15 +7,14 @@ use crate::error::{Result, TwitterErrors};
 use hyper::client::{HttpConnector, ResponseFuture};
 use hyper::{self, Body, Request};
 use serde::{de::DeserializeOwned, Deserialize};
-use serde_json;
 
 use std::convert::TryFrom;
 
 use super::Headers;
 
-const X_RATE_LIMIT_LIMIT: &'static str = "X-Rate-Limit-Limit";
-const X_RATE_LIMIT_REMAINING: &'static str = "X-Rate-Limit-Remaining";
-const X_RATE_LIMIT_RESET: &'static str = "X-Rate-Limit-Reset";
+const X_RATE_LIMIT_LIMIT: &str = "X-Rate-Limit-Limit";
+const X_RATE_LIMIT_REMAINING: &str = "X-Rate-Limit-Remaining";
+const X_RATE_LIMIT_RESET: &str = "X-Rate-Limit-Reset";
 
 fn rate_limit(headers: &Headers, header: &'static str) -> Result<Option<i32>> {
     let val = headers.get(header);

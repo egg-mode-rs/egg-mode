@@ -232,7 +232,7 @@ impl<'de> Deserialize<'de> for SearchResult {
         let raw = RawSearch::deserialize(deser)?;
         Ok(SearchResult {
             statuses: raw.statuses,
-            query: raw.search_metadata.query.into(),
+            query: raw.search_metadata.query,
             max_id: raw.search_metadata.max_id,
             since_id: raw.search_metadata.since_id,
             params: None,
@@ -258,8 +258,12 @@ pub struct SearchResult {
 impl SearchResult {
     ///Load the next page of search results for the same query.
     pub async fn older(&self, token: &auth::Token) -> Result<Response<SearchResult>, error::Error> {
-        let mut params =
-            ParamList::from(self.params.as_ref().cloned().unwrap_or_default()).extended_tweets();
+        let mut params = self
+            .params
+            .as_ref()
+            .cloned()
+            .unwrap_or_default()
+            .extended_tweets();
 
         params.remove("since_id");
 
@@ -278,8 +282,12 @@ impl SearchResult {
 
     ///Load the previous page of search results for the same query.
     pub async fn newer(&self, token: &auth::Token) -> Result<Response<SearchResult>, error::Error> {
-        let mut params =
-            ParamList::from(self.params.as_ref().cloned().unwrap_or_default()).extended_tweets();
+        let mut params = self
+            .params
+            .as_ref()
+            .cloned()
+            .unwrap_or_default()
+            .extended_tweets();
 
         params.remove("max_id");
         if let Some(max_id) = self.statuses.iter().map(|t| t.id).max() {

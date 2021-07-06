@@ -530,7 +530,7 @@ pub async fn access_token<S: Into<String>>(
         match kv.next() {
             Some("oauth_token") => key = kv.next().map(|s| s.to_string()),
             Some("oauth_token_secret") => secret = kv.next().map(|s| s.to_string()),
-            Some("user_id") => id = kv.next().and_then(|s| u64::from_str_radix(s, 10).ok()),
+            Some("user_id") => id = kv.next().and_then(|s| s.parse::<u64>().ok()),
             Some("screen_name") => username = kv.next().map(|s| s.to_string()),
             Some(_) => (),
             None => {
