@@ -4,8 +4,8 @@
 
 use crate::common::*;
 
-use crate::{auth, links};
 use crate::user::{self, UserID};
+use crate::{auth, links};
 
 use super::*;
 

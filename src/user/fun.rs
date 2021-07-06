@@ -130,7 +130,9 @@ where
     // the relationship returned by Twitter is actually contained within a `"relationship"` field,
     // so this wrapper struct makes sure the data is loaded correctly
     #[derive(Deserialize)]
-    struct RelationWrapper { relationship: Relationship }
+    struct RelationWrapper {
+        relationship: Relationship,
+    }
 
     let resp: Response<RelationWrapper> = request_with_json_response(req).await?;
 

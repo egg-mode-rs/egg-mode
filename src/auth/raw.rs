@@ -18,7 +18,7 @@ use sha1::Sha1;
 
 use crate::common::*;
 
-use super::{Token, KeyPair};
+use super::{KeyPair, Token};
 
 // n.b. this type is exported in `raw::auth` - these docs are public!
 /// Builder struct to assemble and sign an API request.
@@ -89,7 +89,10 @@ impl<'a> RequestBuilder<'a> {
             params.clone()
         };
         RequestBuilder {
-            body: Some((Body::from(params.to_urlencoded()), "application/x-www-form-urlencoded")),
+            body: Some((
+                Body::from(params.to_urlencoded()),
+                "application/x-www-form-urlencoded",
+            )),
             params: Some(total_params),
             ..self
         }
@@ -102,7 +105,10 @@ impl<'a> RequestBuilder<'a> {
     /// if you specify `with_body_params` and also `with_body_json`, only the one you call last
     /// will be sent with the request.
     pub fn with_body_json(self, body: impl serde::Serialize) -> Self {
-        self.with_body(serde_json::to_string(&body).unwrap(), "application/json; charset=UTF-8")
+        self.with_body(
+            serde_json::to_string(&body).unwrap(),
+            "application/json; charset=UTF-8",
+        )
     }
 
     /// Includes the given data as the request body, with the given content type. Data given this
@@ -196,8 +202,7 @@ impl<'a> RequestBuilder<'a> {
             .header(AUTHORIZATION, authorization);
 
         if let Some((body, content)) = self.body {
-            request.header(CONTENT_TYPE, content)
-                .body(body).unwrap()
+            request.header(CONTENT_TYPE, content).body(body).unwrap()
         } else {
             request.body(Body::empty()).unwrap()
         }
@@ -262,10 +267,7 @@ impl OAuthParams {
 
     /// Adds the given callback or verifier to this `OAuthParams` header.
     fn with_addon(self, addon: OAuthAddOn) -> OAuthParams {
-        OAuthParams {
-            addon,
-            ..self
-        }
+        OAuthParams { addon, ..self }
     }
 
     /// Uses the parameters in this `OAuthParams` instance to generate a signature for the given
@@ -281,8 +283,14 @@ impl OAuthParams {
                 .add_param("oauth_timestamp", format!("{}", self.timestamp.clone()))
                 .add_param("oauth_version", "1.0")
                 .add_opt_param("oauth_token", self.token.clone().map(|k| k.key))
-                .add_opt_param("oauth_callback", self.addon.as_callback().map(|s| s.to_string()))
-                .add_opt_param("oauth_verifier", self.addon.as_verifier().map(|s| s.to_string()));
+                .add_opt_param(
+                    "oauth_callback",
+                    self.addon.as_callback().map(|s| s.to_string()),
+                )
+                .add_opt_param(
+                    "oauth_verifier",
+                    self.addon.as_verifier().map(|s| s.to_string()),
+                );
 
             let mut query = sig_params
                 .iter()
@@ -331,11 +339,12 @@ impl OAuthParams {
             OAuthAddOn::None => (),
         }
 
-        params.insert("oauth_signature", base64::encode(&digest.finalize().into_bytes()).into());
+        params.insert(
+            "oauth_signature",
+            base64::encode(&digest.finalize().into_bytes()).into(),
+        );
 
-        SignedHeader {
-            params,
-        }
+        SignedHeader { params }
     }
 }
 

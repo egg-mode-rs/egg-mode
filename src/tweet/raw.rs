@@ -5,8 +5,7 @@ use serde::Deserialize;
 use crate::common::serde_datetime;
 
 use super::{
-    deserialize_tweet_source, ExtendedTweetEntities, FilterLevel, Tweet,
-    TweetEntities, TweetSource,
+    deserialize_tweet_source, ExtendedTweetEntities, FilterLevel, Tweet, TweetEntities, TweetSource,
 };
 
 #[derive(Debug, Clone, Deserialize)]

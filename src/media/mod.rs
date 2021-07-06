@@ -263,7 +263,7 @@ pub async fn upload_media_for_dm(
     data: &[u8],
     media_type: &mime::Mime,
     shared: bool,
-    token: &auth::Token
+    token: &auth::Token,
 ) -> error::Result<MediaHandle> {
     let media_category = MediaCategory::from(media_type);
     let params = ParamList::new()
@@ -282,7 +282,7 @@ pub async fn upload_media_for_dm(
 async fn finish_upload(
     media: RawMedia,
     data: &[u8],
-    token: &auth::Token
+    token: &auth::Token,
 ) -> error::Result<MediaHandle> {
     // divide into 1MB chunks
     for (ix, chunk) in data.chunks(1024 * 1024).enumerate() {
