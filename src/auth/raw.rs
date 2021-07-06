@@ -306,7 +306,7 @@ impl OAuthParams {
         );
 
         // TODO check if key is correct length? Can this fail?
-        let mut digest = Hmac::<Sha1>::new_varkey(key.as_bytes()).expect("Wrong key length");
+        let mut digest = Hmac::<Sha1>::new_from_slice(key.as_bytes()).expect("Wrong key length");
         digest.update(base_str.as_bytes());
 
         let mut params: BTreeMap<&'static str, Cow<'static, str>> = BTreeMap::new();
