@@ -77,7 +77,7 @@ pub async fn show(list: ListID, token: &auth::Token) -> Result<Response<List>> {
 ///
 ///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
-pub fn members<'a>(list: ListID, token: &auth::Token) -> CursorIter<UserCursor> {
+pub fn members(list: ListID, token: &auth::Token) -> CursorIter<UserCursor> {
     let params = ParamList::new().add_list_param(list);
 
     CursorIter::new(links::lists::MEMBERS, token, Some(params), Some(20))
@@ -87,7 +87,7 @@ pub fn members<'a>(list: ListID, token: &auth::Token) -> CursorIter<UserCursor> 
 ///
 ///This function returns a `Stream` over the users returned by Twitter. This method defaults to
 ///reeturning 20 users in a single network call; the maximum is 5000.
-pub fn subscribers<'a>(list: ListID, token: &auth::Token) -> CursorIter<UserCursor> {
+pub fn subscribers(list: ListID, token: &auth::Token) -> CursorIter<UserCursor> {
     let params = ParamList::new().add_list_param(list);
 
     CursorIter::new(links::lists::SUBSCRIBERS, token, Some(params), Some(20))
@@ -355,7 +355,7 @@ pub async fn unsubscribe(list: ListID, token: &auth::Token) -> Result<Response<L
 ///[`ListUpdate`]: struct.ListUpdate.html
 pub fn update(list: ListID) -> ListUpdate {
     ListUpdate {
-        list: list,
+        list,
         name: None,
         public: None,
         desc: None,

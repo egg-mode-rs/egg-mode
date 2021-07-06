@@ -289,7 +289,11 @@ where
     ///This is intended to be used as part of this struct's Iterator implementation. It is provided
     ///as a convenience for those who wish to manage network calls and pagination manually.
     pub fn call(&self) -> impl Future<Output = Result<Response<T>>> {
-        let params = ParamList::from(self.params_base.as_ref().cloned().unwrap_or_default())
+        let params = self
+            .params_base
+            .as_ref()
+            .cloned()
+            .unwrap_or_default()
             .add_param("cursor", self.next_cursor.to_string())
             .add_opt_param("count", self.page_size.map_string());
 
@@ -308,10 +312,10 @@ where
         page_size: Option<i32>,
     ) -> CursorIter<T> {
         CursorIter {
-            link: link,
+            link,
             token: token.clone(),
-            params_base: params_base,
-            page_size: page_size,
+            params_base,
+            page_size,
             previous_cursor: -1,
             next_cursor: -1,
             loader: None,

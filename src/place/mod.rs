@@ -236,7 +236,7 @@ impl SearchBuilder {
     ///Begins building a location search with the given query.
     fn new(query: PlaceQuery) -> Self {
         SearchBuilder {
-            query: query,
+            query,
             accuracy: None,
             granularity: None,
             max_results: None,
@@ -371,13 +371,12 @@ mod serde_bounding_box {
                 .and_then(|arr| arr.get(0).cloned())
                 .ok_or_else(|| D::Error::custom("Malformed 'bounding_box' attribute"))
                 .and_then(|inner_arr| {
-                    serde_json::from_value::<Vec<(f64, f64)>>(inner_arr)
-                        .map_err(|e| D::Error::custom(e))
+                    serde_json::from_value::<Vec<(f64, f64)>>(inner_arr).map_err(D::Error::custom)
                 })
         }
     }
 
-    pub fn serialize<S>(src: &Vec<(f64, f64)>, ser: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(src: &[(f64, f64)], ser: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {

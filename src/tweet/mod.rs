@@ -343,19 +343,17 @@ impl FromStr for TweetSource {
             .captures(full)
             .and_then(|cap| cap.get(1))
             .map(|m| m.as_str().to_string())
-            .ok_or(InvalidResponse(
-                "TweetSource had no link href",
-                Some(full.to_string()),
-            ))?;
+            .ok_or_else(|| {
+                InvalidResponse("TweetSource had no link href", Some(full.to_string()))
+            })?;
 
         let name = RE_NAME
             .captures(full)
             .and_then(|cap| cap.get(1))
             .map(|m| m.as_str().to_string())
-            .ok_or(InvalidResponse(
-                "TweetSource had no link text",
-                Some(full.to_string()),
-            ))?;
+            .ok_or_else(|| {
+                InvalidResponse("TweetSource had no link text", Some(full.to_string()))
+            })?;
 
         Ok(TweetSource { name, url })
     }
@@ -523,7 +521,7 @@ impl Timeline {
 
         TimelineFuture {
             timeline: Some(self),
-            loader: loader,
+            loader,
         }
     }
 
@@ -535,7 +533,7 @@ impl Timeline {
 
         TimelineFuture {
             timeline: Some(self),
-            loader: loader,
+            loader,
         }
     }
 
@@ -556,7 +554,11 @@ impl Timeline {
 
     ///Helper function to construct a `Request` from the current state.
     fn request(&self, since_id: Option<u64>, max_id: Option<u64>) -> Request<Body> {
-        let params = ParamList::from(self.params_base.as_ref().cloned().unwrap_or_default())
+        let params = self
+            .params_base
+            .as_ref()
+            .cloned()
+            .unwrap_or_default()
             .add_param("count", self.count.to_string())
             .add_param("tweet_mode", "extended")
             .add_param("include_ext_alt_text", "true")
@@ -587,9 +589,9 @@ impl Timeline {
         token: &auth::Token,
     ) -> Self {
         Timeline {
-            link: link,
+            link,
             token: token.clone(),
-            params_base: params_base,
+            params_base,
             count: 20,
             max_id: None,
             min_id: None,
@@ -845,12 +847,9 @@ impl DraftTweet {
                 "auto_populate_reply_metadata",
                 self.auto_populate_reply_metadata.map_string(),
             )
-            .add_opt_param(
-                "attachment_url",
-                self.attachment_url.as_ref().map(|v| v.clone()),
-            )
+            .add_opt_param("attachment_url", self.attachment_url.as_ref().cloned())
             .add_opt_param("display_coordinates", self.display_coordinates.map_string())
-            .add_opt_param("place_id", self.place_id.as_ref().map(|v| v.clone()))
+            .add_opt_param("place_id", self.place_id.as_ref().cloned())
             .add_opt_param("possible_sensitive", self.possibly_sensitive.map_string());
 
         if let Some(ref exclude) = self.exclude_reply_user_ids {

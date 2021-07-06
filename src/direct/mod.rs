@@ -281,18 +281,18 @@ impl Timeline {
 
     /// Clear the saved cursor information on this timeline, then return the most recent set of
     /// messages.
-    pub fn start<'s>(
-        &'s mut self,
-    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's {
+    pub fn start(
+        &mut self,
+    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + '_ {
         self.reset();
         self.next_page()
     }
 
     /// Loads the next page of messages, setting the `next_cursor` to the one received from
     /// Twitter.
-    pub fn next_page<'s>(
-        &'s mut self,
-    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + 's {
+    pub fn next_page(
+        &mut self,
+    ) -> impl Future<Output = Result<Response<Vec<DirectMessage>>, error::Error>> + '_ {
         let next_cursor = self.next_cursor.take();
         let req = self.request(next_cursor);
         let loader = request_with_json_response(req);
