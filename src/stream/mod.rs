@@ -346,7 +346,7 @@ pub struct StreamBuilder {
 impl StreamBuilder {
     fn new(url: &'static str) -> Self {
         StreamBuilder {
-            url: url,
+            url,
             follow: Vec::new(),
             track: Vec::new(),
             language: Vec::new(),
@@ -368,7 +368,7 @@ impl StreamBuilder {
     /// # }
     /// ```
     pub fn follow(mut self, to_follow: &[u64]) -> Self {
-        self.follow.extend(to_follow.into_iter());
+        self.follow.extend(to_follow.iter());
         self
     }
 
@@ -411,7 +411,7 @@ impl StreamBuilder {
     /// # }
     /// ```
     pub fn locations(mut self, locations: &[BoundingBox]) -> Self {
-        self.locations.extend(locations.into_iter());
+        self.locations.extend(locations.iter());
         self
     }
 

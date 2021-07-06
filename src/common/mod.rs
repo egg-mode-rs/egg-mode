@@ -490,7 +490,7 @@ pub mod serde_datetime {
     use serde::de::Error;
     use serde::{Deserialize, Deserializer, Serializer};
 
-    const DATE_FORMAT: &'static str = "%a %b %d %T %z %Y";
+    const DATE_FORMAT: &str = "%a %b %d %T %z %Y";
 
     pub fn deserialize<'de, D>(ser: D) -> Result<chrono::DateTime<chrono::Utc>, D::Error>
     where
@@ -499,7 +499,7 @@ pub mod serde_datetime {
         let s = String::deserialize(ser)?;
         let date = (chrono::Utc)
             .datetime_from_str(&s, DATE_FORMAT)
-            .map_err(|e| D::Error::custom(e))?;
+            .map_err(D::Error::custom)?;
         Ok(date)
     }
 
@@ -524,7 +524,7 @@ pub mod serde_via_string {
         <T as std::str::FromStr>::Err: std::fmt::Display,
     {
         let str = String::deserialize(ser)?;
-        str.parse().map_err(|e| D::Error::custom(e))
+        str.parse().map_err(D::Error::custom)
     }
 
     pub fn serialize<T, S>(src: &T, ser: S) -> Result<S::Ok, S::Error>

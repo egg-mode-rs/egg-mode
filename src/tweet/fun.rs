@@ -117,10 +117,12 @@ pub async fn lookup_map<I: IntoIterator<Item = u64>>(
             )
         })?
     {
-        let id = key.parse::<u64>().or(Err(InvalidResponse(
-            "could not parse id as integer",
-            Some(key.to_string()),
-        )))?;
+        let id = key.parse::<u64>().or_else(|_| {
+            Err(InvalidResponse(
+                "could not parse id as integer",
+                Some(key.to_string()),
+            ))
+        })?;
         if val.is_null() {
             map.insert(id, None);
         } else {
