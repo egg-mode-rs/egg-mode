@@ -1,3 +1,9 @@
+//! Functionality to alter a user's public profile.
+//!
+//! Specifically, this module contains functions which update the information
+//! that is publically visible on a user's timeline (e.g. name, location). This module does *not*
+//! modify a user's private account settings (e.g. email, password).
+
 use crate::{
     auth,
     common::{post, request_with_empty_response, request_with_json_response, ParamList},

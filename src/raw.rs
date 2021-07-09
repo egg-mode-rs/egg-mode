@@ -42,7 +42,7 @@
 //! process it. Which one you select depends on how much processing you want egg-mode to do with
 //! the response:
 //!
-//! * At the most hands-off end, there's [`response_future`,] which is a small wrapper that just
+//! * At the most hands-off end, there's [`response_future`], which is a small wrapper that just
 //!   starts the request and hands off the `ResponseFuture` from `hyper` to give you the most power
 //!   over handling the response data.
 //! * In the middle, there's [`response_raw_bytes`], which wraps the `ResponseFuture` to return the
