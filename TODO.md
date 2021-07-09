@@ -139,14 +139,14 @@ return a list of IDs of something are grouped in with the rest of the main struc
 
 <!-- break these lists apart -->
 
-- [ ] account/update\_profile
-- [ ] account/update\_profile\_image
+- [x] account/update\_profile
+- [x] account/update\_profile\_image
 - [ ] account/update\_profile\_background\_image
 
 <!-- break these lists apart -->
 
 - [ ] account/profile\_banner
-- [ ] account/update\_profile\_banner
+- [x] account/update\_profile\_banner
 - [ ] account/remove\_profile\_banner
 
 <!-- break these lists apart -->
