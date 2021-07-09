@@ -89,12 +89,11 @@ pub mod lists {
 }
 
 pub mod account {
-    pub const UPDATE_PROFILE_IMAGE: &'static str =
+    pub const UPDATE_PROFILE_IMAGE: &str =
         "https://api.twitter.com/1.1/account/update_profile_image.json";
-    pub const UPDATE_PROFILE_BNNER: &'static str =
+    pub const UPDATE_PROFILE_BNNER: &str =
         "https://api.twitter.com/1.1/account/update_profile_banner.json";
-    pub const UPDATE_PROFILE: &'static str =
-        "https://api.twitter.com/1.1/account/update_profile.json";
+    pub const UPDATE_PROFILE: &str = "https://api.twitter.com/1.1/account/update_profile.json";
 }
 
 pub mod place {
@@ -127,6 +126,6 @@ pub mod stream {
 }
 
 pub mod trend {
-    pub const CLOSEST: &'static str = "https://api.twitter.com/1.1/trends/closest.json";
-    pub const AVAILABLE: &'static str = "https://api.twitter.com/1.1/trends/available.json";
+    pub const CLOSEST: &str = "https://api.twitter.com/1.1/trends/closest.json";
+    pub const AVAILABLE: &str = "https://api.twitter.com/1.1/trends/available.json";
 }

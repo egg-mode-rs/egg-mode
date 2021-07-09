@@ -45,7 +45,7 @@ pub async fn terms(token: &auth::Token) -> Result<Response<String>> {
         .get("tos")
         .and_then(|tos| tos.as_str())
         .map(String::from)
-        .ok_or_else(|| InvalidResponse("Missing field: tos", None))?;
+        .ok_or(InvalidResponse("Missing field: tos", None))?;
     Ok(Response::map(ret, |_| tos))
 }
 
@@ -63,7 +63,7 @@ pub async fn privacy(token: &auth::Token) -> Result<Response<String>> {
         .get("privacy")
         .and_then(|tos| tos.as_str())
         .map(String::from)
-        .ok_or_else(|| InvalidResponse("Missing field: privacy", None))?;
+        .ok_or(InvalidResponse("Missing field: privacy", None))?;
     Ok(Response::map(ret, |_| privacy))
 }
 

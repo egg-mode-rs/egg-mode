@@ -240,11 +240,12 @@ impl TryFrom<raw::RawTweet> for Tweet {
     type Error = error::Error;
 
     fn try_from(mut raw: raw::RawTweet) -> Result<Tweet> {
+        let extended_full_text = raw.extended_tweet.map(|xt| xt.full_text);
         let text = raw
             .full_text
-            .or(raw.extended_tweet.map(|xt| xt.full_text))
+            .or(extended_full_text)
             .or(raw.text)
-            .ok_or_else(|| error::Error::MissingValue("text"))?;
+            .ok_or(error::Error::MissingValue("text"))?;
         let current_user_retweet = raw.current_user_retweet.map(|cur| cur.id);
 
         if let Some(ref mut range) = raw.display_text_range {
