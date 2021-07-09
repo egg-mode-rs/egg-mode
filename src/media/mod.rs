@@ -364,7 +364,7 @@ mod tests {
 
         match media.progress {
             Some(super::ProgressInfo::Pending(5)) => (),
-            other => assert!(false, format!("Unexpected value of progress={:?}", other)),
+            other => assert!(false, "Unexpected value of progress={:?}", other),
         }
     }
 
@@ -378,7 +378,7 @@ mod tests {
 
         match media.progress {
             Some(super::ProgressInfo::InProgress(10)) => (),
-            other => assert!(false, format!("Unexpected value of progress={:?}", other)),
+            other => assert!(false, "Unexpected value of progress={:?}", other),
         }
     }
 
@@ -399,7 +399,7 @@ mod tests {
                     message: "Unsupported video format".to_string(),
                 }
             ),
-            other => assert!(false, format!("Unexpected value of progress={:?}", other)),
+            other => assert!(false, "Unexpected value of progress={:?}", other),
         }
     }
 }

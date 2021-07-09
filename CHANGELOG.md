@@ -1,6 +1,11 @@
 # Changelog for egg-mode
 
 ## Pending
+### Changed
+### Added
+
+
+## [0.16.0] - 2021-07-09
 
 ### Changed
 - Updated tokio to version 1.0
@@ -22,13 +27,19 @@
     - The `conversations` example has been updated to demonstrate the new API
   - This is technically a **breaking change**, but the old DMs stuff hasn't worked since 2018 so it
     was already broken without this change
-- `CursorIter` now implements `Send`
-  - Thanks @hdevalence for the PR!
+- `CursorIter` now implements `Send` - thanks @hdevalence
+-  Allow `bounding_box` attribute of `place` payload to be `null`
+- `BoundingBox` struct serialization fixed - thanks @kenkoooo
+- `hmac` bumped to v0.11 - thanks @travisbrown
+- `clippy` and formatting fixes - thanks @travisbrown
 
 ### Added
+- New module `account`, adding endpoints to update a user's profile (name, location, avatar etc)
+  - Thanks to @uesugi6111
+- New module `trend`, adding endpoints to fetch trending topics
+  - Thanks to @RinHizakura
 - New function `raw::request_delete` which is like `request_get`, but sends a DELETE request instead
-- New module `raw::types::direct`, containing raw `Deserialize`able types used with the Direct
-  Message API
+- New module `raw::types::direct`, containing raw `Deserialize`able types used with the Direct Message API
 - New function `Response::try_map`, to change the type of a `Response` using a fallible conversion
 - New function `Response::into`, to convert a `Response` using the `Into` trait
 - `Response` now implements `IntoIterator` if its contained type does
