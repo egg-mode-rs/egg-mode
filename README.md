@@ -38,7 +38,7 @@ This may be helpful if you wish to avoid linking against `OpenSSL`.
 To enable, modify your `Cargo.toml` entry:
 
 ```
-egg-mode = { version = "0.15", features = ["rustls"], default-features = false }
+egg-mode = { version = "0.16", features = ["rustls"], default-features = false }
 ```
 
 If you also want to avoid using the root certificates on your operating system, the feature
@@ -47,7 +47,7 @@ into the final binary, bypassing the operating system's root certificates. To us
 this in your `Cargo.toml` instead:
 
 ```
-egg-mode = { version = "0.15", features = ["rustls_webpki"], default-features = false }
+egg-mode = { version = "0.16", features = ["rustls_webpki"], default-features = false }
 ```
 
 See available methods and tips to get started in the [Documentation](https://docs.rs/egg-mode/).
