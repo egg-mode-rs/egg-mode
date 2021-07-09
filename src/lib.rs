@@ -163,6 +163,7 @@
 
 #[macro_use]
 mod common;
+pub mod account;
 pub mod auth;
 pub mod cursor;
 pub mod direct;
@@ -178,6 +179,7 @@ pub mod service;
 pub mod stream;
 pub mod tweet;
 pub mod user;
+pub mod trend;
 
 pub use crate::auth::{KeyPair, Token};
 pub use crate::common::{RateLimit, Response, ResponseIter};

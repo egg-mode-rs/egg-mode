@@ -88,6 +88,15 @@ pub mod lists {
     pub const UPDATE: &str = "https://api.twitter.com/1.1/lists/update.json";
 }
 
+pub mod account {
+    pub const UPDATE_PROFILE_IMAGE: &'static str =
+        "https://api.twitter.com/1.1/account/update_profile_image.json";
+    pub const UPDATE_PROFILE_BNNER: &'static str =
+        "https://api.twitter.com/1.1/account/update_profile_banner.json";
+    pub const UPDATE_PROFILE: &'static str =
+        "https://api.twitter.com/1.1/account/update_profile.json";
+}
+
 pub mod place {
     pub const SHOW_STEM: &str = "https://api.twitter.com/1.1/geo/id";
     pub const REVERSE_GEOCODE: &str = "https://api.twitter.com/1.1/geo/reverse_geocode.json";
@@ -100,8 +109,7 @@ pub mod direct {
     pub const SEND: &str = "https://api.twitter.com/1.1/direct_messages/events/new.json";
     pub const DELETE: &str = "https://api.twitter.com/1.1/direct_messages/events/destroy.json";
     pub const MARK_READ: &str = "https://api.twitter.com/1.1/direct_messages/mark_read.json";
-    pub const INDICATE_TYPING: &str =
-        "https://api.twitter.com/1.1/direct_messages/indicate_typing.json";
+    pub const INDICATE_TYPING: &str = "https://api.twitter.com/1.1/direct_messages/indicate_typing.json";
 }
 
 pub mod service {
@@ -115,4 +123,9 @@ pub mod service {
 pub mod stream {
     pub const SAMPLE: &str = "https://stream.twitter.com/1.1/statuses/sample.json";
     pub const FILTER: &str = "https://stream.twitter.com/1.1/statuses/filter.json";
+}
+
+pub mod trend {
+    pub const CLOSEST: &'static str = "https://api.twitter.com/1.1/trends/closest.json";
+    pub const AVAILABLE: &'static str = "https://api.twitter.com/1.1/trends/available.json";
 }
