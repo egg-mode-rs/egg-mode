@@ -22,7 +22,7 @@ counting and mention/hashtag/url extraction. That has since been extracted into 
 
 ## MSRV
 
-Rust **1.44** or higher
+Rust **1.46** or higher
 
 ## Usage
 
