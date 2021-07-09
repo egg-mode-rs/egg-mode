@@ -83,7 +83,7 @@ fn parse_url(base: &'static str, full: &str) -> Result<ParamList> {
 ///the given URL is not a valid `reverse_geocode` query URL.
 pub async fn reverse_geocode_url(url: &str, token: &auth::Token) -> Result<Response<SearchResult>> {
     let params = parse_url(links::place::REVERSE_GEOCODE, url)?;
-    let req = get(links::place::REVERSE_GEOCODE, &token, Some(&params));
+    let req = get(links::place::REVERSE_GEOCODE, token, Some(&params));
     request_with_json_response(req).await
 }
 
@@ -146,6 +146,6 @@ pub fn search_ip(query: impl Into<CowStr>) -> SearchBuilder {
 ///the given URL is not a valid `search` query URL.
 pub async fn search_url(url: &str, token: &auth::Token) -> Result<Response<SearchResult>> {
     let params = parse_url(links::place::SEARCH, url)?;
-    let req = get(links::place::REVERSE_GEOCODE, &token, Some(&params));
+    let req = get(links::place::REVERSE_GEOCODE, token, Some(&params));
     request_with_json_response(req).await
 }

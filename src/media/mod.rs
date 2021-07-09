@@ -235,7 +235,7 @@ pub async fn upload_media(
         .add_param("total_bytes", data.len().to_string())
         .add_param("media_type", media_type.to_string())
         .add_param("media_category", media_category.to_string());
-    let req = post(links::media::UPLOAD, &token, Some(&params));
+    let req = post(links::media::UPLOAD, token, Some(&params));
 
     let media = request_with_json_response::<RawMedia>(req).await?.response;
 
@@ -272,7 +272,7 @@ pub async fn upload_media_for_dm(
         .add_param("media_type", media_type.to_string())
         .add_param("media_category", media_category.dm_category())
         .add_param("shared", shared.to_string());
-    let req = post(links::media::UPLOAD, &token, Some(&params));
+    let req = post(links::media::UPLOAD, token, Some(&params));
 
     let media = request_with_json_response::<RawMedia>(req).await?.response;
 
@@ -331,7 +331,7 @@ pub async fn set_metadata(
             "text": alt_text
         }
     });
-    let req = post_json(links::media::METADATA, &token, payload);
+    let req = post_json(links::media::METADATA, token, payload);
     raw_request(req).await?;
     Ok(())
 }
