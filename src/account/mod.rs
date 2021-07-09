@@ -12,8 +12,8 @@ use crate::{
     Response,
 };
 
-/// Parameters  
-/// account/update_profile_banner
+/// Options for updating the profile banner
+#[derive(Debug, Default)]
 pub struct ProfileBannerOption {
     /// The width of the preferred section of the image being uploaded in pixels.
     /// Use with height , offset_left , and offset_top to select the desired region of the image to use.
@@ -29,8 +29,8 @@ pub struct ProfileBannerOption {
     pub offset_top: Option<String>,
 }
 
-/// Parameters
-/// account/update_profile  
+/// Options for updating the user profile
+#[derive(Debug, Default)]
 pub struct UserProfile {
     /// Full name associated with the profile.
     pub name: Option<String>,
@@ -47,6 +47,8 @@ pub struct UserProfile {
 }
 
 /// Updates the authenticating user's profile image.
+///
+/// This function takes the image as a slice of bytes. This slice must be a valid GIF, JPG or PNG image.
 /// Note that this method expects raw multipart data, not a URL to an image.
 ///
 /// This method asynchronously processes the uploaded file before updating the user's profile image URL.
@@ -61,6 +63,8 @@ pub async fn update_profile_image(
 }
 
 /// Uploads a profile banner on behalf of the authenticating user.
+///
+/// This function takes the banner as a slice of bytes. This slice must be a valid GIF, JPG or PNG image.
 /// More information about sizing variations can be found in User Profile Images and Banners and GET users / profile_banner.
 ///
 /// Profile banner images are processed asynchronously.
