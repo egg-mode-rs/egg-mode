@@ -36,7 +36,7 @@
 ### Added
 - New module `account`, adding endpoints to update a user's profile (name, location, avatar etc)
   - Thanks to @uesugi6111
-- New module `trend`, adding endpoints to fetch trending topics
+- New module `trend`, adding endpoints to fetch trending topic locations
   - Thanks to @RinHizakura
 - New function `raw::request_delete` which is like `request_get`, but sends a DELETE request instead
 - New module `raw::types::direct`, containing raw `Deserialize`able types used with the Direct Message API
