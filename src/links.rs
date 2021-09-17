@@ -16,6 +16,7 @@ pub mod auth {
 pub mod users {
     pub const LOOKUP: &str = "https://api.twitter.com/1.1/users/lookup.json";
     pub const SHOW: &str = "https://api.twitter.com/1.1/users/show.json";
+    pub const PROFILE_BNNER: &str = "https://api.twitter.com/1.1/users/profile_banner.json";
     pub const SEARCH: &str = "https://api.twitter.com/1.1/users/search.json";
     pub const FRIENDS_LIST: &str = "https://api.twitter.com/1.1/friends/list.json";
     pub const FRIENDS_IDS: &str = "https://api.twitter.com/1.1/friends/ids.json";
@@ -118,6 +119,7 @@ pub mod service {
     pub const CONFIG: &str = "https://api.twitter.com/1.1/help/configuration.json";
     pub const RATE_LIMIT_STATUS: &str =
         "https://api.twitter.com/1.1/application/rate_limit_status.json";
+    pub const LANGS: &str = "https://api.twitter.com/1.1/help/languages.json";
 }
 
 pub mod stream {

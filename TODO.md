@@ -68,6 +68,7 @@ return a list of IDs of something are grouped in with the rest of the main struc
 ### Users
 
 - [x] users/show (`user::show`)
+- [x] users/profile_banner (`user::profile_banner`)
 - [x] users/lookup (`user::lookup`)
 - [x] users/search (`user::search`)
 - [x] friends/list (`user::friends_of`)
@@ -145,14 +146,13 @@ return a list of IDs of something are grouped in with the rest of the main struc
 
 <!-- break these lists apart -->
 
-- [ ] account/profile\_banner
 - [x] account/update\_profile\_banner
 - [ ] account/remove\_profile\_banner
 
 <!-- break these lists apart -->
 
 - [x] application/rate\_limit\_status (`service::rate_limit_status`)
-- [ ] help/languages
+- [x] help/languages (`service::langs`)
 - [x] help/configuration (`service::config`)
 - [x] help/privacy (`service::privacy`)
 - [x] help/tos (`service::terms`)
