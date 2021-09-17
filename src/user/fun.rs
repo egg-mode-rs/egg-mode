@@ -138,7 +138,6 @@ pub async fn profile_banner<T: Into<UserID>>(
         .map(serde_json::from_str)
         .ok_or(InvalidResponse("Missing field: sizes", None))??;
 
-    // request_with_json_response(req).await
     Ok(Response::map(ret, |_| banners))
 }
 

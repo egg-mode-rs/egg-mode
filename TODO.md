@@ -152,7 +152,7 @@ return a list of IDs of something are grouped in with the rest of the main struc
 <!-- break these lists apart -->
 
 - [x] application/rate\_limit\_status (`service::rate_limit_status`)
-- [x] help/languages
+- [x] help/languages (`service::langs`)
 - [x] help/configuration (`service::config`)
 - [x] help/privacy (`service::privacy`)
 - [x] help/tos (`service::terms`)
