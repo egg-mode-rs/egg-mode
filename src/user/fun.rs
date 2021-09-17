@@ -2,7 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use std::collections::HashMap;
+
 use crate::common::*;
+use crate::error::Error::InvalidResponse;
 use crate::error::Result;
 use crate::{auth, cursor, links};
 
@@ -99,6 +102,44 @@ pub async fn show<T: Into<UserID>>(acct: T, token: &auth::Token) -> Result<Respo
     let req = get(links::users::SHOW, token, Some(&params));
 
     request_with_json_response(req).await
+}
+
+/// Represents a single profile banner returned by [`profile_banner`][] function.
+#[derive(Debug, Deserialize)]
+pub struct UserProfileBanner {
+    ///Width of profile banner
+    w: u32,
+    ///Height of profile banner
+    h: u32,
+    ///Link to the profile banner
+    url: String,
+}
+
+/// Returns a map of the available size variations of the specified user's profile banner. 
+/// If the user has not uploaded a profile banner, a HTTP 404 will be served instead. 
+/// This method can be used instead of string manipulation on the `profile_banner_url` 
+/// returned in user objects as described in 
+/// <https://developer.twitter.com/en/docs/accounts-and-users/user-profile-images-and-banners>.
+///
+/// The profile banner data available at each size variant's URL is in PNG format.
+pub async fn profile_banner<T: Into<UserID>>(
+    acct: T,
+    token: &auth::Token,
+) -> Result<Response<HashMap<String, UserProfileBanner>>> {
+    let params = ParamList::new().add_user_param(acct.into());
+
+    let req = get(links::users::PROFILE_BNNER, token, Some(&params));
+    let ret = request_with_json_response::<serde_json::Value>(req).await?;
+
+    let banners: HashMap<String, UserProfileBanner> = ret
+        .response
+        .get("sizes")
+        .and_then(|banner| banner.as_str())
+        .map(serde_json::from_str)
+        .ok_or(InvalidResponse("Missing field: sizes", None))??;
+
+    // request_with_json_response(req).await
+    Ok(Response::map(ret, |_| banners))
 }
 
 /// Lookup the user IDs that the authenticating user has disabled retweets from.
