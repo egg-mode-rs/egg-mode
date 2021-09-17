@@ -118,6 +118,7 @@ pub mod service {
     pub const CONFIG: &str = "https://api.twitter.com/1.1/help/configuration.json";
     pub const RATE_LIMIT_STATUS: &str =
         "https://api.twitter.com/1.1/application/rate_limit_status.json";
+    pub const LANGS: &str = "https://api.twitter.com/1.1/help/languages.json";
 }
 
 pub mod stream {

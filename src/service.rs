@@ -67,6 +67,17 @@ pub async fn privacy(token: &auth::Token) -> Result<Response<String>> {
     Ok(Response::map(ret, |_| privacy))
 }
 
+///Returns a future that resolves to the list of languages supported by Twitter API.
+///
+///See the documentation for the [`Lang`][] struct for discussion of what individual fields returned
+///in Vec mean.
+///
+///[`Lang`]: struct.Lang.html
+pub async fn langs(token: &auth::Token) -> Result<Response<Vec<Lang>>> {
+    let req = get(links::service::LANGS, token, None);
+    request_with_json_response::<Vec<Lang>>(req).await
+}
+
 ///Returns a future that resolves to the current configuration from Twitter, including the maximum
 ///length of a t.co URL and maximum photo resolutions per size, among others.
 ///
@@ -101,6 +112,20 @@ pub async fn rate_limit_status(token: &auth::Token) -> Result<Response<RateLimit
 pub async fn rate_limit_status_raw(token: &auth::Token) -> Result<Response<serde_json::Value>> {
     let req = get(links::service::RATE_LIMIT_STATUS, token, None);
     request_with_json_response(req).await
+}
+
+///Represents a single language supported by the Twitter API.
+///
+///The language `code` may be formatted as ISO 639-1 alpha-2 (en), ISO 639-3 alpha-3 (msa), 
+///or ISO 639-1 alpha-2 combined with an ISO 3166-1 alpha-2 localization (zh-tw).
+#[derive(Debug, Deserialize)]
+pub struct Lang {
+    ///Language code such as `en`, `hi`, `en-gb`, etc.
+    pub code: String,
+    ///Status whether language is in `production` or not.
+    pub status: String,
+    ///Name of the language such as `Polish`, `Chinese (Simplified)`, etc.
+    pub name: String,
 }
 
 ///Represents a service configuration from Twitter.
@@ -293,6 +318,7 @@ impl FromStr for Method {
             "/help/configuration" => Ok(Method::Service(ServiceMethod::Config)),
             "/help/privacy" => Ok(Method::Service(ServiceMethod::Privacy)),
             "/help/tos" => Ok(Method::Service(ServiceMethod::Terms)),
+            "/help/languages" => Ok(Method::Service(ServiceMethod::Langs)),
             "/account/verify_credentials" => Ok(Method::Service(ServiceMethod::VerifyTokens)),
             "/application/rate_limit_status" => Ok(Method::Service(ServiceMethod::RateLimitStatus)),
 
@@ -383,6 +409,8 @@ pub enum ServiceMethod {
     RateLimitStatus,
     ///`verify_tokens`
     VerifyTokens,
+    ///`service::langs`
+    Langs,
 }
 
 ///Method identifiers from the `tweet` module, for use by `rate_limit_status`.
@@ -481,5 +509,11 @@ mod tests {
     fn parse_rate_limit() {
         let sample = load_file("sample_payloads/rate_limit_sample.json");
         ::serde_json::from_str::<RateLimitStatus>(&sample).unwrap();
+    }
+
+    #[test]
+    fn parse_langs() {
+        let sample = load_file("sample_payloads/sample-languages.json");
+        ::serde_json::from_str::<Vec<Lang>>(&sample).unwrap();
     }
 }
