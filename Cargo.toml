@@ -13,7 +13,10 @@ edition = "2018"
 
 [dependencies]
 base64 = "0.13"
-chrono = { version = "0.4", features = ["serde"] }
+# Switching off default features removes a dependency to the "time" crate that
+# contains a potential security issue.
+# See https://github.com/time-rs/time/issues/293
+chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
 futures = "0.3"
 derive_more = "0.99"
 hmac = "0.11"
