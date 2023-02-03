@@ -1,3 +1,10 @@
+# abandoned
+
+![status: abandoned](https://img.shields.io/badge/status-abandoned-red)
+
+**NOTE**: This crate is abandoned. See https://github.com/egg-mode-rs/egg-mode/issues/132 for
+details.
+
 # egg-mode
 
 Twitter library for Rust ![Build Status](https://github.com/egg-mode-rs/egg-mode/workflows/CI/badge.svg)
