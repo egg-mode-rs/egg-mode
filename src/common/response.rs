@@ -5,8 +5,10 @@ use crate::error::Error::{self, *};
 use crate::error::{Result, TwitterErrors};
 
 use hyper::client::{HttpConnector, ResponseFuture};
+use hyper::service::Service;
 use hyper::{self, Body, Request};
 use serde::{de::DeserializeOwned, Deserialize};
+use tower_http::decompression::{self, Decompression};
 
 use std::convert::TryFrom;
 
@@ -193,15 +195,27 @@ pub fn get_response(request: Request<Body>) -> ResponseFuture {
     client.request(request)
 }
 
+/// Similar to `get_response`, but makes the request with some `Accept-Encoding`s.
+///
+/// Codes inside `egg-mode` crate should prefer this function to `get_response`.
+pub fn get_response2(request: Request<Body>) -> decompression::ResponseFuture<ResponseFuture> {
+    let connector = new_https_connector();
+    let mut client = Decompression::new(hyper::Client::builder().build(connector));
+    client.call(request)
+}
+
 // n.b. this function is re-exported in the `raw` module - these docs are public!
 /// Loads the given request, parses the headers and response for potential errors given by Twitter,
 /// and returns the headers and raw bytes returned from the response.
 pub async fn raw_request(request: Request<Body>) -> Result<(Headers, Vec<u8>)> {
     let connector = new_https_connector();
-    let client = hyper::Client::builder().build(connector);
-    let resp = client.request(request).await?;
+    let mut client = Decompression::new(hyper::Client::builder().build(connector));
+    let resp = client.call(request).await?;
     let (parts, body) = resp.into_parts();
-    let body: Vec<_> = hyper::body::to_bytes(body).await?.to_vec();
+    let body: Vec<_> = hyper::body::to_bytes(body)
+        .await
+        .map_err(Error::downcast_from)?
+        .to_vec();
     if let Ok(errors) = serde_json::from_slice::<TwitterErrors>(&body) {
         if errors.errors.iter().any(|e| e.code == 88)
             && parts.headers.contains_key(X_RATE_LIMIT_RESET)

@@ -17,7 +17,7 @@ chrono = { version = "0.4", features = ["serde"] }
 futures = "0.3"
 derive_more = "0.99"
 hmac = "0.11"
-hyper = { version = "0.14", features = ["http1", "http2", "client", "stream"] }
+hyper = { version = "0.14", features = ["http1", "http2", "client"] }
 hyper-rustls = { version = "0.22", optional = true, default-features = false }
 hyper-tls = { version = "0.5", optional = true }
 lazy_static = "1.4"
@@ -31,6 +31,7 @@ serde_json = "1.0"
 sha-1 = "0.9"
 thiserror = "1.0.11"
 tokio = { version = "1.0", features = ["time"] }
+tower-http = { version = "0.3", features = ["decompression-br", "decompression-gzip"] }
 url = "2.1.1"
 
 [features]

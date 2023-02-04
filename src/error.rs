@@ -171,3 +171,15 @@ pub enum Error {
     #[error("Error converting headers: {}", _0)]
     HeaderConvertError(#[from] std::num::ParseIntError),
 }
+
+impl Error {
+    pub(crate) fn downcast_from(e: Box<dyn std::error::Error + Send + Sync>) -> Self {
+        match e.downcast() {
+            Ok(e) => Error::NetError(*e),
+            Err(e) => match e.downcast() {
+                Ok(e) => Error::IOError(*e),
+                Err(e) => Error::IOError(std::io::Error::new(std::io::ErrorKind::Other, e)),
+            },
+        }
+    }
+}

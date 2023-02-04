@@ -50,11 +50,13 @@ use std::task::{Context, Poll};
 use std::{self, io};
 
 use futures::Stream;
+use hyper::body::HttpBody;
 use hyper::client::ResponseFuture;
 use hyper::{Body, Request};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json;
+use tower_http::decompression::{self, DecompressionBody};
 
 use crate::auth::Token;
 use crate::common::*;
@@ -209,8 +211,8 @@ impl FromStr for StreamMessage {
 pub struct TwitterStream {
     buf: Vec<u8>,
     request: Option<Request<Body>>,
-    response: Option<ResponseFuture>,
-    body: Option<Body>,
+    response: Option<decompression::ResponseFuture<ResponseFuture>>,
+    body: Option<DecompressionBody<Body>>,
 }
 
 impl TwitterStream {
@@ -229,7 +231,7 @@ impl Stream for TwitterStream {
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         if let Some(req) = self.request.take() {
-            self.response = Some(get_response(req));
+            self.response = Some(get_response2(req));
         }
 
         if let Some(mut resp) = self.response.take() {
@@ -253,7 +255,7 @@ impl Stream for TwitterStream {
 
         if let Some(mut body) = self.body.take() {
             loop {
-                match Pin::new(&mut body).poll_next(cx) {
+                match Pin::new(&mut body).poll_data(cx) {
                     Poll::Pending => {
                         self.body = Some(body);
                         return Poll::Pending;
@@ -263,7 +265,7 @@ impl Stream for TwitterStream {
                     }
                     Poll::Ready(Some(Err(e))) => {
                         self.body = Some(body);
-                        return Poll::Ready(Some(Err(e.into())));
+                        return Poll::Ready(Some(Err(error::Error::downcast_from(e))));
                     }
                     Poll::Ready(Some(Ok(chunk))) => {
                         self.buf.extend(&*chunk);
