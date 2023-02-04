@@ -53,8 +53,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Wait 60 seconds for processing
         print!("Waiting for media to finish processing..");
         stdout().flush()?;
+        let mut progress = handle.progress;
         for ct in 0..=60u32 {
-            match get_status(handle.id.clone(), &config.token).await?.progress {
+            match progress {
                 None | Some(ProgressInfo::Success) => {
                     println!("\nMedia sucessfully processed");
                     break;
@@ -69,6 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if ct == 60 {
                 Err("Error: timeout")?
             }
+            progress = get_status(handle.id.clone(), &config.token).await?.progress;
         }
     }
 
